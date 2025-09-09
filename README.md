@@ -276,4 +276,5 @@ VITE_WEBSITE_URL=https://allthingbucket.com
 - 모든 기능은 Lumi SDK를 통해 MongoDB와 연동
 - SMS 발송은 네이버 클라우드 SMS API 또는 다른 SMS 서비스 연동 필요
 #   a l l t h i n g b u c k e t  
+ #   a l l t h i n g b u c k e t  
  
