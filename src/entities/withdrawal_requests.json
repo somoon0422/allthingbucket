@@ -1,0 +1,78 @@
+
+{
+  "name": "withdrawal_requests",
+  "options": {
+    "validator": {
+      "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["user_id", "requested_amount", "bank_name", "account_number", "account_holder", "status", "created_at"],
+        "properties": {
+          "user_id": {
+            "bsonType": "string",
+            "description": "출금 요청자 ID"
+          },
+          "requested_amount": {
+            "bsonType": "number",
+            "minimum": 1000,
+            "description": "출금 요청 금액"
+          },
+          "bank_name": {
+            "bsonType": "string",
+            "description": "은행명"
+          },
+          "account_number": {
+            "bsonType": "string",
+            "description": "계좌번호"
+          },
+          "account_holder": {
+            "bsonType": "string",
+            "description": "예금주명"
+          },
+          "tax_rate": {
+            "bsonType": "number",
+            "description": "세율 (기본 3.3%)"
+          },
+          "tax_amount": {
+            "bsonType": "number",
+            "description": "세금 금액"
+          },
+          "final_amount": {
+            "bsonType": "number",
+            "description": "실지급 금액 (세금 제외)"
+          },
+          "status": {
+            "bsonType": "string",
+            "enum": ["pending", "approved", "processing", "completed", "rejected"],
+            "description": "처리 상태"
+          },
+          "admin_note": {
+            "bsonType": "string",
+            "description": "관리자 메모"
+          },
+          "processed_by": {
+            "bsonType": "string",
+            "description": "처리한 관리자 ID"
+          },
+          "processed_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "처리 완료 일시"
+          },
+          "created_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "요청 일시"
+          },
+          "updated_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "수정 일시"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "validationLevel": "moderate",
+    "validationAction": "warn"
+  }
+}

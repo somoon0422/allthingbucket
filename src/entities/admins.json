@@ -1,0 +1,63 @@
+
+{
+  "name": "admins",
+  "fields": {
+    "_id": {
+      "type": "string",
+      "title": "관리자 ID"
+    },
+    "admin_id": {
+      "type": "string",
+      "title": "관리자 고유 ID",
+      "required": true
+    },
+    "admin_name": {
+      "type": "string",
+      "title": "관리자명",
+      "required": true
+    },
+    "email": {
+      "type": "string",
+      "title": "이메일",
+      "required": true
+    },
+    "password": {
+      "type": "string",
+      "title": "비밀번호",
+      "required": true
+    },
+    "role": {
+      "type": "string",
+      "title": "권한",
+      "enum": ["super_admin", "admin", "manager"],
+      "default": "admin"
+    },
+    "permissions": {
+      "type": "array",
+      "title": "세부 권한",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_active": {
+      "type": "boolean",
+      "title": "활성 상태",
+      "default": true
+    },
+    "last_login": {
+      "type": "string",
+      "title": "마지막 로그인",
+      "format": "datetime"
+    },
+    "created_at": {
+      "type": "string",
+      "title": "생성일",
+      "format": "datetime"
+    },
+    "updated_at": {
+      "type": "string",
+      "title": "수정일",
+      "format": "datetime"
+    }
+  }
+}

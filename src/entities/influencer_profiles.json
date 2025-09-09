@@ -1,0 +1,126 @@
+
+{
+  "name": "influencer_profiles",
+  "options": {
+    "validator": {
+      "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["user_id", "full_name", "phone", "created_at", "updated_at"],
+        "properties": {
+          "user_id": {
+            "bsonType": "string",
+            "description": "사용자 ID (Lumi 인증 시스템 연동)"
+          },
+          "full_name": {
+            "bsonType": "string",
+            "description": "실명"
+          },
+          "phone": {
+            "bsonType": "string",
+            "description": "전화번호"
+          },
+          "email": {
+            "bsonType": "string",
+            "description": "이메일 주소"
+          },
+          "birth_date": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "생년월일"
+          },
+          "gender": {
+            "bsonType": "string",
+            "enum": ["male", "female", "other"],
+            "description": "성별"
+          },
+          "address": {
+            "bsonType": "object",
+            "description": "주소 정보"
+          },
+          "naver_blog": {
+            "bsonType": "string",
+            "description": "네이버 블로그 URL"
+          },
+          "instagram_id": {
+            "bsonType": "string",
+            "description": "인스타그램 아이디"
+          },
+          "youtube_channel": {
+            "bsonType": "string",
+            "description": "유튜브 채널 URL"
+          },
+          "tiktok_id": {
+            "bsonType": "string",
+            "description": "틱톡 아이디"
+          },
+          "facebook_page": {
+            "bsonType": "string",
+            "description": "페이스북 페이지 URL"
+          },
+          "other_sns": {
+            "bsonType": "string",
+            "description": "기타 SNS 정보"
+          },
+          "follower_counts": {
+            "bsonType": "object",
+            "description": "각 플랫폼별 팔로워 수"
+          },
+          "categories": {
+            "bsonType": "array",
+            "description": "관심 카테고리"
+          },
+          "experience_level": {
+            "bsonType": "string",
+            "enum": ["beginner", "intermediate", "expert"],
+            "description": "체험단 경험 수준"
+          },
+          "bank_name": {
+            "bsonType": "string",
+            "description": "은행명"
+          },
+          "account_number": {
+            "bsonType": "string",
+            "description": "계좌번호"
+          },
+          "account_holder": {
+            "bsonType": "string",
+            "description": "예금주명"
+          },
+          "tax_info": {
+            "bsonType": "object",
+            "description": "세금 정보 (주민등록번호 등)"
+          },
+          "profile_status": {
+            "bsonType": "string",
+            "enum": ["incomplete", "pending", "verified", "rejected"],
+            "description": "프로필 승인 상태"
+          },
+          "rating": {
+            "bsonType": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "인플루언서 평점"
+          },
+          "total_experiences": {
+            "bsonType": "int",
+            "minimum": 0,
+            "description": "총 참여한 체험단 수"
+          },
+          "created_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "생성일시"
+          },
+          "updated_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "수정일시"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "validationLevel": "moderate",
+    "validationAction": "warn"
+  }
+}

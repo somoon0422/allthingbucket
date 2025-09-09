@@ -1,0 +1,48 @@
+
+{
+  "name": "user_codes",
+  "options": {
+    "validator": {
+      "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["user_code", "status", "assigned_by", "created_at", "updated_at"],
+        "properties": {
+          "user_code": {
+            "bsonType": "string",
+            "description": "고유 회원 코드"
+          },
+          "user_id": {
+            "bsonType": "string",
+            "description": "사용한 사용자 ID (없으면 미사용)"
+          },
+          "status": {
+            "bsonType": "string",
+            "enum": ["active", "inactive", "expired"],
+            "description": "코드 상태"
+          },
+          "assigned_by": {
+            "bsonType": "string",
+            "description": "코드 발급 관리자"
+          },
+          "notes": {
+            "bsonType": "string",
+            "description": "코드 설명"
+          },
+          "created_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "생성 시간"
+          },
+          "updated_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "수정 시간"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "validationLevel": "moderate",
+    "validationAction": "warn"
+  }
+}

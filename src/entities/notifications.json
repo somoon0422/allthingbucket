@@ -1,0 +1,72 @@
+
+{
+  "name": "notifications",
+  "fields": {
+    "_id": {
+      "type": "string",
+      "title": "알림 ID"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "사용자 ID",
+      "required": true
+    },
+    "application_id": {
+      "type": "string",
+      "title": "신청 ID"
+    },
+    "campaign_id": {
+      "type": "string",
+      "title": "캠페인 ID"
+    },
+    "notification_type": {
+      "type": "string",
+      "title": "알림 유형",
+      "enum": [
+        "application_approved",
+        "application_rejected", 
+        "review_approved",
+        "review_rejected",
+        "points_awarded",
+        "campaign_reminder",
+        "system_notice"
+      ],
+      "required": true
+    },
+    "title": {
+      "type": "string",
+      "title": "제목",
+      "required": true
+    },
+    "message": {
+      "type": "string",
+      "title": "메시지",
+      "required": true
+    },
+    "email_sent": {
+      "type": "boolean",
+      "title": "이메일 발송 여부",
+      "default": false
+    },
+    "email_sent_at": {
+      "type": "string",
+      "title": "이메일 발송일",
+      "format": "datetime"
+    },
+    "is_read": {
+      "type": "boolean",
+      "title": "읽음 여부",
+      "default": false
+    },
+    "read_at": {
+      "type": "string",
+      "title": "읽은 시간",
+      "format": "datetime"
+    },
+    "created_at": {
+      "type": "string",
+      "title": "생성일",
+      "format": "datetime"
+    }
+  }
+}

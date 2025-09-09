@@ -1,0 +1,126 @@
+
+{
+  "name": "applications",
+  "fields": {
+    "_id": {
+      "type": "string",
+      "title": "신청 ID"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "사용자 ID",
+      "required": true
+    },
+    "campaign_id": {
+      "type": "string",
+      "title": "캠페인 ID",
+      "required": true
+    },
+    "campaign_name": {
+      "type": "string",
+      "title": "캠페인명"
+    },
+    "user_name": {
+      "type": "string",
+      "title": "사용자명"
+    },
+    "user_email": {
+      "type": "string",
+      "title": "사용자 이메일"
+    },
+    "application_status": {
+      "type": "string",
+      "title": "신청 상태",
+      "enum": [
+        "pending",
+        "approved", 
+        "rejected",
+        "experience_in_progress",
+        "review_submitted",
+        "review_approved",
+        "review_rejected",
+        "points_awarded",
+        "completed"
+      ],
+      "default": "pending"
+    },
+    "reward_points": {
+      "type": "number",
+      "title": "지급 예정 포인트",
+      "default": 0
+    },
+    "points_awarded": {
+      "type": "number",
+      "title": "실제 지급된 포인트",
+      "default": 0
+    },
+    "applied_at": {
+      "type": "string",
+      "title": "신청일",
+      "format": "datetime"
+    },
+    "approved_at": {
+      "type": "string",
+      "title": "승인일",
+      "format": "datetime"
+    },
+    "rejected_at": {
+      "type": "string",
+      "title": "거절일",
+      "format": "datetime"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "title": "거절 사유"
+    },
+    "review_content": {
+      "type": "string",
+      "title": "리뷰 내용"
+    },
+    "review_images": {
+      "type": "array",
+      "title": "리뷰 이미지 URL 목록",
+      "items": {
+        "type": "string"
+      }
+    },
+    "review_blog_url": {
+      "type": "string",
+      "title": "블로그 리뷰 URL"
+    },
+    "review_submitted_at": {
+      "type": "string",
+      "title": "리뷰 제출일",
+      "format": "datetime"
+    },
+    "review_approved_at": {
+      "type": "string",
+      "title": "리뷰 승인일",
+      "format": "datetime"
+    },
+    "review_rejected_at": {
+      "type": "string",
+      "title": "리뷰 반려일",
+      "format": "datetime"
+    },
+    "review_rejection_reason": {
+      "type": "string",
+      "title": "리뷰 반려 사유"
+    },
+    "points_awarded_at": {
+      "type": "string",
+      "title": "포인트 지급일",
+      "format": "datetime"
+    },
+    "created_at": {
+      "type": "string",
+      "title": "생성일",
+      "format": "datetime"
+    },
+    "updated_at": {
+      "type": "string",
+      "title": "수정일",
+      "format": "datetime"
+    }
+  }
+}

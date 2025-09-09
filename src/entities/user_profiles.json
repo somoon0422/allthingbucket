@@ -1,0 +1,104 @@
+
+{
+  "name": "user_profiles",
+  "options": {
+    "validator": {
+      "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["user_id", "signup_code", "created_at", "updated_at"],
+        "properties": {
+          "user_id": {
+            "bsonType": "string",
+            "description": "사용자 ID (Lumi 인증 시스템 연동)"
+          },
+          "signup_code": {
+            "bsonType": "string",
+            "description": "가입 시 사용한 회원 코드"
+          },
+          "phone": {
+            "bsonType": "string",
+            "description": "전화번호"
+          },
+          "birth_date": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "생년월일"
+          },
+          "naver_id": {
+            "bsonType": "string",
+            "description": "네이버 아이디"
+          },
+          "instagram_id": {
+            "bsonType": "string", 
+            "description": "인스타그램 아이디"
+          },
+          "youtube_channel": {
+            "bsonType": "string",
+            "description": "유튜브 채널명"
+          },
+          "blog_url": {
+            "bsonType": "string",
+            "description": "블로그 URL"
+          },
+          "other_sns": {
+            "bsonType": "string",
+            "description": "기타 SNS 정보"
+          },
+          "bank_name": {
+            "bsonType": "string",
+            "description": "은행명"
+          },
+          "account_number": {
+            "bsonType": "string",
+            "description": "계좌번호"
+          },
+          "account_holder": {
+            "bsonType": "string",
+            "description": "예금주명"
+          },
+          "tax_resident_number": {
+            "bsonType": "string",
+            "description": "주민등록번호 (세금 계산용)"
+          },
+          "total_points_earned": {
+            "bsonType": "int",
+            "minimum": 0,
+            "description": "총 적립 포인트"
+          },
+          "total_points_withdrawn": {
+            "bsonType": "int",
+            "minimum": 0,
+            "description": "총 출금 포인트"
+          },
+          "current_balance": {
+            "bsonType": "int",
+            "minimum": 0,
+            "description": "현재 포인트 잔액"
+          },
+          "experience_count": {
+            "bsonType": "int",
+            "minimum": 0,
+            "description": "참여한 체험단 수"
+          },
+          "is_verified": {
+            "bsonType": "bool",
+            "description": "계정 인증 상태"
+          },
+          "created_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "생성일시"
+          },
+          "updated_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "수정일시"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "validationLevel": "moderate",
+    "validationAction": "warn"
+  }
+}

@@ -1,0 +1,105 @@
+
+{
+  "user_applications": {
+    "title": "사용자 신청",
+    "type": "object",
+    "properties": {
+      "_id": {
+        "type": "string",
+        "title": "ID"
+      },
+      "user_id": {
+        "type": "string",
+        "title": "사용자 ID",
+        "required": true
+      },
+      "experience_id": {
+        "type": "string",
+        "title": "체험단 ID",
+        "required": true
+      },
+      "experience_type": {
+        "type": "string",
+        "title": "체험단 타입",
+        "enum": ["product", "press", "local", "purchase_review"],
+        "enumLabels": ["제품 체험", "기자단", "지역 체험", "구매평"]
+      },
+      "status": {
+        "type": "string",
+        "title": "신청 상태",
+        "enum": ["pending", "approved", "rejected", "in_progress", "review_submitted", "completed"],
+        "enumLabels": ["승인 대기", "승인 완료", "승인 거절", "진행 중", "리뷰 제출", "완료"],
+        "default": "pending"
+      },
+      "application_reason": {
+        "type": "string",
+        "title": "신청 사유",
+        "required": true
+      },
+      "instagram_handle": {
+        "type": "string",
+        "title": "인스타그램 계정"
+      },
+      "youtube_channel": {
+        "type": "string",
+        "title": "유튜브 채널"
+      },
+      "blog_url": {
+        "type": "string",
+        "title": "블로그 URL"
+      },
+      "followers_count": {
+        "type": "number",
+        "title": "팔로워 수"
+      },
+      "experience_description": {
+        "type": "string",
+        "title": "관련 체험 경험"
+      },
+      "naver_id": {
+        "type": "string",
+        "title": "네이버 ID"
+      },
+      "naver_name": {
+        "type": "string",
+        "title": "네이버 가입 성함"
+      },
+      "camera_model": {
+        "type": "string",
+        "title": "카메라 기종"
+      },
+      "phone_number": {
+        "type": "string",
+        "title": "연락처"
+      },
+      "address": {
+        "type": "string",
+        "title": "주소"
+      },
+      "detailed_address": {
+        "type": "string",
+        "title": "상세 주소"
+      },
+      "user_name": {
+        "type": "string",
+        "title": "사용자 이름"
+      },
+      "applied_at": {
+        "type": "string",
+        "title": "신청일",
+        "format": "datetime"
+      },
+      "created_at": {
+        "type": "string",
+        "title": "생성일",
+        "format": "datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "title": "수정일",
+        "format": "datetime"
+      }
+    },
+    "required": ["user_id", "experience_id", "application_reason"]
+  }
+}

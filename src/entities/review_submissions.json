@@ -1,0 +1,114 @@
+
+{
+  "title": "리뷰 인증 제출",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "title": "사용자 ID",
+      "description": "리뷰를 제출한 사용자의 ID"
+    },
+    "user_name": {
+      "type": "string",
+      "title": "사용자 이름",
+      "description": "리뷰를 제출한 사용자의 이름"
+    },
+    "user_code": {
+      "type": "string",
+      "title": "사용자 코드",
+      "description": "리뷰를 제출한 사용자의 회원 코드"
+    },
+    "application_id": {
+      "type": "string",
+      "title": "신청 ID",
+      "description": "관련된 체험단 신청 ID"
+    },
+    "experience_id": {
+      "type": "string",
+      "title": "체험단 ID",
+      "description": "체험단 코드 테이블의 ID"
+    },
+    "experience_name": {
+      "type": "string",
+      "title": "체험단명",
+      "description": "체험단 이름"
+    },
+    "review_content": {
+      "type": "string",
+      "title": "리뷰 내용",
+      "description": "작성한 리뷰 텍스트"
+    },
+    "proof_images": {
+      "type": "array",
+      "title": "인증 이미지",
+      "description": "리뷰 인증용 이미지 URL 배열",
+      "items": {
+        "type": "string",
+        "title": "이미지 URL"
+      }
+    },
+    "proof_links": {
+      "type": "array",
+      "title": "인증 링크",
+      "description": "리뷰 게시 링크 등 인증 URL 배열",
+      "items": {
+        "type": "string",
+        "title": "링크 URL"
+      }
+    },
+    "requested_points": {
+      "type": "number",
+      "title": "요청 포인트",
+      "description": "사용자가 요청한 포인트 금액"
+    },
+    "status": {
+      "type": "string",
+      "title": "검수 상태",
+      "enum": ["pending", "approved", "rejected"],
+      "description": "관리자 검수 상태 (pending: 검수대기, approved: 승인, rejected: 거절)"
+    },
+    "submitted_at": {
+      "type": "string",
+      "title": "datetime",
+      "description": "리뷰 제출 일시"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "title": "datetime",
+      "description": "관리자 검수 완료 일시"
+    },
+    "reviewed_by": {
+      "type": "string",
+      "title": "검수자",
+      "description": "검수를 진행한 관리자 이름"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "title": "거절 사유",
+      "description": "검수 거절 시 사유"
+    },
+    "additional_notes": {
+      "type": "string",
+      "title": "추가 메모",
+      "description": "관리자 또는 사용자 추가 메모"
+    },
+    "created_at": {
+      "type": "string",
+      "title": "datetime",
+      "description": "레코드 생성 일시"
+    },
+    "updated_at": {
+      "type": "string",
+      "title": "datetime",
+      "description": "레코드 수정 일시"
+    }
+  },
+  "required": [
+    "user_id",
+    "application_id",
+    "experience_id",
+    "review_content",
+    "status",
+    "submitted_at"
+  ]
+}

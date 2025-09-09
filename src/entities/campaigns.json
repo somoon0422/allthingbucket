@@ -1,0 +1,81 @@
+
+{
+  "name": "campaigns",
+  "fields": {
+    "_id": {
+      "type": "string",
+      "title": "캠페인 ID"
+    },
+    "campaign_name": {
+      "type": "string",
+      "title": "캠페인명",
+      "required": true
+    },
+    "product_name": {
+      "type": "string",
+      "title": "제품명"
+    },
+    "brand_name": {
+      "type": "string",
+      "title": "브랜드명"
+    },
+    "description": {
+      "type": "string",
+      "title": "캠페인 설명"
+    },
+    "reward_points": {
+      "type": "number",
+      "title": "지급 포인트",
+      "default": 0
+    },
+    "recruitment_count": {
+      "type": "number",
+      "title": "모집 인원",
+      "default": 1
+    },
+    "current_applicants": {
+      "type": "number",
+      "title": "현재 신청자 수",
+      "default": 0
+    },
+    "campaign_status": {
+      "type": "string",
+      "title": "캠페인 상태",
+      "enum": ["recruiting", "in_progress", "completed", "cancelled"],
+      "default": "recruiting"
+    },
+    "start_date": {
+      "type": "string",
+      "title": "시작일",
+      "format": "datetime"
+    },
+    "end_date": {
+      "type": "string",
+      "title": "종료일",
+      "format": "datetime"
+    },
+    "review_deadline": {
+      "type": "string",
+      "title": "리뷰 마감일",
+      "format": "datetime"
+    },
+    "requirements": {
+      "type": "string",
+      "title": "참여 조건"
+    },
+    "created_at": {
+      "type": "string",
+      "title": "생성일",
+      "format": "datetime"
+    },
+    "updated_at": {
+      "type": "string",
+      "title": "수정일",
+      "format": "datetime"
+    },
+    "created_by": {
+      "type": "string",
+      "title": "생성자 ID"
+    }
+  }
+}

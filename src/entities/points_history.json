@@ -1,0 +1,57 @@
+
+{
+  "name": "points_history",
+  "fields": {
+    "_id": {
+      "type": "string",
+      "title": "히스토리 ID"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "사용자 ID",
+      "required": true
+    },
+    "application_id": {
+      "type": "string",
+      "title": "신청 ID"
+    },
+    "campaign_id": {
+      "type": "string",
+      "title": "캠페인 ID"
+    },
+    "campaign_name": {
+      "type": "string",
+      "title": "캠페인명"
+    },
+    "points_type": {
+      "type": "string",
+      "title": "포인트 유형",
+      "enum": ["earned", "used", "withdrawn", "expired", "refunded"],
+      "required": true
+    },
+    "points_amount": {
+      "type": "number",
+      "title": "포인트 금액",
+      "required": true
+    },
+    "points_balance": {
+      "type": "number",
+      "title": "포인트 잔액",
+      "default": 0
+    },
+    "description": {
+      "type": "string",
+      "title": "설명"
+    },
+    "transaction_date": {
+      "type": "string",
+      "title": "거래일",
+      "format": "datetime"
+    },
+    "created_at": {
+      "type": "string",
+      "title": "생성일",
+      "format": "datetime"
+    }
+  }
+}

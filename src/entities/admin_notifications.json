@@ -1,0 +1,74 @@
+
+{
+  "name": "admin_notifications",
+  "options": {
+    "validator": {
+      "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["type", "title", "message", "is_read", "created_at"],
+        "properties": {
+          "type": {
+            "bsonType": "string",
+            "enum": ["new_signup", "experience_application", "application_cancelled", "profile_updated", "withdrawal_request"],
+            "description": "알림 유형"
+          },
+          "title": {
+            "bsonType": "string",
+            "description": "알림 제목"
+          },
+          "message": {
+            "bsonType": "string",
+            "description": "알림 내용"
+          },
+          "user_id": {
+            "bsonType": "string",
+            "description": "관련 사용자 ID"
+          },
+          "user_name": {
+            "bsonType": "string",
+            "description": "관련 사용자 이름"
+          },
+          "experience_code": {
+            "bsonType": "string",
+            "description": "관련 체험단 코드"
+          },
+          "experience_title": {
+            "bsonType": "string",
+            "description": "관련 체험단 제목"
+          },
+          "metadata": {
+            "bsonType": "object",
+            "description": "추가 메타데이터"
+          },
+          "is_read": {
+            "bsonType": "bool",
+            "description": "읽음 여부"
+          },
+          "priority": {
+            "bsonType": "string",
+            "enum": ["low", "medium", "high", "urgent"],
+            "description": "우선순위"
+          },
+          "created_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "알림 생성 시간"
+          },
+          "updated_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "알림 업데이트 시간"
+          },
+          "read_at": {
+            "bsonType": "string",
+            "title": "datetime",
+            "description": "읽은 시간"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "validationLevel": "moderate",
+    "validationAction": "warn"
+  }
+}

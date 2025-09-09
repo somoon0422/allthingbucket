@@ -1,0 +1,50 @@
+
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "title": "UserPoints",
+    "description": "사용자 포인트 관리",
+    "additionalProperties": true,
+    "required": ["user_id", "total_points", "available_points", "created_at"],
+    "properties": {
+      "user_id": {
+        "bsonType": "string",
+        "description": "사용자 ID"
+      },
+      "total_points": {
+        "bsonType": "number",
+        "minimum": 0,
+        "description": "총 적립 포인트"
+      },
+      "available_points": {
+        "bsonType": "number",
+        "minimum": 0,
+        "description": "사용 가능 포인트"
+      },
+      "withdrawn_points": {
+        "bsonType": "number",
+        "minimum": 0,
+        "description": "출금한 포인트"
+      },
+      "tax_amount": {
+        "bsonType": "number",
+        "minimum": 0,
+        "description": "세금 계산 금액"
+      },
+      "bank_account": {
+        "bsonType": "object",
+        "description": "출금 계좌 정보"
+      },
+      "created_at": {
+        "bsonType": "string",
+        "title": "datetime",
+        "description": "생성일시"
+      },
+      "updated_at": {
+        "bsonType": "string",
+        "title": "datetime",
+        "description": "수정일시"
+      }
+    }
+  }
+}

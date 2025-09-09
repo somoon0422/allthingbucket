@@ -1,0 +1,112 @@
+
+{
+  "experience_codes": {
+    "title": "체험단 코드",
+    "type": "object",
+    "properties": {
+      "_id": {
+        "type": "string",
+        "title": "ID"
+      },
+      "experience_name": {
+        "type": "string",
+        "title": "체험단명",
+        "required": true
+      },
+      "title": {
+        "type": "string", 
+        "title": "제목"
+      },
+      "brand": {
+        "type": "string",
+        "title": "브랜드명"
+      },
+      "brand_name": {
+        "type": "string",
+        "title": "브랜드명"
+      },
+      "company": {
+        "type": "string",
+        "title": "회사명"
+      },
+      "experience_type": {
+        "type": "string",
+        "title": "체험단 타입",
+        "enum": ["product", "press", "local", "purchase_review"],
+        "enumLabels": ["제품 체험", "기자단", "지역 체험", "구매평"],
+        "default": "purchase_review"
+      },
+      "description": {
+        "type": "string",
+        "title": "체험단 설명"
+      },
+      "image_url": {
+        "type": "string",
+        "title": "이미지 URL"
+      },
+      "main_image": {
+        "type": "string",
+        "title": "메인 이미지 URL"
+      },
+      "additional_images": {
+        "type": "array",
+        "title": "추가 이미지 URLs",
+        "items": {
+          "type": "string"
+        }
+      },
+      "points_reward": {
+        "type": "number",
+        "title": "포인트 보상"
+      },
+      "reward_points": {
+        "type": "number",
+        "title": "리워드 포인트"
+      },
+      "recruitment_deadline": {
+        "type": "string",
+        "title": "모집 마감일",
+        "format": "date"
+      },
+      "experience_period": {
+        "type": "string",
+        "title": "체험 기간"
+      },
+      "location": {
+        "type": "string",
+        "title": "지역"
+      },
+      "max_participants": {
+        "type": "number",
+        "title": "최대 모집 인원",
+        "minimum": 1
+      },
+      "status": {
+        "type": "string",
+        "title": "상태",
+        "enum": ["active", "closed", "pending"],
+        "enumLabels": ["모집중", "마감", "준비중"],
+        "default": "active"
+      },
+      "additional_requirements": {
+        "type": "string",
+        "title": "추가 요구사항"
+      },
+      "code": {
+        "type": "string",
+        "title": "체험단 코드"
+      },
+      "created_at": {
+        "type": "string",
+        "title": "생성일",
+        "format": "datetime"
+      },
+      "updated_at": {
+        "type": "string",
+        "title": "수정일", 
+        "format": "datetime"
+      }
+    },
+    "required": ["experience_name", "experience_type"]
+  }
+}

@@ -1,0 +1,35 @@
+# 🔥 백엔드 .gitignore
+
+# 환경변수 파일 (보안상 중요!)
+.env
+.env.local
+.env.development
+.env.production
+
+# 의존성
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 로그 파일
+*.log
+logs/
+
+# 임시 파일
+.tmp/
+.temp/
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 빌드 결과물
+dist/
+build/

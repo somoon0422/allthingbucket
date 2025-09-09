@@ -1,0 +1,65 @@
+
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "title": "UserReview",
+    "description": "사용자 체험 리뷰",
+    "additionalProperties": true,
+    "required": ["review_id", "user_id", "campaign_id", "application_id", "content", "status", "created_at"],
+    "properties": {
+      "review_id": {
+        "bsonType": "string",
+        "description": "리뷰 고유 ID"
+      },
+      "user_id": {
+        "bsonType": "string",
+        "description": "사용자 ID"
+      },
+      "campaign_id": {
+        "bsonType": "string",
+        "description": "캠페인 ID"
+      },
+      "application_id": {
+        "bsonType": "string",
+        "description": "신청 ID"
+      },
+      "content": {
+        "bsonType": "string",
+        "description": "리뷰 내용"
+      },
+      "rating": {
+        "bsonType": "int",
+        "minimum": 1,
+        "maximum": 5,
+        "description": "평점 (1-5)"
+      },
+      "images": {
+        "bsonType": "array",
+        "description": "리뷰 이미지 URL 배열"
+      },
+      "sns_posts": {
+        "bsonType": "array",
+        "description": "SNS 게시물 링크"
+      },
+      "status": {
+        "bsonType": "string",
+        "enum": ["pending", "approved", "rejected", "revision_required"],
+        "description": "리뷰 승인 상태"
+      },
+      "admin_feedback": {
+        "bsonType": "string",
+        "description": "관리자 피드백"
+      },
+      "created_at": {
+        "bsonType": "string",
+        "title": "datetime",
+        "description": "리뷰 작성일시"
+      },
+      "approved_at": {
+        "bsonType": "string",
+        "title": "datetime",
+        "description": "승인일시"
+      }
+    }
+  }
+}

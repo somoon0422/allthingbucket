@@ -1,0 +1,100 @@
+
+{
+  "name": "users",
+  "fields": {
+    "_id": {
+      "type": "string",
+      "title": "사용자 ID"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "사용자 고유 ID",
+      "required": true
+    },
+    "email": {
+      "type": "string",
+      "title": "이메일",
+      "required": true
+    },
+    "name": {
+      "type": "string",
+      "title": "이름",
+      "required": true
+    },
+    "phone": {
+      "type": "string",
+      "title": "전화번호"
+    },
+    "address": {
+      "type": "string",
+      "title": "주소"
+    },
+    "birth_date": {
+      "type": "string",
+      "title": "생년월일"
+    },
+    "gender": {
+      "type": "string",
+      "title": "성별",
+      "enum": ["male", "female", "other"]
+    },
+    "profile_image": {
+      "type": "string",
+      "title": "프로필 이미지 URL"
+    },
+    "total_points": {
+      "type": "number",
+      "title": "총 적립 포인트",
+      "default": 0
+    },
+    "available_points": {
+      "type": "number",
+      "title": "사용 가능 포인트",
+      "default": 0
+    },
+    "used_points": {
+      "type": "number",
+      "title": "사용한 포인트",
+      "default": 0
+    },
+    "pending_points": {
+      "type": "number",
+      "title": "출금 대기 포인트",
+      "default": 0
+    },
+    "last_login": {
+      "type": "string",
+      "title": "마지막 로그인",
+      "format": "datetime"
+    },
+    "login_count": {
+      "type": "number",
+      "title": "로그인 횟수",
+      "default": 0
+    },
+    "auto_login_token": {
+      "type": "string",
+      "title": "자동 로그인 토큰"
+    },
+    "token_expires_at": {
+      "type": "string",
+      "title": "토큰 만료일",
+      "format": "datetime"
+    },
+    "is_active": {
+      "type": "boolean",
+      "title": "활성 상태",
+      "default": true
+    },
+    "created_at": {
+      "type": "string",
+      "title": "가입일",
+      "format": "datetime"
+    },
+    "updated_at": {
+      "type": "string",
+      "title": "수정일",
+      "format": "datetime"
+    }
+  }
+}
