@@ -124,18 +124,21 @@ export const useUserManagement = () => {
 
   const deleteUser = useCallback(async (userId: string) => {
     try {
-      console.log('🗑️ 사용자 삭제:', userId)
+      console.log('🗑️ 사용자 삭제 시작:', userId)
       
       // 관련 데이터도 함께 삭제
       try {
         // 사용자 프로필 삭제
+        console.log('📋 사용자 프로필 삭제 중...')
         const profilesResponse = await lumi.entities.user_profiles.list({
           filter: { user_id: userId }
         })
         const profiles = ensureArray(profilesResponse)
+        console.log('발견된 프로필 수:', profiles.length)
         
         for (const profile of profiles) {
           if (profile && profile._id) {
+            console.log('프로필 삭제:', profile._id)
             await lumi.entities.user_profiles.delete(profile._id)
           }
         }

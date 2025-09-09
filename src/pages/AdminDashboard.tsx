@@ -6,7 +6,7 @@ import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
 import CampaignTypeUpdateModal from '../components/CampaignTypeUpdateModal'
-import { lumi } from '../lib/lumi'
+import { lumi, checkLumiConnection } from '../lib/lumi'
 import {CheckCircle, XCircle, Clock, AlertCircle, Eye, Home, RefreshCw, Bell, FileText, UserCheck, Gift, Plus, BarChart3, CheckSquare, Download, Search, Filter, Trash2, X, Edit3} from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -711,17 +711,65 @@ const AdminDashboard: React.FC = () => {
 
     try {
       setBulkActionLoading(true)
-      const deletePromises = Array.from(selectedUsers).map(id => 
-        lumi.entities.user_profiles.delete(id)
-      )
+      console.log('🗑️ 사용자 일괄삭제 시작:', Array.from(selectedUsers))
       
-      await Promise.all(deletePromises)
-      toast.success(`${selectedUsers.size}명의 사용자가 삭제되었습니다`)
+      // API 연결 상태 확인
+      const isConnected = await checkLumiConnection()
+      if (!isConnected) {
+        toast.error('데이터베이스 연결에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+      
+      const deletePromises = Array.from(selectedUsers).map(async (id) => {
+        try {
+          console.log('🗑️ 삭제 중인 사용자 ID:', id)
+          
+          // 먼저 사용자 프로필이 존재하는지 확인
+          const profile = await lumi.entities.user_profiles.get(id)
+          if (!profile) {
+            console.warn('⚠️ 사용자 프로필을 찾을 수 없습니다:', id)
+            return { success: false, id, error: '프로필 없음' }
+          }
+          
+          const result = await lumi.entities.user_profiles.delete(id)
+          console.log('✅ 삭제 성공:', id, result)
+          return { success: true, id, result }
+        } catch (deleteError) {
+          console.error('❌ 개별 사용자 삭제 실패:', id, deleteError)
+          return { success: false, id, error: deleteError }
+        }
+      })
+      
+      const results = await Promise.all(deletePromises)
+      
+      // 결과 분석
+      const successCount = results.filter(r => r.success).length
+      const failCount = results.filter(r => !r.success).length
+      
+      console.log('📊 삭제 결과:', { successCount, failCount, results })
+      
+      if (successCount > 0) {
+        toast.success(`${successCount}명의 사용자가 삭제되었습니다`)
+      }
+      
+      if (failCount > 0) {
+        toast.error(`${failCount}명의 사용자 삭제에 실패했습니다`)
+      }
+      
       setSelectedUsers(new Set())
       syncAllData(false, false)
     } catch (error) {
       console.error('일괄삭제 실패:', error)
-      toast.error('일괄삭제에 실패했습니다')
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류'
+      const errorStatus = (error as any)?.status
+      const errorResponse = (error as any)?.response
+      
+      console.error('에러 상세:', {
+        message: errorMessage,
+        status: errorStatus,
+        response: errorResponse
+      })
+      toast.error(`일괄삭제에 실패했습니다: ${errorMessage}`)
     } finally {
       setBulkActionLoading(false)
     }
