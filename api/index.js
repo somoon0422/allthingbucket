@@ -31,7 +31,7 @@ const connectToMongoDB = async () => {
       console.log('✅ MongoDB Atlas 연결 성공!');
     }
     return { client, db };
-  } catch (error) {
+   } catch (error) {
     console.error('❌ MongoDB Atlas 연결 실패:', error);
     throw error;
   }
