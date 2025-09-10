@@ -6,7 +6,7 @@ import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
 import CampaignTypeUpdateModal from '../components/CampaignTypeUpdateModal'
-import { lumi, checkLumiConnection } from '../lib/lumi'
+// Lumi SDK 제거됨 - MongoDB API 사용
 import {CheckCircle, XCircle, Clock, AlertCircle, Eye, Home, RefreshCw, Bell, FileText, UserCheck, Gift, Plus, BarChart3, CheckSquare, Download, Search, Filter, Trash2, X, Edit3} from 'lucide-react'
 import toast from 'react-hot-toast'
 

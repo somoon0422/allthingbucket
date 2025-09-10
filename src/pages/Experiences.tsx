@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import ApplicationFormModal from '../components/ApplicationFormModal'
-import { lumi } from '../lib/lumi'
+// Lumi SDK 제거됨 - MongoDB API 사용
 import {Gift, Calendar, MapPin, Users, Clock, AlertCircle, Filter, Search, Coins, CheckCircle, XCircle, Eye, FileText} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { ultraSafeArray, safeString, safeNumber } from '../utils/arrayUtils'
@@ -22,93 +22,27 @@ const Experiences: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all')
   const [applicationStatuses, setApplicationStatuses] = useState<{[key: string]: any}>({})
 
-  // 🔥 체험단 목록 로드 - Lumi SDK 전용
+  // 🔥 체험단 목록 로드 - MongoDB API 사용
   const loadExperiences = async () => {
     try {
       setLoading(true)
-      console.log('🔥 체험단 로딩 시작 (Lumi SDK 전용)...')
+      console.log('🔥 체험단 로딩 시작 (MongoDB API)...')
       
-      // Lumi SDK 엔티티 구조 확인
-      console.log('Lumi SDK 전체 구조:', lumi)
-      console.log('Lumi SDK 엔티티 확인:', Object.keys(lumi.entities))
+      // MongoDB API로 캠페인 데이터 로드
+      const response = await fetch('/api/db/campaigns')
+      const result = await response.json()
       
-      // 각 엔티티의 메서드 확인
-      Object.keys(lumi.entities).forEach(entityName => {
-        const entity = lumi.entities[entityName]
-        console.log(`${entityName} 엔티티 메서드:`, Object.keys(entity))
-      })
-      
-      // Lumi 데이터 로드 - 어드민과 동일한 experience_codes 엔티티만 사용 (빠른 로딩)
-      let response
-      let dataSource = 'experience_codes'
-      
-      try {
-        console.log('🔥 experience_codes 엔티티 로드 중... (어드민과 동일)')
-        response = await lumi.entities.experience_codes.list({
-          sort: { created_at: -1 }
-        })
-        console.log('✅ experience_codes 엔티티 성공:', response)
-      } catch (error) {
-        console.log('❌ experience_codes 엔티티 실패, 샘플 데이터 사용:', error)
-        // 실패 시 즉시 샘플 데이터 사용 (빠른 폴백)
-        response = [
-          {
-            _id: 'sample1',
-            campaign_name: '샘플 체험단 1',
-            brand_name: '샘플 브랜드',
-            description: '샘플 체험단 설명입니다.',
-            reward_points: 1000,
-            recruitment_count: 10,
-            current_applicants: 3,
-            campaign_status: 'recruiting',
-            start_date: '2024-01-01',
-            end_date: '2024-01-31',
-            created_at: '2024-01-01T00:00:00Z'
-          },
-          {
-            _id: 'sample2', 
-            campaign_name: '샘플 체험단 2',
-            brand_name: '샘플 브랜드 2',
-            description: '샘플 체험단 설명 2입니다.',
-            reward_points: 1500,
-            recruitment_count: 5,
-            current_applicants: 2,
-            campaign_status: 'in_progress',
-            start_date: '2024-01-15',
-            end_date: '2024-02-15',
-            created_at: '2024-01-15T00:00:00Z'
-          }
-        ]
-        dataSource = 'sample_data'
+      if (result.success) {
+        console.log('✅ MongoDB 캠페인 데이터 성공:', result.data)
+        const safeExperiences = ultraSafeArray(result.data)
+        setExperiences(safeExperiences)
+      } else {
+        throw new Error(result.error || '캠페인 데이터 로드 실패')
       }
-      
-      console.log(`최종 데이터 소스: ${dataSource}`, response)
-      
-      // 어드민과 동일한 방식으로 데이터 처리
-      let expList = []
-      if (response && typeof response === 'object') {
-        if (Array.isArray(response)) {
-          expList = response
-        } else if (response.list && Array.isArray(response.list)) {
-          expList = response.list
-        } else if ((response as any).data && Array.isArray((response as any).data)) {
-          expList = (response as any).data
-        }
-      }
-      
-      const safeExperiences = ultraSafeArray(expList)
-      console.log('어드민과 동일한 방식으로 처리된 데이터:', safeExperiences)
-      setExperiences(safeExperiences)
-      
-      // 🔥 사용자별 신청 상태 체크
-      if (isAuthenticated && user?.user_id) {
-        await checkApplicationStatuses(safeExperiences)
-      }
-      
     } catch (error) {
-      console.error('체험단 목록 로드 실패:', error)
-      toast.error('체험단 목록을 불러오는데 실패했습니다')
-      setExperiences([]) // 오류 시에도 빈 배열로 안전하게 설정
+      console.error('❌ 체험단 로드 실패:', error)
+      toast.error('체험단 목록을 불러오는데 실패했습니다')현재 뿐
+      setExperiences([])
     } finally {
       setLoading(false)
     }

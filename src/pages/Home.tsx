@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { lumi } from '../lib/lumi'
+// Lumi SDK 제거됨 - MongoDB API 사용
 import {Gift, Star, Users, TrendingUp, ArrowRight, Calendar, MapPin, Coins, ChevronLeft, ChevronRight, Heart, MessageCircle} from 'lucide-react'
 import { ultraSafeArray, safeString, safeNumber } from '../utils/arrayUtils'
 import { useAuth } from '../hooks/useAuth'
@@ -46,38 +46,43 @@ const Home: React.FC = () => {
     }
   }
 
-  // 🔥 추천 체험단 로드 - 완전 안전화
+  // 🔥 추천 체험단 로드 - MongoDB API 사용
   const loadFeaturedExperiences = async () => {
     try {
-      const response = await lumi.entities.experience_codes.list({
-        filter: { status: 'active' }, 
-        sort: { created_at: -1 },
-        limit: 6
-      })
+      const response = await fetch('/api/db/campaigns?limit=6')
+      const result = await response.json()
       
-      const safeExperiences = ultraSafeArray(response)
-      setFeaturedExperiences(safeExperiences)
+      if (result.success) {
+        const safeExperiences = ultraSafeArray(result.data)
+        setFeaturedExperiences(safeExperiences)
+      } else {
+        setFeaturedExperiences([])
+      }
     } catch (error) {
       console.error('추천 체험단 로드 실패:', error)
       setFeaturedExperiences([])
     }
   }
 
-  // 🔥 통계 로드 - 완전 안전화
+  // 🔥 통계 로드 - MongoDB API 사용
   const loadStats = async () => {
     try {
-      const [experiencesRes, usersRes, reviewsRes] = await Promise.all([
-        lumi.entities.experience_codes.list({}),
-        lumi.entities.user_profiles.list({}),
-        lumi.entities.user_reviews.list({})
+      const [campaignsRes, usersRes, reviewsRes] = await Promise.all([
+        fetch('/api/db/campaigns'),
+        fetch('/api/db/user-profiles'),
+        fetch('/api/db/user-reviews')
       ])
 
-      const experiences = ultraSafeArray(experiencesRes)
-      const users = ultraSafeArray(usersRes)
-      const reviews = ultraSafeArray(reviewsRes)
+      const campaignsResult = await campaignsRes.json()
+      const usersResult = await usersRes.json()
+      const reviewsResult = await reviewsRes.json()
+
+      const campaigns = campaignsResult.success ? ultraSafeArray(campaignsResult.data) : []
+      const users = usersResult.success ? ultraSafeArray(usersResult.data) : []
+      const reviews = reviewsResult.success ? ultraSafeArray(reviewsResult.data) : []
 
       setStats({
-        totalExperiences: experiences.length,
+        totalExperiences: campaigns.length,
         totalUsers: users.length,
         totalReviews: reviews.length
       })
@@ -91,18 +96,20 @@ const Home: React.FC = () => {
     }
   }
 
-  // 🔥 체험단 후기 로드
+  // 🔥 체험단 후기 로드 - MongoDB API 사용
   const loadReviews = async () => {
     try {
-      const response = await lumi.entities.user_reviews.list({
-        limit: 10,
-        sort: { created_at: -1 }
-      })
-
-      const reviewsData = ultraSafeArray(response)
-      setReviews(reviewsData)
+      const response = await fetch('/api/db/user-reviews?limit=10')
+      const result = await response.json()
+      
+      if (result.success) {
+        const safeReviews = ultraSafeArray(result.data)
+        setReviews(safeReviews)
+      } else {
+        setReviews([])
+      }
     } catch (error) {
-      console.error('후기 로드 실패:', error)
+      console.error('리뷰 로드 실패:', error)
       setReviews([])
     }
   }

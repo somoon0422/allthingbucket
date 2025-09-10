@@ -1,23 +1,26 @@
 
 import { useState, useCallback } from 'react'
-import { lumi } from '../lib/lumi'
+// Lumi SDK 제거됨 - MongoDB API 사용
 import toast from 'react-hot-toast'
 import { ultraSafeArray, extractAllUserIds } from '../utils/arrayUtils'
 
 export const useExperiences = () => {
   const [loading, setLoading] = useState(false)
 
-  // 체험단 목록 조회
+  // 체험단 목록 조회 - MongoDB API 사용
   const getExperiences = useCallback(async () => {
     try {
       setLoading(true)
       
-      const response = await lumi.entities.experience_codes.list({
-        sort: { created_at: -1 }
-      })
+      const response = await fetch('/api/db/campaigns')
+      const result = await response.json()
       
-      const experiences = ultraSafeArray(response)
-      return experiences
+      if (result.success) {
+        const experiences = ultraSafeArray(result.data)
+        return experiences
+      } else {
+        throw new Error(result.error || '캠페인 목록 조회 실패')
+      }
     } catch (error) {
       console.error('체험단 목록 조회 실패:', error)
       toast.error('체험단 목록을 불러오는데 실패했습니다')
@@ -27,13 +30,19 @@ export const useExperiences = () => {
     }
   }, [])
 
-  // 특정 체험단 조회
+  // 특정 체험단 조회 - MongoDB API 사용
   const getCampaignById = useCallback(async (id: string) => {
     try {
       setLoading(true)
       
-      const experience = await lumi.entities.experience_codes.get(id)
-      return experience
+      const response = await fetch(`/api/db/campaigns?campaign_id=${id}`)
+      const result = await response.json()
+      
+      if (result.success && result.data && result.data.length > 0) {
+        return result.data[0]
+      } else {
+        throw new Error('캠페인을 찾을 수 없습니다')
+      }
     } catch (error) {
       console.error('체험단 상세 조회 실패:', error)
       toast.error('체험단 정보를 불러오는데 실패했습니다')

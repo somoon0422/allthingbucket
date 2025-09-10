@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-import { lumi } from '../lib/lumi'
+// Lumi SDK 제거됨 - MongoDB API 사용
 import { lumiAuthService } from '../services/lumiAuthService'
 import { getUserFromToken } from '../utils/auth'
 import toast from 'react-hot-toast'
@@ -300,13 +300,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setUser(null)
       
-      // Lumi SDK 로그아웃
-      try {
-        await lumi.auth.signOut()
-        console.log('✅ Lumi SDK 로그아웃 완료')
-      } catch (error) {
-        console.warn('Lumi SDK 로그아웃 실패:', error)
-      }
+      // Lumi SDK 제거됨 - MongoDB API 사용으로 대체
       
       // 로컬 세션 정리
       localStorage.removeItem('admin_session')
@@ -411,42 +405,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Lumi 기반 사용자 체크 (기존 방식)
-        const currentUser = lumi.auth.user
-        if (currentUser) {
-          try {
-            const userProfileResponse = await lumi.entities.user_profiles.list({
-              filter: { user_id: (currentUser as any).user_id || (currentUser as any).id || (currentUser as any).userId }
-            })
-            
-            const userProfiles = safeDataAccess(userProfileResponse, [])
-            const userProfile = safeFindInArray(userProfiles, (profile: any) => {
-              try {
-                return profile && 
-                       typeof profile === 'object' && 
-                       profile.user_id === ((currentUser as any).user_id || (currentUser as any).id || (currentUser as any).userId)
-              } catch {
-                return false
-              }
-            })
-            
-            const enrichedUser = currentUser ? {
-              ...(currentUser as any),
-              profile: userProfile || null
-            } : null
-            
-            const processedUser = processUserData(enrichedUser)
-            if (processedUser) {
-              setUser(processedUser)
-            }
-          } catch {
-            // 프로필 조회 실패시 기본 정보로 로그인
-            const processedUser = processUserData(currentUser)
-            if (processedUser) {
-              setUser(processedUser)
-            }
-          }
-        }
+        // Lumi SDK 제거됨 - MongoDB API 사용으로 대체
       } catch (error) {
         console.error('자동 로그인 체크 실패:', error)
       } finally {
