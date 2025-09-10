@@ -377,6 +377,111 @@ app.get('/api/db/review-submissions', async (req, res) => {
   }
 });
 
+// 캠페인 업데이트 (PUT /api/db/campaigns/:id)
+app.put('/api/db/campaigns/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const campaignData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    const result = await db.collection('campaigns').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: campaignData }
+    );
+    if (result.modifiedCount > 0) {
+      res.json({ success: true, data: campaignData });
+    } else {
+      res.status(404).json({ success: false, error: '캠페인을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 캠페인 업데이트 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 캠페인 삭제 (DELETE /api/db/campaigns/:id)
+app.delete('/api/db/campaigns/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const result = await db.collection('campaigns').deleteOne(
+      { _id: new ObjectId(req.params.id) }
+    );
+    if (result.deletedCount > 0) {
+      res.json({ success: true, message: '캠페인이 삭제되었습니다' });
+    } else {
+      res.status(404).json({ success: false, error: '캠페인을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 캠페인 삭제 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 사용자 프로필 업데이트 (PUT /api/db/user-profiles/:id)
+app.put('/api/db/user-profiles/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const profileData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    const result = await db.collection('user_profiles').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: profileData }
+    );
+    if (result.modifiedCount > 0) {
+      res.json({ success: true, data: profileData });
+    } else {
+      res.status(404).json({ success: false, error: '사용자 프로필을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 사용자 프로필 업데이트 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 사용자 프로필 삭제 (DELETE /api/db/user-profiles/:id)
+app.delete('/api/db/user-profiles/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const result = await db.collection('user_profiles').deleteOne(
+      { _id: new ObjectId(req.params.id) }
+    );
+    if (result.deletedCount > 0) {
+      res.json({ success: true, message: '사용자 프로필이 삭제되었습니다' });
+    } else {
+      res.status(404).json({ success: false, error: '사용자 프로필을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 사용자 프로필 삭제 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 사용자 신청 내역 삭제 (DELETE /api/db/user-applications/:id)
+app.delete('/api/db/user-applications/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const result = await db.collection('user_applications').deleteOne(
+      { _id: new ObjectId(req.params.id) }
+    );
+    if (result.deletedCount > 0) {
+      res.json({ success: true, message: '신청 내역이 삭제되었습니다' });
+    } else {
+      res.status(404).json({ success: false, error: '신청 내역을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 사용자 신청 내역 삭제 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 중복된 엔드포인트 제거됨
 
 // 사용자 코드 조회 (GET /api/db/user-codes)
