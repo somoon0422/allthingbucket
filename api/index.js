@@ -1,13 +1,5 @@
-const express = require('express');
-const cors = require('cors');
+// api/index.js - Vercel Functions 형식
 const { MongoClient } = require('mongodb');
-
-const app = express();
-
-// 미들웨어
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // MongoDB 연결 설정
 if (!process.env.MONGODB_URI) {
@@ -15,353 +7,98 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-let client = null;
-let db = null;
+let cachedClient = null;
+let cachedDb = null;
 
-// MongoDB 연결 함수 (Express 최적화)
-const connectDB = async () => {
+// MongoDB 연결 함수
+const connectToDatabase = async () => {
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
+  }
+
   try {
-    if (!client) {
-      console.log('🔗 MongoDB 연결 시도...');
-      client = new MongoClient(uri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
-        connectTimeoutMS: 5000
-      });
-      
-      await client.connect();
-      db = client.db('allthingbucket');
-      console.log('✅ MongoDB 연결 성공!');
-    }
+    console.log('🔗 MongoDB 연결 시도...');
+    const client = new MongoClient(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 5000
+    });
+    
+    await client.connect();
+    const db = client.db('allthingbucket');
+    
+    cachedClient = client;
+    cachedDb = db;
+    
+    console.log('✅ MongoDB 연결 성공!');
     return { client, db };
   } catch (error) {
     console.error('❌ MongoDB 연결 실패:', error.message);
-    // 연결 실패 시 재시도
-    setTimeout(connectDB, 5000);
     throw error;
   }
 };
 
-// 연결 상태 모니터링
-if (client) {
-  client.on('disconnected', () => {
-    console.log('MongoDB 연결 끊김');
-  });
-  
-  client.on('error', (err) => {
-    console.error('MongoDB 에러:', err);
-  });
-}
-
-// MongoDB 연결 함수
-async function connectToDatabase() {
-  try {
-    const { db, client } = await connectDB();
-    return { db, client };
-  } catch (error) {
-    console.error('❌ MongoDB 연결 실패:', error);
-    throw error;
-  }
-}
-
-// CORS 설정
-app.use(cors({
-  origin: ['https://allthingbucket.com', 'http://localhost:5173', 'https://allthingbucket-fu178awcd-allthingbuckets-projects.vercel.app'],
-  credentials: true
-}));
-
-// 기본 라우트
-app.get('/', (req, res) => {
-  res.json({ message: 'AllThingBucket API Server is running!' });
-});
-
-// 테스트 엔드포인트
-app.get('/api/test', (req, res) => {
-  console.log('🧪 API 테스트 요청:', req.url);
-  res.json({ 
-    message: 'API 테스트 성공',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// 캠페인 목록 조회 (GET /api/db/campaigns)
-app.get('/api/db/campaigns', async (req, res) => {
+// 메인 핸들러
+module.exports = async (req, res) => {
   // CORS 설정
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
-  console.log('📋 캠페인 목록 조회 요청:', req.query);
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  const { pathname } = new URL(req.url, `http://${req.headers.host}`);
   
   try {
-    console.log('Connecting to MongoDB...');
-    const { db } = await connectToDatabase();
-    
-    const collection = db.collection('campaigns');
-    console.log('campaigns 컬렉션 접근 성공');
-    
-    // 쿼리 조건 설정
-    const query = {};
-    
-    if (req.query.campaign_id) {
-      query._id = req.query.campaign_id;
+    // 간단한 테스트 API
+    if (pathname === '/api/simple-test') {
+      return res.status(200).json({ 
+        message: "API is working!",
+        env: process.env.MONGODB_URI ? "ENV exists" : "ENV missing",
+        timestamp: new Date().toISOString()
+      });
     }
     
-    if (req.query.status) {
-      query.status = req.query.status;
+    // MongoDB 연결 테스트
+    if (pathname === '/api/test-db') {
+      const { db } = await connectToDatabase();
+      await db.admin().ping();
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "MongoDB connected!",
+        database: db.databaseName
+      });
     }
     
-    if (req.query.category) {
-      query.type = req.query.category;
+    // 캠페인 목록 조회
+    if (pathname === '/api/campaigns' && req.method === 'GET') {
+      const { db } = await connectToDatabase();
+      const campaigns = await db.collection('campaigns').find({}).toArray();
+      
+      return res.status(200).json({ 
+        success: true, 
+        data: campaigns 
+      });
     }
     
-    console.log('쿼리 조건:', query);
-    
-    let cursor = collection.find(query);
-    
-    if (req.query.limit) {
-      cursor = cursor.limit(parseInt(req.query.limit));
-    }
-    
-    cursor = cursor.sort({ created_at: -1 });
-    
-    const campaigns = await cursor.toArray();
-    console.log('조회된 캠페인 수:', campaigns.length);
-
-    res.status(200).json({ 
-      success: true, 
-      data: campaigns,
-      count: campaigns.length
+    // 기본 응답
+    return res.status(404).json({ 
+      error: "API endpoint not found",
+      path: pathname,
+      method: req.method
     });
     
-  } catch (e) {
-    console.error('MongoDB Error:', e);
-    
-    // Fallback 데이터 반환
-    const fallbackCampaigns = [
-      {
-        _id: "campaign_1",
-        title: "뷰티 제품 체험단 모집",
-        description: "새로운 뷰티 제품을 체험해보실 분들을 모집합니다.",
-        type: "beauty",
-        status: "active",
-        max_participants: 50,
-        current_participants: 15,
-        start_date: "2024-01-01T00:00:00.000+00:00",
-        end_date: "2024-12-31T00:00:00.000+00:00",
-        application_start: "2024-01-01T00:00:00.000+00:00",
-        application_end: "2024-12-15T00:00:00.000+00:00",
-        content_start: "2024-01-01T00:00:00.000+00:00",
-        content_end: "2024-12-20T00:00:00.000+00:00",
-        requirements: "인스타그램 팔로워 1만명 이상",
-        rewards: "제품 무료 제공 + 포인트 1000P",
-        main_images: ["https://example.com/beauty1.jpg"],
-        detail_images: ["https://example.com/beauty_detail1.jpg", "https://example.com/beauty_detail2.jpg"],
-        created_at: "2025-09-10T01:59:07.897+00:00",
-        updated_at: "2025-09-10T01:59:07.897+00:00"
-      },
-      {
-        _id: "campaign_2",
-        title: "테크 가전 제품 리뷰",
-        description: "최신 테크 가전 제품을 리뷰해주실 분들을 모집합니다.",
-        type: "tech",
-        status: "active",
-        max_participants: 30,
-        current_participants: 8,
-        start_date: "2024-01-01T00:00:00.000+00:00",
-        end_date: "2024-12-31T00:00:00.000+00:00",
-        application_start: "2024-01-01T00:00:00.000+00:00",
-        application_end: "2024-12-10T00:00:00.000+00:00",
-        content_start: "2024-01-01T00:00:00.000+00:00",
-        content_end: "2024-12-15T00:00:00.000+00:00",
-        requirements: "유튜브 구독자 5천명 이상",
-        rewards: "제품 무료 제공 + 포인트 2000P",
-        main_images: ["https://example.com/tech1.jpg"],
-        detail_images: ["https://example.com/tech_detail1.jpg"],
-        created_at: "2025-09-10T01:59:07.897+00:00",
-        updated_at: "2025-09-10T01:59:07.897+00:00"
-      }
-    ];
-    
-    res.status(200).json({ 
+  } catch (error) {
+    console.error('API Error:', error);
+    return res.status(500).json({ 
       success: false,
-      fallback: true,
-      data: fallbackCampaigns,
-      count: fallbackCampaigns.length,
-      error: e.message 
+      error: error.message 
     });
   }
-});
-
-// 디버깅용 테스트 라우트
-app.get('/api/test-db', async (req, res) => {
-  try {
-    const { db, client } = await connectToDatabase();
-    
-    // 연결 상태 확인
-    const state = client.topology ? client.topology.s.state : 'unknown';
-    const states = {
-      'connected': 'connected',
-      'connecting': 'connecting',
-      'disconnected': 'disconnected',
-      'unknown': 'unknown'
-    };
-    
-    // 간단한 쿼리 테스트
-    const collections = await db.listCollections().toArray();
-    
-    res.json({
-      status: states[state] || 'unknown',
-      connected: state === 'connected',
-      database: db.databaseName,
-      collections: collections.map(c => c.name),
-      uri: process.env.MONGODB_URI ? 'URI exists' : 'URI missing',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error.message,
-      stack: error.stack,
-      uri: process.env.MONGODB_URI ? 'URI exists' : 'URI missing'
-    });
-  }
-});
-
-// 간단한 테스트 엔드포인트
-app.get('/api/db/test', async (req, res) => {
-  try {
-    console.log('🧪 MongoDB 연결 테스트 시작...');
-    
-    const { db } = await connectToDatabase();
-    console.log('✅ MongoDB 연결 성공!');
-    
-    // 핑 테스트
-    await db.admin().ping();
-    console.log('✅ Ping 성공!');
-    
-    const collections = await db.listCollections().toArray();
-    console.log('📊 컬렉션 목록:', collections.map(c => c.name));
-    
-    res.json({
-      success: true,
-      message: 'MongoDB 연결 성공',
-      collections: collections.map(c => c.name),
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('❌ MongoDB 연결 테스트 실패:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-
-// 캠페인 신청 API (POST /api/apply-campaign)
-app.post('/api/apply-campaign', async (req, res) => {
-  // CORS 설정
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: '메소드 오류' });
-  }
-
-  try {
-    console.log('📝 캠페인 신청 요청:', req.body);
-    
-    const { db } = await connectToDatabase();
-    
-    // 신청 데이터 저장
-    const application = {
-      campaignId: req.body.campaignId,
-      userName: req.body.userName,
-      userEmail: req.body.userEmail,
-      phoneNumber: req.body.phoneNumber,
-      address: req.body.address,
-      socialMedia: req.body.socialMedia,
-      applicationDate: new Date(),
-      status: 'pending'
-    };
-    
-    const result = await db.collection('applications').insertOne(application);
-    
-    res.status(200).json({ 
-      success: true, 
-      message: '신청이 완료되었습니다!',
-      applicationId: result.insertedId 
-    });
-    
-  } catch (error) {
-    console.error('신청 저장 실패:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: '신청 처리 중 오류가 발생했습니다',
-      details: error.message
-    });
-  }
-});
-
-// 데이터베이스 상태 확인
-app.get('/api/db/status', async (req, res) => {
-  try {
-    const { db } = await connectToDatabase();
-    const profiles = await db.collection('user_profiles').find({}).limit(1).toArray();
-    
-    res.json({
-      success: true,
-      message: 'MongoDB 연결 성공',
-      profiles_count: profiles.length,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('❌ DB 상태 확인 실패:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// 헬스 체크
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// 404 핸들러
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    error: 'API endpoint not found',
-    path: req.originalUrl
-  });
-});
-
-// 에러 핸들러
-app.use((error, req, res, next) => {
-  console.error('❌ 서버 에러:', error);
-  res.status(500).json({
-    success: false,
-    error: error.message || 'Internal server error'
-  });
-});
-
-// 서버 시작
-const PORT = process.env.PORT || 3001;
-
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다.`);
-  });
-}
-
-module.exports = app;
+};
