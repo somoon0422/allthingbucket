@@ -254,7 +254,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // MongoDB API로 관리자 로그인
-      const response = await fetch('http://localhost:3001/api/db/admin-login', {
+      const response = await fetch('/api/db/admin-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
