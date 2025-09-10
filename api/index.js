@@ -16,6 +16,7 @@ const connectToMongoDB = async () => {
     if (!client) {
       console.log('🔗 MongoDB Atlas 연결 시도...');
       console.log('연결 문자열:', connectionString.replace(/\/\/.*@/, '//***:***@'));
+      console.log('환경 변수 MONGODB_URI:', process.env.MONGODB_URI ? '설정됨' : '설정되지 않음');
       
       // Create a MongoClient with a MongoClientOptions object to set the Stable API version
       client = new MongoClient(connectionString, {
@@ -74,9 +75,13 @@ app.get('/api/test', (req, res) => {
 app.get('/api/db/campaigns', async (req, res) => {
   try {
     console.log('📋 캠페인 목록 조회 요청:', req.query);
+    console.log('🔗 MongoDB 연결 시도 중...');
     
     const { db } = await connectToMongoDB();
+    console.log('✅ MongoDB 연결 성공!');
+    
     const collection = db.collection('campaigns');
+    console.log('📊 campaigns 컬렉션 접근 성공!');
     
     // 쿼리 조건 설정
     const query = {};
