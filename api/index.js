@@ -18,7 +18,123 @@ app.use(express.urlencoded({ extended: true }));
 // MongoDB 서비스 동적 로드
 let mongodbService;
 try {
-  mongodbService = require('../backend/services/mongodbService');
+  // Vercel 환경에서 MongoDB 서비스 로드
+  const { MongoClient } = require('mongodb');
+  
+  const connectionString = process.env.MONGODB_URI || 'mongodb+srv://support_db_user:nv2c50bqVBAOgJRr@cluster0.9ny0kvy.mongodb.net/allthingbucket?retryWrites=true&w=majority&appName=Cluster0&tls=true';
+  
+  let client = null;
+  let db = null;
+  
+  const connectToMongoDB = async () => {
+    try {
+      if (!client) {
+        client = new MongoClient(connectionString, {
+          tls: true,
+          tlsAllowInvalidCertificates: true,
+          tlsAllowInvalidHostnames: true,
+        });
+        await client.connect();
+        db = client.db('allthingbucket');
+        console.log('✅ MongoDB Atlas 연결 성공!');
+      }
+      return { client, db };
+    } catch (error) {
+      console.error('❌ MongoDB Atlas 연결 실패:', error);
+      throw error;
+    }
+  };
+  
+  mongodbService = {
+    async getCampaigns(options = {}) {
+      try {
+        const { db } = await connectToMongoDB();
+        const collection = db.collection('campaigns');
+        let query = {};
+        
+        if (options.filter) {
+          query = { ...query, ...options.filter };
+        }
+        
+        let cursor = collection.find(query);
+        
+        if (options.sort) {
+          cursor = cursor.sort(options.sort);
+        }
+        
+        if (options.limit) {
+          cursor = cursor.limit(options.limit);
+        }
+        
+        const campaigns = await cursor.toArray();
+        return campaigns;
+      } catch (error) {
+        console.error('❌ 캠페인 목록 조회 실패:', error);
+        throw error;
+      }
+    },
+    
+    async getAdminByUsername(username) {
+      try {
+        const { db } = await connectToMongoDB();
+        const collection = db.collection('admins');
+        const admin = await collection.findOne({ username: username, is_active: true });
+        return admin;
+      } catch (error) {
+        console.error('❌ 관리자 조회 실패:', error);
+        throw error;
+      }
+    },
+    
+    async updateAdminLastLogin(adminId) {
+      try {
+        const { db } = await connectToMongoDB();
+        const collection = db.collection('admins');
+        await collection.updateOne(
+          { _id: adminId },
+          { 
+            $set: { 
+              last_login: new Date(),
+              updated_at: new Date()
+            }
+          }
+        );
+      } catch (error) {
+        console.error('❌ 관리자 로그인 시간 업데이트 실패:', error);
+        throw error;
+      }
+    },
+    
+    async getUserProfiles(options = {}) {
+      try {
+        const { db } = await connectToMongoDB();
+        const collection = db.collection('user_profiles');
+        let query = {};
+        
+        if (options.filter) {
+          query = { ...query, ...options.filter };
+        }
+        
+        let cursor = collection.find(query);
+        
+        if (options.sort) {
+          cursor = cursor.sort(options.sort);
+        }
+        
+        if (options.limit) {
+          cursor = cursor.limit(options.limit);
+        }
+        
+        const profiles = await cursor.toArray();
+        return profiles;
+      } catch (error) {
+        console.error('❌ 사용자 프로필 조회 실패:', error);
+        throw error;
+      }
+    }
+  };
+  
+  console.log('✅ MongoDB 서비스 초기화 완료');
 } catch (error) {
   console.error('MongoDB 서비스 로드 실패:', error);
 }
@@ -29,6 +145,15 @@ app.get('/health', (req, res) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     service: 'AllThingBucket API'
+  });
+});
+
+// 테스트 엔드포인트
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'API 테스트 성공',
+    timestamp: new Date().toISOString(),
+    mongodb: mongodbService ? '연결됨' : '연결 안됨'
   });
 });
 
