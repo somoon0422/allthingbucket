@@ -1,6 +1,6 @@
-const clientPromise = require('../../lib/mongodb');
+import clientPromise from '../../lib/mongodb.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // CORS 헤더 설정
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST');

@@ -1,7 +1,7 @@
 // pages/api/test-db.js
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // 환경변수 확인
   if (!process.env.MONGODB_URI) {
     return res.status(500).json({ 

@@ -1,5 +1,5 @@
 // pages/api/simple-test.js
-module.exports = function handler(req, res) {
+export default function handler(req, res) {
   res.status(200).json({ 
     message: "API is working!",
     env: process.env.MONGODB_URI ? "ENV exists" : "ENV missing",
