@@ -39,19 +39,24 @@ const connectToMongoDB = async () => {
 
 // 헬스 체크
 app.get('/health', (req, res) => {
+  console.log('🏥 헬스 체크 요청:', req.url);
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    service: 'AllThingBucket API'
+    service: 'AllThingBucket API',
+    mongodb: db ? 'connected' : 'disconnected',
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
 // 테스트 엔드포인트
 app.get('/api/test', (req, res) => {
+  console.log('🧪 API 테스트 요청:', req.url);
   res.json({ 
     message: 'API 테스트 성공',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: db ? 'connected' : 'disconnected'
   });
 });
 
