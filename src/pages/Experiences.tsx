@@ -2,17 +2,17 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { useExperiences } from '../hooks/useExperiences'
+// useExperiences 제거됨 - 사용하지 않음
 import ApplicationFormModal from '../components/ApplicationFormModal'
 // Lumi SDK 제거됨 - MongoDB API 사용
-import {Gift, Calendar, MapPin, Users, Clock, AlertCircle, Filter, Search, Coins, CheckCircle, XCircle, Eye, FileText} from 'lucide-react'
+import {Gift, Calendar, MapPin, Users, Filter, Search, Coins, Eye} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { ultraSafeArray, safeString, safeNumber } from '../utils/arrayUtils'
 
 const Experiences: React.FC = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuth()
-  const { checkDuplicateApplication } = useExperiences()
+  // checkDuplicateApplication 제거됨 - 사용하지 않음
   
   const [experiences, setExperiences] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -20,7 +20,7 @@ const Experiences: React.FC = () => {
   const [showApplicationModal, setShowApplicationModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [applicationStatuses, setApplicationStatuses] = useState<{[key: string]: any}>({})
+  // applicationStatuses 제거됨 - 사용하지 않음
 
   // 🔥 체험단 목록 로드 - MongoDB API 사용
   const loadExperiences = async () => {
@@ -123,14 +123,7 @@ const Experiences: React.FC = () => {
         return
       }
 
-      // 🔥 중복 신청 체크
-      const experienceId = experience._id || experience.id
-      const existingApplication = applicationStatuses[experienceId]
-      
-      if (existingApplication) {
-        toast.error('이미 신청하신 체험단입니다')
-        return
-      }
+      // 중복 신청 체크는 신청 모달에서 처리
 
       setSelectedExperience(experience)
       setShowApplicationModal(true)
@@ -178,88 +171,7 @@ const Experiences: React.FC = () => {
     }
   }
 
-  // 🔥 신청 상태 표시 함수
-  const getApplicationStatusBadge = (experience: any) => {
-    const experienceId = experience._id || experience.id
-    const existingApplication = applicationStatuses[experienceId]
-    
-    if (!existingApplication) return null
-
-    const status = safeString(existingApplication, 'status', 'pending')
-    
-    switch (status) {
-      case 'pending':
-        return (
-          <div className="flex items-center space-x-1 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
-            <Clock className="w-3 h-3" />
-            <span>승인대기중</span>
-          </div>
-        )
-      case 'approved':
-        return (
-          <div className="flex items-center space-x-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-            <CheckCircle className="w-3 h-3" />
-            <span>신청완료</span>
-          </div>
-        )
-      case 'in_progress':
-        return (
-          <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-            <CheckCircle className="w-3 h-3" />
-            <span>진행중</span>
-          </div>
-        )
-      case 'review_submitted':
-        return (
-          <div className="flex items-center space-x-1 bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
-            <FileText className="w-3 h-3" />
-            <span>리뷰 검수중</span>
-          </div>
-        )
-      case 'review_completed':
-        return (
-          <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-            <CheckCircle className="w-3 h-3" />
-            <span>리뷰 승인완료</span>
-          </div>
-        )
-      case 'point_pending':
-        return (
-          <div className="flex items-center space-x-1 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
-            <Clock className="w-3 h-3" />
-            <span>포인트 지급 전</span>
-          </div>
-        )
-      case 'completed':
-        return (
-          <div className="flex items-center space-x-1 bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-xs">
-            <CheckCircle className="w-3 h-3" />
-            <span>포인트 지급완료</span>
-          </div>
-        )
-      case 'rejected':
-        return (
-          <div className="flex items-center space-x-1 bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
-            <XCircle className="w-3 h-3" />
-            <span>반려됨</span>
-          </div>
-        )
-      case 'cancelled':
-        return (
-          <div className="flex items-center space-x-1 bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">
-            <XCircle className="w-3 h-3" />
-            <span>신청 취소</span>
-          </div>
-        )
-      default:
-        return (
-          <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-            <AlertCircle className="w-3 h-3" />
-            <span>신청완료</span>
-          </div>
-        )
-    }
-  }
+  // getApplicationStatusBadge 함수 제거됨 - 사용하지 않음
 
   if (loading) {
     return (
@@ -350,8 +262,7 @@ const Experiences: React.FC = () => {
                 const maxParticipants = safeNumber(experience, 'recruitment_count', 0) || safeNumber(experience, 'max_participants', 0)
                 const imageUrl = safeString(experience, 'image_url')
 
-                const existingApplication = applicationStatuses[experienceId]
-                const isApplied = !!existingApplication
+                const isApplied = false // 신청 상태는 모달에서 처리
 
                 return (
                   <div
@@ -370,12 +281,7 @@ const Experiences: React.FC = () => {
                         }}
                       />
                       
-                      {/* 🔥 신청 상태 표시 */}
-                      {isApplied && (
-                        <div className="absolute top-2 right-2">
-                          {getApplicationStatusBadge(experience)}
-                        </div>
-                      )}
+                      {/* 신청 상태 표시 제거됨 */}
                     </div>
 
                     <div className="p-6">

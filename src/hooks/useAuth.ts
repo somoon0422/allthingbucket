@@ -33,91 +33,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// 🔥 ULTRA SAFE 배열 변환 - undefined.length 완전 차단
-function ultraSafeArray(value: any): any[] {
-  try {
-    // 1. null/undefined 즉시 차단
-    if (value === null || value === undefined) {
-      return []
-    }
-    
-    // 2. 이미 배열인 경우 안전 필터링
-    if (Array.isArray(value)) {
-      try {
-        return value.filter(item => item != null)
-      } catch {
-        return []
-      }
-    }
-    
-    // 3. 객체에서 배열 속성 찾기
-    if (typeof value === 'object' && value !== null) {
-      const arrayKeys = ['list', 'data', 'items', 'results', 'users', 'profiles']
-      
-      for (const key of arrayKeys) {
-        try {
-          const candidate = value[key]
-          if (candidate && Array.isArray(candidate)) {
-            return candidate.filter((item: any) => item != null)
-          }
-        } catch {
-          continue
-        }
-      }
-      
-      // Object.values로 배열 찾기
-      try {
-        const values = Object.values(value)
-        for (const val of values) {
-          if (Array.isArray(val)) {
-            try {
-              return val.filter((item: any) => item != null)
-            } catch {
-              continue
-            }
-          }
-        }
-      } catch {
-        // Object.values 실패시 빈 배열 반환
-      }
-    }
-    
-    // 4. 모든 경우에 빈 배열 반환
-    return []
-    
-  } catch {
-    // 완전 실패시에도 빈 배열 반환
-    return []
-  }
-}
+// ultraSafeArray 함수 제거됨 - 사용하지 않음
 
-// 🔥 안전한 데이터 접근
-function safeDataAccess(data: any, fallback: any[] = []): any[] {
-  try {
-    if (!data) {
-      return Array.isArray(fallback) ? fallback : []
-    }
-    
-    const result = ultraSafeArray(data)
-    return Array.isArray(result) ? result : (Array.isArray(fallback) ? fallback : [])
-  } catch {
-    return Array.isArray(fallback) ? fallback : []
-  }
-}
-
-// 🔥 안전한 배열 검색
-function safeFindInArray(arr: any, predicate: (item: any) => boolean): any | undefined {
-  try {
-    const safeArray = ultraSafeArray(arr)
-    if (!Array.isArray(safeArray) || safeArray.length === 0) {
-      return undefined
-    }
-    
-    return safeArray.find(predicate)
-  } catch {
-    return undefined
-  }
-}
+// safeDataAccess, safeFindInArray 함수 제거됨 - 사용하지 않음
 
 // 🔥 안전한 사용자 데이터 처리
 function processUserData(userData: any): User | null {

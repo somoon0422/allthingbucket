@@ -791,9 +791,15 @@ const AdminDashboard: React.FC = () => {
       setBulkActionLoading(true)
       console.log('🗑️ 사용자 일괄삭제 시작:', Array.from(selectedUsers))
       
-      // API 연결 상태 확인
-      const isConnected = await checkLumiConnection()
-      if (!isConnected) {
+      // MongoDB API 연결 상태 확인
+      try {
+        const healthResponse = await fetch('/api/db/status')
+        const healthResult = await healthResponse.json()
+        if (!healthResult.success) {
+          toast.error('데이터베이스 연결에 실패했습니다. 잠시 후 다시 시도해주세요.')
+          return
+        }
+      } catch (error) {
         toast.error('데이터베이스 연결에 실패했습니다. 잠시 후 다시 시도해주세요.')
         return
       }

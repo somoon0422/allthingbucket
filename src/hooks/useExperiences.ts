@@ -216,7 +216,7 @@ export const useExperiences = () => {
   }, [])
 
   // 🔥 완전히 안전한 사용자 신청 내역 조회
-  const getUserApplications = useCallback(async (userId?: string, currentUser?: any, forceRefresh = false) => {
+  const getUserApplications = useCallback(async (userId?: string, currentUser?: any) => {
     try {
       setLoading(true)
 
