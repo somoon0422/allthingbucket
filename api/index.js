@@ -73,8 +73,55 @@ app.get('/api/test', (req, res) => {
 
 // 캠페인 목록 조회 (GET /api/db/campaigns)
 app.get('/api/db/campaigns', async (req, res) => {
+  console.log('📋 캠페인 목록 조회 요청:', req.query);
+  
+  // Fallback 데이터 정의
+  const fallbackCampaigns = [
+    {
+      _id: "campaign_1",
+      title: "뷰티 제품 체험단 모집",
+      description: "새로운 뷰티 제품을 체험해보실 분들을 모집합니다.",
+      type: "beauty",
+      status: "active",
+      max_participants: 50,
+      current_participants: 15,
+      start_date: "2024-01-01T00:00:00.000+00:00",
+      end_date: "2024-12-31T00:00:00.000+00:00",
+      application_start: "2024-01-01T00:00:00.000+00:00",
+      application_end: "2024-12-15T00:00:00.000+00:00",
+      content_start: "2024-01-01T00:00:00.000+00:00",
+      content_end: "2024-12-20T00:00:00.000+00:00",
+      requirements: "인스타그램 팔로워 1만명 이상",
+      rewards: "제품 무료 제공 + 포인트 1000P",
+      main_images: ["https://example.com/beauty1.jpg"],
+      detail_images: ["https://example.com/beauty_detail1.jpg", "https://example.com/beauty_detail2.jpg"],
+      created_at: "2025-09-10T01:59:07.897+00:00",
+      updated_at: "2025-09-10T01:59:07.897+00:00"
+    },
+    {
+      _id: "campaign_2",
+      title: "테크 가전 제품 리뷰",
+      description: "최신 테크 가전 제품을 리뷰해주실 분들을 모집합니다.",
+      type: "tech",
+      status: "active",
+      max_participants: 30,
+      current_participants: 8,
+      start_date: "2024-01-01T00:00:00.000+00:00",
+      end_date: "2024-12-31T00:00:00.000+00:00",
+      application_start: "2024-01-01T00:00:00.000+00:00",
+      application_end: "2024-12-10T00:00:00.000+00:00",
+      content_start: "2024-01-01T00:00:00.000+00:00",
+      content_end: "2024-12-15T00:00:00.000+00:00",
+      requirements: "유튜브 구독자 5천명 이상",
+      rewards: "제품 무료 제공 + 포인트 2000P",
+      main_images: ["https://example.com/tech1.jpg"],
+      detail_images: ["https://example.com/tech_detail1.jpg"],
+      created_at: "2025-09-10T01:59:07.897+00:00",
+      updated_at: "2025-09-10T01:59:07.897+00:00"
+    }
+  ];
+
   try {
-    console.log('📋 캠페인 목록 조회 요청:', req.query);
     console.log('🔗 MongoDB 연결 시도 중...');
     
     const { db } = await connectToMongoDB();
@@ -120,11 +167,49 @@ app.get('/api/db/campaigns', async (req, res) => {
     console.error('❌ 캠페인 목록 조회 실패:', error);
     console.error('에러 상세:', error.message);
     console.error('에러 스택:', error.stack);
+    console.error('에러 타입:', typeof error);
+    console.error('에러 이름:', error.name);
     
-    // MongoDB 연결 실패 시 임시 데이터 반환
-    if (error.message.includes('connection') || error.message.includes('timeout')) {
-      console.log('🔄 MongoDB 연결 실패로 임시 데이터 반환');
-      const fallbackCampaigns = [
+    // 모든 에러에 대해 Fallback 데이터 반환
+    console.log('🔄 에러 발생으로 Fallback 데이터 반환');
+    return res.json({
+      success: true,
+      data: fallbackCampaigns,
+      count: fallbackCampaigns.length,
+      fallback: true,
+      error: error.message
+    });
+  }
+});
+
+// 간단한 테스트 엔드포인트 추가
+app.get('/api/db/test', async (req, res) => {
+  try {
+    console.log('🧪 MongoDB 연결 테스트 시작...');
+    const { db } = await connectToMongoDB();
+    console.log('✅ MongoDB 연결 성공!');
+    
+    const collections = await db.listCollections().toArray();
+    console.log('📊 컬렉션 목록:', collections.map(c => c.name));
+    
+    res.json({
+      success: true,
+      message: 'MongoDB 연결 성공',
+      collections: collections.map(c => c.name),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ MongoDB 연결 테스트 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+// 기존 Fallback 데이터 (사용되지 않음)
+const fallbackCampaigns = [
         {
           _id: "campaign_1",
           title: "뷰티 제품 체험단 모집",
