@@ -297,13 +297,87 @@ app.get('/api/db/user-reviews', async (req, res) => {
 app.get('/api/db/user-applications', async (req, res) => {
   try {
     const { db } = await connectToMongoDB();
-    const applications = await db.collection('user_applications').find({}).toArray();
+    const { user_id, experience_id, status } = req.query;
+    
+    let filter = {};
+    if (user_id) filter.user_id = user_id;
+    if (experience_id) filter.experience_id = experience_id;
+    if (status) filter.status = status;
+    
+    const applications = await db.collection('user_applications').find(filter).toArray();
     res.json({ success: true, data: applications, count: applications.length });
   } catch (error) {
     console.error('❌ 사용자 신청 내역 조회 실패:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// 사용자 신청 내역 생성 (POST /api/db/user-applications)
+app.post('/api/db/user-applications', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const applicationData = {
+      ...req.body,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    const result = await db.collection('user_applications').insertOne(applicationData);
+    res.json({ success: true, data: { _id: result.insertedId, ...applicationData } });
+  } catch (error) {
+    console.error('❌ 사용자 신청 내역 생성 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 사용자 신청 내역 업데이트 (PUT /api/db/user-applications/:id)
+app.put('/api/db/user-applications/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const applicationData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    const result = await db.collection('user_applications').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: applicationData }
+    );
+    if (result.modifiedCount > 0) {
+      res.json({ success: true, data: applicationData });
+    } else {
+      res.status(404).json({ success: false, error: '신청 내역을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 사용자 신청 내역 업데이트 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 관리자 알림 조회 (GET /api/db/admin-notifications)
+app.get('/api/db/admin-notifications', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const notifications = await db.collection('admin_notifications').find({}).toArray();
+    res.json({ success: true, data: notifications, count: notifications.length });
+  } catch (error) {
+    console.error('❌ 관리자 알림 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 리뷰 제출 조회 (GET /api/db/review-submissions)
+app.get('/api/db/review-submissions', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const reviews = await db.collection('review_submissions').find({}).toArray();
+    res.json({ success: true, data: reviews, count: reviews.length });
+  } catch (error) {
+    console.error('❌ 리뷰 제출 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 중복된 엔드포인트 제거됨
 
 // 사용자 코드 조회 (GET /api/db/user-codes)
 app.get('/api/db/user-codes', async (req, res) => {

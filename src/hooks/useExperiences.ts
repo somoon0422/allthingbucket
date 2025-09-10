@@ -153,7 +153,13 @@ export const useExperiences = () => {
         }
       }
 
-      const result = await lumi.entities.user_applications.create(applicationData)
+      // MongoDB API로 신청 생성
+      const response = await fetch('/api/db/user-applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(applicationData)
+      })
+      const result = await response.json()
       
       toast.success('체험단 신청이 완료되었습니다!')
       return { success: true, application: result }
@@ -183,12 +189,20 @@ export const useExperiences = () => {
     try {
       setLoading(true)
       
-      // 삭제 대신 상태를 'cancelled'로 변경
-      await lumi.entities.user_applications.update(applicationId, {
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+      // MongoDB API로 신청 취소
+      const response = await fetch(`/api/db/user-applications/${applicationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
       })
+      const result = await response.json()
+      if (!result.success) {
+        throw new Error('신청 취소에 실패했습니다')
+      }
       
       toast.success('신청이 취소되었습니다')
       return true
@@ -246,13 +260,10 @@ export const useExperiences = () => {
           const filter: any = {}
           filter[criteria.field] = criteria.value
           
-          const response = await lumi.entities.user_applications.list({
-            filter: filter,
-            sort: { applied_at: -1, created_at: -1 },
-            ...(forceRefresh && { _t: Date.now() }) // 캐시 무효화
-          })
-
-          const applications = ultraSafeArray(response)
+          // MongoDB API로 신청 내역 검색
+          const response = await fetch(`/api/db/user-applications?${criteria.field}=${criteria.value}`)
+          const result = await response.json()
+          const applications = result.success ? result.data : []
           if (applications.length > 0) {
             allApplications = [...allApplications, ...applications]
           }
@@ -305,7 +316,10 @@ export const useExperiences = () => {
               }
             }
 
-            const experience = await lumi.entities.experience_codes.get(app.experience_id)
+            // MongoDB API로 체험단 정보 조회
+            const experienceResponse = await fetch(`/api/db/campaigns?campaign_id=${app.experience_id}`)
+            const experienceResult = await experienceResponse.json()
+            const experience = experienceResult.success && experienceResult.data.length > 0 ? experienceResult.data[0] : null
             return {
               ...app,
               experience: experience || null,

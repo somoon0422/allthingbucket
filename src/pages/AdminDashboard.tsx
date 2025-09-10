@@ -212,7 +212,10 @@ const AdminDashboard: React.FC = () => {
               return { ...app, experience: null }
             }
 
-            const experience = await lumi.entities.experience_codes.get(app.experience_id)
+            // MongoDB API로 체험단 정보 조회
+            const experienceResponse = await fetch(`/api/db/campaigns?campaign_id=${app.experience_id}`)
+            const experienceResult = await experienceResponse.json()
+            const experience = experienceResult.success && experienceResult.data.length > 0 ? experienceResult.data[0] : null
             return { ...app, experience: experience || null }
           } catch {
             return { ...app, experience: null }
@@ -229,20 +232,20 @@ const AdminDashboard: React.FC = () => {
 
   const loadUsers = async () => {
     try {
-      // users 엔티티와 user_profiles 엔티티 모두 가져오기
+      // MongoDB API로 사용자 데이터 조회
       const [usersResponse, profilesResponse] = await Promise.all([
-        lumi.entities.users.list({
-          sort: { created_at: -1 },
-          ...({ _t: Date.now() } as any) // 🔥 캐시 무효화
-        }),
-        lumi.entities.user_profiles.list({
-          sort: { created_at: -1 },
-          ...({ _t: Date.now() } as any) // 🔥 캐시 무효화
-        })
+        fetch('/api/db/users'),
+        fetch('/api/db/user-profiles')
       ])
       
-      const safeUsers = ultraSafeArray(usersResponse)
-      const safeProfiles = ultraSafeArray(profilesResponse)
+      const usersResult = await usersResponse.json()
+      const profilesResult = await profilesResponse.json()
+      
+      const usersData = usersResult.success ? usersResult.data : []
+      const profilesData = profilesResult.success ? profilesResult.data : []
+      
+      const safeUsers = ultraSafeArray(usersData)
+      const safeProfiles = ultraSafeArray(profilesData)
       
       // 사용자 정보와 프로필 정보를 병합 (user_id로 정확히 매칭)
       const mergedUsers = safeUsers.map((user: any) => {
@@ -289,11 +292,11 @@ const AdminDashboard: React.FC = () => {
 
   const loadExperiences = async () => {
     try {
-      const response = await lumi.entities.experience_codes.list({
-        sort: { created_at: -1 }
-      })
+      // MongoDB API로 체험단 목록 조회
+      const response = await fetch('/api/db/campaigns')
+      const result = await response.json()
       
-      const safeExperiences = ultraSafeArray(response)
+      const safeExperiences = result.success ? ultraSafeArray(result.data) : []
       setExperiences(safeExperiences)
     } catch (error) {
       console.error('체험단 목록 로드 실패:', error)
@@ -303,12 +306,11 @@ const AdminDashboard: React.FC = () => {
 
   const loadNotifications = async () => {
     try {
-      const response = await lumi.entities.admin_notifications.list({
-        sort: { created_at: -1 },
-        limit: 20
-      })
+      // MongoDB API로 알림 목록 조회
+      const response = await fetch('/api/db/admin-notifications')
+      const result = await response.json()
       
-      const safeNotifications = ultraSafeArray(response)
+      const safeNotifications = result.success ? ultraSafeArray(result.data) : []
       setNotifications(safeNotifications)
     } catch (error) {
       console.error('알림 목록 로드 실패:', error)
@@ -318,11 +320,11 @@ const AdminDashboard: React.FC = () => {
 
   const loadReviews = async () => {
     try {
-      const response = await lumi.entities.review_submissions.list({
-        sort: { submitted_at: -1, created_at: -1 }
-      })
+      // MongoDB API로 리뷰 목록 조회
+      const response = await fetch('/api/db/review-submissions')
+      const result = await response.json()
       
-      const safeReviews = ultraSafeArray(response)
+      const safeReviews = result.success ? ultraSafeArray(result.data) : []
       console.log('🔍 로드된 리뷰 데이터:', safeReviews)
       setReviews(safeReviews)
     } catch (error) {
