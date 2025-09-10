@@ -41,7 +41,7 @@ const Experiences: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ 체험단 로드 실패:', error)
-      toast.error('체험단 목록을 불러오는데 실패했습니다')현재 뿐
+      toast.error('체험단 목록을 불러오는데 실패했습니다')
       setExperiences([])
     } finally {
       setLoading(false)

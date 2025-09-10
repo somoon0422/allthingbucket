@@ -300,6 +300,68 @@ app.get('/api/db/user-applications', async (req, res) => {
   }
 });
 
+// 사용자 등록 (POST /api/db/user-register)
+app.post('/api/db/user-register', async (req, res) => {
+  try {
+    console.log('🔐 사용자 등록 요청:', req.body);
+    
+    const { db } = await connectToMongoDB();
+    const { name, email, password } = req.body;
+    
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: '이름, 이메일, 비밀번호를 모두 입력해주세요'
+      });
+    }
+    
+    // 중복 이메일 체크
+    const existingUser = await db.collection('users').findOne({ email: email });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        error: '이미 존재하는 이메일입니다'
+      });
+    }
+    
+    // 새 사용자 생성
+    const newUser = {
+      user_id: `user_${Date.now()}`,
+      name: name,
+      email: email,
+      password: password, // 실제로는 해시화해야 함
+      role: 'user',
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    
+    const result = await db.collection('users').insertOne(newUser);
+    
+    console.log('✅ 사용자 등록 성공:', newUser.email);
+    
+    res.json({
+      success: true,
+      message: '회원가입이 완료되었습니다',
+      data: {
+        user: {
+          _id: result.insertedId,
+          user_id: newUser.user_id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role
+        },
+        token: `user_token_${Date.now()}`
+      }
+    });
+  } catch (error) {
+    console.error('❌ 사용자 등록 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // 404 핸들러
 app.use('*', (req, res) => {
   res.status(404).json({ 

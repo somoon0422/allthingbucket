@@ -216,17 +216,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      const result = await lumiAuthService.registerUser(userData)
+      // MongoDB API로 사용자 등록
+      const response = await fetch('/api/db/user-register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+      })
       
-      if (result.user && result.token) {
+      const result = await response.json()
+      
+      if (result.success && result.data.user) {
         // 토큰을 localStorage에 저장
-        localStorage.setItem('auth_token', result.token)
+        if (result.data.token) {
+          localStorage.setItem('auth_token', result.data.token)
+        }
         
-        const processedUser = processUserData(result.user)
+        const processedUser = processUserData(result.data.user)
         if (processedUser) {
           setUser(processedUser)
           toast.success(`회원가입이 완료되었습니다, ${processedUser.name}님!`)
         }
+      } else {
+        throw new Error(result.error || '회원가입에 실패했습니다')
       }
     } catch (error: any) {
       console.error('회원가입 실패:', error)
