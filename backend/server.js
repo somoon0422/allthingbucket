@@ -4,11 +4,11 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 require('dotenv').config();
 
-const smsRoutes = require('./backend/routes/sms');
-const authRoutes = require('./backend/routes/auth');
-const databaseRoutes = require('./backend/routes/database');
-const mongodbService = require('./backend/services/mongodbService');
-const { errorHandler } = require('./backend/middleware/errorHandler');
+const smsRoutes = require('./routes/sms');
+const authRoutes = require('./routes/auth');
+const databaseRoutes = require('./routes/database');
+const mongodbService = require('./services/mongodbService');
+const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
