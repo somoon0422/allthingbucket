@@ -7,10 +7,7 @@
     },
     {
       "src": "api/index.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["node_modules/mongodb/**"]
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
