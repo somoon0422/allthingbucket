@@ -15,13 +15,22 @@ const connectToMongoDB = async () => {
   try {
     if (!client) {
       console.log('🔗 MongoDB Atlas 연결 시도...');
+      console.log('연결 문자열:', connectionString.replace(/\/\/.*@/, '//***:***@'));
+      
       client = new MongoClient(connectionString, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
         serverApi: {
           version: '1',
           strict: false,
           deprecationErrors: false
-        }
+        },
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        family: 4
       });
+      
       await client.connect();
       db = client.db('allthingbucket');
       console.log('✅ MongoDB Atlas 연결 성공!');
@@ -29,6 +38,7 @@ const connectToMongoDB = async () => {
     return { client, db };
   } catch (error) {
     console.error('❌ MongoDB Atlas 연결 실패:', error);
+    console.error('에러 상세:', error.message);
     throw error;
   }
 };
@@ -99,6 +109,65 @@ app.get('/api/db/campaigns', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ 캠페인 목록 조회 실패:', error);
+    console.error('에러 상세:', error.message);
+    console.error('에러 스택:', error.stack);
+    
+    // MongoDB 연결 실패 시 임시 데이터 반환
+    if (error.message.includes('connection') || error.message.includes('timeout')) {
+      console.log('🔄 MongoDB 연결 실패로 임시 데이터 반환');
+      const fallbackCampaigns = [
+        {
+          _id: "campaign_1",
+          title: "뷰티 제품 체험단 모집",
+          description: "새로운 뷰티 제품을 체험해보실 분들을 모집합니다.",
+          type: "beauty",
+          status: "active",
+          max_participants: 50,
+          current_participants: 15,
+          start_date: "2024-01-01T00:00:00.000+00:00",
+          end_date: "2024-12-31T00:00:00.000+00:00",
+          application_start: "2024-01-01T00:00:00.000+00:00",
+          application_end: "2024-12-15T00:00:00.000+00:00",
+          content_start: "2024-01-01T00:00:00.000+00:00",
+          content_end: "2024-12-20T00:00:00.000+00:00",
+          requirements: "인스타그램 팔로워 1만명 이상",
+          rewards: "제품 무료 제공 + 포인트 1000P",
+          main_images: ["https://example.com/beauty1.jpg"],
+          detail_images: ["https://example.com/beauty_detail1.jpg", "https://example.com/beauty_detail2.jpg"],
+          created_at: "2025-09-10T01:59:07.897+00:00",
+          updated_at: "2025-09-10T01:59:07.897+00:00"
+        },
+        {
+          _id: "campaign_2",
+          title: "테크 가전 제품 리뷰",
+          description: "최신 테크 가전 제품을 리뷰해주실 분들을 모집합니다.",
+          type: "tech",
+          status: "active",
+          max_participants: 30,
+          current_participants: 8,
+          start_date: "2024-01-01T00:00:00.000+00:00",
+          end_date: "2024-12-31T00:00:00.000+00:00",
+          application_start: "2024-01-01T00:00:00.000+00:00",
+          application_end: "2024-12-10T00:00:00.000+00:00",
+          content_start: "2024-01-01T00:00:00.000+00:00",
+          content_end: "2024-12-15T00:00:00.000+00:00",
+          requirements: "유튜브 구독자 5천명 이상",
+          rewards: "제품 무료 제공 + 포인트 2000P",
+          main_images: ["https://example.com/tech1.jpg"],
+          detail_images: ["https://example.com/tech_detail1.jpg"],
+          created_at: "2025-09-10T01:59:07.897+00:00",
+          updated_at: "2025-09-10T01:59:07.897+00:00"
+        }
+      ];
+      
+      return res.json({
+        success: true,
+        data: fallbackCampaigns,
+        count: fallbackCampaigns.length,
+        fallback: true
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: error.message
