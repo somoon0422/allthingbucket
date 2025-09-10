@@ -10,7 +10,7 @@ const connectionString = process.env.MONGODB_URI || 'mongodb+srv://support_db_us
 let client = null;
 let db = null;
 
-// MongoDB 연결 함수
+// MongoDB 연결 함수 (간단한 버전)
 const connectToMongoDB = async () => {
   try {
     if (!client) {
@@ -18,25 +18,19 @@ const connectToMongoDB = async () => {
       console.log('연결 문자열:', connectionString.replace(/\/\/.*@/, '//***:***@'));
       console.log('환경 변수 MONGODB_URI:', process.env.MONGODB_URI ? '설정됨' : '설정되지 않음');
       
-      // Create a MongoClient with a MongoClientOptions object to set the Stable API version
+      // 간단한 연결 옵션
       client = new MongoClient(connectionString, {
-        serverApi: {
-          version: ServerApiVersion.v1,
-          strict: false,
-          deprecationErrors: false,
-        },
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
         maxPoolSize: 10,
-        serverSelectionTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-        connectTimeoutMS: 10000
+        connectTimeoutMS: 5000
       });
       
       // Connect the client to the server
       await client.connect();
-      
-      // Send a ping to confirm a successful connection
-      await client.db("admin").command({ ping: 1 });
-      console.log("✅ Pinged your deployment. You successfully connected to MongoDB!");
+      console.log("✅ MongoDB 연결 성공!");
       
       db = client.db('allthingbucket');
     }
