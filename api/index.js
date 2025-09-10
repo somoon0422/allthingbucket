@@ -288,6 +288,18 @@ app.get('/api/db/user-reviews', async (req, res) => {
   }
 });
 
+// 사용자 신청 내역 조회 (GET /api/db/user-applications)
+app.get('/api/db/user-applications', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const applications = await db.collection('user_applications').find({}).toArray();
+    res.json({ success: true, data: applications, count: applications.length });
+  } catch (error) {
+    console.error('❌ 사용자 신청 내역 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 404 핸들러
 app.use('*', (req, res) => {
   res.status(404).json({ 

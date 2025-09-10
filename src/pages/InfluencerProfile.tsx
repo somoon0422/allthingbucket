@@ -53,14 +53,16 @@ const InfluencerProfile: React.FC = () => {
       setLoading(true)
       console.log('🔍 체험단 히스토리 조회 시작:', user.user_id)
 
-      // 사용자 신청 내역 조회
-      const applicationResult = await lumi.entities.user_applications.list()
-      const applicationList = Array.isArray(applicationResult) ? applicationResult : []
+      // 사용자 신청 내역 조회 - MongoDB API 사용
+      const applicationResponse = await fetch('/api/db/user-applications')
+      const applicationResult = await applicationResponse.json()
+      const applicationList = applicationResult.success ? applicationResult.data : []
       const userApplications = applicationList.filter((app: any) => app && app.user_id === user.user_id)
 
-      // 체험단 정보와 매칭
-      const experienceResult = await lumi.entities.experience_codes.list()
-      const experienceList = Array.isArray(experienceResult) ? experienceResult : []
+      // 체험단 정보와 매칭 - MongoDB API 사용
+      const experienceResponse = await fetch('/api/db/campaigns')
+      const experienceResult = await experienceResponse.json()
+      const experienceList = experienceResult.success ? experienceResult.data : []
       const experienceMap = new Map()
       experienceList.forEach((exp: any) => {
         experienceMap.set(exp.experience_code, exp)

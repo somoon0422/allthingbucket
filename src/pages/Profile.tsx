@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { lumi } from '../lib/lumi'
+// Lumi SDK 제거됨 - MongoDB API 사용
 import toast from 'react-hot-toast'
 import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield} from 'lucide-react'
 import { AddressInput } from '../components/AddressInput'
