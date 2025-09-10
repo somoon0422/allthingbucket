@@ -49,7 +49,10 @@ const Home: React.FC = () => {
   // 🔥 추천 체험단 로드 - MongoDB API 사용
   const loadFeaturedExperiences = async () => {
     try {
-      const response = await fetch('/api/db/campaigns?limit=6')
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001/api/db/campaigns?limit=6'
+        : 'https://allthingbucket.com/api/db/campaigns?limit=6'
+      const response = await fetch(apiUrl)
       const result = await response.json()
       
       if (result.success) {
@@ -67,11 +70,14 @@ const Home: React.FC = () => {
   // 🔥 통계 로드 - MongoDB API 사용
   const loadStats = async () => {
     try {
-      const [campaignsRes, usersRes, reviewsRes] = await Promise.all([
-        fetch('/api/db/campaigns'),
-        fetch('/api/db/user-profiles'),
-        fetch('/api/db/user-reviews')
-      ])
+        const apiBaseUrl = window.location.hostname === 'localhost' 
+          ? 'http://localhost:3001'
+          : 'https://allthingbucket.com'
+        const [campaignsRes, usersRes, reviewsRes] = await Promise.all([
+          fetch(`${apiBaseUrl}/api/db/campaigns`),
+          fetch(`${apiBaseUrl}/api/db/user-profiles`),
+          fetch(`${apiBaseUrl}/api/db/user-reviews`)
+        ])
 
       const campaignsResult = await campaignsRes.json()
       const usersResult = await usersRes.json()
@@ -99,7 +105,10 @@ const Home: React.FC = () => {
   // 🔥 체험단 후기 로드 - MongoDB API 사용
   const loadReviews = async () => {
     try {
-      const response = await fetch('/api/db/user-reviews?limit=10')
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001/api/db/user-reviews?limit=10'
+        : 'https://allthingbucket.com/api/db/user-reviews?limit=10'
+      const response = await fetch(apiUrl)
       const result = await response.json()
       
       if (result.success) {

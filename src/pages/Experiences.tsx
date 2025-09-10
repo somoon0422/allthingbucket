@@ -29,7 +29,11 @@ const Experiences: React.FC = () => {
       console.log('🔥 체험단 로딩 시작 (MongoDB API)...')
       
       // MongoDB API로 캠페인 데이터 로드
-      const response = await fetch('/api/db/campaigns')
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001/api/db/campaigns'
+        : 'https://allthingbucket.com/api/db/campaigns'
+      console.log('🌐 API URL:', apiUrl)
+      const response = await fetch(apiUrl)
       const result = await response.json()
       
       if (result.success) {

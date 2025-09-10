@@ -87,9 +87,13 @@ app.get('/api/db/status', async (req, res) => {
 app.get('/api/db/campaigns', async (req, res) => {
   try {
     console.log('📋 캠페인 목록 조회 요청:', req.query);
+    console.log('🔗 MongoDB 연결 시도 중...');
 
     const { db } = await connectToMongoDB();
+    console.log('✅ MongoDB 연결 성공!');
+    
     const collection = db.collection('campaigns');
+    console.log('📊 campaigns 컬렉션 접근 성공');
     
     let query = {};
     
@@ -105,6 +109,8 @@ app.get('/api/db/campaigns', async (req, res) => {
       query.type = req.query.category;
     }
     
+    console.log('🔍 쿼리 조건:', query);
+    
     let cursor = collection.find(query);
     
     if (req.query.limit) {
@@ -114,6 +120,7 @@ app.get('/api/db/campaigns', async (req, res) => {
     cursor = cursor.sort({ created_at: -1 });
     
     const campaigns = await cursor.toArray();
+    console.log('📋 조회된 캠페인 수:', campaigns.length);
 
     res.json({
       success: true,
