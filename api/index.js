@@ -4,46 +4,45 @@ const { MongoClient } = require('mongodb');
 
 const app = express();
 
-// 전역 변수로 연결 캐싱
-let cachedDb = null;
-let cachedClient = null;
+// Vercel 최적화 MongoDB 연결
+if (!process.env.MONGODB_URI) {
+  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+}
 
-// MongoDB 연결 함수 (단순화된 버전)
+const uri = process.env.MONGODB_URI;
+const options = {};
+
+let client;
+let clientPromise;
+
+if (process.env.NODE_ENV === 'development') {
+  // 개발 환경에서는 global 변수 사용
+  let globalWithMongo = global;
+  
+  if (!globalWithMongo._mongoClientPromise) {
+    client = new MongoClient(uri, options);
+    globalWithMongo._mongoClientPromise = client.connect();
+  }
+  clientPromise = globalWithMongo._mongoClientPromise;
+} else {
+  // 프로덕션에서는 새 연결
+  client = new MongoClient(uri, options);
+  clientPromise = client.connect();
+}
+
+// MongoDB 연결 함수
 async function connectToDatabase() {
   console.log('🔗 MongoDB 연결 시도...');
   
-  // 환경변수 체크
-  if (!process.env.MONGODB_URI) {
-    throw new Error('MONGODB_URI 환경변수가 설정되지 않았습니다');
+  try {
+    const client = await clientPromise;
+    const db = client.db('allthingbucket');
+    console.log("✅ MongoDB 연결 성공!");
+    return { db, client };
+  } catch (error) {
+    console.error('❌ MongoDB 연결 실패:', error);
+    throw error;
   }
-  
-  console.log('환경 변수 MONGODB_URI:', process.env.MONGODB_URI ? '설정됨' : '설정되지 않음');
-  
-  if (cachedDb) {
-    console.log('✅ 캐시된 DB 연결 사용');
-    return { db: cachedDb, client: cachedClient };
-  }
-
-  console.log('새로운 MongoDB 연결 생성...');
-  
-  const client = new MongoClient(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    connectTimeoutMS: 5000
-  });
-
-  await client.connect();
-  console.log("✅ MongoDB 연결 성공!");
-  
-  const db = client.db('allthingbucket');
-  
-  cachedClient = client;
-  cachedDb = db;
-  
-  return { db, client };
 }
 
 // 미들웨어 설정
@@ -71,39 +70,17 @@ app.get('/api/test', (req, res) => {
 
 // 캠페인 목록 조회 (GET /api/db/campaigns)
 app.get('/api/db/campaigns', async (req, res) => {
+  // CORS 설정
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
   console.log('📋 캠페인 목록 조회 요청:', req.query);
   
   try {
-    console.log('1. API 함수 시작');
-    
-    // 환경변수 체크
-    if (!process.env.MONGODB_URI) {
-      console.log('❌ MONGODB_URI 환경변수 없음');
-      return res.status(500).json({ 
-        success: false,
-        error: 'MONGODB_URI 환경변수가 설정되지 않았습니다' 
-      });
-    }
-    
-    console.log('2. MongoDB URI 존재 확인');
-    
-    // 타임아웃 설정
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Connection timeout')), 10000)
-    );
-    
-    const connectionPromise = connectToDatabase();
-    
-    const { db } = await Promise.race([connectionPromise, timeoutPromise]);
-    
-    console.log('3. DB 연결 성공');
-    
-    // 핑 테스트
-    await db.admin().ping();
-    console.log('4. Ping 성공');
+    console.log('Connecting to MongoDB...');
+    const { db } = await connectToDatabase();
     
     const collection = db.collection('campaigns');
-    console.log('5. campaigns 컬렉션 접근 성공');
+    console.log('campaigns 컬렉션 접근 성공');
     
     // 쿼리 조건 설정
     const query = {};
@@ -120,7 +97,7 @@ app.get('/api/db/campaigns', async (req, res) => {
       query.type = req.query.category;
     }
     
-    console.log('6. 쿼리 조건:', query);
+    console.log('쿼리 조건:', query);
     
     let cursor = collection.find(query);
     
@@ -131,24 +108,81 @@ app.get('/api/db/campaigns', async (req, res) => {
     cursor = cursor.sort({ created_at: -1 });
     
     const campaigns = await cursor.toArray();
-    console.log('7. 조회된 캠페인 수:', campaigns.length);
+    console.log('조회된 캠페인 수:', campaigns.length);
 
-    res.json({
-      success: true,
+    res.status(200).json({ 
+      success: true, 
       data: campaigns,
       count: campaigns.length
     });
     
-  } catch (error) {
-    console.error('❌ 캠페인 목록 조회 실패:', error);
-    console.error('에러 발생 위치:', error.message);
-    console.error('에러 스택:', error.stack);
+  } catch (e) {
+    console.error('MongoDB Error:', e);
     
-    res.status(500).json({ 
+    // Fallback 데이터 반환
+    const fallbackCampaigns = [
+      {
+        _id: "campaign_1",
+        title: "뷰티 제품 체험단 모집",
+        description: "새로운 뷰티 제품을 체험해보실 분들을 모집합니다.",
+        type: "beauty",
+        status: "active",
+        max_participants: 50,
+        current_participants: 15,
+        start_date: "2024-01-01T00:00:00.000+00:00",
+        end_date: "2024-12-31T00:00:00.000+00:00",
+        application_start: "2024-01-01T00:00:00.000+00:00",
+        application_end: "2024-12-15T00:00:00.000+00:00",
+        content_start: "2024-01-01T00:00:00.000+00:00",
+        content_end: "2024-12-20T00:00:00.000+00:00",
+        requirements: "인스타그램 팔로워 1만명 이상",
+        rewards: "제품 무료 제공 + 포인트 1000P",
+        main_images: ["https://example.com/beauty1.jpg"],
+        detail_images: ["https://example.com/beauty_detail1.jpg", "https://example.com/beauty_detail2.jpg"],
+        created_at: "2025-09-10T01:59:07.897+00:00",
+        updated_at: "2025-09-10T01:59:07.897+00:00"
+      },
+      {
+        _id: "campaign_2",
+        title: "테크 가전 제품 리뷰",
+        description: "최신 테크 가전 제품을 리뷰해주실 분들을 모집합니다.",
+        type: "tech",
+        status: "active",
+        max_participants: 30,
+        current_participants: 8,
+        start_date: "2024-01-01T00:00:00.000+00:00",
+        end_date: "2024-12-31T00:00:00.000+00:00",
+        application_start: "2024-01-01T00:00:00.000+00:00",
+        application_end: "2024-12-10T00:00:00.000+00:00",
+        content_start: "2024-01-01T00:00:00.000+00:00",
+        content_end: "2024-12-15T00:00:00.000+00:00",
+        requirements: "유튜브 구독자 5천명 이상",
+        rewards: "제품 무료 제공 + 포인트 2000P",
+        main_images: ["https://example.com/tech1.jpg"],
+        detail_images: ["https://example.com/tech_detail1.jpg"],
+        created_at: "2025-09-10T01:59:07.897+00:00",
+        updated_at: "2025-09-10T01:59:07.897+00:00"
+      }
+    ];
+    
+    res.status(200).json({ 
       success: false,
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      fallback: true,
+      data: fallbackCampaigns,
+      count: fallbackCampaigns.length,
+      error: e.message 
     });
+  }
+});
+
+// 빠른 테스트 API
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const { db } = await connectToDatabase();
+    await db.admin().command({ ping: 1 });
+    res.json({ status: "MongoDB 연결 성공! ✅" });
+  } catch (e) {
+    res.status(500).json({ status: "연결 실패 ❌", error: e.message });
   }
 });
 
@@ -156,14 +190,6 @@ app.get('/api/db/campaigns', async (req, res) => {
 app.get('/api/db/test', async (req, res) => {
   try {
     console.log('🧪 MongoDB 연결 테스트 시작...');
-    
-    // 환경변수 체크
-    if (!process.env.MONGODB_URI) {
-      return res.status(500).json({ 
-        success: false,
-        error: 'MONGODB_URI 환경변수가 설정되지 않았습니다' 
-      });
-    }
     
     const { db } = await connectToDatabase();
     console.log('✅ MongoDB 연결 성공!');
