@@ -5,7 +5,7 @@ const { MongoClient } = require('mongodb');
 const app = express();
 
 // MongoDB 연결 설정
-const connectionString = process.env.MONGODB_URI || 'mongodb+srv://support_db_user:nv2c50bqVBAOgJRr@cluster0.9ny0kvy.mongodb.net/allthingbucket?retryWrites=true&w=majority&appName=Cluster0&tls=true&tlsAllowInvalidCertificates=true&tlsAllowInvalidHostnames=true&apiVersion=1';
+const connectionString = process.env.MONGODB_URI || 'mongodb+srv://support_db_user:nv2c50bqVBAOgJRr@cluster0.9ny0kvy.mongodb.net/allthingbucket?retryWrites=true&w=majority&appName=Cluster0';
 
 let client = null;
 let db = null;
@@ -20,15 +20,9 @@ const connectToMongoDB = async () => {
       client = new MongoClient(connectionString, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverApi: {
-          version: '1',
-          strict: false,
-          deprecationErrors: false
-        },
         maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
-        family: 4
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000
       });
       
       await client.connect();
