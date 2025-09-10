@@ -48,41 +48,7 @@ const Experiences: React.FC = () => {
     }
   }
 
-  // 🔥 신청 상태 체크 함수
-  const checkApplicationStatuses = async (experiencesList: any[]) => {
-    try {
-      if (!user?.user_id) return
-
-      const statusPromises = experiencesList.map(async (experience) => {
-        try {
-          const experienceId = experience._id || experience.id
-          if (!experienceId) return { experienceId, status: null }
-
-          const duplicateCheck = await checkDuplicateApplication(experienceId, user.user_id, user)
-          
-          return {
-            experienceId,
-            status: duplicateCheck.isDuplicate ? duplicateCheck.existingApplication : null
-          }
-        } catch {
-          return { experienceId: experience._id || experience.id, status: null }
-        }
-      })
-
-      const statuses = await Promise.all(statusPromises)
-      const statusMap: {[key: string]: any} = {}
-      
-      statuses.forEach(({ experienceId, status }) => {
-        if (experienceId) {
-          statusMap[experienceId] = status
-        }
-      })
-
-      setApplicationStatuses(statusMap)
-    } catch (error) {
-      console.error('신청 상태 체크 실패:', error)
-    }
-  }
+  // checkApplicationStatuses 함수 제거됨 - 사용하지 않음
 
   useEffect(() => {
     loadExperiences()
