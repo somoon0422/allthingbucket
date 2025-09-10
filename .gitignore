@@ -3,7 +3,7 @@ node_modules/
 backend/node_modules/
 
 # Build outputs
-dist/
+# dist/  # Vercel 배포를 위해 주석 처리
 build/
 
 # Environment variables
