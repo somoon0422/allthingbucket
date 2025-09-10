@@ -7,24 +7,13 @@
     },
     {
       "src": "api/index.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["node_modules/mongodb/**"]
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "/api/index.js"
-    },
-    {
-      "src": "/experiences",
-      "dest": "/dist/index.html"
-    },
-    {
-      "src": "/experiences/(.*)",
-      "dest": "/dist/index.html"
     },
     {
       "src": "/(.*)",
