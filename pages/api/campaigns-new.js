@@ -1,5 +1,5 @@
 // pages/api/campaigns-new.js
-import { MongoClient } from 'mongodb';
+const { MongoClient } = require('mongodb');
 
 // 캐시된 연결
 let cachedClient = null;
@@ -20,7 +20,7 @@ async function connectToDatabase() {
   return { client, db };
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS 설정
   res.setHeader('Access-Control-Allow-Origin', '*');
   
