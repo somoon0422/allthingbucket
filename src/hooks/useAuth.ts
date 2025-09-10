@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react'
 // Lumi SDK 제거됨 - MongoDB API 사용
-import { lumiAuthService } from '../services/lumiAuthService'
+// lumiAuthService 제거됨 - MongoDB API 사용
 import { getUserFromToken } from '../utils/auth'
 import toast from 'react-hot-toast'
 
@@ -179,17 +179,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      const result = await lumiAuthService.loginUser({ email, password })
+      // MongoDB API로 사용자 로그인
+      const response = await fetch('/api/db/user-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      })
       
-      if (result.user && result.token) {
+      const result = await response.json()
+      
+      if (result.success && result.data.user) {
         // 토큰을 localStorage에 저장
-        localStorage.setItem('auth_token', result.token)
+        if (result.data.token) {
+          localStorage.setItem('auth_token', result.data.token)
+        }
         
-        const processedUser = processUserData(result.user)
+        const processedUser = processUserData(result.data.user)
         if (processedUser) {
           setUser(processedUser)
           toast.success(`환영합니다, ${processedUser.name}님!`)
         }
+      } else {
+        throw new Error(result.error || '로그인에 실패했습니다')
       }
     } catch (error: any) {
       console.error('로그인 실패:', error)

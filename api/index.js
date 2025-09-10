@@ -124,6 +124,75 @@ app.get('/api/db/campaigns', async (req, res) => {
   }
 });
 
+// 사용자 로그인 (POST /api/db/user-login)
+app.post('/api/db/user-login', async (req, res) => {
+  try {
+    console.log('🔐 사용자 로그인 요청:', req.body);
+    
+    const { db } = await connectToMongoDB();
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: '이메일과 비밀번호를 입력해주세요'
+      });
+    }
+    
+    // 사용자 조회
+    const user = await db.collection('users').findOne({ email: email });
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: '존재하지 않는 사용자입니다'
+      });
+    }
+    
+    // 비밀번호 확인 (실제로는 해시 비교해야 함)
+    if (user.password !== password) {
+      return res.status(401).json({
+        success: false,
+        error: '비밀번호가 일치하지 않습니다'
+      });
+    }
+    
+    // 마지막 로그인 시간 업데이트
+    await db.collection('users').updateOne(
+      { _id: user._id },
+      { 
+        $set: { 
+          last_login: new Date(),
+          updated_at: new Date()
+        }
+      }
+    );
+    
+    console.log('✅ 사용자 로그인 성공:', user.email);
+    
+    res.json({
+      success: true,
+      message: '로그인 성공',
+      data: {
+        user: {
+          _id: user._id,
+          user_id: user.user_id,
+          name: user.name,
+          email: user.email,
+          role: user.role || 'user'
+        },
+        token: `user_token_${Date.now()}`
+      }
+    });
+  } catch (error) {
+    console.error('❌ 사용자 로그인 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // 관리자 로그인
 app.post('/api/db/admin-login', async (req, res) => {
   try {
@@ -190,6 +259,32 @@ app.post('/api/db/admin-login', async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+// 사용자 프로필 조회 (GET /api/db/user-profiles)
+app.get('/api/db/user-profiles', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const profiles = await db.collection('user_profiles').find({}).toArray();
+    res.json({ success: true, data: profiles, count: profiles.length });
+  } catch (error) {
+    console.error('❌ 사용자 프로필 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 사용자 리뷰 조회 (GET /api/db/user-reviews)
+app.get('/api/db/user-reviews', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+    const query = limit ? { limit } : {};
+    const reviews = await db.collection('user_reviews').find({}, query).toArray();
+    res.json({ success: true, data: reviews, count: reviews.length });
+  } catch (error) {
+    console.error('❌ 사용자 리뷰 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
