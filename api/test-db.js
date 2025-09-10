@@ -1,10 +1,14 @@
-// api/test-db.js (Vercel Functions)
+// api/test-db.js
 const { MongoClient } = require('mongodb');
 
 module.exports = async (req, res) => {
+  // CORS 설정
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
   if (!process.env.MONGODB_URI) {
     return res.status(500).json({ 
-      error: "MONGODB_URI not found" 
+      error: "MONGODB_URI not found",
+      message: "환경변수가 설정되지 않았습니다" 
     });
   }
 
@@ -14,16 +18,20 @@ module.exports = async (req, res) => {
     await client.connect();
     await client.db("admin").command({ ping: 1 });
     
-    res.status(200).json({ 
+    return res.status(200).json({ 
       success: true,
-      message: "MongoDB connected!" 
+      message: "MongoDB 연결 성공!",
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
-      error: error.message 
+      error: "MongoDB 연결 실패",
+      details: error.message
     });
   } finally {
-    if (client) await client.close();
+    if (client) {
+      await client.close();
+    }
   }
 };
