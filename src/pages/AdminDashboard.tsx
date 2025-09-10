@@ -335,12 +335,11 @@ const AdminDashboard: React.FC = () => {
 
   const loadPointRequests = async () => {
     try {
-      const response = await lumi.entities.user_applications.list({
-        filter: { status: 'point_pending' },
-        sort: { point_requested_at: -1, created_at: -1 }
-      })
+      // MongoDB API로 포인트 신청 목록 조회
+      const response = await fetch('/api/db/user-applications?status=point_pending')
+      const result = await response.json()
       
-      const safePointRequests = ultraSafeArray(response)
+      const safePointRequests = result.success ? ultraSafeArray(result.data) : []
       console.log('💰 로드된 포인트 신청 데이터:', safePointRequests)
       setPointRequests(safePointRequests)
     } catch (error) {
@@ -378,16 +377,28 @@ const AdminDashboard: React.FC = () => {
       }
 
       setBulkActionLoading(true)
+      // MongoDB API로 일괄 승인
       const promises = Array.from(selectedApplications).map(id => 
-        lumi.entities.user_applications.update(id, {
-          status: 'approved',
-          admin_message: '일괄 승인',
-          processed_at: new Date().toISOString(),
-          processed_by: user?.id || user?.user_id || ''
+        fetch(`/api/db/user-applications/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'approved',
+            admin_message: '일괄 승인',
+            processed_at: new Date().toISOString(),
+            processed_by: user?.id || user?.user_id || ''
+          })
         })
       )
 
-      await Promise.all(promises)
+      const responses = await Promise.all(promises)
+      const results = await Promise.all(responses.map(r => r.json()))
+      
+      // 모든 응답이 성공인지 확인
+      const failedCount = results.filter(r => !r.success).length
+      if (failedCount > 0) {
+        throw new Error(`${failedCount}개 신청 승인에 실패했습니다`)
+      }
       toast.success(`${selectedApplications.size}개 신청이 승인되었습니다`)
       setSelectedApplications(new Set())
       setBulkModal(false)
@@ -416,16 +427,28 @@ const AdminDashboard: React.FC = () => {
       }
 
       setBulkActionLoading(true)
+      // MongoDB API로 일괄 거부
       const promises = Array.from(selectedApplications).map(id => 
-        lumi.entities.user_applications.update(id, {
-          status: 'rejected',
-          rejection_reason: reason,
-          processed_at: new Date().toISOString(),
-          processed_by: user?.id || user?.user_id || ''
+        fetch(`/api/db/user-applications/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'rejected',
+            rejection_reason: reason,
+            processed_at: new Date().toISOString(),
+            processed_by: user?.id || user?.user_id || ''
+          })
         })
       )
 
-      await Promise.all(promises)
+      const responses = await Promise.all(promises)
+      const results = await Promise.all(responses.map(r => r.json()))
+      
+      // 모든 응답이 성공인지 확인
+      const failedCount = results.filter(r => !r.success).length
+      if (failedCount > 0) {
+        throw new Error(`${failedCount}개 신청 거부에 실패했습니다`)
+      }
       toast.success(`${selectedApplications.size}개 신청이 반려되었습니다`)
       setSelectedApplications(new Set())
       setBulkModal(false)
@@ -576,17 +599,29 @@ const AdminDashboard: React.FC = () => {
         return
       }
 
-      // 체험단인지 신청인지에 따라 다른 엔티티 사용
+      // 체험단인지 신청인지에 따라 다른 API 사용
       if (selectedApplication.experience_name) {
-        // 체험단 메모 업데이트
-        await lumi.entities.experience_codes.update(itemId, {
-          admin_message: memoText
+        // 체험단 메모 업데이트 - MongoDB API 사용
+        const response = await fetch(`/api/db/campaigns/${itemId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ admin_message: memoText })
         })
+        const result = await response.json()
+        if (!result.success) {
+          throw new Error('체험단 메모 업데이트에 실패했습니다')
+        }
       } else {
-        // 신청 메모 업데이트
-        await lumi.entities.user_applications.update(itemId, {
-          admin_message: memoText
+        // 신청 메모 업데이트 - MongoDB API 사용
+        const response = await fetch(`/api/db/user-applications/${itemId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ admin_message: memoText })
         })
+        const result = await response.json()
+        if (!result.success) {
+          throw new Error('신청 메모 업데이트에 실패했습니다')
+        }
       }
 
       toast.success('메모가 저장되었습니다')
@@ -611,16 +646,40 @@ const AdminDashboard: React.FC = () => {
         return
       }
 
-      // 체험단인지 신청인지 사용자인지에 따라 다른 엔티티 사용
+      // 체험단인지 신청인지 사용자인지에 따라 다른 API 사용
       if (selectedApplication.experience_name) {
-        // 체험단 메타데이터 업데이트
-        await lumi.entities.experience_codes.update(itemId, editingData)
+        // 체험단 메타데이터 업데이트 - MongoDB API 사용
+        const response = await fetch(`/api/db/campaigns/${itemId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingData)
+        })
+        const result = await response.json()
+        if (!result.success) {
+          throw new Error('체험단 메타데이터 업데이트에 실패했습니다')
+        }
       } else if (selectedApplication.email && !selectedApplication.experience_name && !selectedApplication.name) {
-        // 사용자 메타데이터 업데이트
-        await lumi.entities.user_profiles.update(itemId, editingData)
+        // 사용자 메타데이터 업데이트 - MongoDB API 사용
+        const response = await fetch(`/api/db/user-profiles/${itemId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingData)
+        })
+        const result = await response.json()
+        if (!result.success) {
+          throw new Error('사용자 메타데이터 업데이트에 실패했습니다')
+        }
       } else {
-        // 신청 메타데이터 업데이트
-        await lumi.entities.user_applications.update(itemId, editingData)
+        // 신청 메타데이터 업데이트 - MongoDB API 사용
+        const response = await fetch(`/api/db/user-applications/${itemId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingData)
+        })
+        const result = await response.json()
+        if (!result.success) {
+          throw new Error('신청 메타데이터 업데이트에 실패했습니다')
+        }
       }
 
       toast.success('정보가 저장되었습니다')
@@ -641,11 +700,19 @@ const AdminDashboard: React.FC = () => {
     }
 
     try {
-      await lumi.entities.experience_codes.delete(experienceId)
-      toast.success('체험단이 삭제되었습니다')
+      // MongoDB API로 체험단 삭제
+      const response = await fetch(`/api/db/campaigns/${experienceId}`, {
+        method: 'DELETE'
+      })
+      const result = await response.json()
       
-      // 데이터 새로고침
-      syncAllData(false, false)
+      if (result.success) {
+        toast.success('체험단이 삭제되었습니다')
+        // 데이터 새로고침
+        syncAllData(false, false)
+      } else {
+        throw new Error(result.error || '체험단 삭제에 실패했습니다')
+      }
     } catch (error) {
       console.error('체험단 삭제 실패:', error)
       toast.error('체험단 삭제에 실패했습니다')
@@ -659,11 +726,19 @@ const AdminDashboard: React.FC = () => {
     }
 
     try {
-      await lumi.entities.user_profiles.delete(userId)
-      toast.success('사용자가 삭제되었습니다')
+      // MongoDB API로 사용자 삭제
+      const response = await fetch(`/api/db/user-profiles/${userId}`, {
+        method: 'DELETE'
+      })
+      const result = await response.json()
       
-      // 데이터 새로고침
-      syncAllData(false, false)
+      if (result.success) {
+        toast.success('사용자가 삭제되었습니다')
+        // 데이터 새로고침
+        syncAllData(false, false)
+      } else {
+        throw new Error(result.error || '사용자 삭제에 실패했습니다')
+      }
     } catch (error) {
       console.error('사용자 삭제 실패:', error)
       toast.error('사용자 삭제에 실패했습니다')
@@ -683,8 +758,11 @@ const AdminDashboard: React.FC = () => {
 
     try {
       setBulkActionLoading(true)
+      // MongoDB API로 일괄 삭제
       const deletePromises = Array.from(selectedApplications).map(id => 
-        lumi.entities.user_applications.delete(id)
+        fetch(`/api/db/user-applications/${id}`, {
+          method: 'DELETE'
+        })
       )
       
       await Promise.all(deletePromises)
