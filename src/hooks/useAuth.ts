@@ -218,19 +218,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })
       })
       
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
       const result = await response.json()
       
-      if (result.success && result.data.admin) {
-        const admin = result.data.admin
+      if (result.success && result.admin) {
+        const admin = result.admin
         
         const processedAdmin = processUserData({
-          _id: admin._id,
+          _id: admin.id,
           name: admin.username,
           email: admin.email,
           role: 'admin',
           admin_name: admin.username,
           admin_role: admin.role,
-          is_active: admin.is_active
+          is_active: true
         })
         
         if (processedAdmin) {

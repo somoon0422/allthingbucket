@@ -309,7 +309,7 @@ export class SupabaseAuthService {
         admin_id: 'admin_default_001',
         admin_name: 'admin',
         email: 'admin@allthingbucket.com',
-        password: 'admin123',
+        password: 'secure_password_2024',
         role: 'super_admin',
         permissions: ['read', 'write', 'delete', 'admin'],
         is_active: true,

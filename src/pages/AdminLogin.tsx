@@ -9,8 +9,8 @@ const AdminLogin: React.FC = () => {
   const { adminLogin, adminLoginWithCredentials, isAdminUser } = useAuth()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
-    admin_name: 'admin',
-    password: 'admin123'
+    admin_name: '',
+    password: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -42,25 +42,8 @@ const AdminLogin: React.FC = () => {
         console.log('MongoDB 인증 실패, 기본 인증 시도:', mongoError)
       }
 
-      // 기본 관리자 인증 (MongoDB 연결 실패시 폴백)
-      if (formData.admin_name === 'admin' && (formData.password === 'admin123' || formData.password === 'allthingbucket2024')) {
-        await adminLogin({
-          admin_name: formData.admin_name,
-          admin_role: 'super_admin',
-          id: `admin_${Date.now()}`,
-          name: formData.admin_name,
-          email: `${formData.admin_name}@admin.com`,
-          role: 'admin'
-        })
-        
-        toast.success('관리자 로그인 성공!')
-        // 잠시 후 리다이렉트 (상태 업데이트 시간 확보)
-        setTimeout(() => {
-          navigate('/admin')
-        }, 500)
-      } else {
-        toast.error('관리자명 또는 비밀번호가 올바르지 않습니다')
-      }
+      // Supabase 인증 실패 시 에러 처리
+      toast.error('관리자 로그인에 실패했습니다. 계정 정보를 확인해주세요.')
     } catch (error) {
       console.error('관리자 로그인 실패:', error)
       toast.error('로그인에 실패했습니다')
