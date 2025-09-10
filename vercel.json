@@ -19,6 +19,14 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/experiences",
+      "dest": "/dist/index.html"
+    },
+    {
+      "src": "/experiences/(.*)",
+      "dest": "/dist/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/dist/$1"
     }
