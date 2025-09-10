@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient } = require('mongodb');
 
 const app = express();
 
@@ -11,29 +10,6 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// MongoDB 연결 설정
-const connectionString = process.env.MONGODB_URI || 'mongodb+srv://support_db_user:nv2c50bqVBAOgJRr@cluster0.9ny0kvy.mongodb.net/allthingbucket?retryWrites=true&w=majority&appName=Cluster0&tls=true&tlsAllowInvalidCertificates=true&tlsAllowInvalidHostnames=true';
-
-let client = null;
-let db = null;
-
-// MongoDB 연결 함수
-const connectToMongoDB = async () => {
-  try {
-    if (!client) {
-      console.log('🔗 MongoDB Atlas 연결 시도...');
-      client = new MongoClient(connectionString);
-      await client.connect();
-      db = client.db('allthingbucket');
-      console.log('✅ MongoDB Atlas 연결 성공!');
-    }
-    return { client, db };
-  } catch (error) {
-    console.error('❌ MongoDB Atlas 연결 실패:', error);
-    throw error;
-  }
-};
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -50,41 +26,58 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// 캠페인 목록 조회 (GET /api/db/campaigns)
+// 캠페인 목록 조회 (GET /api/db/campaigns) - 임시 데이터
 app.get('/api/db/campaigns', async (req, res) => {
   try {
     console.log('📋 캠페인 목록 조회 요청:', req.query);
     
-    const { db } = await connectToMongoDB();
-    const collection = db.collection('campaigns');
-    
-    // 쿼리 조건 설정
-    const query = {};
-    
-    if (req.query.campaign_id) {
-      query._id = req.query.campaign_id;
-    }
-    
-    if (req.query.status) {
-      query.status = req.query.status;
-    }
-    
-    if (req.query.category) {
-      query.type = req.query.category;
-    }
-    
-    console.log('🔍 쿼리 조건:', query);
-    
-    let cursor = collection.find(query);
-    
-    if (req.query.limit) {
-      cursor = cursor.limit(parseInt(req.query.limit));
-    }
-    
-    cursor = cursor.sort({ created_at: -1 });
-    
-    const campaigns = await cursor.toArray();
-    console.log('📋 조회된 캠페인 수:', campaigns.length);
+    // 임시 캠페인 데이터
+    const campaigns = [
+      {
+        _id: "campaign_1",
+        title: "뷰티 제품 체험단 모집",
+        description: "새로운 뷰티 제품을 체험해보실 분들을 모집합니다.",
+        type: "beauty",
+        status: "active",
+        max_participants: 50,
+        current_participants: 15,
+        start_date: "2024-01-01T00:00:00.000+00:00",
+        end_date: "2024-12-31T00:00:00.000+00:00",
+        application_start: "2024-01-01T00:00:00.000+00:00",
+        application_end: "2024-12-15T00:00:00.000+00:00",
+        content_start: "2024-01-01T00:00:00.000+00:00",
+        content_end: "2024-12-20T00:00:00.000+00:00",
+        requirements: "인스타그램 팔로워 1만명 이상",
+        rewards: "제품 무료 제공 + 포인트 1000P",
+        main_images: ["https://example.com/beauty1.jpg"],
+        detail_images: ["https://example.com/beauty_detail1.jpg", "https://example.com/beauty_detail2.jpg"],
+        created_at: "2025-09-10T01:59:07.897+00:00",
+        updated_at: "2025-09-10T01:59:07.897+00:00"
+      },
+      {
+        _id: "campaign_2",
+        title: "테크 가전 제품 리뷰",
+        description: "최신 테크 가전 제품을 리뷰해주실 분들을 모집합니다.",
+        type: "tech",
+        status: "active",
+        max_participants: 30,
+        current_participants: 8,
+        start_date: "2024-01-01T00:00:00.000+00:00",
+        end_date: "2024-12-31T00:00:00.000+00:00",
+        application_start: "2024-01-01T00:00:00.000+00:00",
+        application_end: "2024-12-10T00:00:00.000+00:00",
+        content_start: "2024-01-01T00:00:00.000+00:00",
+        content_end: "2024-12-15T00:00:00.000+00:00",
+        requirements: "유튜브 구독자 5천명 이상",
+        rewards: "제품 무료 제공 + 포인트 2000P",
+        main_images: ["https://example.com/tech1.jpg"],
+        detail_images: ["https://example.com/tech_detail1.jpg"],
+        created_at: "2025-09-10T01:59:07.897+00:00",
+        updated_at: "2025-09-10T01:59:07.897+00:00"
+      }
+    ];
+
+    console.log('📋 임시 캠페인 데이터 반환:', campaigns.length);
 
     res.json({
       success: true,
@@ -103,13 +96,9 @@ app.get('/api/db/campaigns', async (req, res) => {
 // 데이터베이스 상태 확인
 app.get('/api/db/status', async (req, res) => {
   try {
-    const { db } = await connectToMongoDB();
-    const profiles = await db.collection('user_profiles').find({}).limit(1).toArray();
-    
     res.json({
       success: true,
-      message: 'MongoDB 연결 성공',
-      profiles_count: profiles.length,
+      message: 'API 서버 정상 작동',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
