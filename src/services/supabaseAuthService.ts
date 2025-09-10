@@ -1,4 +1,4 @@
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import { 
   isValidEmail,
   isStrongPassword
@@ -31,7 +31,7 @@ export interface AdminLoginCredentials {
   password: string
 }
 
-export class LumiAuthService {
+export class SupabaseAuthService {
   // 사용자 회원가입
   async registerUser(userData: UserRegistrationData): Promise<{ user: any; token: string }> {
     try {
@@ -49,7 +49,7 @@ export class LumiAuthService {
       }
 
       // 이메일 중복 체크
-      const existingUsersResponse = await lumi.entities.users.list({
+      const existingUsersResponse = await dataService.entities.users.list({
         filter: { email: userData.email }
       })
 
@@ -80,7 +80,7 @@ export class LumiAuthService {
       }
 
       // 사용자 생성
-      const createdUser = await lumi.entities.users.create(userRecord)
+      const createdUser = await dataService.entities.users.create(userRecord)
 
       // 사용자 프로필 생성
       const userProfile = {
@@ -103,7 +103,7 @@ export class LumiAuthService {
         updated_at: new Date().toISOString()
       }
 
-      await lumi.entities.user_profiles.create(userProfile)
+      await dataService.entities.user_profiles.create(userProfile)
 
       // 포인트 기록 생성
       const userPoints = {
@@ -117,7 +117,7 @@ export class LumiAuthService {
         updated_at: new Date().toISOString()
       }
 
-      await lumi.entities.user_points.create(userPoints)
+      await dataService.entities.user_points.create(userPoints)
 
       // 토큰 생성 (간단한 JWT 스타일)
       const token = this.generateToken({
@@ -141,7 +141,7 @@ export class LumiAuthService {
   async loginUser(credentials: LoginCredentials): Promise<{ user: any; token: string }> {
     try {
       // 사용자 조회
-      const usersResponse = await lumi.entities.users.list({
+      const usersResponse = await dataService.entities.users.list({
         filter: { email: credentials.email }
       })
 
@@ -158,7 +158,7 @@ export class LumiAuthService {
       }
 
       // 로그인 횟수 업데이트
-      await lumi.entities.users.update(user._id, {
+      await dataService.entities.users.update(user._id, {
         login_count: (user.login_count || 0) + 1,
         last_login: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -195,7 +195,7 @@ export class LumiAuthService {
       }
 
       // 관리자명 중복 체크
-      const existingAdminsResponse = await lumi.entities.admin_users.list({
+      const existingAdminsResponse = await dataService.entities.admin_users.list({
         filter: { admin_name: adminData.admin_name }
       })
 
@@ -219,7 +219,7 @@ export class LumiAuthService {
       }
 
       // 관리자 생성
-      const createdAdmin = await lumi.entities.admin_users.create(adminRecord)
+      const createdAdmin = await dataService.entities.admin_users.create(adminRecord)
 
       // 토큰 생성
       const token = this.generateToken({
@@ -244,7 +244,7 @@ export class LumiAuthService {
   async loginAdmin(credentials: AdminLoginCredentials): Promise<{ admin: any; token: string }> {
     try {
       // 관리자 조회
-      const adminsResponse = await lumi.entities.admin_users.list({
+      const adminsResponse = await dataService.entities.admin_users.list({
         filter: { admin_name: credentials.admin_name }
       })
 
@@ -266,7 +266,7 @@ export class LumiAuthService {
       }
 
       // 로그인 시간 업데이트
-      await lumi.entities.admin_users.update(admin._id, {
+      await dataService.entities.admin_users.update(admin._id, {
         last_login: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -294,7 +294,7 @@ export class LumiAuthService {
   async createDefaultAdmin(): Promise<void> {
     try {
       // 기본 관리자 계정이 이미 있는지 확인
-      const existingAdminsResponse = await lumi.entities.admin_users.list({
+      const existingAdminsResponse = await dataService.entities.admin_users.list({
         filter: { admin_name: 'admin' }
       })
 
@@ -318,8 +318,8 @@ export class LumiAuthService {
         updated_at: new Date().toISOString()
       }
 
-      await lumi.entities.admin_users.create(defaultAdmin)
-      console.log('기본 관리자 계정이 생성되었습니다: admin / admin123')
+      await dataService.entities.admin_users.create(defaultAdmin)
+      console.log('Supabase 기본 관리자 계정이 생성되었습니다')
     } catch (error) {
       console.error('기본 관리자 계정 생성 실패:', error)
     }
@@ -329,7 +329,7 @@ export class LumiAuthService {
   async createTestUser(): Promise<void> {
     try {
       // 테스트 사용자 계정이 이미 있는지 확인
-      const existingUsersResponse = await lumi.entities.users.list({
+      const existingUsersResponse = await dataService.entities.users.list({
         filter: { email: 'test@test.com' }
       })
 
@@ -360,7 +360,7 @@ export class LumiAuthService {
         updated_at: new Date().toISOString()
       }
 
-      await lumi.entities.users.create(testUser)
+      await dataService.entities.users.create(testUser)
       
       // 사용자 프로필 생성
       const userProfile = {
@@ -383,7 +383,7 @@ export class LumiAuthService {
         updated_at: new Date().toISOString()
       }
 
-      await lumi.entities.user_profiles.create(userProfile)
+      await dataService.entities.user_profiles.create(userProfile)
 
       // 포인트 기록 생성
       const userPoints = {
@@ -397,7 +397,7 @@ export class LumiAuthService {
         updated_at: new Date().toISOString()
       }
 
-      await lumi.entities.user_points.create(userPoints)
+      await dataService.entities.user_points.create(userPoints)
       
       console.log('테스트 사용자 계정이 생성되었습니다: test@test.com / test123')
     } catch (error) {
@@ -468,4 +468,4 @@ export class LumiAuthService {
   }
 }
 
-export const lumiAuthService = new LumiAuthService()
+export const supabaseAuthService = new SupabaseAuthService()

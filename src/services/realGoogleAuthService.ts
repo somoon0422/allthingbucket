@@ -117,7 +117,7 @@ class RealGoogleAuthService {
       const { lumi } = await import('../lib/lumi')
       
       // 기존 사용자 확인
-      const existingUsersResponse = await lumi.entities.users.list({
+      const existingUsersResponse = await dataService.entities.users.list({
         filter: { email: googleUser.email }
       })
       
@@ -129,7 +129,7 @@ class RealGoogleAuthService {
         user = existingUsers[0]
         console.log('✅ 기존 사용자 업데이트:', user)
         
-        await lumi.entities.users.update(user._id, {
+        await dataService.entities.users.update(user._id, {
           google_id: googleUser.id,
           profile_image: googleUser.picture,
           updated_at: new Date().toISOString()
@@ -149,7 +149,7 @@ class RealGoogleAuthService {
         
         console.log('📝 새 사용자 생성:', newUser)
         
-        const createdUser = await lumi.entities.users.create(newUser)
+        const createdUser = await dataService.entities.users.create(newUser)
         user = createdUser
         console.log('✅ 새 사용자 생성 완료:', createdUser)
       }
@@ -177,7 +177,7 @@ class RealGoogleAuthService {
       const { lumi } = await import('../lib/lumi')
       
       // 기존 프로필 확인
-      const existingProfilesResponse = await lumi.entities.user_profiles.list({
+      const existingProfilesResponse = await dataService.entities.user_profiles.list({
         filter: { user_id: user.user_id }
       })
       
@@ -218,7 +218,7 @@ class RealGoogleAuthService {
         
         console.log('📝 새 프로필 생성:', newProfile)
         
-        const createdProfile = await lumi.entities.user_profiles.create(newProfile)
+        const createdProfile = await dataService.entities.user_profiles.create(newProfile)
         console.log('✅ 새 프로필 생성 완료:', createdProfile)
       } else {
         console.log('⏭️ 이미 존재하는 프로필:', existingProfiles[0])

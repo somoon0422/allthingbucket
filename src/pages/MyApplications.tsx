@@ -6,7 +6,7 @@ import { useExperiences } from '../hooks/useExperiences'
 import ReviewSubmissionManager from '../components/ReviewSubmissionManager'
 import {Calendar, Gift, Clock, AlertCircle, CheckCircle, XCircle, Eye, FileText, Coins, User, Instagram, MessageSquare, ExternalLink, Trash2, Filter, Edit3, CalendarDays, RefreshCw} from 'lucide-react'
 import toast from 'react-hot-toast'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 
 // 🔥 ULTRA SAFE 배열 변환 - undefined.length 완전 차단
 function ultraSafeArray<T>(value: any): T[] {
@@ -321,7 +321,7 @@ const MyApplications: React.FC = () => {
       }
 
       // 신청 상태를 "포인트 지급 전"으로 변경
-      await lumi.entities.user_applications.update(applicationId, {
+      await dataService.entities.user_applications.update(applicationId, {
         status: 'point_pending',
         point_requested_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

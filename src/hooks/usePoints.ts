@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
 import { ultraSafeArray } from '../utils/arrayUtils'
 
@@ -56,7 +56,7 @@ export const usePoints = () => {
       setLoading(true)
       console.log('💰 사용자 포인트 조회:', userId)
       
-      const response = await lumi.entities.user_points.list({
+      const response = await dataService.entities.user_points.list({
         filter: { user_id: userId }
       })
       
@@ -71,7 +71,7 @@ export const usePoints = () => {
         return convertedPoints
       } else {
         // 포인트 데이터가 없으면 초기 생성
-        const newUserPoints = await lumi.entities.user_points.create({
+        const newUserPoints = await dataService.entities.user_points.create({
           user_id: userId,
           total_points: 0,
           available_points: 0,
@@ -96,7 +96,7 @@ export const usePoints = () => {
     try {
       console.log('📜 포인트 히스토리 조회:', userId)
       
-      const response = await lumi.entities.points_history.list({
+      const response = await dataService.entities.points_history.list({
         filter: { user_id: userId },
         sort: { created_at: -1 }
       })
@@ -122,7 +122,7 @@ export const usePoints = () => {
       console.log('➕ 포인트 추가:', { userId, points, description, type })
       
       // 포인트 히스토리 추가
-      await lumi.entities.points_history.create({
+      await dataService.entities.points_history.create({
         user_id: userId,
         points: points,
         type: type,
@@ -139,7 +139,7 @@ export const usePoints = () => {
           updated_at: new Date().toISOString()
         }
         
-        await lumi.entities.user_points.update(currentPoints._id, updatedPoints)
+        await dataService.entities.user_points.update(currentPoints._id, updatedPoints)
         setUserPoints(prev => prev ? { ...prev, ...updatedPoints } : null)
       }
       
@@ -165,7 +165,7 @@ export const usePoints = () => {
       }
       
       // 포인트 히스토리 추가
-      await lumi.entities.points_history.create({
+      await dataService.entities.points_history.create({
         user_id: userId,
         points: -points,
         type: type,
@@ -180,7 +180,7 @@ export const usePoints = () => {
         updated_at: new Date().toISOString()
       }
       
-      await lumi.entities.user_points.update(currentPoints._id, updatedPoints)
+      await dataService.entities.user_points.update(currentPoints._id, updatedPoints)
       setUserPoints(prev => prev ? { ...prev, ...updatedPoints } : null)
       
       console.log('✅ 포인트 차감 완료:', points)

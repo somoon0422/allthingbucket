@@ -1,6 +1,6 @@
 
 import { useState } from 'react'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
 
 export const useWithdrawal = () => {
@@ -32,7 +32,7 @@ export const useWithdrawal = () => {
     setLoading(true)
     try {
       // 사용자 잔액 확인
-      const { list: profiles } = await lumi.entities.user_profiles.list()
+      const { list: profiles } = await dataService.entities.user_profiles.list()
       const userProfile = profiles.find(p => p.user_id === userId)
       
       if (!userProfile || userProfile.current_balance < requestedAmount) {
@@ -50,7 +50,7 @@ export const useWithdrawal = () => {
       const { taxRate, taxAmount, finalAmount } = calculateTax(requestedAmount)
 
       // 출금 요청 생성
-      await lumi.entities.withdrawal_requests.create({
+      await dataService.entities.withdrawal_requests.create({
         user_id: userId,
         requested_amount: requestedAmount,
         bank_name: bankInfo.bankName,
@@ -68,13 +68,13 @@ export const useWithdrawal = () => {
       })
 
       // 사용자 잔액에서 차감 (요청 시점에 차감)
-      await lumi.entities.user_profiles.update(userProfile._id, {
+      await dataService.entities.user_profiles.update(userProfile._id, {
         current_balance: userProfile.current_balance - requestedAmount,
         updated_at: new Date().toISOString()
       })
 
       // 포인트 사용 기록 생성
-      await lumi.entities.user_points.create({
+      await dataService.entities.user_points.create({
         user_id: userId,
         transaction_type: 'withdrawal_requested',
         amount: requestedAmount,
@@ -104,7 +104,7 @@ export const useWithdrawal = () => {
   // 사용자 출금 내역 조회
   const getUserWithdrawals = async (userId: string) => {
     try {
-      const { list: withdrawals } = await lumi.entities.withdrawal_requests.list()
+      const { list: withdrawals } = await dataService.entities.withdrawal_requests.list()
       return withdrawals.filter(w => w.user_id === userId).sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
@@ -117,7 +117,7 @@ export const useWithdrawal = () => {
   // 출금 가능 금액 조회
   const getWithdrawableAmount = async (userId: string) => {
     try {
-      const { list: profiles } = await lumi.entities.user_profiles.list()
+      const { list: profiles } = await dataService.entities.user_profiles.list()
       const userProfile = profiles.find(p => p.user_id === userId)
       return userProfile?.current_balance || 0
     } catch (error) {

@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 // useExperiences 제거됨 - 사용하지 않음
 import ApplicationFormModal from '../components/ApplicationFormModal'
-// Lumi SDK 제거됨 - MongoDB API 사용
+// MongoDB API 사용
+import { dataService } from '../lib/dataService'
 import {Gift, Calendar, MapPin, Users, Filter, Search, Coins, Eye} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { ultraSafeArray, safeString, safeNumber } from '../utils/arrayUtils'
@@ -22,29 +23,32 @@ const Experiences: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all')
   // applicationStatuses 제거됨 - 사용하지 않음
 
-  // 🔥 체험단 목록 로드 - MongoDB API 사용
+  // 🔥 체험단 목록 로드 - dataService.campaigns.list 사용
   const loadExperiences = async () => {
     try {
       setLoading(true)
-      console.log('🔥 체험단 로딩 시작 (MongoDB API)...')
+      console.log('🔥 체험단 로딩 시작 (dataService.campaigns.list)...')
+      console.log('🔥 dataService 객체 확인:', dataService)
+      console.log('🔥 dataService.entities 확인:', dataService.entities)
+      console.log('🔥 dataService.entities.campaigns 확인:', dataService.entities.campaigns)
       
-      // MongoDB API로 캠페인 데이터 로드
-      const apiUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001/api/db/campaigns'
-        : 'https://allthingbucket.com/api/db/campaigns'
-      console.log('🌐 API URL:', apiUrl)
-      const response = await fetch(apiUrl)
-      const result = await response.json()
+      // dataService.campaigns.list를 통해 MongoDB 데이터 로드
+      console.log('🔥 dataService.entities.campaigns.list() 호출 시작...')
+      const campaigns = await dataService.entities.campaigns.list()
+      console.log('✅ MongoDB 캠페인 데이터 성공:', campaigns)
+      console.log('✅ 캠페인 데이터 타입:', typeof campaigns)
+      console.log('✅ 캠페인 데이터 길이:', campaigns?.length)
       
-      if (result.success) {
-        console.log('✅ MongoDB 캠페인 데이터 성공:', result.data)
-        const safeExperiences = ultraSafeArray(result.data)
-        setExperiences(safeExperiences)
-      } else {
-        throw new Error(result.error || '캠페인 데이터 로드 실패')
-      }
+      const safeExperiences = ultraSafeArray(campaigns)
+      console.log('✅ 안전한 체험단 데이터:', safeExperiences)
+      setExperiences(safeExperiences)
     } catch (error) {
       console.error('❌ 체험단 로드 실패:', error)
+      console.error('❌ 에러 타입:', typeof error)
+      if (error instanceof Error) {
+        console.error('❌ 에러 메시지:', error.message)
+        console.error('❌ 에러 스택:', error.stack)
+      }
       toast.error('체험단 목록을 불러오는데 실패했습니다')
       setExperiences([])
     } finally {
@@ -183,7 +187,7 @@ const Experiences: React.FC = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">체험단 목록을 불러오는 중...</p>
-          <p className="text-sm text-gray-500 mt-2">Lumi SDK에서 데이터를 로드하고 있습니다</p>
+          <p className="text-sm text-gray-500 mt-2">MongoDB에서 데이터를 로드하고 있습니다</p>
         </div>
       </div>
     )

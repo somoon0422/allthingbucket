@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-// Lumi SDK 제거됨 - MongoDB API 사용
-// lumiAuthService 제거됨 - MongoDB API 사용
+// Lumi SDK 제거됨 - Supabase API 사용
+// lumiAuthService 제거됨 - Supabase API 사용
 import { getUserFromToken } from '../utils/auth'
 import toast from 'react-hot-toast'
 
@@ -97,11 +97,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      // MongoDB API로 사용자 로그인
+      // Supabase API로 사용자 로그인
       const apiBaseUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001'
         : 'https://allthingbucket.com'
-      const response = await fetch(`${apiBaseUrl}/api/db/user-login`, {
+      const response = await fetch(`${apiBaseUrl}/api/auth/user/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      // MongoDB API로 사용자 등록
+      // Supabase API로 사용자 등록
       const apiBaseUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001'
         : 'https://allthingbucket.com'
@@ -203,11 +203,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      // MongoDB API로 관리자 로그인
+      // Supabase API로 관리자 로그인
       const apiBaseUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001'
         : 'https://allthingbucket.com'
-      const response = await fetch(`${apiBaseUrl}/api/db/admin-login`, {
+      const response = await fetch(`${apiBaseUrl}/api/auth/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -253,7 +253,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setUser(null)
       
-      // Lumi SDK 제거됨 - MongoDB API 사용으로 대체
+      // Lumi SDK 제거됨 - Supabase API 사용으로 대체
       
       // 로컬 세션 정리
       localStorage.removeItem('admin_session')
@@ -302,7 +302,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         setLoading(true)
         
-        // lumiAuthService 제거됨 - MongoDB API 사용으로 대체
+        // lumiAuthService 제거됨 - Supabase API 사용으로 대체
         
         // 관리자 토큰 체크
         const adminToken = localStorage.getItem('admin_token')
@@ -354,7 +354,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Lumi SDK 제거됨 - MongoDB API 사용으로 대체
+        // Lumi SDK 제거됨 - Supabase API 사용으로 대체
       } catch (error) {
         console.error('자동 로그인 체크 실패:', error)
       } finally {

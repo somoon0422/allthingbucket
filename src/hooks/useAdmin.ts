@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
 
 interface Experience {
@@ -24,7 +24,7 @@ export const useAdmin = () => {
   const fetchExperiences = useCallback(async () => {
     try {
       setLoading(true)
-      const result = await lumi.entities.experience_codes.list()
+      const result = await dataService.entities.experience_codes.list()
       const expList = result?.list || []
       
       // Entity 타입을 Experience 타입으로 변환
@@ -57,7 +57,7 @@ export const useAdmin = () => {
 
   const createExperience = async (expData: Partial<Experience>) => {
     try {
-      const newExp = await lumi.entities.experience_codes.create({
+      const newExp = await dataService.entities.experience_codes.create({
         ...expData,
         created_at: new Date().toISOString(),
         status: 'active'
@@ -75,7 +75,7 @@ export const useAdmin = () => {
 
   const updateExperience = async (expId: string, updates: Partial<Experience>) => {
     try {
-      const updatedExp = await lumi.entities.experience_codes.update(expId, updates)
+      const updatedExp = await dataService.entities.experience_codes.update(expId, updates)
       await fetchExperiences() // 목록 새로고침
       toast.success('체험단이 업데이트되었습니다')
       return updatedExp
@@ -88,7 +88,7 @@ export const useAdmin = () => {
 
   const deleteExperience = async (expId: string) => {
     try {
-      await lumi.entities.experience_codes.delete(expId)
+      await dataService.entities.experience_codes.delete(expId)
       await fetchExperiences() // 목록 새로고침
       toast.success('체험단이 삭제되었습니다')
     } catch (error) {

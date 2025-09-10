@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
 
 // ✅ TSX 호환 안전한 배열 보장 함수
@@ -61,11 +61,11 @@ export const useUserManagement = () => {
       console.log('👥 전체 사용자 조회 시작...')
       
       // 사용자 기본 정보 조회
-      const usersResponse = await lumi.entities.users.list()
+      const usersResponse = await dataService.entities.users.list()
       const usersList = ensureArray(usersResponse)
       
       // 사용자 프로필 정보 조회
-      const profilesResponse = await lumi.entities.user_profiles.list()
+      const profilesResponse = await dataService.entities.user_profiles.list()
       const profilesList = ensureArray(profilesResponse)
       
       // 사용자와 프로필 매핑
@@ -99,7 +99,7 @@ export const useUserManagement = () => {
     try {
       console.log('🔄 사용자 권한 변경:', { userId, role })
       
-      await lumi.entities.users.update(userId, {
+      await dataService.entities.users.update(userId, {
         role: role,
         updated_at: new Date().toISOString()
       })
@@ -130,7 +130,7 @@ export const useUserManagement = () => {
       try {
         // 사용자 프로필 삭제
         console.log('📋 사용자 프로필 삭제 중...')
-        const profilesResponse = await lumi.entities.user_profiles.list({
+        const profilesResponse = await dataService.entities.user_profiles.list({
           filter: { user_id: userId }
         })
         const profiles = ensureArray(profilesResponse)
@@ -139,19 +139,19 @@ export const useUserManagement = () => {
         for (const profile of profiles) {
           if (profile && profile._id) {
             console.log('프로필 삭제:', profile._id)
-            await lumi.entities.user_profiles.delete(profile._id)
+            await dataService.entities.user_profiles.delete(profile._id)
           }
         }
         
         // 사용자 포인트 삭제
-        const pointsResponse = await lumi.entities.user_points.list({
+        const pointsResponse = await dataService.entities.user_points.list({
           filter: { user_id: userId }
         })
         const points = ensureArray(pointsResponse)
         
         for (const point of points) {
           if (point && point._id) {
-            await lumi.entities.user_points.delete(point._id)
+            await dataService.entities.user_points.delete(point._id)
           }
         }
       } catch (cleanupError) {
@@ -159,7 +159,7 @@ export const useUserManagement = () => {
       }
       
       // 사용자 삭제
-      await lumi.entities.users.delete(userId)
+      await dataService.entities.users.delete(userId)
       
       // 로컬 상태 업데이트
       setUsers(prev => prev.filter(user => user.id !== userId))

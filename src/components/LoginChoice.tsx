@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import toast from 'react-hot-toast'
 import {ArrowLeft, Home, Users} from 'lucide-react'
+import { KakaoAuthService } from '../services/kakaoAuthService'
 
 const LoginChoice: React.FC = () => {
   // 🛡️ 훅을 최상단에서만 호출
@@ -38,6 +39,20 @@ const LoginChoice: React.FC = () => {
       toast.error('로그인 처리 중 오류가 발생했습니다')
       setLoading(false)
     })
+  }
+
+  // 🟡 카카오 로그인 처리
+  const handleKakaoLogin = () => {
+    setLoading(true)
+    
+    try {
+      console.log('🟡 카카오 로그인 시도')
+      KakaoAuthService.startKakaoLogin()
+    } catch (error) {
+      console.error('❌ 카카오 로그인 오류:', error)
+      toast.error('카카오 로그인 중 오류가 발생했습니다')
+      setLoading(false)
+    }
   }
 
   // 🛡️ 안전한 네비게이션 함수들
@@ -105,7 +120,7 @@ const LoginChoice: React.FC = () => {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full bg-white border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+          className="w-full bg-white border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
           type="button"
         >
           <svg className="w-6 h-6" viewBox="0 0 24 24">
@@ -115,6 +130,19 @@ const LoginChoice: React.FC = () => {
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
           <span>{loading ? '로그인 중...' : 'Google로 계속하기'}</span>
+        </button>
+
+        {/* 🟡 카카오 로그인 버튼 */}
+        <button
+          onClick={handleKakaoLogin}
+          disabled={loading}
+          className="w-full bg-yellow-400 text-gray-800 py-4 rounded-xl font-medium hover:bg-yellow-500 transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+          type="button"
+        >
+          <svg className="w-6 h-6" viewBox="0 0 24 24">
+            <path fill="#3C1E1E" d="M12 3C6.48 3 2 6.48 2 10.8c0 2.52 1.6 4.8 4.1 6.2L5.4 19.2c-.1.2.1.4.3.3l2.8-1.4c.8.2 1.6.3 2.5.3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z"/>
+          </svg>
+          <span>{loading ? '로그인 중...' : '카카오로 계속하기'}</span>
         </button>
 
         {/* 🔧 관리자 로그인 링크 */}

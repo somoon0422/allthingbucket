@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-// Lumi SDK 제거됨 - MongoDB API 사용
+// MongoDB API 사용
+import { dataService } from '../lib/dataService'
 import {Gift, Star, Users, TrendingUp, ArrowRight, Calendar, MapPin, Coins, ChevronLeft, ChevronRight, Heart, MessageCircle} from 'lucide-react'
 import { ultraSafeArray, safeString, safeNumber } from '../utils/arrayUtils'
 import { useAuth } from '../hooks/useAuth'
@@ -46,51 +47,30 @@ const Home: React.FC = () => {
     }
   }
 
-  // 🔥 추천 체험단 로드 - MongoDB API 사용
+  // 🔥 추천 체험단 로드 - dataService.campaigns.list 사용
   const loadFeaturedExperiences = async () => {
     try {
-      const apiUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001/api/db/campaigns?limit=6'
-        : 'https://allthingbucket.com/api/db/campaigns?limit=6'
-      const response = await fetch(apiUrl)
-      const result = await response.json()
-      
-      if (result.success) {
-        const safeExperiences = ultraSafeArray(result.data)
-        setFeaturedExperiences(safeExperiences)
-      } else {
-        setFeaturedExperiences([])
-      }
+      const campaigns = await dataService.entities.campaigns.list({ limit: 6 })
+      const safeExperiences = ultraSafeArray(campaigns)
+      setFeaturedExperiences(safeExperiences)
     } catch (error) {
       console.error('추천 체험단 로드 실패:', error)
       setFeaturedExperiences([])
     }
   }
 
-  // 🔥 통계 로드 - MongoDB API 사용
+  // 🔥 통계 로드 - dataService 사용
   const loadStats = async () => {
     try {
-        const apiBaseUrl = window.location.hostname === 'localhost' 
-          ? 'http://localhost:3001'
-          : 'https://allthingbucket.com'
-        const [campaignsRes, usersRes, reviewsRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/api/db/campaigns`),
-          fetch(`${apiBaseUrl}/api/db/user-profiles`),
-          fetch(`${apiBaseUrl}/api/db/user-reviews`)
-        ])
-
-      const campaignsResult = await campaignsRes.json()
-      const usersResult = await usersRes.json()
-      const reviewsResult = await reviewsRes.json()
-
-      const campaigns = campaignsResult.success ? ultraSafeArray(campaignsResult.data) : []
-      const users = usersResult.success ? ultraSafeArray(usersResult.data) : []
-      const reviews = reviewsResult.success ? ultraSafeArray(reviewsResult.data) : []
+      const [campaigns, users] = await Promise.all([
+        dataService.entities.campaigns.list(),
+        dataService.entities.user_profiles.list()
+      ])
 
       setStats({
         totalExperiences: campaigns.length,
         totalUsers: users.length,
-        totalReviews: reviews.length
+        totalReviews: 0 // user-reviews 엔드포인트가 없으므로 0으로 설정
       })
     } catch (error) {
       console.error('통계 로드 실패:', error)
@@ -102,21 +82,11 @@ const Home: React.FC = () => {
     }
   }
 
-  // 🔥 체험단 후기 로드 - MongoDB API 사용
+  // 🔥 체험단 후기 로드 - dataService 사용 (현재는 빈 배열 반환)
   const loadReviews = async () => {
     try {
-      const apiUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001/api/db/user-reviews?limit=10'
-        : 'https://allthingbucket.com/api/db/user-reviews?limit=10'
-      const response = await fetch(apiUrl)
-      const result = await response.json()
-      
-      if (result.success) {
-        const safeReviews = ultraSafeArray(result.data)
-        setReviews(safeReviews)
-      } else {
-        setReviews([])
-      }
+      // user-reviews 엔드포인트가 없으므로 빈 배열로 설정
+      setReviews([])
     } catch (error) {
       console.error('리뷰 로드 실패:', error)
       setReviews([])

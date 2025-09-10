@@ -212,11 +212,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
         {/* 관리자 계정 정보 */}
         {isAdminMode && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-700">
-              <strong>관리자 계정:</strong><br />
-              관리자명: <span className="font-mono">admin</span><br />
-              비밀번호: <span className="font-mono">admin123</span>
+          <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-700">
+              <strong>관리자 로그인:</strong><br />
+              관리자 계정으로 로그인하세요
             </p>
           </div>
         )}

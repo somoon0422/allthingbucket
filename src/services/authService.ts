@@ -106,16 +106,39 @@ export class AuthService {
   // 관리자 로그인
   async loginAdmin(credentials: AdminLoginCredentials): Promise<{ admin: any; token: string }> {
     try {
-      // API 호출로 관리자 로그인
-      const result = await apiCall('/auth/admin/login', {
+      console.log('🔐 관리자 로그인 시도:', credentials);
+      
+      // MongoDB API로 관리자 로그인
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com';
+      
+      const response = await fetch(`${apiBaseUrl}/api/auth/admin/login`, {
         method: 'POST',
-        body: JSON.stringify(credentials)
-      })
-
-      return result
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: credentials.admin_name,
+          password: credentials.password
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || '로그인에 실패했습니다');
+      }
+      
+      console.log('✅ 관리자 로그인 성공:', result);
+      
+      return {
+        admin: result.data,
+        token: 'admin_token_' + Date.now() // 임시 토큰
+      };
     } catch (error) {
-      console.error('관리자 로그인 실패:', error)
-      throw error
+      console.error('관리자 로그인 실패:', error);
+      throw error;
     }
   }
 

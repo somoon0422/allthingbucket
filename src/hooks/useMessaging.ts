@@ -1,6 +1,6 @@
 
 import { useState } from 'react'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 
 interface MessageOptions {
   to: string
@@ -23,7 +23,7 @@ interface KakaoConfig {
 export const useMessaging = () => {
   const [loading, setLoading] = useState(false)
 
-  // 🔥 1. 이메일 발송 (Lumi SDK)
+  // 🔥 1. 이메일 발송 (백엔드 API)
   const sendEmail = async (options: {
     to: string
     subject: string
@@ -33,70 +33,31 @@ export const useMessaging = () => {
     try {
       console.log('📧 이메일 발송 시작:', options.to)
       
-      // 🔥 이메일 설정 (환경변수 또는 기본값)
-      const emailConfig = {
-        fromName: import.meta.env.VITE_EMAIL_FROM_NAME || '올띵버킷 체험단',
-        companyName: import.meta.env.VITE_COMPANY_NAME || '올띵버킷',
-        supportEmail: import.meta.env.VITE_SUPPORT_EMAIL || 'support@allthingbucket.com',
-        supportPhone: import.meta.env.VITE_SUPPORT_PHONE || '010-7290-7620',
-        website: import.meta.env.VITE_WEBSITE_URL || 'https://allthingbucket.com'
-      }
+      // 백엔드 API를 통해 이메일 발송
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
       
-      // 🔥 디버깅: 이메일 설정값 출력  
-      console.log('📧 이메일 설정값:', emailConfig)
-      console.log('📧 환경변수 확인:', {
-        VITE_EMAIL_FROM_NAME: import.meta.env.VITE_EMAIL_FROM_NAME,
-        VITE_COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME,
-        VITE_SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL,
-        VITE_SUPPORT_PHONE: import.meta.env.VITE_SUPPORT_PHONE,
-        VITE_WEBSITE_URL: import.meta.env.VITE_WEBSITE_URL
+      const response = await fetch(`${apiBaseUrl}/api/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: options.to,
+          subject: options.subject,
+          message: options.message,
+          userInfo: options.userInfo
+        })
       })
       
-      // ⚠️ 중요: 이메일은 웹사이트에 로그인한 사용자에게만 발송 가능
-      const emailPayload = {
-        to: options.to,
-        subject: options.subject,
-        from: emailConfig.supportEmail, // 🔥 발신자 이메일 주소 설정
-        fromName: emailConfig.fromName,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0;">
-              <h1 style="margin: 0; font-size: 24px;">🎉 ${emailConfig.companyName} 체험단</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">체험단 선정 안내</p>
-            </div>
-            
-            <div style="background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #333; margin-bottom: 20px;">안녕하세요 ${options.userInfo?.name || '고객'}님! 👋</h2>
-              
-              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                ${options.message.replace(/\n/g, '<br>')}
-              </div>
-              
-              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #666;">
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <h3 style="color: #333; margin-bottom: 15px;">📞 문의 및 고객센터</h3>
-                  <p style="margin: 8px 0;"><strong>📧 이메일 문의:</strong> <a href="mailto:${emailConfig.supportEmail}" style="color: #667eea; text-decoration: none;">${emailConfig.supportEmail}</a></p>
-                  <p style="margin: 8px 0;"><strong>📱 전화 문의:</strong> ${emailConfig.supportPhone}</p>
-                  <p style="margin: 8px 0;"><strong>🌐 웹사이트:</strong> <a href="${emailConfig.website}" style="color: #667eea; text-decoration: none;">${emailConfig.website}</a></p>
-                  <p style="margin: 8px 0; font-size: 14px; color: #888;">평일 09:00-18:00 (주말 및 공휴일 휴무)</p>
-                </div>
-                <p style="margin-top: 20px;"><strong>${emailConfig.companyName} 체험단 팀 드림</strong></p>
-                <p style="font-size: 12px; margin-top: 20px; color: #999;">※ 이 메일은 발송전용입니다. 회신이 불가능하니 문의사항은 위 고객센터로 연락해주세요.</p>
-              </div>
-            </div>
-          </div>
-        `
+      if (!response.ok) {
+        throw new Error(`이메일 발송 실패: ${response.status}`)
       }
       
-      // 🔥 디버깅: Lumi SDK에 전달되는 페이로드 출력
-      console.log('📧 Lumi SDK 페이로드:', JSON.stringify(emailPayload, null, 2))
-      
-      // Lumi SDK 이메일 발송
-      const result = await lumi.tools.email.send(emailPayload)
-      console.log('📧 Lumi SDK 응답:', result)
-      
-      console.log('✅ 이메일 발송 성공')
-      return { success: true, method: 'email' }
+      const result = await response.json()
+      console.log('✅ 이메일 발송 성공:', result)
+      return result
       
     } catch (error: any) {
       console.error('❌ 이메일 발송 실패:', error)

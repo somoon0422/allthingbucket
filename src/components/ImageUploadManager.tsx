@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import {Upload, X, Link as LinkIcon, AlertCircle, Loader2} from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -99,9 +99,20 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
       console.log('🔍 Lumi SDK 상태:', { lumi: !!lumi, tools: !!lumi?.tools, file: !!lumi?.tools?.file })
       console.log('🔍 사용자 인증 상태:', { user: user?.name, id: user?.user_id })
       
-      // 🚀 Lumi 파일 저장소에 업로드 시도
+      // 🚀 Base64 방식으로 파일 업로드
       try {
-        const uploadResults = await lumi.tools.file.upload(validFiles)
+        const uploadResults = await Promise.all(
+          validFiles.map(async (file) => {
+            return new Promise<{fileUrl: string}>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => {
+                resolve({ fileUrl: reader.result as string })
+              }
+              reader.onerror = reject
+              reader.readAsDataURL(file)
+            })
+          })
+        )
         console.log('📊 업로드 결과:', uploadResults)
         
         const successfulUploads: string[] = []

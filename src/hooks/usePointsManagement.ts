@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
 
 export const usePointsManagement = () => {
@@ -13,7 +13,7 @@ export const usePointsManagement = () => {
     try {
       console.log('🔍 출금 요청 목록 조회 시작...')
       
-      const result = await lumi.entities.withdrawal_requests.list()
+      const result = await dataService.entities.withdrawal_requests.list()
       const requests = result?.list || []
       console.log('💳 조회된 출금 요청:', requests)
 
@@ -67,7 +67,7 @@ export const usePointsManagement = () => {
       console.log('💰 포인트 지급 시작:', { userId, amount, reason })
 
       // 포인트 지급 기록 생성
-      await lumi.entities.user_points.create({
+      await dataService.entities.user_points.create({
         user_id: userId,
         amount: amount,
         type: 'earned',
@@ -82,13 +82,13 @@ export const usePointsManagement = () => {
       })
 
       // 사용자 프로필의 포인트 잔액 업데이트
-      const profilesResult = await lumi.entities.user_profiles.list()
+      const profilesResult = await dataService.entities.user_profiles.list()
       const profiles = profilesResult?.list || []
       const safeProfiles = Array.isArray(profiles) ? profiles : []
       const userProfile = safeProfiles.find(p => p?.user_id === userId)
       
       if (userProfile) {
-        await lumi.entities.user_profiles.update(userProfile._id, {
+        await dataService.entities.user_profiles.update(userProfile._id, {
           current_balance: (userProfile.current_balance || 0) + amount,
           total_points_earned: (userProfile.total_points_earned || 0) + amount,
           updated_at: new Date().toISOString()
@@ -134,7 +134,7 @@ export const usePointsManagement = () => {
     setLoading(true)
     try {
       // 사용자 잔액 확인
-      const profilesResult = await lumi.entities.user_profiles.list()
+      const profilesResult = await dataService.entities.user_profiles.list()
       const profiles = profilesResult?.list || []
       const safeProfiles = Array.isArray(profiles) ? profiles : []
       const userProfile = safeProfiles.find(p => p?.user_id === userId)
@@ -148,7 +148,7 @@ export const usePointsManagement = () => {
       const taxInfo = calculateTax(amount)
 
       // 출금 요청 생성
-      await lumi.entities.withdrawal_requests.create({
+      await dataService.entities.withdrawal_requests.create({
         user_id: userId,
         requested_amount: amount,
         amount: amount, // 호환성을 위해 둘 다 설정
@@ -164,7 +164,7 @@ export const usePointsManagement = () => {
       })
 
       // 포인트 차감 (보류 상태로)
-      await lumi.entities.user_points.create({
+      await dataService.entities.user_points.create({
         user_id: userId,
         amount: -amount,
         type: 'withdrawn',
@@ -176,7 +176,7 @@ export const usePointsManagement = () => {
       })
 
       // 사용자 프로필 잔액 업데이트 (보류 금액 반영)
-      await lumi.entities.user_profiles.update(userProfile._id, {
+      await dataService.entities.user_profiles.update(userProfile._id, {
         current_balance: (userProfile.current_balance || 0) - amount,
         updated_at: new Date().toISOString()
       })
@@ -203,7 +203,7 @@ export const usePointsManagement = () => {
     try {
       console.log('🔄 출금 처리 시작:', { withdrawalId, action })
 
-      const result = await lumi.entities.withdrawal_requests.list()
+      const result = await dataService.entities.withdrawal_requests.list()
       const withdrawals = result?.list || []
       const safeWithdrawals = Array.isArray(withdrawals) ? withdrawals : []
       const withdrawal = safeWithdrawals.find(w => w?._id === withdrawalId)
@@ -215,7 +215,7 @@ export const usePointsManagement = () => {
 
       if (action === 'approved') {
         // 출금 승인
-        await lumi.entities.withdrawal_requests.update(withdrawalId, {
+        await dataService.entities.withdrawal_requests.update(withdrawalId, {
           status: 'approved',
           processed_by: adminId || 'admin',
           processed_at: new Date().toISOString(),
@@ -224,7 +224,7 @@ export const usePointsManagement = () => {
         })
 
         // 포인트 기록 완료 처리
-        const pointsResult = await lumi.entities.user_points.list()
+        const pointsResult = await dataService.entities.user_points.list()
         const pointRecords = pointsResult?.list || []
         const safePointRecords = Array.isArray(pointRecords) ? pointRecords : []
         const pendingRecord = safePointRecords.find(p => 
@@ -234,20 +234,20 @@ export const usePointsManagement = () => {
         )
         
         if (pendingRecord) {
-          await lumi.entities.user_points.update(pendingRecord._id, {
+          await dataService.entities.user_points.update(pendingRecord._id, {
             status: 'completed',
             updated_at: new Date().toISOString()
           })
         }
 
         // 사용자 프로필 출금 총액 업데이트
-        const profilesResult = await lumi.entities.user_profiles.list()
+        const profilesResult = await dataService.entities.user_profiles.list()
         const profiles = profilesResult?.list || []
         const safeProfiles = Array.isArray(profiles) ? profiles : []
         const userProfile = safeProfiles.find(p => p?.user_id === withdrawal.user_id)
         
         if (userProfile) {
-          await lumi.entities.user_profiles.update(userProfile._id, {
+          await dataService.entities.user_profiles.update(userProfile._id, {
             total_points_withdrawn: (userProfile.total_points_withdrawn || 0) + (withdrawal.requested_amount || withdrawal.amount),
             updated_at: new Date().toISOString()
           })
@@ -256,7 +256,7 @@ export const usePointsManagement = () => {
         toast.success('출금이 승인되었습니다')
       } else {
         // 출금 거절 - 포인트 복구
-        await lumi.entities.withdrawal_requests.update(withdrawalId, {
+        await dataService.entities.withdrawal_requests.update(withdrawalId, {
           status: 'rejected',
           processed_by: adminId || 'admin',
           processed_at: new Date().toISOString(),
@@ -265,20 +265,20 @@ export const usePointsManagement = () => {
         })
 
         // 포인트 복구
-        const profilesResult = await lumi.entities.user_profiles.list()
+        const profilesResult = await dataService.entities.user_profiles.list()
         const profiles = profilesResult?.list || []
         const safeProfiles = Array.isArray(profiles) ? profiles : []
         const userProfile = safeProfiles.find(p => p?.user_id === withdrawal.user_id)
         
         if (userProfile) {
-          await lumi.entities.user_profiles.update(userProfile._id, {
+          await dataService.entities.user_profiles.update(userProfile._id, {
             current_balance: (userProfile.current_balance || 0) + (withdrawal.requested_amount || withdrawal.amount),
             updated_at: new Date().toISOString()
           })
         }
 
         // 포인트 기록 취소 처리
-        const pointsResult = await lumi.entities.user_points.list()
+        const pointsResult = await dataService.entities.user_points.list()
         const pointRecords = pointsResult?.list || []
         const safePointRecords = Array.isArray(pointRecords) ? pointRecords : []
         const pendingRecord = safePointRecords.find(p => 
@@ -288,7 +288,7 @@ export const usePointsManagement = () => {
         )
         
         if (pendingRecord) {
-          await lumi.entities.user_points.update(pendingRecord._id, {
+          await dataService.entities.user_points.update(pendingRecord._id, {
             status: 'cancelled',
             updated_at: new Date().toISOString()
           })
@@ -311,7 +311,7 @@ export const usePointsManagement = () => {
   // 포인트 내역 조회
   const getPointHistory = async (userId: string) => {
     try {
-      const result = await lumi.entities.user_points.list()
+      const result = await dataService.entities.user_points.list()
       const points = result?.list || []
       const safePoints = Array.isArray(points) ? points : []
       
@@ -329,7 +329,7 @@ export const usePointsManagement = () => {
   // 출금 요청 목록 조회 (상태별)
   const getWithdrawalRequests = async (status?: string) => {
     try {
-      const result = await lumi.entities.withdrawal_requests.list()
+      const result = await dataService.entities.withdrawal_requests.list()
       const withdrawals = result?.list || []
       const safeWithdrawals = Array.isArray(withdrawals) ? withdrawals : []
       

@@ -1,4 +1,4 @@
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import { GoogleOAuthAPI } from './googleOAuthAPI'
 
 export interface GoogleUserInfo {
@@ -80,7 +80,7 @@ export class GoogleAuthService {
     }
     
     // 기존 사용자 확인
-    const existingUsersResponse = await lumi.entities.users.list({
+    const existingUsersResponse = await dataService.entities.users.list({
       filter: { email: mockGoogleUser.email }
     })
     
@@ -89,7 +89,7 @@ export class GoogleAuthService {
     if (existingUsers.length > 0) {
       // 기존 사용자 업데이트
       user = existingUsers[0]
-      await lumi.entities.users.update(user._id, {
+      await dataService.entities.users.update(user._id, {
         google_id: mockGoogleUser.id,
         profile_image: mockGoogleUser.picture,
         updated_at: new Date().toISOString()
@@ -107,11 +107,11 @@ export class GoogleAuthService {
         updated_at: new Date().toISOString()
       }
       
-      const createdUser = await lumi.entities.users.create(newUser)
+      const createdUser = await dataService.entities.users.create(newUser)
       user = createdUser
       
       // 사용자 프로필 생성
-      await lumi.entities.user_profiles.create({
+      await dataService.entities.user_profiles.create({
         user_id: newUser.user_id,
         name: newUser.name,
         email: newUser.email,
@@ -121,7 +121,7 @@ export class GoogleAuthService {
       })
       
       // 사용자 포인트 초기화
-      await lumi.entities.user_points.create({
+      await dataService.entities.user_points.create({
         user_id: newUser.user_id,
         total_points: 0,
         available_points: 0,
@@ -234,7 +234,7 @@ export class GoogleAuthService {
       console.log('🔍 사용자 프로필 확인 중...', user)
       
       // 기존 프로필 확인
-      const existingProfiles = await lumi.entities.user_profiles.list({
+      const existingProfiles = await dataService.entities.user_profiles.list({
         filter: { user_id: user.id || user.user_id }
       })
       
@@ -244,7 +244,7 @@ export class GoogleAuthService {
         console.log('📝 새 사용자 프로필 생성 중...')
         
         // 새 프로필 생성
-        await lumi.entities.user_profiles.create({
+        await dataService.entities.user_profiles.create({
           user_id: user.id || user.user_id,
           name: user.name || user.email?.split('@')[0] || '사용자',
           email: user.email || '',
@@ -255,7 +255,7 @@ export class GoogleAuthService {
         })
         
         // 사용자 포인트 초기화
-        await lumi.entities.user_points.create({
+        await dataService.entities.user_points.create({
           user_id: user.id || user.user_id,
           total_points: 0,
           available_points: 0,
@@ -301,7 +301,7 @@ export class GoogleAuthService {
       console.log('📝 Google 사용자 정보:', mockGoogleUser)
       
       // 기존 사용자 확인
-      const existingUsersResponse = await lumi.entities.users.list({
+      const existingUsersResponse = await dataService.entities.users.list({
         filter: { email: mockGoogleUser.email }
       })
       
@@ -314,7 +314,7 @@ export class GoogleAuthService {
         user = existingUsers[0]
         console.log('✅ 기존 사용자 업데이트:', user)
         
-        await lumi.entities.users.update(user._id, {
+        await dataService.entities.users.update(user._id, {
           google_id: mockGoogleUser.id,
           profile_image: mockGoogleUser.picture,
           updated_at: new Date().toISOString()
@@ -334,7 +334,7 @@ export class GoogleAuthService {
         
         console.log('📝 새 사용자 생성:', newUser)
         
-        const createdUser = await lumi.entities.users.create(newUser)
+        const createdUser = await dataService.entities.users.create(newUser)
         user = createdUser
         console.log('✅ 사용자 생성 완료:', createdUser)
         
@@ -342,7 +342,7 @@ export class GoogleAuthService {
         await this.ensureUserProfile(createdUser)
         
         // 사용자 포인트 초기화
-        await lumi.entities.user_points.create({
+        await dataService.entities.user_points.create({
           user_id: newUser.user_id,
           total_points: 0,
           available_points: 0,

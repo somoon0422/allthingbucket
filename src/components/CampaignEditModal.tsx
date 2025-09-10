@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import {X, Upload, Calendar, MapPin, Users, Coins, Clock, FileText, Phone, Mail, Image, Code, Trash2, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
 import toast from 'react-hot-toast'
 import ReactQuill from 'react-quill'
@@ -239,7 +239,15 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
           continue
         }
 
-        const uploadResult = await lumi.tools.file.upload(file)
+        // 파일을 Base64로 변환하여 저장
+        const uploadResult = await new Promise<{fileUrl: string}>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => {
+            resolve({ fileUrl: reader.result as string })
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
         
         if (uploadResult && typeof uploadResult === 'object' && 'fileUrl' in uploadResult) {
           const result = uploadResult as any
@@ -277,7 +285,15 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
           continue
         }
 
-        const uploadResult = await lumi.tools.file.upload(file)
+        // 파일을 Base64로 변환하여 저장
+        const uploadResult = await new Promise<{fileUrl: string}>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => {
+            resolve({ fileUrl: reader.result as string })
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
         
         if (uploadResult && typeof uploadResult === 'object' && 'fileUrl' in uploadResult) {
           const result = uploadResult as any
@@ -410,7 +426,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       }
 
       // 캠페인 업데이트
-      await lumi.entities.experience_codes.update(campaign._id, updateData)
+      await dataService.entities.experience_codes.update(campaign._id, updateData)
       
       toast.success('캠페인이 성공적으로 수정되었습니다!')
       onSuccess()

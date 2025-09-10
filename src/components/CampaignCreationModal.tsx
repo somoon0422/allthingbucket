@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import {X, Upload, Calendar, MapPin, Users, Coins, Clock, FileText, Phone, Mail, Image, Code, Trash2, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
 import toast from 'react-hot-toast'
 import ReactQuill from 'react-quill'
@@ -119,8 +119,15 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
           continue
         }
 
-        // Lumi SDK를 사용한 파일 업로드
-        const uploadResult = await lumi.tools.file.upload(file)
+        // 파일을 Base64로 변환하여 저장
+        const uploadResult = await new Promise<{fileUrl: string}>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => {
+            resolve({ fileUrl: reader.result as string })
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
         
         if (uploadResult && typeof uploadResult === 'object' && 'fileUrl' in uploadResult) {
           const result = uploadResult as any
@@ -160,8 +167,15 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
           continue
         }
 
-        // Lumi SDK를 사용한 파일 업로드
-        const uploadResult = await lumi.tools.file.upload(file)
+        // 파일을 Base64로 변환하여 저장
+        const uploadResult = await new Promise<{fileUrl: string}>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => {
+            resolve({ fileUrl: reader.result as string })
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
         
         if (uploadResult && typeof uploadResult === 'object' && 'fileUrl' in uploadResult) {
           const result = uploadResult as any
@@ -239,32 +253,27 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         return
       }
 
-      // 캠페인 데이터 생성
+      // 캠페인 데이터 생성 (Supabase campaigns 테이블 구조에 맞게)
       const campaignData = {
-        experience_name: formData.experience_name.trim(),
+        campaign_name: formData.experience_name.trim(),
+        product_name: formData.brand_name.trim(),
         brand_name: formData.brand_name.trim(),
         description: formData.description.trim(),
-        experience_type: formData.experience_type, // 캠페인 타입 추가
-        campaign_type: formData.experience_type, // 호환성을 위한 별칭
-        type: formData.experience_type, // 추가 호환성
-        reward_points: formData.reward_points ? parseInt(formData.reward_points) : 0,
-        // 🔥 기간 설정에서 자동으로 가져오기
-        application_deadline: formData.application_end_date || null,
-        experience_location: formData.experience_location.trim() || null,
+        type: formData.experience_type,
+        status: 'active',
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : 0,
-        experience_period: formData.experience_period.trim() || null,
-        review_deadline: formData.content_end_date || null,
+        current_participants: 0,
+        start_date: formData.application_start_date || new Date().toISOString(),
+        end_date: formData.application_end_date || null,
+        application_start: formData.application_start_date || new Date().toISOString(),
+        application_end: formData.application_end_date || null,
+        content_start: formData.application_start_date || new Date().toISOString(),
+        content_end: formData.content_end_date || null,
         requirements: formData.requirements.trim() || null,
-        additional_info: formData.additional_info.trim() || null,
-        contact_email: formData.contact_email.trim() || null,
-        contact_phone: formData.contact_phone.trim() || null,
-        
-        // 🔥 리뷰넷 스타일 새로운 필드들
-        provided_items: formData.provided_items.trim() || null,
-        campaign_mission: formData.campaign_mission.trim() || null,
-        keywords: formData.keywords.trim() || null,
-        product_links: formData.product_links.trim() || null,
-        additional_guidelines: formData.additional_guidelines.trim() || null,
+        rewards: formData.reward_points ? `${formData.reward_points}P` : null,
+        main_images: mainImages,
+        detail_images: detailImages,
+        html_content: htmlContent.trim() || null,
         
         // 🔥 캠페인 일정 정보
         application_start_date: formData.application_start_date || null,
@@ -274,24 +283,13 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         content_end_date: formData.content_end_date || null,
         result_announcement_date: formData.result_announcement_date || null,
         current_applicants: parseInt(formData.current_applicants.toString()) || 0,
-        
-        // 🔥 이미지 관련 필드들
-        main_image_url: mainImages[0] || null, // 첫 번째 메인 이미지를 대표 이미지로
-        main_images: mainImages, // 모든 메인 이미지들
-        detail_images: detailImages, // 모든 상세 이미지들
-        html_content: htmlContent.trim() || null, // HTML 컨텐츠
-        
-        // 🔥 기존 호환성을 위한 필드
-        image_url: mainImages[0] || null,
-        
-        status: formData.status,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         creator: 'admin'
       }
 
-      // 캠페인 생성
-      await lumi.entities.experience_codes.create(campaignData)
+      // 캠페인 생성 (campaigns 테이블에 저장)
+      await dataService.entities.campaigns.create(campaignData)
       
       toast.success('캠페인이 성공적으로 등록되었습니다!')
       onSuccess()

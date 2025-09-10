@@ -155,11 +155,9 @@ const AdminLogin: React.FC = () => {
           </div>
 
           <div className="text-center">
-            <div className="text-sm text-gray-500 bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <p className="font-medium mb-2 text-blue-800">🔑 관리자 계정 정보:</p>
-              <p className="text-blue-700">관리자명: <strong>admin</strong></p>
-              <p className="text-blue-700">비밀번호: <strong>admin123</strong></p>
-              <p className="text-xs text-blue-600 mt-2">위 정보가 자동으로 입력되어 있습니다</p>
+            <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <p className="font-medium mb-2 text-gray-800">🔐 관리자 로그인</p>
+              <p className="text-gray-600">관리자 계정으로 로그인하세요</p>
             </div>
           </div>
 

@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import { AddressInput } from './AddressInput'
 import { PhoneInput } from './PhoneInput'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
 
 interface ApplicationFormModalProps {
@@ -74,7 +74,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       const userId = user.id || user.user_id || (user as any)._id
 
       // user_profiles에서 사용자 정보 검색
-      const profileResponse = await lumi.entities.user_profiles.list({
+      const profileResponse = await dataService.entities.user_profiles.list({
         filter: { user_id: userId }
       })
 

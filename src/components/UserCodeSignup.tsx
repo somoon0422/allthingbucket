@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
 import { User, Phone, MapPin, Calendar, CreditCard } from 'lucide-react'
 
@@ -45,7 +45,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
     setLoading(true)
     try {
       // 1. 회원 코드 존재 여부 및 사용 여부 확인
-      const { list: codes } = await lumi.entities.user_codes.list()
+      const { list: codes } = await dataService.entities.user_codes.list()
       const codeRecord = codes.find(c => c.user_code === userCode.toUpperCase())
 
       if (!codeRecord) {
@@ -99,7 +99,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
     setLoading(true)
     try {
       // 1. 프로필 정보 저장
-      await lumi.entities.user_profiles.create({
+      await dataService.entities.user_profiles.create({
         user_id: user.userId,
         signup_code: isExistingUser ? 'EXISTING_USER' : userCode.toUpperCase(),
         name: profileData.name,
@@ -119,11 +119,11 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
 
       // 2. 신규 가입인 경우에만 회원 코드 업데이트
       if (!isExistingUser && userCode) {
-        const { list: codes } = await lumi.entities.user_codes.list()
+        const { list: codes } = await dataService.entities.user_codes.list()
         const codeRecord = codes.find(c => c.user_code === userCode.toUpperCase())
         
         if (codeRecord) {
-          await lumi.entities.user_codes.update(codeRecord._id, {
+          await dataService.entities.user_codes.update(codeRecord._id, {
             user_id: user.userId,
             updated_at: new Date().toISOString()
           })

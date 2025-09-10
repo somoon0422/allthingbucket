@@ -24,7 +24,7 @@ class LocalDataService {
   // API 호출 헬퍼
   private async apiCall(endpoint: string, options: RequestInit = {}) {
     const url = `${API_BASE_URL}${endpoint}`
-    console.log('🌐 SQLite API 호출:', url, options)
+    console.log('🌐 MongoDB API 호출:', url, options)
     
     try {
       const response = await fetch(url, {
@@ -40,10 +40,10 @@ class LocalDataService {
       }
       
       const data = await response.json()
-      console.log('✅ SQLite API 응답:', data)
+      console.log('✅ MongoDB API 응답:', data)
       return data
     } catch (error) {
-      console.error('❌ SQLite API 호출 실패:', error)
+      console.error('❌ MongoDB API 호출 실패:', error)
       throw error
     }
   }

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import { useAuth } from '../hooks/useAuth'
 import ImageUploadManager from './ImageUploadManager'
 import {FileText, Link, Image, Send, X, AlertCircle, CheckCircle, ExternalLink} from 'lucide-react'
@@ -42,7 +42,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
         console.log('🔍 기존 리뷰 데이터 로딩:', { applicationId, userId: user.user_id })
         
         // application_id로 기존 리뷰 검색
-        const reviewsResponse = await lumi.entities.review_submissions.list({
+        const reviewsResponse = await dataService.entities.review_submissions.list({
           filter: { application_id: applicationId }
         })
         
@@ -51,7 +51,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
         const reviews = Array.isArray(reviewsResponse) ? reviewsResponse : (reviewsResponse as any).data || []
         
         // 🔥 user_applications에서도 이미지 데이터 확인
-        const applicationResponse = await lumi.entities.user_applications.get(applicationId)
+        const applicationResponse = await dataService.entities.user_applications.get(applicationId)
         console.log('📋 신청 데이터에서 이미지 확인:', applicationResponse)
         
         if (reviews && reviews.length > 0) {
@@ -218,16 +218,16 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
       if (existingReview) {
         // 기존 리뷰 업데이트
         const reviewId = (existingReview as any)._id || (existingReview as any).id
-        reviewResult = await lumi.entities.review_submissions.update(reviewId, reviewData)
+        reviewResult = await dataService.entities.review_submissions.update(reviewId, reviewData)
         console.log('✅ 리뷰 업데이트 결과:', reviewResult)
       } else {
         // 새 리뷰 생성
-        reviewResult = await lumi.entities.review_submissions.create(reviewData)
+        reviewResult = await dataService.entities.review_submissions.create(reviewData)
         console.log('✅ 리뷰 제출 결과:', reviewResult)
       }
 
       // 🚀 user_applications 상태 업데이트
-      await lumi.entities.user_applications.update(applicationId, {
+      await dataService.entities.user_applications.update(applicationId, {
         status: 'review_submitted',
         review_submitted_at: new Date().toISOString(),
         review_submission_id: (reviewResult as any)._id || (reviewResult as any).id,
@@ -240,7 +240,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
 
       // 🚀 어드민 알림 생성
       try {
-        await lumi.entities.admin_notifications.create({
+        await dataService.entities.admin_notifications.create({
           type: 'review_submitted',
           title: '새로운 리뷰 제출',
           message: `${user?.name || '사용자'}님이 "${experienceName}" 캠페인 리뷰를 제출했습니다.`,

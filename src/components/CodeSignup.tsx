@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
-import { lumi } from '../lib/lumi'
+import { dataService } from '../lib/dataService'
 import {Gift, User, Phone, Mail, Instagram, Youtube, AlertCircle, CheckCircle} from 'lucide-react'
 import toast from 'react-hot-toast'
 
