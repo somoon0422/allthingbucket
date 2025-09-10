@@ -64,7 +64,10 @@ const Profile: React.FC = () => {
       setLoading(true)
       
       // 🏷️ 사용자 회원코드 조회 (수정 불가) - MongoDB API 사용
-      const codesResponse = await fetch('/api/db/user-codes')
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
+      const codesResponse = await fetch(`${apiBaseUrl}/api/db/user-codes`)
       const codesResult = await codesResponse.json()
       const codes = codesResult.success ? codesResult.data : []
       const userCodeData = codes.find((code: any) => code && code.user_id === user.user_id)
@@ -75,7 +78,7 @@ const Profile: React.FC = () => {
       }
       
       // 먼저 user_profiles에서 기본 정보 확인 - MongoDB API 사용
-      const userProfilesResponse = await fetch('/api/db/user-profiles')
+      const userProfilesResponse = await fetch(`${apiBaseUrl}/api/db/user-profiles`)
       const userProfilesResult = await userProfilesResponse.json()
       const userProfiles = userProfilesResult.success ? userProfilesResult.data : []
       const userProfile = Array.isArray(userProfiles) 
@@ -83,7 +86,7 @@ const Profile: React.FC = () => {
         : null
       
       // influencer_profiles에서 상세 정보 확인 - MongoDB API 사용
-      const influencerProfilesResponse = await fetch('/api/db/influencer-profiles')
+      const influencerProfilesResponse = await fetch(`${apiBaseUrl}/api/db/influencer-profiles`)
       const influencerProfilesResult = await influencerProfilesResponse.json()
       const influencerProfiles = influencerProfilesResult.success ? influencerProfilesResult.data : []
       const influencerProfile = influencerProfiles.find((p: any) => p && p.user_id === user.user_id)
@@ -183,7 +186,10 @@ const Profile: React.FC = () => {
 
       if (profile && profile._id) {
         // influencer_profiles 업데이트 - MongoDB API 사용
-        const response = await fetch(`/api/db/influencer-profiles/${profile._id}`, {
+        const apiBaseUrl = window.location.hostname === 'localhost' 
+          ? 'http://localhost:3001'
+          : 'https://allthingbucket.com'
+        const response = await fetch(`${apiBaseUrl}/api/db/influencer-profiles/${profile._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(profileData)
@@ -196,7 +202,7 @@ const Profile: React.FC = () => {
         }
       } else {
         // 새 influencer_profile 생성 - MongoDB API 사용
-        const response = await fetch('/api/db/influencer-profiles', {
+        const response = await fetch(`${apiBaseUrl}/api/db/influencer-profiles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(profileData)

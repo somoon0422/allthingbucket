@@ -193,7 +193,10 @@ const AdminDashboard: React.FC = () => {
   const loadApplications = async () => {
     try {
       // MongoDB API로 신청 내역 조회
-      const response = await fetch('/api/db/user-applications')
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
+      const response = await fetch(`${apiBaseUrl}/api/db/user-applications`)
       const result = await response.json()
       const safeApplications = result.success ? ultraSafeArray(result.data) : []
       
@@ -213,7 +216,7 @@ const AdminDashboard: React.FC = () => {
             }
 
             // MongoDB API로 체험단 정보 조회
-            const experienceResponse = await fetch(`/api/db/campaigns?campaign_id=${app.experience_id}`)
+            const experienceResponse = await fetch(`${apiBaseUrl}/api/db/campaigns?campaign_id=${app.experience_id}`)
             const experienceResult = await experienceResponse.json()
             const experience = experienceResult.success && experienceResult.data.length > 0 ? experienceResult.data[0] : null
             return { ...app, experience: experience || null }
@@ -233,9 +236,12 @@ const AdminDashboard: React.FC = () => {
   const loadUsers = async () => {
     try {
       // MongoDB API로 사용자 데이터 조회
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
       const [usersResponse, profilesResponse] = await Promise.all([
-        fetch('/api/db/users'),
-        fetch('/api/db/user-profiles')
+        fetch(`${apiBaseUrl}/api/db/users`),
+        fetch(`${apiBaseUrl}/api/db/user-profiles`)
       ])
       
       const usersResult = await usersResponse.json()
@@ -293,7 +299,10 @@ const AdminDashboard: React.FC = () => {
   const loadExperiences = async () => {
     try {
       // MongoDB API로 체험단 목록 조회
-      const response = await fetch('/api/db/campaigns')
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
+      const response = await fetch(`${apiBaseUrl}/api/db/campaigns`)
       const result = await response.json()
       
       const safeExperiences = result.success ? ultraSafeArray(result.data) : []
@@ -305,9 +314,12 @@ const AdminDashboard: React.FC = () => {
   }
 
   const loadNotifications = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       // MongoDB API로 알림 목록 조회
-      const response = await fetch('/api/db/admin-notifications')
+      const response = await fetch(`${apiBaseUrl}/api/db/admin-notifications`)
       const result = await response.json()
       
       const safeNotifications = result.success ? ultraSafeArray(result.data) : []
@@ -319,9 +331,12 @@ const AdminDashboard: React.FC = () => {
   }
 
   const loadReviews = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       // MongoDB API로 리뷰 목록 조회
-      const response = await fetch('/api/db/review-submissions')
+      const response = await fetch(`${apiBaseUrl}/api/db/review-submissions`)
       const result = await response.json()
       
       const safeReviews = result.success ? ultraSafeArray(result.data) : []
@@ -334,9 +349,12 @@ const AdminDashboard: React.FC = () => {
   }
 
   const loadPointRequests = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       // MongoDB API로 포인트 신청 목록 조회
-      const response = await fetch('/api/db/user-applications?status=point_pending')
+      const response = await fetch(`${apiBaseUrl}/api/db/user-applications?status=point_pending`)
       const result = await response.json()
       
       const safePointRequests = result.success ? ultraSafeArray(result.data) : []
@@ -370,6 +388,9 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 일괄 처리 함수들
   const handleBulkApprove = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       if (selectedApplications.size === 0) {
         toast.error('선택된 항목이 없습니다')
@@ -379,7 +400,7 @@ const AdminDashboard: React.FC = () => {
       setBulkActionLoading(true)
       // MongoDB API로 일괄 승인
       const promises = Array.from(selectedApplications).map(id => 
-        fetch(`/api/db/user-applications/${id}`, {
+        fetch(`${apiBaseUrl}/api/db/user-applications/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -420,6 +441,9 @@ const AdminDashboard: React.FC = () => {
   }
 
   const handleBulkReject = async (reason: string) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       if (selectedApplications.size === 0) {
         toast.error('선택된 항목이 없습니다')
@@ -429,7 +453,7 @@ const AdminDashboard: React.FC = () => {
       setBulkActionLoading(true)
       // MongoDB API로 일괄 거부
       const promises = Array.from(selectedApplications).map(id => 
-        fetch(`/api/db/user-applications/${id}`, {
+        fetch(`${apiBaseUrl}/api/db/user-applications/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -590,6 +614,9 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 메모 수정 함수
   const handleMemoSave = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     if (!selectedApplication) return
 
     try {
@@ -602,7 +629,7 @@ const AdminDashboard: React.FC = () => {
       // 체험단인지 신청인지에 따라 다른 API 사용
       if (selectedApplication.experience_name) {
         // 체험단 메모 업데이트 - MongoDB API 사용
-        const response = await fetch(`/api/db/campaigns/${itemId}`, {
+        const response = await fetch(`${apiBaseUrl}/api/db/campaigns/${itemId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ admin_message: memoText })
@@ -613,7 +640,7 @@ const AdminDashboard: React.FC = () => {
         }
       } else {
         // 신청 메모 업데이트 - MongoDB API 사용
-        const response = await fetch(`/api/db/user-applications/${itemId}`, {
+        const response = await fetch(`${apiBaseUrl}/api/db/user-applications/${itemId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ admin_message: memoText })
@@ -637,6 +664,9 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 메타데이터 저장 함수
   const handleMetadataSave = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     if (!selectedApplication) return
 
     try {
@@ -649,7 +679,7 @@ const AdminDashboard: React.FC = () => {
       // 체험단인지 신청인지 사용자인지에 따라 다른 API 사용
       if (selectedApplication.experience_name) {
         // 체험단 메타데이터 업데이트 - MongoDB API 사용
-        const response = await fetch(`/api/db/campaigns/${itemId}`, {
+        const response = await fetch(`${apiBaseUrl}/api/db/campaigns/${itemId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(editingData)
@@ -660,7 +690,7 @@ const AdminDashboard: React.FC = () => {
         }
       } else if (selectedApplication.email && !selectedApplication.experience_name && !selectedApplication.name) {
         // 사용자 메타데이터 업데이트 - MongoDB API 사용
-        const response = await fetch(`/api/db/user-profiles/${itemId}`, {
+        const response = await fetch(`${apiBaseUrl}/api/db/user-profiles/${itemId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(editingData)
@@ -671,7 +701,7 @@ const AdminDashboard: React.FC = () => {
         }
       } else {
         // 신청 메타데이터 업데이트 - MongoDB API 사용
-        const response = await fetch(`/api/db/user-applications/${itemId}`, {
+        const response = await fetch(`${apiBaseUrl}/api/db/user-applications/${itemId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(editingData)
@@ -695,13 +725,16 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 체험단 삭제 함수
   const handleDeleteExperience = async (experienceId: string) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     if (!confirm('정말로 이 체험단을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       return
     }
 
     try {
       // MongoDB API로 체험단 삭제
-      const response = await fetch(`/api/db/campaigns/${experienceId}`, {
+      const response = await fetch(`${apiBaseUrl}/api/db/campaigns/${experienceId}`, {
         method: 'DELETE'
       })
       const result = await response.json()
@@ -721,13 +754,16 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 사용자 삭제 함수
   const handleDeleteUser = async (userId: string) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     if (!confirm('정말로 이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       return
     }
 
     try {
       // MongoDB API로 사용자 삭제
-      const response = await fetch(`/api/db/user-profiles/${userId}`, {
+      const response = await fetch(`${apiBaseUrl}/api/db/user-profiles/${userId}`, {
         method: 'DELETE'
       })
       const result = await response.json()
@@ -747,6 +783,9 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 일괄삭제 함수들
   const handleBulkDeleteApplications = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     if (selectedApplications.size === 0) {
       toast.error('삭제할 신청을 선택해주세요')
       return
@@ -760,7 +799,7 @@ const AdminDashboard: React.FC = () => {
       setBulkActionLoading(true)
       // MongoDB API로 일괄 삭제
       const deletePromises = Array.from(selectedApplications).map(id => 
-        fetch(`/api/db/user-applications/${id}`, {
+        fetch(`${apiBaseUrl}/api/db/user-applications/${id}`, {
           method: 'DELETE'
         })
       )
@@ -778,6 +817,9 @@ const AdminDashboard: React.FC = () => {
   }
 
   const handleBulkDeleteUsers = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     if (selectedUsers.size === 0) {
       toast.error('삭제할 사용자를 선택해주세요')
       return
@@ -793,7 +835,7 @@ const AdminDashboard: React.FC = () => {
       
       // MongoDB API 연결 상태 확인
       try {
-        const healthResponse = await fetch('/api/db/status')
+        const healthResponse = await fetch(`${apiBaseUrl}/api/db/status`)
         const healthResult = await healthResponse.json()
         if (!healthResult.success) {
           toast.error('데이터베이스 연결에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -809,7 +851,7 @@ const AdminDashboard: React.FC = () => {
           console.log('🗑️ 삭제 중인 사용자 ID:', id)
           
           // MongoDB API로 사용자 프로필 삭제
-          const response = await fetch(`/api/db/user-profiles/${id}`, {
+          const response = await fetch(`${apiBaseUrl}/api/db/user-profiles/${id}`, {
             method: 'DELETE'
           })
           const result = await response.json()
@@ -863,6 +905,9 @@ const AdminDashboard: React.FC = () => {
   }
 
   const handleBulkDeleteExperiences = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     if (selectedExperiences.size === 0) {
       toast.error('삭제할 캠페인을 선택해주세요')
       return
@@ -876,7 +921,7 @@ const AdminDashboard: React.FC = () => {
       setBulkActionLoading(true)
       // MongoDB API로 체험단 일괄 삭제
       const deletePromises = Array.from(selectedExperiences).map(id => 
-        fetch(`/api/db/campaigns/${id}`, {
+        fetch(`${apiBaseUrl}/api/db/campaigns/${id}`, {
           method: 'DELETE'
         })
       )
@@ -895,6 +940,9 @@ const AdminDashboard: React.FC = () => {
 
   // 세부적인 캠페인 타입 업데이트
   const handleDetailedCampaignTypeUpdate = async (updateConfig: {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     targetTypes: string[],
     newType: string,
     updateAll: boolean
@@ -927,7 +975,7 @@ const AdminDashboard: React.FC = () => {
           console.log(`   새 타입: ${updateConfig.newType}`)
           
           // MongoDB API로 캠페인 업데이트
-          const response = await fetch(`/api/db/campaigns/${experience._id}`, {
+          const response = await fetch(`${apiBaseUrl}/api/db/campaigns/${experience._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updateData)
@@ -975,6 +1023,9 @@ const AdminDashboard: React.FC = () => {
 
   // 기존 캠페인들에 새로운 필드들 추가
   const handleUpdateCampaignFields = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     if (!confirm('기존 캠페인들에 새로운 필드들(제공내역, 캠페인 미션, 키워드, 링크, 추가 안내사항, 캠페인 일정)을 추가하시겠습니까?')) {
       return
     }
@@ -1116,7 +1167,7 @@ const AdminDashboard: React.FC = () => {
           console.log(`   추가된 필드들:`, Object.keys(updateData))
           
           // MongoDB API로 캠페인 필드 업데이트
-          const response = await fetch(`/api/db/campaigns/${experience._id}`, {
+          const response = await fetch(`${apiBaseUrl}/api/db/campaigns/${experience._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updateData)
@@ -1333,6 +1384,9 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 캠페인 상태 변경 함수
   const handleCampaignStatusChange = async (experienceId: string, currentStage: string) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       const experience = experiences.find(exp => exp._id === experienceId || exp.id === experienceId)
       if (!experience) {
@@ -1369,7 +1423,7 @@ const AdminDashboard: React.FC = () => {
       }
 
       // MongoDB API로 캠페인 상태 업데이트
-      const response = await fetch(`/api/db/campaigns/${experienceId}`, {
+      const response = await fetch(`${apiBaseUrl}/api/db/campaigns/${experienceId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1419,6 +1473,9 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 리뷰 일괄 삭제 함수
   const handleBulkReviewDelete = async () => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       if (selectedReviews.length === 0) {
         toast.error('선택된 리뷰가 없습니다')
@@ -1434,7 +1491,7 @@ const AdminDashboard: React.FC = () => {
       // MongoDB API로 리뷰 일괄 삭제
       for (const reviewId of selectedReviews) {
         try {
-          const response = await fetch(`/api/db/review-submissions/${reviewId}`, {
+          const response = await fetch(`${apiBaseUrl}/api/db/review-submissions/${reviewId}`, {
             method: 'DELETE'
           })
           const result = await response.json()
@@ -1465,6 +1522,9 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 포인트 지급 승인 함수
   const handlePointApproval = async (applicationId: string) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       const application = applications.find(app => (app as any)._id === applicationId || (app as any).id === applicationId)
       if (!application) {
@@ -1487,14 +1547,14 @@ const AdminDashboard: React.FC = () => {
       // 사용자 포인트 업데이트
       try {
         // MongoDB API로 사용자 포인트 조회
-        const userPointsResponse = await fetch(`/api/db/user-points?user_id=${userId}`)
+        const userPointsResponse = await fetch(`${apiBaseUrl}/api/db/user-points?user_id=${userId}`)
         const userPointsResult = await userPointsResponse.json()
         const userPoints = userPointsResult.success ? userPointsResult.data : []
         
         if (userPoints.length > 0) {
           const currentPoints = userPoints[0] as any
           // MongoDB API로 포인트 업데이트
-          const updateResponse = await fetch(`/api/db/user-points/${currentPoints._id}`, {
+          const updateResponse = await fetch(`${apiBaseUrl}/api/db/user-points/${currentPoints._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1509,7 +1569,7 @@ const AdminDashboard: React.FC = () => {
           }
         } else {
           // MongoDB API로 새 포인트 레코드 생성
-          const createResponse = await fetch('/api/db/user-points', {
+          const createResponse = await fetch(`${apiBaseUrl}/api/db/user-points`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1528,7 +1588,7 @@ const AdminDashboard: React.FC = () => {
         }
 
         // MongoDB API로 포인트 히스토리 추가
-        const historyResponse = await fetch('/api/db/points-history', {
+        const historyResponse = await fetch(`${apiBaseUrl}/api/db/points-history`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1547,7 +1607,7 @@ const AdminDashboard: React.FC = () => {
         }
 
         // MongoDB API로 신청 상태를 "완료"로 변경
-        const applicationResponse = await fetch(`/api/db/user-applications/${applicationId}`, {
+        const applicationResponse = await fetch(`${apiBaseUrl}/api/db/user-applications/${applicationId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1577,6 +1637,9 @@ const AdminDashboard: React.FC = () => {
 
   // 🔥 리뷰 승인/거절 함수
   const handleReviewApproval = async (reviewId: string, action: 'approved' | 'rejected') => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       const review = reviews.find(r => (r as any)._id === reviewId || (r as any).id === reviewId)
       if (!review) {
@@ -1591,7 +1654,7 @@ const AdminDashboard: React.FC = () => {
       }
 
       // MongoDB API로 리뷰 상태 업데이트
-      const response = await fetch(`/api/db/review-submissions/${reviewId}`, {
+      const response = await fetch(`${apiBaseUrl}/api/db/review-submissions/${reviewId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reviewData)
@@ -1606,7 +1669,7 @@ const AdminDashboard: React.FC = () => {
       if (applicationId) {
         if (action === 'approved') {
           // MongoDB API로 승인 시 "리뷰 검수 완료" 상태로 업데이트 (포인트 지급 전)
-          const approveResponse = await fetch(`/api/db/user-applications/${applicationId}`, {
+          const approveResponse = await fetch(`${apiBaseUrl}/api/db/user-applications/${applicationId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1620,7 +1683,7 @@ const AdminDashboard: React.FC = () => {
           }
         } else if (action === 'rejected') {
           // MongoDB API로 거절 시 리뷰 거절 상태로 업데이트
-          const rejectResponse = await fetch(`/api/db/user-applications/${applicationId}`, {
+          const rejectResponse = await fetch(`${apiBaseUrl}/api/db/user-applications/${applicationId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

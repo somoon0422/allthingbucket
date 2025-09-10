@@ -98,7 +98,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // MongoDB API로 사용자 로그인
-      const response = await fetch('/api/db/user-login', {
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
+      const response = await fetch(`${apiBaseUrl}/api/db/user-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +138,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // MongoDB API로 사용자 등록
-      const response = await fetch('/api/db/user-register', {
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
+      const response = await fetch(`${apiBaseUrl}/api/db/user-register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,7 +204,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // MongoDB API로 관리자 로그인
-      const response = await fetch('/api/db/admin-login', {
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
+      const response = await fetch(`${apiBaseUrl}/api/db/admin-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

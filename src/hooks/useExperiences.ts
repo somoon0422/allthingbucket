@@ -12,7 +12,10 @@ export const useExperiences = () => {
     try {
       setLoading(true)
       
-      const response = await fetch('/api/db/campaigns')
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
+      const response = await fetch(`${apiBaseUrl}/api/db/campaigns`)
       const result = await response.json()
       
       if (result.success) {
@@ -35,7 +38,10 @@ export const useExperiences = () => {
     try {
       setLoading(true)
       
-      const response = await fetch(`/api/db/campaigns?campaign_id=${id}`)
+      const apiBaseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001'
+        : 'https://allthingbucket.com'
+      const response = await fetch(`${apiBaseUrl}/api/db/campaigns?campaign_id=${id}`)
       const result = await response.json()
       
       if (result.success && result.data && result.data.length > 0) {
@@ -62,7 +68,10 @@ export const useExperiences = () => {
         if (!checkUserId) continue
         
         // MongoDB API로 중복 신청 체크
-        const response = await fetch(`/api/db/user-applications?user_id=${checkUserId}&experience_id=${experienceId}`)
+        const apiBaseUrl = window.location.hostname === 'localhost' 
+          ? 'http://localhost:3001'
+          : 'https://allthingbucket.com'
+        const response = await fetch(`${apiBaseUrl}/api/db/user-applications?user_id=${checkUserId}&experience_id=${experienceId}`)
         const result = await response.json()
         const applications = result.success ? ultraSafeArray(result.data) : []
         if (applications.length > 0) {
@@ -82,6 +91,9 @@ export const useExperiences = () => {
 
   // 🔥 안전한 체험단 신청
   const applyForCampaign = useCallback(async (experienceId: string, userId: string, additionalData: any = {}) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       setLoading(true)
 
@@ -100,13 +112,13 @@ export const useExperiences = () => {
       // 🔥 모집인원 체크
       try {
         // MongoDB API로 체험단 정보 조회
-        const experienceResponse = await fetch(`/api/db/campaigns?campaign_id=${experienceId}`)
+        const experienceResponse = await fetch(`${apiBaseUrl}/api/db/campaigns?campaign_id=${experienceId}`)
         const experienceResult = await experienceResponse.json()
         const experience = experienceResult.success && experienceResult.data.length > 0 ? experienceResult.data[0] : null
         
         if (experience && experience.max_participants) {
           // 현재 승인된 신청자 수 확인 - MongoDB API 사용
-          const applicationsResponse = await fetch(`/api/db/user-applications?experience_id=${experienceId}&status=approved`)
+          const applicationsResponse = await fetch(`${apiBaseUrl}/api/db/user-applications?experience_id=${experienceId}&status=approved`)
           const applicationsResult = await applicationsResponse.json()
           const approvedApplications = applicationsResult.success ? applicationsResult.data : []
           
@@ -154,7 +166,7 @@ export const useExperiences = () => {
       }
 
       // MongoDB API로 신청 생성
-      const response = await fetch('/api/db/user-applications', {
+      const response = await fetch(`${apiBaseUrl}/api/db/user-applications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(applicationData)
@@ -186,11 +198,14 @@ export const useExperiences = () => {
 
   // 🔥 신청 취소 함수 (상태 변경으로 수정)
   const cancelApplication = useCallback(async (applicationId: string) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       setLoading(true)
       
       // MongoDB API로 신청 취소
-      const response = await fetch(`/api/db/user-applications/${applicationId}`, {
+      const response = await fetch(`${apiBaseUrl}/api/db/user-applications/${applicationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -217,6 +232,9 @@ export const useExperiences = () => {
 
   // 🔥 완전히 안전한 사용자 신청 내역 조회
   const getUserApplications = useCallback(async (userId?: string, currentUser?: any) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       setLoading(true)
 
@@ -261,7 +279,7 @@ export const useExperiences = () => {
           filter[criteria.field] = criteria.value
           
           // MongoDB API로 신청 내역 검색
-          const response = await fetch(`/api/db/user-applications?${criteria.field}=${criteria.value}`)
+          const response = await fetch(`${apiBaseUrl}/api/db/user-applications?${criteria.field}=${criteria.value}`)
           const result = await response.json()
           const applications = result.success ? result.data : []
           if (applications.length > 0) {
@@ -317,7 +335,7 @@ export const useExperiences = () => {
             }
 
             // MongoDB API로 체험단 정보 조회
-            const experienceResponse = await fetch(`/api/db/campaigns?campaign_id=${app.experience_id}`)
+            const experienceResponse = await fetch(`${apiBaseUrl}/api/db/campaigns?campaign_id=${app.experience_id}`)
             const experienceResult = await experienceResponse.json()
             const experience = experienceResult.success && experienceResult.data.length > 0 ? experienceResult.data[0] : null
             return {
