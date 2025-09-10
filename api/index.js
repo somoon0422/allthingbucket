@@ -218,6 +218,52 @@ app.get('/api/db/test', async (req, res) => {
 });
 
 
+// 캠페인 신청 API (POST /api/apply-campaign)
+app.post('/api/apply-campaign', async (req, res) => {
+  // CORS 설정
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: '메소드 오류' });
+  }
+
+  try {
+    console.log('📝 캠페인 신청 요청:', req.body);
+    
+    const { db } = await connectToDatabase();
+    
+    // 신청 데이터 저장
+    const application = {
+      campaignId: req.body.campaignId,
+      userName: req.body.userName,
+      userEmail: req.body.userEmail,
+      phoneNumber: req.body.phoneNumber,
+      address: req.body.address,
+      socialMedia: req.body.socialMedia,
+      applicationDate: new Date(),
+      status: 'pending'
+    };
+    
+    const result = await db.collection('applications').insertOne(application);
+    
+    res.status(200).json({ 
+      success: true, 
+      message: '신청이 완료되었습니다!',
+      applicationId: result.insertedId 
+    });
+    
+  } catch (error) {
+    console.error('신청 저장 실패:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '신청 처리 중 오류가 발생했습니다',
+      details: error.message
+    });
+  }
+});
+
 // 데이터베이스 상태 확인
 app.get('/api/db/status', async (req, res) => {
   try {
