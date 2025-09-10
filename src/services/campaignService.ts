@@ -49,10 +49,16 @@ export class CampaignService {
       }
 
       const queryString = queryParams.toString()
-      const endpoint = `/campaigns${queryString ? `?${queryString}` : ''}`
+      const endpoint = `/api/db/campaigns${queryString ? `?${queryString}` : ''}`
       
-      const result = await apiCall(endpoint)
-      return result.campaigns || result || []
+      const response = await fetch(endpoint)
+      const result = await response.json()
+      
+      if (result.success) {
+        return result.data || []
+      } else {
+        throw new Error(result.error || '캠페인 조회 실패')
+      }
     } catch (error) {
       console.error('체험단 캠페인 조회 실패:', error)
       throw error
@@ -62,8 +68,14 @@ export class CampaignService {
   // 특정 체험단 캠페인 조회
   async getCampaignById(campaignId: string): Promise<any> {
     try {
-      const result = await apiCall(`/campaigns/${campaignId}`)
-      return result
+      const response = await fetch(`/api/db/campaigns?campaign_id=${campaignId}`)
+      const result = await response.json()
+      
+      if (result.success && result.data && result.data.length > 0) {
+        return result.data[0]
+      } else {
+        throw new Error('캠페인을 찾을 수 없습니다')
+      }
     } catch (error) {
       console.error('체험단 캠페인 조회 실패:', error)
       throw error
