@@ -1,4 +1,3 @@
-
 {
   "name": "admins",
   "fields": {
@@ -6,14 +5,9 @@
       "type": "string",
       "title": "관리자 ID"
     },
-    "admin_id": {
+    "username": {
       "type": "string",
-      "title": "관리자 고유 ID",
-      "required": true
-    },
-    "admin_name": {
-      "type": "string",
-      "title": "관리자명",
+      "title": "사용자명",
       "required": true
     },
     "email": {
@@ -21,23 +15,16 @@
       "title": "이메일",
       "required": true
     },
-    "password": {
+    "password_hash": {
       "type": "string",
-      "title": "비밀번호",
+      "title": "비밀번호 해시",
       "required": true
     },
     "role": {
       "type": "string",
-      "title": "권한",
-      "enum": ["super_admin", "admin", "manager"],
+      "title": "역할",
+      "enum": ["super_admin", "admin", "moderator"],
       "default": "admin"
-    },
-    "permissions": {
-      "type": "array",
-      "title": "세부 권한",
-      "items": {
-        "type": "string"
-      }
     },
     "is_active": {
       "type": "boolean",

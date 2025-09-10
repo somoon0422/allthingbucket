@@ -4,11 +4,11 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 require('dotenv').config();
 
-const smsRoutes = require('./routes/sms');
-const authRoutes = require('./routes/auth');
-const databaseRoutes = require('./routes/database');
-const databaseService = require('./services/databaseService');
-const { errorHandler } = require('./middleware/errorHandler');
+const smsRoutes = require('./backend/routes/sms');
+const authRoutes = require('./backend/routes/auth');
+const databaseRoutes = require('./backend/routes/database');
+const mongodbService = require('./backend/services/mongodbService');
+const { errorHandler } = require('./backend/middleware/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -51,15 +51,20 @@ app.use(errorHandler);
 // 🔥 서버 시작
 const startServer = async () => {
   try {
-    // 데이터베이스 연결
-    await databaseService.connect();
+    // MongoDB Atlas 연결
+    const isConnected = await mongodbService.connect();
+    
+    if (!isConnected) {
+      console.error('❌ MongoDB Atlas 연결 실패');
+      process.exit(1);
+    }
     
     app.listen(PORT, () => {
       console.log(`🚀 백엔드 서버가 포트 ${PORT}에서 실행 중입니다`);
       console.log(`📱 SMS API: http://localhost:${PORT}/api/sms`);
       console.log(`🗄️ DB API: http://localhost:${PORT}/api/db`);
       console.log(`🏥 헬스 체크: http://localhost:${PORT}/health`);
-      console.log(`💾 데이터베이스: SQLite 연결됨`);
+      console.log(`💾 데이터베이스: MongoDB Atlas 연결됨`);
     });
   } catch (error) {
     console.error('❌ 서버 시작 실패:', error);

@@ -54,18 +54,20 @@ const InfluencerProfile: React.FC = () => {
       console.log('🔍 체험단 히스토리 조회 시작:', user.user_id)
 
       // 사용자 신청 내역 조회
-      const { list: applicationList } = await lumi.entities.user_applications.list()
-      const userApplications = applicationList?.filter(app => app.user_id === user.user_id) || []
+      const applicationResult = await lumi.entities.user_applications.list()
+      const applicationList = Array.isArray(applicationResult) ? applicationResult : []
+      const userApplications = applicationList.filter((app: any) => app && app.user_id === user.user_id)
 
       // 체험단 정보와 매칭
-      const { list: experienceList } = await lumi.entities.experience_codes.list()
+      const experienceResult = await lumi.entities.experience_codes.list()
+      const experienceList = Array.isArray(experienceResult) ? experienceResult : []
       const experienceMap = new Map()
-      experienceList?.forEach(exp => {
+      experienceList.forEach((exp: any) => {
         experienceMap.set(exp.experience_code, exp)
       })
 
       // 히스토리 데이터 구성
-      const historyData: ApplicationHistory[] = userApplications.map(app => {
+      const historyData: ApplicationHistory[] = userApplications.map((app: any) => {
         const experience = experienceMap.get(app.experience_code)
         return {
           ...app,
@@ -117,7 +119,7 @@ const InfluencerProfile: React.FC = () => {
 
       // 🔔 관리자 알림 (간단한 로깅)
       try {
-        await lumi.entities.admin_notifications?.create({
+        const result = await lumi.entities.admin_notifications.create({
           type: 'application_cancelled',
           title: '체험단 신청 철회',
           message: `${user?.name || '사용자'}님이 "${experienceTitle}" 체험단 신청을 철회했습니다.`,
@@ -126,6 +128,7 @@ const InfluencerProfile: React.FC = () => {
           created_at: new Date().toISOString(),
           is_read: false
         })
+        console.log('관리자 알림 생성 결과:', result)
       } catch (notificationError) {
         console.log('알림 저장 실패 (무시):', notificationError)
       }

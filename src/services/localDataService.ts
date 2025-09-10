@@ -48,6 +48,23 @@ class LocalDataService {
     }
   }
 
+  // 캠페인 목록 조회
+  async listCampaigns(options: { limit?: number; filter?: any } = {}) {
+    try {
+      const queryParams = new URLSearchParams()
+      if (options.limit) queryParams.append('limit', options.limit.toString())
+      if (options.filter?.campaign_id) queryParams.append('campaign_id', options.filter.campaign_id)
+      
+      const endpoint = `/campaigns${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+      const result = await this.apiCall(endpoint)
+      
+      return result.data || []
+    } catch (error) {
+      console.error('캠페인 목록 조회 실패:', error)
+      return []
+    }
+  }
+
   // 사용자 프로필 목록 조회
   async listUserProfiles(options: { limit?: number; filter?: any } = {}) {
     console.log('📋 SQLite 사용자 프로필 목록 조회:', options)
@@ -101,6 +118,66 @@ class LocalDataService {
     
     console.log('✅ 조회된 사용자 수:', users.length)
     return users
+  }
+
+  // 사용자 코드 목록 조회
+  async listUserCodes(options: { limit?: number; filter?: any } = {}) {
+    console.log('🏷️ SQLite 사용자 코드 목록 조회:', options)
+    
+    const params = new URLSearchParams()
+    if (options.limit) params.append('limit', options.limit.toString())
+    if (options.filter?.user_id) params.append('user_id', options.filter.user_id)
+    
+    const endpoint = `/user-codes${params.toString() ? '?' + params.toString() : ''}`
+    const response = await this.apiCall(endpoint)
+    
+    console.log('✅ 조회된 사용자 코드 수:', response.data.length)
+    return response.data
+  }
+
+  // 인플루언서 프로필 목록 조회
+  async listInfluencerProfiles(options: { limit?: number; filter?: any } = {}) {
+    console.log('👤 SQLite 인플루언서 프로필 목록 조회:', options)
+    
+    const params = new URLSearchParams()
+    if (options.limit) params.append('limit', options.limit.toString())
+    if (options.filter?.user_id) params.append('user_id', options.filter.user_id)
+    
+    const endpoint = `/influencer-profiles${params.toString() ? '?' + params.toString() : ''}`
+    const response = await this.apiCall(endpoint)
+    
+    console.log('✅ 조회된 인플루언서 프로필 수:', response.data.length)
+    return response.data
+  }
+
+  // 사용자 신청 목록 조회
+  async listUserApplications(options: { limit?: number; filter?: any } = {}) {
+    console.log('📋 SQLite 사용자 신청 목록 조회:', options)
+    
+    const params = new URLSearchParams()
+    if (options.limit) params.append('limit', options.limit.toString())
+    if (options.filter?.user_id) params.append('user_id', options.filter.user_id)
+    
+    const endpoint = `/user-applications${params.toString() ? '?' + params.toString() : ''}`
+    const response = await this.apiCall(endpoint)
+    
+    console.log('✅ 조회된 사용자 신청 수:', response.data.length)
+    return response.data
+  }
+
+  // 체험단 코드 목록 조회
+  async listExperienceCodes(options: { limit?: number; filter?: any } = {}) {
+    console.log('🎯 SQLite 체험단 코드 목록 조회:', options)
+    
+    const params = new URLSearchParams()
+    if (options.limit) params.append('limit', options.limit.toString())
+    if (options.filter?.campaign_id) params.append('campaign_id', options.filter.campaign_id)
+    
+    const endpoint = `/experience-codes${params.toString() ? '?' + params.toString() : ''}`
+    const response = await this.apiCall(endpoint)
+    
+    console.log('✅ 조회된 체험단 코드 수:', response.data.length)
+    return response.data
   }
 
   // 연결 상태 확인

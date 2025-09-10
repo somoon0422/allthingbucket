@@ -65,23 +65,25 @@ const Profile: React.FC = () => {
       
       // 🏷️ 사용자 회원코드 조회 (수정 불가)
       const codesResult = await lumi.entities.user_codes.list()
-      const codes = codesResult?.list || codesResult || []
-      const userCodeData = Array.isArray(codes) 
-        ? codes.find((code: any) => code && code.user_id === user.user_id)
-        : null
+      const codes = Array.isArray(codesResult) ? codesResult : []
+      const userCodeData = codes.find((code: any) => code && code.user_id === user.user_id)
       
-      if (userCodeData) {
+      if (userCodeData && userCodeData.user_code) {
         setUserCode(userCodeData.user_code)
         console.log('🏷️ 사용자 회원코드 확인:', userCodeData.user_code)
       }
       
       // 먼저 user_profiles에서 기본 정보 확인
-      const { list: userProfiles } = await lumi.entities.user_profiles.list()
-      const userProfile = userProfiles.find(p => p.user_id === user.user_id)
+      const userProfilesResult = await lumi.entities.user_profiles.list()
+      const userProfiles = userProfilesResult?.list || userProfilesResult || []
+      const userProfile = Array.isArray(userProfiles) 
+        ? userProfiles.find((p: any) => p && p.user_id === user.user_id)
+        : null
       
       // influencer_profiles에서 상세 정보 확인
-      const { list: influencerProfiles } = await lumi.entities.influencer_profiles.list()
-      const influencerProfile = influencerProfiles.find(p => p.user_id === user.user_id)
+      const influencerProfilesResult = await lumi.entities.influencer_profiles.list()
+      const influencerProfiles = Array.isArray(influencerProfilesResult) ? influencerProfilesResult : []
+      const influencerProfile = influencerProfiles.find((p: any) => p && p.user_id === user.user_id)
       
       if (influencerProfile) {
         setProfile(influencerProfile)
@@ -182,8 +184,12 @@ const Profile: React.FC = () => {
         toast.success('프로필이 업데이트되었습니다')
       } else {
         // 새 influencer_profile 생성
-        await lumi.entities.influencer_profiles.create(profileData)
-        toast.success('프로필이 생성되었습니다')
+        const result = await lumi.entities.influencer_profiles.create(profileData)
+        if (result?.success) {
+          toast.success('프로필이 생성되었습니다')
+        } else {
+          toast.error('프로필 생성에 실패했습니다')
+        }
       }
 
       setEditMode(false)

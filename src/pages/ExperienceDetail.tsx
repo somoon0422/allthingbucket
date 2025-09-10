@@ -74,39 +74,39 @@ function ExperienceDetail() {
         
         // 🔥 디버깅: 날짜 데이터 확인
         console.log('📅 체험단 날짜 데이터:', {
-          application_end_date: experienceData?.application_end_date,
-          application_deadline: experienceData?.application_deadline,
-          content_end_date: experienceData?.content_end_date,
-          review_deadline: experienceData?.review_deadline,
-          end_date: experienceData?.end_date,
+          application_end_date: (experienceData as any)?.application_end_date,
+          application_deadline: (experienceData as any)?.application_deadline,
+          content_end_date: (experienceData as any)?.content_end_date,
+          review_deadline: (experienceData as any)?.review_deadline,
+          end_date: (experienceData as any)?.end_date,
           allDateFields: Object.keys(experienceData || {}).filter(key => 
             key.includes('date') || key.includes('deadline')
           ).reduce((acc, key) => {
-            acc[key] = experienceData?.[key]
+            acc[key] = (experienceData as any)?.[key]
             return acc
           }, {} as any)
         })
         
         // 🔥 캠페인 상태 체크
-        const campaignStatus = experienceData?.campaign_status || 'recruiting'
+        const campaignStatus = (experienceData as any)?.campaign_status || 'recruiting'
         
         if (campaignStatus === 'recruitment_completed' || campaignStatus === 'campaign_ended') {
           setIsApplicationClosed(true)
           console.log('🚫 캠페인 상태로 인한 신청 마감:', campaignStatus)
-        } else if (experienceData && experienceData.max_participants) {
+        } else if (experienceData && (experienceData as any).max_participants) {
           // 🔥 정확한 지원자 수 체크
           const applications = await getUserApplications() || []
           const experienceApplications = applications.filter((app: any) => 
-            app.experience_id === experienceData._id || app.experience_id === experienceData.id
+            app.experience_id === (experienceData as any)._id || app.experience_id === (experienceData as any).id
           )
           
           console.log('🔍 신청자 체크:', {
-            maxParticipants: experienceData.max_participants,
+            maxParticipants: (experienceData as any).max_participants,
             currentApplications: experienceApplications.length,
             applications: experienceApplications
           })
           
-          if (experienceApplications.length >= experienceData.max_participants) {
+          if (experienceApplications.length >= (experienceData as any).max_participants) {
             setIsApplicationClosed(true)
             console.log('🚫 최대 참가자 수 도달로 인한 신청 마감')
           }

@@ -29,8 +29,11 @@ const WithdrawalRequest: React.FC = () => {
       setProfileLoading(true)
       
       // 사용자 프로필 조회
-      const { list: profiles } = await lumi.entities.user_profiles.list()
-      const profile = profiles.find(p => p.user_id === user.user_id)
+      const profilesResult = await lumi.entities.user_profiles.list()
+      const profiles = profilesResult?.list || profilesResult || []
+      const profile = Array.isArray(profiles) 
+        ? profiles.find((p: any) => p && p.user_id === user.user_id)
+        : null
       setUserProfile(profile)
 
       // 출금 요청 내역 조회

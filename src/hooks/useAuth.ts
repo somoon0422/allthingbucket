@@ -253,17 +253,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      const result = await lumiAuthService.loginAdmin({ admin_name: adminName, password })
+      // MongoDB API로 관리자 로그인
+      const response = await fetch('http://localhost:3001/api/db/admin-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: adminName,
+          password: password
+        })
+      })
       
-      if (result.admin && result.token) {
-        // 토큰을 localStorage에 저장
-        localStorage.setItem('admin_token', result.token)
+      const result = await response.json()
+      
+      if (result.success && result.data.admin) {
+        const admin = result.data.admin
         
         const processedAdmin = processUserData({
-          ...result.admin,
+          _id: admin._id,
+          name: admin.username,
+          email: admin.email,
           role: 'admin',
-          admin_name: result.admin.admin_name,
-          admin_role: result.admin.role
+          admin_name: admin.username,
+          admin_role: admin.role,
+          is_active: admin.is_active
         })
         
         if (processedAdmin) {
@@ -271,6 +285,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('admin_session', JSON.stringify(processedAdmin))
           toast.success(`관리자 로그인 성공: ${processedAdmin.admin_name}님`, { duration: 2000 })
         }
+      } else {
+        throw new Error(result.error || '관리자 로그인에 실패했습니다')
       }
     } catch (error: any) {
       console.error('관리자 로그인 실패:', error)
@@ -414,10 +430,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             })
             
-            const enrichedUser = {
-              ...currentUser,
+            const enrichedUser = currentUser ? {
+              ...(currentUser as any),
               profile: userProfile || null
-            }
+            } : null
             
             const processedUser = processUserData(enrichedUser)
             if (processedUser) {

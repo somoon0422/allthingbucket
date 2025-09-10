@@ -120,16 +120,18 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         }
 
         // Lumi SDK를 사용한 파일 업로드
-        const uploadResults = await lumi.tools.file.upload([file])
+        const uploadResult = await lumi.tools.file.upload(file)
         
-        if (uploadResults && uploadResults.length > 0) {
-          const result = uploadResults[0]
+        if (uploadResult && typeof uploadResult === 'object' && 'fileUrl' in uploadResult) {
+          const result = uploadResult as any
           if (result.fileUrl) {
             setMainImages(prev => [...prev, result.fileUrl].filter((url): url is string => Boolean(url)))
             toast.success('메인 이미지가 업로드되었습니다')
           } else if (result.uploadError) {
             toast.error(`업로드 실패: ${result.uploadError}`)
           }
+        } else {
+          toast.error('파일 업로드에 실패했습니다')
         }
       }
     } catch (error) {
@@ -159,16 +161,18 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         }
 
         // Lumi SDK를 사용한 파일 업로드
-        const uploadResults = await lumi.tools.file.upload([file])
+        const uploadResult = await lumi.tools.file.upload(file)
         
-        if (uploadResults && uploadResults.length > 0) {
-          const result = uploadResults[0]
+        if (uploadResult && typeof uploadResult === 'object' && 'fileUrl' in uploadResult) {
+          const result = uploadResult as any
           if (result.fileUrl) {
             setDetailImages(prev => [...prev, result.fileUrl].filter((url): url is string => Boolean(url)))
             toast.success('상세 이미지가 업로드되었습니다')
           } else if (result.uploadError) {
             toast.error(`업로드 실패: ${result.uploadError}`)
           }
+        } else {
+          toast.error('파일 업로드에 실패했습니다')
         }
       }
     } catch (error) {
