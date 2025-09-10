@@ -192,12 +192,10 @@ const AdminDashboard: React.FC = () => {
   // 🔥 데이터 로드 함수들 - 완전 안전화
   const loadApplications = async () => {
     try {
-      const response = await lumi.entities.user_applications.list({
-        sort: { applied_at: -1, created_at: -1 },
-        ...({ _t: Date.now() } as any) // 🔥 캐시 무효화
-      })
-      
-      const safeApplications = ultraSafeArray(response)
+      // MongoDB API로 신청 내역 조회
+      const response = await fetch('/api/db/user-applications')
+      const result = await response.json()
+      const safeApplications = result.success ? ultraSafeArray(result.data) : []
       
       // 디버깅: 신청 데이터 구조 확인
       console.log('📋 신청 데이터 샘플:', safeApplications.slice(0, 2))

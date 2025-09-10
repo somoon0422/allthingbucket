@@ -375,11 +375,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         setLoading(true)
         
-        // 기본 관리자 계정 생성 (초기 설정)
-        await lumiAuthService.createDefaultAdmin()
-        
-        // 테스트 사용자 계정 생성 (초기 설정)
-        await lumiAuthService.createTestUser()
+        // lumiAuthService 제거됨 - MongoDB API 사용으로 대체
         
         // 관리자 토큰 체크
         const adminToken = localStorage.getItem('admin_token')
