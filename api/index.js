@@ -1,11 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const app = express();
 
 // MongoDB 연결 설정
-const connectionString = process.env.MONGODB_URI || 'mongodb+srv://support_db_user:nv2c50bqVBAOgJRr@cluster0.9ny0kvy.mongodb.net/allthingbucket?retryWrites=true&w=majority&appName=Cluster0';
+const connectionString = process.env.MONGODB_URI || 'mongodb+srv://support_db_user:nv2c50bqVBAOgJRr@cluster0.9ny0kvy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 let client = null;
 let db = null;
@@ -17,17 +17,27 @@ const connectToMongoDB = async () => {
       console.log('🔗 MongoDB Atlas 연결 시도...');
       console.log('연결 문자열:', connectionString.replace(/\/\/.*@/, '//***:***@'));
       
+      // Create a MongoClient with a MongoClientOptions object to set the Stable API version
       client = new MongoClient(connectionString, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
+        serverApi: {
+          version: ServerApiVersion.v1,
+          strict: false,
+          deprecationErrors: false,
+        },
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 10000,
-        socketTimeoutMS: 45000
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 10000
       });
       
+      // Connect the client to the server
       await client.connect();
+      
+      // Send a ping to confirm a successful connection
+      await client.db("admin").command({ ping: 1 });
+      console.log("✅ Pinged your deployment. You successfully connected to MongoDB!");
+      
       db = client.db('allthingbucket');
-      console.log('✅ MongoDB Atlas 연결 성공!');
     }
     return { client, db };
   } catch (error) {
