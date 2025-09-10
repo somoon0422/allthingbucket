@@ -305,6 +305,71 @@ app.get('/api/db/user-applications', async (req, res) => {
   }
 });
 
+// 사용자 코드 조회 (GET /api/db/user-codes)
+app.get('/api/db/user-codes', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const codes = await db.collection('user_codes').find({}).toArray();
+    res.json({ success: true, data: codes, count: codes.length });
+  } catch (error) {
+    console.error('❌ 사용자 코드 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 인플루언서 프로필 조회 (GET /api/db/influencer-profiles)
+app.get('/api/db/influencer-profiles', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const profiles = await db.collection('influencer_profiles').find({}).toArray();
+    res.json({ success: true, data: profiles, count: profiles.length });
+  } catch (error) {
+    console.error('❌ 인플루언서 프로필 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 인플루언서 프로필 생성 (POST /api/db/influencer-profiles)
+app.post('/api/db/influencer-profiles', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const profileData = {
+      ...req.body,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    const result = await db.collection('influencer_profiles').insertOne(profileData);
+    res.json({ success: true, data: { _id: result.insertedId, ...profileData } });
+  } catch (error) {
+    console.error('❌ 인플루언서 프로필 생성 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 인플루언서 프로필 업데이트 (PUT /api/db/influencer-profiles/:id)
+app.put('/api/db/influencer-profiles/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const profileData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    const result = await db.collection('influencer_profiles').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: profileData }
+    );
+    if (result.modifiedCount > 0) {
+      res.json({ success: true, data: profileData });
+    } else {
+      res.status(404).json({ success: false, error: '프로필을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 인플루언서 프로필 업데이트 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 사용자 등록 (POST /api/db/user-register)
 app.post('/api/db/user-register', async (req, res) => {
   try {

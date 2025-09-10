@@ -63,9 +63,10 @@ const Profile: React.FC = () => {
     try {
       setLoading(true)
       
-      // 🏷️ 사용자 회원코드 조회 (수정 불가)
-      const codesResult = await lumi.entities.user_codes.list()
-      const codes = Array.isArray(codesResult) ? codesResult : []
+      // 🏷️ 사용자 회원코드 조회 (수정 불가) - MongoDB API 사용
+      const codesResponse = await fetch('/api/db/user-codes')
+      const codesResult = await codesResponse.json()
+      const codes = codesResult.success ? codesResult.data : []
       const userCodeData = codes.find((code: any) => code && code.user_id === user.user_id)
       
       if (userCodeData && userCodeData.user_code) {
@@ -73,16 +74,18 @@ const Profile: React.FC = () => {
         console.log('🏷️ 사용자 회원코드 확인:', userCodeData.user_code)
       }
       
-      // 먼저 user_profiles에서 기본 정보 확인
-      const userProfilesResult = await lumi.entities.user_profiles.list()
-      const userProfiles = userProfilesResult?.list || userProfilesResult || []
+      // 먼저 user_profiles에서 기본 정보 확인 - MongoDB API 사용
+      const userProfilesResponse = await fetch('/api/db/user-profiles')
+      const userProfilesResult = await userProfilesResponse.json()
+      const userProfiles = userProfilesResult.success ? userProfilesResult.data : []
       const userProfile = Array.isArray(userProfiles) 
         ? userProfiles.find((p: any) => p && p.user_id === user.user_id)
         : null
       
-      // influencer_profiles에서 상세 정보 확인
-      const influencerProfilesResult = await lumi.entities.influencer_profiles.list()
-      const influencerProfiles = Array.isArray(influencerProfilesResult) ? influencerProfilesResult : []
+      // influencer_profiles에서 상세 정보 확인 - MongoDB API 사용
+      const influencerProfilesResponse = await fetch('/api/db/influencer-profiles')
+      const influencerProfilesResult = await influencerProfilesResponse.json()
+      const influencerProfiles = influencerProfilesResult.success ? influencerProfilesResult.data : []
       const influencerProfile = influencerProfiles.find((p: any) => p && p.user_id === user.user_id)
       
       if (influencerProfile) {
@@ -179,13 +182,27 @@ const Profile: React.FC = () => {
       }
 
       if (profile && profile._id) {
-        // influencer_profiles 업데이트
-        await lumi.entities.influencer_profiles.update(profile._id, profileData)
-        toast.success('프로필이 업데이트되었습니다')
+        // influencer_profiles 업데이트 - MongoDB API 사용
+        const response = await fetch(`/api/db/influencer-profiles/${profile._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData)
+        })
+        const result = await response.json()
+        if (result.success) {
+          toast.success('프로필이 업데이트되었습니다')
+        } else {
+          toast.error('프로필 업데이트에 실패했습니다')
+        }
       } else {
-        // 새 influencer_profile 생성
-        const result = await lumi.entities.influencer_profiles.create(profileData)
-        if (result?.success) {
+        // 새 influencer_profile 생성 - MongoDB API 사용
+        const response = await fetch('/api/db/influencer-profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData)
+        })
+        const result = await response.json()
+        if (result.success) {
           toast.success('프로필이 생성되었습니다')
         } else {
           toast.error('프로필 생성에 실패했습니다')

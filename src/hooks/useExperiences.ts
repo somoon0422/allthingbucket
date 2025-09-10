@@ -61,14 +61,10 @@ export const useExperiences = () => {
       for (const checkUserId of allUserIds) {
         if (!checkUserId) continue
         
-        const existingApplications = await lumi.entities.user_applications.list({
-          filter: { 
-            user_id: checkUserId,
-            experience_id: experienceId 
-          }
-        })
-        
-        const applications = ultraSafeArray(existingApplications)
+        // MongoDB API로 중복 신청 체크
+        const response = await fetch(`/api/db/user-applications?user_id=${checkUserId}&experience_id=${experienceId}`)
+        const result = await response.json()
+        const applications = result.success ? ultraSafeArray(result.data) : []
         if (applications.length > 0) {
           return {
             isDuplicate: true,
@@ -103,16 +99,16 @@ export const useExperiences = () => {
 
       // 🔥 모집인원 체크
       try {
-        const experience = await lumi.entities.experience_codes.get(experienceId)
+        // MongoDB API로 체험단 정보 조회
+        const experienceResponse = await fetch(`/api/db/campaigns?campaign_id=${experienceId}`)
+        const experienceResult = await experienceResponse.json()
+        const experience = experienceResult.success && experienceResult.data.length > 0 ? experienceResult.data[0] : null
+        
         if (experience && experience.max_participants) {
-          // 현재 승인된 신청자 수 확인
-          const applicationsResponse = await lumi.entities.user_applications.list({
-            filter: { 
-              experience_id: experienceId,
-              status: 'approved'
-            }
-          })
-          const approvedApplications = (applicationsResponse as any).data || []
+          // 현재 승인된 신청자 수 확인 - MongoDB API 사용
+          const applicationsResponse = await fetch(`/api/db/user-applications?experience_id=${experienceId}&status=approved`)
+          const applicationsResult = await applicationsResponse.json()
+          const approvedApplications = applicationsResult.success ? applicationsResult.data : []
           
           if (approvedApplications.length >= experience.max_participants) {
             toast.error('모집인원이 마감되었습니다')
