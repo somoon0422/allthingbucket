@@ -482,6 +482,140 @@ app.delete('/api/db/user-applications/:id', async (req, res) => {
   }
 });
 
+// 사용자 포인트 조회 (GET /api/db/user-points)
+app.get('/api/db/user-points', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { user_id } = req.query;
+    
+    let filter = {};
+    if (user_id) filter.user_id = user_id;
+    
+    const points = await db.collection('user_points').find(filter).toArray();
+    res.json({ success: true, data: points, count: points.length });
+  } catch (error) {
+    console.error('❌ 사용자 포인트 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 사용자 포인트 생성 (POST /api/db/user-points)
+app.post('/api/db/user-points', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const pointData = {
+      ...req.body,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    const result = await db.collection('user_points').insertOne(pointData);
+    res.json({ success: true, data: { _id: result.insertedId, ...pointData } });
+  } catch (error) {
+    console.error('❌ 사용자 포인트 생성 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 사용자 포인트 업데이트 (PUT /api/db/user-points/:id)
+app.put('/api/db/user-points/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const pointData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    const result = await db.collection('user_points').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: pointData }
+    );
+    if (result.modifiedCount > 0) {
+      res.json({ success: true, data: pointData });
+    } else {
+      res.status(404).json({ success: false, error: '사용자 포인트를 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 사용자 포인트 업데이트 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 포인트 히스토리 조회 (GET /api/db/points-history)
+app.get('/api/db/points-history', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { user_id } = req.query;
+    
+    let filter = {};
+    if (user_id) filter.user_id = user_id;
+    
+    const history = await db.collection('points_history').find(filter).toArray();
+    res.json({ success: true, data: history, count: history.length });
+  } catch (error) {
+    console.error('❌ 포인트 히스토리 조회 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 포인트 히스토리 생성 (POST /api/db/points-history)
+app.post('/api/db/points-history', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const historyData = {
+      ...req.body,
+      created_at: new Date()
+    };
+    const result = await db.collection('points_history').insertOne(historyData);
+    res.json({ success: true, data: { _id: result.insertedId, ...historyData } });
+  } catch (error) {
+    console.error('❌ 포인트 히스토리 생성 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 리뷰 제출 업데이트 (PUT /api/db/review-submissions/:id)
+app.put('/api/db/review-submissions/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const reviewData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    const result = await db.collection('review_submissions').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: reviewData }
+    );
+    if (result.modifiedCount > 0) {
+      res.json({ success: true, data: reviewData });
+    } else {
+      res.status(404).json({ success: false, error: '리뷰 제출을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 리뷰 제출 업데이트 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 리뷰 제출 삭제 (DELETE /api/db/review-submissions/:id)
+app.delete('/api/db/review-submissions/:id', async (req, res) => {
+  try {
+    const { db } = await connectToMongoDB();
+    const { ObjectId } = require('mongodb');
+    const result = await db.collection('review_submissions').deleteOne(
+      { _id: new ObjectId(req.params.id) }
+    );
+    if (result.deletedCount > 0) {
+      res.json({ success: true, message: '리뷰 제출이 삭제되었습니다' });
+    } else {
+      res.status(404).json({ success: false, error: '리뷰 제출을 찾을 수 없습니다' });
+    }
+  } catch (error) {
+    console.error('❌ 리뷰 제출 삭제 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 중복된 엔드포인트 제거됨
 
 // 사용자 코드 조회 (GET /api/db/user-codes)

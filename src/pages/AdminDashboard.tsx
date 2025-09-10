@@ -802,16 +802,19 @@ const AdminDashboard: React.FC = () => {
         try {
           console.log('🗑️ 삭제 중인 사용자 ID:', id)
           
-          // 먼저 사용자 프로필이 존재하는지 확인
-          const profile = await lumi.entities.user_profiles.get(id)
-          if (!profile) {
-            console.warn('⚠️ 사용자 프로필을 찾을 수 없습니다:', id)
-            return { success: false, id, error: '프로필 없음' }
-          }
+          // MongoDB API로 사용자 프로필 삭제
+          const response = await fetch(`/api/db/user-profiles/${id}`, {
+            method: 'DELETE'
+          })
+          const result = await response.json()
           
-          const result = await lumi.entities.user_profiles.delete(id)
-          console.log('✅ 삭제 성공:', id, result)
-          return { success: true, id, result }
+          if (result.success) {
+            console.log('✅ 삭제 성공:', id)
+            return { success: true, id, result }
+          } else {
+            console.warn('⚠️ 사용자 삭제 실패:', id, result.error)
+            return { success: false, id, error: result.error || '삭제 실패' }
+          }
         } catch (deleteError) {
           console.error('❌ 개별 사용자 삭제 실패:', id, deleteError)
           return { success: false, id, error: deleteError }
@@ -865,8 +868,11 @@ const AdminDashboard: React.FC = () => {
 
     try {
       setBulkActionLoading(true)
+      // MongoDB API로 체험단 일괄 삭제
       const deletePromises = Array.from(selectedExperiences).map(id => 
-        lumi.entities.experience_codes.delete(id)
+        fetch(`/api/db/campaigns/${id}`, {
+          method: 'DELETE'
+        })
       )
       
       await Promise.all(deletePromises)
@@ -914,7 +920,16 @@ const AdminDashboard: React.FC = () => {
           console.log(`   기존 타입: ${currentType || 'undefined'}`)
           console.log(`   새 타입: ${updateConfig.newType}`)
           
-          await lumi.entities.experience_codes.update(experience._id, updateData)
+          // MongoDB API로 캠페인 업데이트
+          const response = await fetch(`/api/db/campaigns/${experience._id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+          })
+          const result = await response.json()
+          if (!result.success) {
+            throw new Error(`캠페인 업데이트 실패: ${result.error}`)
+          }
           updatedCount++
           
           updateResults.push({
@@ -1094,8 +1109,18 @@ const AdminDashboard: React.FC = () => {
           console.log(`📝 캠페인 필드 업데이트: ${safeString(experience, 'experience_name', '제목 없음')}`)
           console.log(`   추가된 필드들:`, Object.keys(updateData))
           
-          await lumi.entities.experience_codes.update(experience._id, updateData)
-          updatedCount++
+          // MongoDB API로 캠페인 필드 업데이트
+          const response = await fetch(`/api/db/campaigns/${experience._id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+          })
+          const result = await response.json()
+          if (result.success) {
+            updatedCount++
+          } else {
+            console.error(`캠페인 필드 업데이트 실패: ${result.error}`)
+          }
         }
       }
       
@@ -1337,11 +1362,19 @@ const AdminDashboard: React.FC = () => {
         return
       }
 
-      // 캠페인 상태 업데이트
-      await lumi.entities.experience_codes.update(experienceId, {
-        campaign_status: nextStatus,
-        updated_at: new Date().toISOString()
+      // MongoDB API로 캠페인 상태 업데이트
+      const response = await fetch(`/api/db/campaigns/${experienceId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaign_status: nextStatus,
+          updated_at: new Date().toISOString()
+        })
       })
+      const result = await response.json()
+      if (!result.success) {
+        throw new Error(`캠페인 상태 업데이트 실패: ${result.error}`)
+      }
 
       toast.success(`캠페인 상태가 "${nextLabel}"로 변경되었습니다`)
       
@@ -1392,9 +1425,16 @@ const AdminDashboard: React.FC = () => {
 
       setBulkActionLoading(true)
       
+      // MongoDB API로 리뷰 일괄 삭제
       for (const reviewId of selectedReviews) {
         try {
-          await lumi.entities.review_submissions.delete(reviewId)
+          const response = await fetch(`/api/db/review-submissions/${reviewId}`, {
+            method: 'DELETE'
+          })
+          const result = await response.json()
+          if (!result.success) {
+            console.error(`리뷰 ${reviewId} 삭제 실패:`, result.error)
+          }
         } catch (error) {
           console.error(`리뷰 ${reviewId} 삭제 실패:`, error)
         }
@@ -1440,47 +1480,80 @@ const AdminDashboard: React.FC = () => {
 
       // 사용자 포인트 업데이트
       try {
-        const userPointsResponse = await lumi.entities.user_points.list({ 
-          filter: { user_id: userId } 
-        })
-        const userPoints = (userPointsResponse as any).data || []
+        // MongoDB API로 사용자 포인트 조회
+        const userPointsResponse = await fetch(`/api/db/user-points?user_id=${userId}`)
+        const userPointsResult = await userPointsResponse.json()
+        const userPoints = userPointsResult.success ? userPointsResult.data : []
         
         if (userPoints.length > 0) {
           const currentPoints = userPoints[0] as any
-          await lumi.entities.user_points.update(currentPoints._id, {
-            total_points: (currentPoints.total_points || 0) + rewardPoints,
-            available_points: (currentPoints.available_points || 0) + rewardPoints,
-            updated_at: new Date().toISOString()
+          // MongoDB API로 포인트 업데이트
+          const updateResponse = await fetch(`/api/db/user-points/${currentPoints._id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              total_points: (currentPoints.total_points || 0) + rewardPoints,
+              available_points: (currentPoints.available_points || 0) + rewardPoints,
+              updated_at: new Date().toISOString()
+            })
           })
+          const updateResult = await updateResponse.json()
+          if (!updateResult.success) {
+            throw new Error(`포인트 업데이트 실패: ${updateResult.error}`)
+          }
         } else {
-          // 새 포인트 레코드 생성
-          await lumi.entities.user_points.create({
-            user_id: userId,
-            total_points: rewardPoints,
-            available_points: rewardPoints,
-            withdrawn_points: 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+          // MongoDB API로 새 포인트 레코드 생성
+          const createResponse = await fetch('/api/db/user-points', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: userId,
+              total_points: rewardPoints,
+              available_points: rewardPoints,
+              withdrawn_points: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
           })
+          const createResult = await createResponse.json()
+          if (!createResult.success) {
+            throw new Error(`포인트 생성 실패: ${createResult.error}`)
+          }
         }
 
-        // 포인트 히스토리 추가
-        await lumi.entities.points_history.create({
-          user_id: userId,
-          type: 'earned',
-          amount: rewardPoints,
-          description: `리뷰 승인 - ${safeString(application, 'experience_name')}`,
-          reference_id: applicationId,
-          reference_type: 'review_approval',
-          created_at: new Date().toISOString()
+        // MongoDB API로 포인트 히스토리 추가
+        const historyResponse = await fetch('/api/db/points-history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            type: 'earned',
+            amount: rewardPoints,
+            description: `리뷰 승인 - ${safeString(application, 'experience_name')}`,
+            reference_id: applicationId,
+            reference_type: 'review_approval',
+            created_at: new Date().toISOString()
+          })
         })
+        const historyResult = await historyResponse.json()
+        if (!historyResult.success) {
+          console.error(`포인트 히스토리 추가 실패: ${historyResult.error}`)
+        }
 
-        // 신청 상태를 "완료"로 변경
-        await lumi.entities.user_applications.update(applicationId, {
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+        // MongoDB API로 신청 상태를 "완료"로 변경
+        const applicationResponse = await fetch(`/api/db/user-applications/${applicationId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
         })
+        const applicationResult = await applicationResponse.json()
+        if (!applicationResult.success) {
+          throw new Error(`신청 상태 업데이트 실패: ${applicationResult.error}`)
+        }
 
         toast.success(`포인트 ${rewardPoints}P가 지급되었습니다!`)
       } catch (pointError) {
@@ -1511,24 +1584,48 @@ const AdminDashboard: React.FC = () => {
         reviewed_by: user?.name || '관리자'
       }
 
-      // 리뷰 상태 업데이트
-      await lumi.entities.review_submissions.update(reviewId, reviewData)
+      // MongoDB API로 리뷰 상태 업데이트
+      const response = await fetch(`/api/db/review-submissions/${reviewId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData)
+      })
+      const result = await response.json()
+      if (!result.success) {
+        throw new Error(`리뷰 상태 업데이트 실패: ${result.error}`)
+      }
 
       // 관련 신청 상태 업데이트
       const applicationId = safeString(review, 'application_id')
       if (applicationId) {
         if (action === 'approved') {
-          // 승인 시 "리뷰 검수 완료" 상태로 업데이트 (포인트 지급 전)
-          await lumi.entities.user_applications.update(applicationId, {
-            status: 'review_completed',
-            review_completed_at: new Date().toISOString()
+          // MongoDB API로 승인 시 "리뷰 검수 완료" 상태로 업데이트 (포인트 지급 전)
+          const approveResponse = await fetch(`/api/db/user-applications/${applicationId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'review_completed',
+              review_completed_at: new Date().toISOString()
+            })
           })
+          const approveResult = await approveResponse.json()
+          if (!approveResult.success) {
+            console.error(`신청 상태 업데이트 실패: ${approveResult.error}`)
+          }
         } else if (action === 'rejected') {
-          // 거절 시 리뷰 거절 상태로 업데이트
-          await lumi.entities.user_applications.update(applicationId, {
-            status: 'review_rejected',
-            review_rejected_at: new Date().toISOString()
+          // MongoDB API로 거절 시 리뷰 거절 상태로 업데이트
+          const rejectResponse = await fetch(`/api/db/user-applications/${applicationId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'review_rejected',
+              review_rejected_at: new Date().toISOString()
+            })
           })
+          const rejectResult = await rejectResponse.json()
+          if (!rejectResult.success) {
+            console.error(`신청 상태 업데이트 실패: ${rejectResult.error}`)
+          }
         }
       }
 
