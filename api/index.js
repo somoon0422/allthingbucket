@@ -4,40 +4,62 @@ const { MongoClient } = require('mongodb');
 
 const app = express();
 
-// Vercel 최적화 MongoDB 연결
+// 미들웨어
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// MongoDB 연결 설정
 if (!process.env.MONGODB_URI) {
   throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+let client = null;
+let db = null;
 
-let client;
-let clientPromise;
-
-if (process.env.NODE_ENV === 'development') {
-  // 개발 환경에서는 global 변수 사용
-  let globalWithMongo = global;
-  
-  if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    globalWithMongo._mongoClientPromise = client.connect();
+// MongoDB 연결 함수 (Express 최적화)
+const connectDB = async () => {
+  try {
+    if (!client) {
+      console.log('🔗 MongoDB 연결 시도...');
+      client = new MongoClient(uri, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 5000
+      });
+      
+      await client.connect();
+      db = client.db('allthingbucket');
+      console.log('✅ MongoDB 연결 성공!');
+    }
+    return { client, db };
+  } catch (error) {
+    console.error('❌ MongoDB 연결 실패:', error.message);
+    // 연결 실패 시 재시도
+    setTimeout(connectDB, 5000);
+    throw error;
   }
-  clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-  // 프로덕션에서는 새 연결
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+};
+
+// 연결 상태 모니터링
+if (client) {
+  client.on('disconnected', () => {
+    console.log('MongoDB 연결 끊김');
+  });
+  
+  client.on('error', (err) => {
+    console.error('MongoDB 에러:', err);
+  });
 }
 
 // MongoDB 연결 함수
 async function connectToDatabase() {
-  console.log('🔗 MongoDB 연결 시도...');
-  
   try {
-    const client = await clientPromise;
-    const db = client.db('allthingbucket');
-    console.log("✅ MongoDB 연결 성공!");
+    const { db, client } = await connectDB();
     return { db, client };
   } catch (error) {
     console.error('❌ MongoDB 연결 실패:', error);
@@ -45,13 +67,11 @@ async function connectToDatabase() {
   }
 }
 
-// 미들웨어 설정
+// CORS 설정
 app.use(cors({
   origin: ['https://allthingbucket.com', 'http://localhost:5173', 'https://allthingbucket-fu178awcd-allthingbuckets-projects.vercel.app'],
   credentials: true
 }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -175,14 +195,37 @@ app.get('/api/db/campaigns', async (req, res) => {
   }
 });
 
-// 빠른 테스트 API
+// 디버깅용 테스트 라우트
 app.get('/api/test-db', async (req, res) => {
   try {
-    const { db } = await connectToDatabase();
-    await db.admin().command({ ping: 1 });
-    res.json({ status: "MongoDB 연결 성공! ✅" });
-  } catch (e) {
-    res.status(500).json({ status: "연결 실패 ❌", error: e.message });
+    const { db, client } = await connectToDatabase();
+    
+    // 연결 상태 확인
+    const state = client.topology ? client.topology.s.state : 'unknown';
+    const states = {
+      'connected': 'connected',
+      'connecting': 'connecting',
+      'disconnected': 'disconnected',
+      'unknown': 'unknown'
+    };
+    
+    // 간단한 쿼리 테스트
+    const collections = await db.listCollections().toArray();
+    
+    res.json({
+      status: states[state] || 'unknown',
+      connected: state === 'connected',
+      database: db.databaseName,
+      collections: collections.map(c => c.name),
+      uri: process.env.MONGODB_URI ? 'URI exists' : 'URI missing',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      stack: error.stack,
+      uri: process.env.MONGODB_URI ? 'URI exists' : 'URI missing'
+    });
   }
 });
 
