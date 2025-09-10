@@ -142,6 +142,8 @@ const AdminDashboard: React.FC = () => {
   const [lastSync, setLastSync] = useState<Date>(new Date())
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  
+
 
   // 🔥 실시간 데이터 동기화 함수
   const syncAllData = async (showLoader = true, showToast = false) => {
@@ -404,10 +406,10 @@ const AdminDashboard: React.FC = () => {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            status: 'approved',
-            admin_message: '일괄 승인',
-            processed_at: new Date().toISOString(),
-            processed_by: user?.id || user?.user_id || ''
+          status: 'approved',
+          admin_message: '일괄 승인',
+          processed_at: new Date().toISOString(),
+          processed_by: user?.id || user?.user_id || ''
           })
         })
       )
@@ -457,10 +459,10 @@ const AdminDashboard: React.FC = () => {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            status: 'rejected',
-            rejection_reason: reason,
-            processed_at: new Date().toISOString(),
-            processed_by: user?.id || user?.user_id || ''
+          status: 'rejected',
+          rejection_reason: reason,
+          processed_at: new Date().toISOString(),
+          processed_by: user?.id || user?.user_id || ''
           })
         })
       )
@@ -741,8 +743,8 @@ const AdminDashboard: React.FC = () => {
       
       if (result.success) {
         toast.success('체험단이 삭제되었습니다')
-        // 데이터 새로고침
-        syncAllData(false, false)
+      // 데이터 새로고침
+      syncAllData(false, false)
       } else {
         throw new Error(result.error || '체험단 삭제에 실패했습니다')
       }
@@ -770,8 +772,8 @@ const AdminDashboard: React.FC = () => {
       
       if (result.success) {
         toast.success('사용자가 삭제되었습니다')
-        // 데이터 새로고침
-        syncAllData(false, false)
+      // 데이터 새로고침
+      syncAllData(false, false)
       } else {
         throw new Error(result.error || '사용자 삭제에 실패했습니다')
       }
@@ -940,13 +942,13 @@ const AdminDashboard: React.FC = () => {
 
   // 세부적인 캠페인 타입 업데이트
   const handleDetailedCampaignTypeUpdate = async (updateConfig: {
-    const apiBaseUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3001'
-      : 'https://allthingbucket.com'
     targetTypes: string[],
     newType: string,
     updateAll: boolean
   }) => {
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001'
+      : 'https://allthingbucket.com'
     try {
       setBulkActionLoading(true)
       console.log('🔄 세부 캠페인 타입 업데이트 시작...', updateConfig)
@@ -1174,7 +1176,7 @@ const AdminDashboard: React.FC = () => {
           })
           const result = await response.json()
           if (result.success) {
-            updatedCount++
+          updatedCount++
           } else {
             console.error(`캠페인 필드 업데이트 실패: ${result.error}`)
           }
@@ -1427,9 +1429,9 @@ const AdminDashboard: React.FC = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          campaign_status: nextStatus,
-          updated_at: new Date().toISOString()
-        })
+        campaign_status: nextStatus,
+        updated_at: new Date().toISOString()
+      })
       })
       const result = await response.json()
       if (!result.success) {
@@ -1558,10 +1560,10 @@ const AdminDashboard: React.FC = () => {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              total_points: (currentPoints.total_points || 0) + rewardPoints,
-              available_points: (currentPoints.available_points || 0) + rewardPoints,
-              updated_at: new Date().toISOString()
-            })
+            total_points: (currentPoints.total_points || 0) + rewardPoints,
+            available_points: (currentPoints.available_points || 0) + rewardPoints,
+            updated_at: new Date().toISOString()
+          })
           })
           const updateResult = await updateResponse.json()
           if (!updateResult.success) {
@@ -1573,13 +1575,13 @@ const AdminDashboard: React.FC = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              user_id: userId,
-              total_points: rewardPoints,
-              available_points: rewardPoints,
-              withdrawn_points: 0,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
+            user_id: userId,
+            total_points: rewardPoints,
+            available_points: rewardPoints,
+            withdrawn_points: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
           })
           const createResult = await createResponse.json()
           if (!createResult.success) {
@@ -1592,14 +1594,14 @@ const AdminDashboard: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            user_id: userId,
-            type: 'earned',
-            amount: rewardPoints,
-            description: `리뷰 승인 - ${safeString(application, 'experience_name')}`,
-            reference_id: applicationId,
-            reference_type: 'review_approval',
-            created_at: new Date().toISOString()
-          })
+          user_id: userId,
+          type: 'earned',
+          amount: rewardPoints,
+          description: `리뷰 승인 - ${safeString(application, 'experience_name')}`,
+          reference_id: applicationId,
+          reference_type: 'review_approval',
+          created_at: new Date().toISOString()
+        })
         })
         const historyResult = await historyResponse.json()
         if (!historyResult.success) {
@@ -1611,10 +1613,10 @@ const AdminDashboard: React.FC = () => {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
         })
         const applicationResult = await applicationResponse.json()
         if (!applicationResult.success) {
@@ -1673,9 +1675,9 @@ const AdminDashboard: React.FC = () => {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              status: 'review_completed',
-              review_completed_at: new Date().toISOString()
-            })
+            status: 'review_completed',
+            review_completed_at: new Date().toISOString()
+          })
           })
           const approveResult = await approveResponse.json()
           if (!approveResult.success) {
@@ -1687,9 +1689,9 @@ const AdminDashboard: React.FC = () => {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              status: 'review_rejected',
-              review_rejected_at: new Date().toISOString()
-            })
+            status: 'review_rejected',
+            review_rejected_at: new Date().toISOString()
+          })
           })
           const rejectResult = await rejectResponse.json()
           if (!rejectResult.success) {
@@ -2381,8 +2383,8 @@ const AdminDashboard: React.FC = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         프로필 정보
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        신청 캠페인
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              신청 캠페인
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         액션

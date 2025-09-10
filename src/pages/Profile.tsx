@@ -202,6 +202,9 @@ const Profile: React.FC = () => {
         }
       } else {
         // 새 influencer_profile 생성 - MongoDB API 사용
+        const apiBaseUrl = window.location.hostname === 'localhost' 
+          ? 'http://localhost:3001'
+          : 'https://allthingbucket.com'
         const response = await fetch(`${apiBaseUrl}/api/db/influencer-profiles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
