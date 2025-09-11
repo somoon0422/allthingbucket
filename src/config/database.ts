@@ -1,55 +1,85 @@
-// API 엔드포인트 설정
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+// Supabase 설정
+import { createClient } from '@supabase/supabase-js'
 
-// 컬렉션 이름 상수
-export const COLLECTIONS = {
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nwwwesxzlpotabtcvkgj.supabase.co'
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53d3dlc3h6bHBvdGFidGN2a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MDkyNzQsImV4cCI6MjA3MzA4NTI3NH0.Xw7l2aARgkxognpP1G94_lIMHEKS_fwqkpFTXauSKYE'
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// 테이블 이름 상수
+export const TABLES = {
   USERS: 'users',
-  ADMINS: 'admins',
-  EXPERIENCE_CAMPAIGNS: 'experience_campaigns',
+  ADMIN_USERS: 'admin_users',
+  CAMPAIGNS: 'campaigns',
   USER_APPLICATIONS: 'user_applications',
   USER_PROFILES: 'user_profiles',
   POINTS_HISTORY: 'points_history',
   REVIEW_SUBMISSIONS: 'review_submissions',
-  NOTIFICATIONS: 'notifications'
+  ADMIN_NOTIFICATIONS: 'admin_notifications',
+  USER_CODES: 'user_codes',
+  INFLUENCER_PROFILES: 'influencer_profiles',
+  USER_REVIEWS: 'user_reviews',
+  WITHDRAWAL_REQUESTS: 'withdrawal_requests'
 } as const
 
-// API 호출 헬퍼 함수
-export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+// Supabase API 호출 헬퍼 함수
+export const supabaseCall = async (table: string, operation: string, data?: any) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    })
-
-    if (!response.ok) {
-      throw new Error(`API 호출 실패: ${response.status} ${response.statusText}`)
+    let result
+    
+    switch (operation) {
+      case 'list':
+        result = await supabase.from(table).select('*')
+        break
+      case 'get':
+        result = await supabase.from(table).select('*').eq('id', data.id).single()
+        break
+      case 'create':
+        result = await supabase.from(table).insert(data).select().single()
+        break
+      case 'update':
+        result = await supabase.from(table).update(data).eq('id', data.id).select().single()
+        break
+      case 'delete':
+        result = await supabase.from(table).delete().eq('id', data.id)
+        break
+      default:
+        throw new Error(`지원하지 않는 작업: ${operation}`)
     }
 
-    return await response.json()
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+
+    return { success: true, data: result.data }
   } catch (error) {
-    console.error('API 호출 에러:', error)
+    console.error('Supabase API 호출 에러:', error)
     throw error
   }
 }
 
-// 데이터베이스 연결 시뮬레이션 (클라이언트에서는 항상 성공)
+// 데이터베이스 연결 확인
 export const connectToDatabase = async (): Promise<boolean> => {
   try {
-    console.log('✅ API 서버 연결 준비 완료')
+    const { data, error } = await supabase.from('campaigns').select('count').limit(1)
+    
+    if (error) {
+      console.error('❌ Supabase 연결 실패:', error)
+      return false
+    }
+    
+    console.log('✅ Supabase 연결 성공')
     return true
   } catch (error) {
-    console.error('❌ API 서버 연결 실패:', error)
+    console.error('❌ Supabase 연결 실패:', error)
     return false
   }
 }
 
 export const getDatabase = () => {
-  return { apiCall }
+  return { supabaseCall, supabase }
 }
 
 export const closeDatabase = async (): Promise<void> => {
-  console.log('API 연결 종료')
+  console.log('Supabase 연결 종료')
 }

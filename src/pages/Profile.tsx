@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-// Lumi SDK 제거됨 - MongoDB API 사용
+import { dataService } from '../lib/dataService'
+// Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
 import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield} from 'lucide-react'
 import { AddressInput } from '../components/AddressInput'
@@ -63,13 +64,8 @@ const Profile: React.FC = () => {
     try {
       setLoading(true)
       
-      // 🏷️ 사용자 회원코드 조회 (수정 불가) - MongoDB API 사용
-      const apiBaseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001'
-        : 'https://allthingbucket.com'
-      const codesResponse = await fetch(`${apiBaseUrl}/api/db/user-codes`)
-      const codesResult = await codesResponse.json()
-      const codes = codesResult.success ? codesResult.data : []
+      // 🏷️ 사용자 회원코드 조회 (수정 불가) - Supabase API 사용
+      const codes = await dataService.entities.user_codes.list()
       const userCodeData = codes.find((code: any) => code && code.user_id === user.user_id)
       
       if (userCodeData && userCodeData.user_code) {
@@ -77,18 +73,14 @@ const Profile: React.FC = () => {
         console.log('🏷️ 사용자 회원코드 확인:', userCodeData.user_code)
       }
       
-      // 먼저 user_profiles에서 기본 정보 확인 - MongoDB API 사용
-      const userProfilesResponse = await fetch(`${apiBaseUrl}/api/db/user-profiles`)
-      const userProfilesResult = await userProfilesResponse.json()
-      const userProfiles = userProfilesResult.success ? userProfilesResult.data : []
+      // 먼저 user_profiles에서 기본 정보 확인 - Supabase API 사용
+      const userProfiles = await dataService.entities.user_profiles.list()
       const userProfile = Array.isArray(userProfiles) 
         ? userProfiles.find((p: any) => p && p.user_id === user.user_id)
         : null
       
-      // influencer_profiles에서 상세 정보 확인 - MongoDB API 사용
-      const influencerProfilesResponse = await fetch(`${apiBaseUrl}/api/db/influencer-profiles`)
-      const influencerProfilesResult = await influencerProfilesResponse.json()
-      const influencerProfiles = influencerProfilesResult.success ? influencerProfilesResult.data : []
+      // influencer_profiles에서 상세 정보 확인 - Supabase API 사용
+      const influencerProfiles = await dataService.entities.influencer_profiles.list()
       const influencerProfile = influencerProfiles.find((p: any) => p && p.user_id === user.user_id)
       
       if (influencerProfile) {
@@ -185,32 +177,16 @@ const Profile: React.FC = () => {
       }
 
       if (profile && profile._id) {
-        // influencer_profiles 업데이트 - MongoDB API 사용
-        const apiBaseUrl = window.location.hostname === 'localhost' 
-          ? 'http://localhost:3001'
-          : 'https://allthingbucket.com'
-        const response = await fetch(`${apiBaseUrl}/api/db/influencer-profiles/${profile._id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(profileData)
-        })
-        const result = await response.json()
+        // influencer_profiles 업데이트 - Supabase API 사용
+        const result = await dataService.entities.influencer_profiles.update(profile._id, profileData)
         if (result.success) {
           toast.success('프로필이 업데이트되었습니다')
         } else {
           toast.error('프로필 업데이트에 실패했습니다')
         }
       } else {
-        // 새 influencer_profile 생성 - MongoDB API 사용
-        const apiBaseUrl = window.location.hostname === 'localhost' 
-          ? 'http://localhost:3001'
-          : 'https://allthingbucket.com'
-        const response = await fetch(`${apiBaseUrl}/api/db/influencer-profiles`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(profileData)
-        })
-        const result = await response.json()
+        // 새 influencer_profile 생성 - Supabase API 사용
+        const result = await dataService.entities.influencer_profiles.create(profileData)
         if (result.success) {
           toast.success('프로필이 생성되었습니다')
         } else {

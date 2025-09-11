@@ -80,16 +80,15 @@ export class GoogleAuthService {
     }
     
     // 기존 사용자 확인
-    const existingUsersResponse = await dataService.entities.users.list({
-      filter: { email: mockGoogleUser.email }
-    })
+    const existingUsersResponse = await dataService.entities.users.list()
     
     let user
-    const existingUsers = Array.isArray(existingUsersResponse) ? existingUsersResponse : existingUsersResponse?.list || []
-    if (existingUsers.length > 0) {
+    const existingUsers = Array.isArray(existingUsersResponse) ? existingUsersResponse : []
+    const existingUser = existingUsers.find((u: any) => u.email === mockGoogleUser.email)
+    if (existingUser) {
       // 기존 사용자 업데이트
-      user = existingUsers[0]
-      await dataService.entities.users.update(user._id, {
+      user = existingUser
+      await dataService.entities.users.update(user.id || user._id, {
         google_id: mockGoogleUser.id,
         profile_image: mockGoogleUser.picture,
         updated_at: new Date().toISOString()
@@ -155,16 +154,56 @@ export class GoogleAuthService {
   // Google 로그인 버튼 클릭 처리 (실제 Google OAuth 사용)
   static async handleGoogleLogin(): Promise<void> {
     try {
-      console.log('🔥 실제 Google OAuth 로그인 시작...')
+      console.log('🔥 Google OAuth 로그인 시작...')
       
-      // 실제 Google OAuth 서비스 사용
-      const RealGoogleAuthService = (await import('./realGoogleAuthService')).default
-      await RealGoogleAuthService.startGoogleLogin()
+      // Google OAuth URL로 리다이렉트
+      const authUrl = this.getGoogleAuthUrl()
+      console.log('Google OAuth URL:', authUrl)
+      
+      // 팝업 창으로 Google OAuth 열기
+      const popup = window.open(
+        authUrl,
+        'googleAuth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      )
+      
+      if (!popup) {
+        throw new Error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.')
+      }
+      
+      // 팝업에서 결과를 기다림
+      return new Promise((resolve, reject) => {
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed)
+            reject(new Error('로그인이 취소되었습니다'))
+          }
+        }, 1000)
+        
+        // 메시지 리스너로 결과 받기
+        const messageListener = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return
+          
+          if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+            clearInterval(checkClosed)
+            window.removeEventListener('message', messageListener)
+            popup.close()
+            resolve()
+          } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+            clearInterval(checkClosed)
+            window.removeEventListener('message', messageListener)
+            popup.close()
+            reject(new Error(event.data.error || 'Google 로그인에 실패했습니다'))
+          }
+        }
+        
+        window.addEventListener('message', messageListener)
+      })
       
     } catch (error) {
-      console.error('❌ 실제 Google OAuth 로그인 실패:', error)
+      console.error('❌ Google OAuth 로그인 실패:', error)
       
-      // 실제 Google OAuth 실패시 시뮬레이션으로 대체
+      // Google OAuth 실패시 시뮬레이션으로 대체
       console.log('🔄 시뮬레이션 로그인으로 대체...')
       await this.simulateGoogleLogin()
     }
@@ -234,13 +273,12 @@ export class GoogleAuthService {
       console.log('🔍 사용자 프로필 확인 중...', user)
       
       // 기존 프로필 확인
-      const existingProfiles = await dataService.entities.user_profiles.list({
-        filter: { user_id: user.id || user.user_id }
-      })
+      const existingProfiles = await dataService.entities.user_profiles.list()
       
-      const profiles = Array.isArray(existingProfiles) ? existingProfiles : existingProfiles?.list || []
+      const profiles = Array.isArray(existingProfiles) ? existingProfiles : []
+      const existingProfile = profiles.find((p: any) => p.user_id === (user.id || user.user_id))
       
-      if (profiles.length === 0) {
+      if (!existingProfile) {
         console.log('📝 새 사용자 프로필 생성 중...')
         
         // 새 프로필 생성
@@ -301,20 +339,19 @@ export class GoogleAuthService {
       console.log('📝 Google 사용자 정보:', mockGoogleUser)
       
       // 기존 사용자 확인
-      const existingUsersResponse = await dataService.entities.users.list({
-        filter: { email: mockGoogleUser.email }
-      })
+      const existingUsersResponse = await dataService.entities.users.list()
       
       let user
-      const existingUsers = Array.isArray(existingUsersResponse) ? existingUsersResponse : existingUsersResponse?.list || []
+      const existingUsers = Array.isArray(existingUsersResponse) ? existingUsersResponse : []
+      const existingUser = existingUsers.find((u: any) => u.email === mockGoogleUser.email)
       console.log('🔍 기존 사용자 확인:', existingUsers.length, '명')
       
-      if (existingUsers.length > 0) {
+      if (existingUser) {
         // 기존 사용자 업데이트
-        user = existingUsers[0]
+        user = existingUser
         console.log('✅ 기존 사용자 업데이트:', user)
         
-        await dataService.entities.users.update(user._id, {
+        await dataService.entities.users.update(user.id || user._id, {
           google_id: mockGoogleUser.id,
           profile_image: mockGoogleUser.picture,
           updated_at: new Date().toISOString()

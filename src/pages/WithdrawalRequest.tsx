@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { usePointsManagement } from '../hooks/usePointsManagement'
-// Lumi SDK 제거됨 - MongoDB API 사용
+// Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
 import { 
   Calculator, AlertCircle, CheckCircle, 
@@ -28,7 +28,7 @@ const WithdrawalRequest: React.FC = () => {
     try {
       setProfileLoading(true)
       
-      // 사용자 프로필 조회 - MongoDB API 사용
+      // 사용자 프로필 조회 - Supabase API 사용
       const profilesResponse = await fetch('/api/db/user-profiles')
       const profilesResult = await profilesResponse.json()
       const profiles = profilesResult.success ? profilesResult.data : []

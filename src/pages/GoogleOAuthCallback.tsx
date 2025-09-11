@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import RealGoogleAuthService from '../services/realGoogleAuthService'
+import { useSearchParams } from 'react-router-dom'
+import { GoogleAuthService } from '../services/googleAuthService'
 
 const GoogleOAuthCallback = () => {
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [error, setError] = useState<string>('')
 
@@ -25,7 +24,7 @@ const GoogleOAuthCallback = () => {
         console.log('🔄 Google OAuth 콜백 처리 시작...')
 
         // Google OAuth 콜백 처리
-        const userInfo = await RealGoogleAuthService.handleGoogleCallback(code)
+        const userInfo = await GoogleAuthService.handleGoogleCallback(code)
         
         // 부모 창에 성공 메시지 전송
         if (window.opener) {

@@ -1,4 +1,4 @@
-import { apiCall } from '../config/database'
+import { dataService } from '../lib/dataService'
 import { 
   isValidEmail,
   isStrongPassword,
@@ -49,13 +49,39 @@ export class AuthService {
         throw new Error('유효하지 않은 전화번호 형식입니다')
       }
 
-      // API 호출로 회원가입
-      const result = await apiCall('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(userData)
+      // Supabase Auth를 사용한 회원가입
+      const result = await dataService.auth.signUp({
+        email: userData.email,
+        password: userData.password
       })
 
-      return result
+      if (!result.data.user) {
+        throw new Error('회원가입에 실패했습니다')
+      }
+
+      // 사용자 프로필 생성
+      const profileData = {
+        id: result.data.user.id,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        address: userData.address,
+        birth_date: userData.birth_date,
+        gender: userData.gender,
+        created_at: new Date().toISOString()
+      }
+      
+      await dataService.entities.user_profiles.create(profileData)
+
+      return {
+        user: {
+          id: result.data.user.id,
+          email: result.data.user.email,
+          name: userData.name,
+          profile: profileData
+        },
+        token: result.data.session?.access_token || ''
+      }
     } catch (error) {
       console.error('사용자 회원가입 실패:', error)
       throw error
@@ -65,13 +91,28 @@ export class AuthService {
   // 사용자 로그인
   async loginUser(credentials: LoginCredentials): Promise<{ user: any; token: string }> {
     try {
-      // API 호출로 로그인
-      const result = await apiCall('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(credentials)
+      // Supabase Auth를 사용한 로그인
+      const result = await dataService.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password
       })
 
-      return result
+      if (!result.data.user) {
+        throw new Error('로그인에 실패했습니다')
+      }
+
+      // 사용자 프로필 정보 가져오기
+      const profile = await dataService.entities.user_profiles.get(result.data.user.id)
+
+      return {
+        user: {
+          id: result.data.user.id,
+          email: result.data.user.email,
+          name: profile?.name || result.data.user.email?.split('@')[0] || '사용자',
+          profile: profile
+        },
+        token: result.data.session?.access_token || ''
+      }
     } catch (error) {
       console.error('사용자 로그인 실패:', error)
       throw error
@@ -90,13 +131,22 @@ export class AuthService {
         throw new Error('비밀번호는 최소 8자 이상이며, 대소문자, 숫자, 특수문자를 포함해야 합니다')
       }
 
-      // API 호출로 관리자 회원가입
-      const result = await apiCall('/auth/admin/register', {
-        method: 'POST',
-        body: JSON.stringify(adminData)
-      })
+      // 관리자 계정 생성
+      const adminAccount = {
+        username: adminData.admin_name,
+        email: adminData.email,
+        password: adminData.password, // 실제로는 해시화해야 함
+        role: adminData.role || 'admin',
+        is_active: true,
+        created_at: new Date().toISOString()
+      }
 
-      return result
+      const result = await dataService.entities.admin_users.create(adminAccount)
+
+      return {
+        admin: result.data,
+        token: 'admin_token_' + Date.now() // 임시 토큰
+      }
     } catch (error) {
       console.error('관리자 회원가입 실패:', error)
       throw error
@@ -108,32 +158,23 @@ export class AuthService {
     try {
       console.log('🔐 관리자 로그인 시도:', credentials);
       
-      // MongoDB API로 관리자 로그인
-      const apiBaseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001'
-        : 'https://allthingbucket.com';
+      // Supabase에서 관리자 정보 조회
+      const admins = await dataService.entities.admin_users.list()
+      const admin = admins.find((a: any) => a.username === credentials.admin_name)
       
-      const response = await fetch(`${apiBaseUrl}/api/auth/admin/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: credentials.admin_name,
-          password: credentials.password
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || '로그인에 실패했습니다');
+      if (!admin) {
+        throw new Error('관리자를 찾을 수 없습니다')
       }
       
-      console.log('✅ 관리자 로그인 성공:', result);
+      // 비밀번호 확인 (실제로는 해시된 비밀번호를 비교해야 함)
+      if (admin.password !== credentials.password) {
+        throw new Error('비밀번호가 일치하지 않습니다')
+      }
+      
+      console.log('✅ 관리자 로그인 성공:', admin);
       
       return {
-        admin: result.data,
+        admin: admin,
         token: 'admin_token_' + Date.now() // 임시 토큰
       };
     } catch (error) {
@@ -145,8 +186,8 @@ export class AuthService {
   // 사용자 ID로 사용자 정보 조회
   async getUserById(userId: string): Promise<any> {
     try {
-      const result = await apiCall(`/users/${userId}`)
-      return result
+      const profile = await dataService.entities.user_profiles.get(userId)
+      return profile
     } catch (error) {
       console.error('사용자 조회 실패:', error)
       throw error
@@ -156,8 +197,8 @@ export class AuthService {
   // 관리자 ID로 관리자 정보 조회
   async getAdminById(adminId: string): Promise<any> {
     try {
-      const result = await apiCall(`/admins/${adminId}`)
-      return result
+      const admin = await dataService.entities.admin_users.get(adminId)
+      return admin
     } catch (error) {
       console.error('관리자 조회 실패:', error)
       throw error

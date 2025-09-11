@@ -1,29 +1,17 @@
-
 import { useState, useCallback } from 'react'
-// Lumi SDK 제거됨 - MongoDB API 사용
+import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
-import { ultraSafeArray, extractAllUserIds } from '../utils/arrayUtils'
 
 export const useExperiences = () => {
   const [loading, setLoading] = useState(false)
 
-  // 체험단 목록 조회 - MongoDB API 사용
+  // 체험단 목록 조회 - Supabase API 사용
   const getExperiences = useCallback(async () => {
     try {
       setLoading(true)
       
-      const apiBaseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001'
-        : 'https://allthingbucket.com'
-      const response = await fetch(`${apiBaseUrl}/api/db/campaigns`)
-      const result = await response.json()
-      
-      if (result.success) {
-        const experiences = ultraSafeArray(result.data)
-        return experiences
-      } else {
-        throw new Error(result.error || '캠페인 목록 조회 실패')
-      }
+      const campaigns = await dataService.entities.campaigns.list()
+      return campaigns || []
     } catch (error) {
       console.error('체험단 목록 조회 실패:', error)
       toast.error('체험단 목록을 불러오는데 실패했습니다')
@@ -33,22 +21,13 @@ export const useExperiences = () => {
     }
   }, [])
 
-  // 특정 체험단 조회 - MongoDB API 사용
+  // 특정 체험단 조회 - Supabase API 사용
   const getCampaignById = useCallback(async (id: string) => {
     try {
       setLoading(true)
       
-      const apiBaseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001'
-        : 'https://allthingbucket.com'
-      const response = await fetch(`${apiBaseUrl}/api/db/campaigns?campaign_id=${id}`)
-      const result = await response.json()
-      
-      if (result.success && result.data && result.data.length > 0) {
-        return result.data[0]
-      } else {
-        throw new Error('캠페인을 찾을 수 없습니다')
-      }
+      const campaign = await dataService.entities.campaigns.get(id)
+      return campaign
     } catch (error) {
       console.error('체험단 상세 조회 실패:', error)
       toast.error('체험단 정보를 불러오는데 실패했습니다')
@@ -58,27 +37,18 @@ export const useExperiences = () => {
     }
   }, [])
 
-  // 🔥 중복 신청 체크 함수
-  const checkDuplicateApplication = useCallback(async (experienceId: string, userId: string, originalUser?: any) => {
+  // 중복 신청 체크 함수
+  const checkDuplicateApplication = useCallback(async (experienceId: string, userId: string) => {
     try {
-      // 모든 가능한 사용자 ID 수집
-      const allUserIds = originalUser ? extractAllUserIds(originalUser) : [userId]
+      const applications = await dataService.entities.user_applications.list()
+      const userApplications = applications.filter((app: any) => 
+        app.user_id === userId && app.experience_id === experienceId
+      )
       
-      for (const checkUserId of allUserIds) {
-        if (!checkUserId) continue
-        
-        // MongoDB API로 중복 신청 체크
-        const apiBaseUrl = window.location.hostname === 'localhost' 
-          ? 'http://localhost:3001'
-          : 'https://allthingbucket.com'
-        const response = await fetch(`${apiBaseUrl}/api/db/user-applications?user_id=${checkUserId}&experience_id=${experienceId}`)
-        const result = await response.json()
-        const applications = result.success ? ultraSafeArray(result.data) : []
-        if (applications.length > 0) {
-          return {
-            isDuplicate: true,
-            existingApplication: applications[0]
-          }
+      if (userApplications.length > 0) {
+        return {
+          isDuplicate: true,
+          existingApplication: userApplications[0]
         }
       }
       
@@ -89,11 +59,8 @@ export const useExperiences = () => {
     }
   }, [])
 
-  // 🔥 안전한 체험단 신청
+  // 체험단 신청
   const applyForCampaign = useCallback(async (experienceId: string, userId: string, additionalData: any = {}) => {
-    const apiBaseUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3001'
-      : 'https://allthingbucket.com'
     try {
       setLoading(true)
 
@@ -101,26 +68,23 @@ export const useExperiences = () => {
         throw new Error('사용자 ID가 없습니다')
       }
 
-      // 🔥 중복 신청 체크
-      const duplicateCheck = await checkDuplicateApplication(experienceId, userId, additionalData.original_user_object)
+      // 중복 신청 체크
+      const duplicateCheck = await checkDuplicateApplication(experienceId, userId)
       
       if (duplicateCheck.isDuplicate) {
         toast.error('이미 신청하신 체험단입니다')
         return { success: false, reason: 'duplicate', existingApplication: duplicateCheck.existingApplication }
       }
 
-      // 🔥 모집인원 체크
+      // 모집인원 체크
       try {
-        // MongoDB API로 체험단 정보 조회
-        const experienceResponse = await fetch(`${apiBaseUrl}/api/db/campaigns?campaign_id=${experienceId}`)
-        const experienceResult = await experienceResponse.json()
-        const experience = experienceResult.success && experienceResult.data.length > 0 ? experienceResult.data[0] : null
+        const experience = await dataService.entities.campaigns.get(experienceId)
         
         if (experience && experience.max_participants) {
-          // 현재 승인된 신청자 수 확인 - MongoDB API 사용
-          const applicationsResponse = await fetch(`${apiBaseUrl}/api/db/user-applications?experience_id=${experienceId}&status=approved`)
-          const applicationsResult = await applicationsResponse.json()
-          const approvedApplications = applicationsResult.success ? applicationsResult.data : []
+          const applications = await dataService.entities.user_applications.list()
+          const approvedApplications = applications.filter((app: any) => 
+            app.experience_id === experienceId && app.status === 'approved'
+          )
           
           if (approvedApplications.length >= experience.max_participants) {
             toast.error('모집인원이 마감되었습니다')
@@ -129,7 +93,6 @@ export const useExperiences = () => {
         }
       } catch (error) {
         console.warn('모집인원 체크 실패:', error)
-        // 모집인원 체크 실패해도 신청은 진행 (기존 체험단 호환성)
       }
 
       // 신청 데이터 생성
@@ -156,25 +119,18 @@ export const useExperiences = () => {
         
         submitted_by_role: additionalData.submitted_by_role || '',
         submitted_by_admin_role: additionalData.submitted_by_admin_role || '',
-        debug_info: additionalData.debug_info || {},
-        
-        user_id_mapping: {
-          primary_id: userId,
-          all_user_ids: additionalData.original_user_object ? extractAllUserIds(additionalData.original_user_object) : [userId],
-          original_user_object: additionalData.original_user_object || null
-        }
+        debug_info: additionalData.debug_info || {}
       }
 
-      // MongoDB API로 신청 생성
-      const response = await fetch(`${apiBaseUrl}/api/db/user-applications`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(applicationData)
-      })
-      const result = await response.json()
+      // Supabase API로 신청 생성
+      const result = await dataService.entities.user_applications.create(applicationData)
       
-      toast.success('체험단 신청이 완료되었습니다!')
-      return { success: true, application: result }
+      if (result.success) {
+        toast.success('체험단 신청이 완료되었습니다!')
+        return { success: true, application: result.data }
+      } else {
+        throw new Error(result.message || '신청 생성에 실패했습니다')
+      }
     } catch (error) {
       console.error('체험단 신청 실패:', error)
       
@@ -196,31 +152,23 @@ export const useExperiences = () => {
     }
   }, [checkDuplicateApplication])
 
-  // 🔥 신청 취소 함수 (상태 변경으로 수정)
+  // 신청 취소 함수
   const cancelApplication = useCallback(async (applicationId: string) => {
-    const apiBaseUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3001'
-      : 'https://allthingbucket.com'
     try {
       setLoading(true)
       
-      // MongoDB API로 신청 취소
-      const response = await fetch(`${apiBaseUrl}/api/db/user-applications/${applicationId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+      const result = await dataService.entities.user_applications.update(applicationId, {
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
-      const result = await response.json()
-      if (!result.success) {
-        throw new Error('신청 취소에 실패했습니다')
-      }
       
-      toast.success('신청이 취소되었습니다')
-      return true
+      if (result.success) {
+        toast.success('신청이 취소되었습니다')
+        return true
+      } else {
+        throw new Error(result.message || '신청 취소에 실패했습니다')
+      }
     } catch (error) {
       console.error('신청 취소 실패:', error)
       toast.error('신청 취소에 실패했습니다')
@@ -230,103 +178,23 @@ export const useExperiences = () => {
     }
   }, [])
 
-  // 🔥 완전히 안전한 사용자 신청 내역 조회
-  const getUserApplications = useCallback(async (userId?: string, currentUser?: any) => {
-    const apiBaseUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3001'
-      : 'https://allthingbucket.com'
+  // 사용자 신청 내역 조회
+  const getUserApplications = useCallback(async (userId?: string) => {
     try {
       setLoading(true)
 
-      if (!userId && !currentUser) {
+      if (!userId) {
         return []
       }
 
-      // 🔥 모든 가능한 검색 기준 수집
-      const searchCriteria: Array<{field: string, value: string}> = []
-      
-      if (userId && typeof userId === 'string') {
-        searchCriteria.push({ field: 'user_id', value: userId })
-      }
-      
-      if (currentUser && typeof currentUser === 'object') {
-        const userIds = extractAllUserIds(currentUser)
-        userIds.forEach(id => {
-          if (id && !searchCriteria.some(c => c.field === 'user_id' && c.value === id)) {
-            searchCriteria.push({ field: 'user_id', value: id })
-          }
-        })
-        
-        if (currentUser.email && typeof currentUser.email === 'string') {
-          searchCriteria.push({ field: 'email', value: currentUser.email })
-        }
-        
-        if (currentUser.name && typeof currentUser.name === 'string') {
-          searchCriteria.push({ field: 'name', value: currentUser.name })
-        }
-      }
+      const applications = await dataService.entities.user_applications.list()
+      const userApplications = applications.filter((app: any) => app.user_id === userId)
 
-      if (searchCriteria.length === 0) {
-        return []
-      }
-
-      let allApplications: any[] = []
-
-      // 🔥 각 기준으로 신청 내역 검색 (안전한 배열 처리)
-      for (const criteria of searchCriteria) {
-        try {
-          const filter: any = {}
-          filter[criteria.field] = criteria.value
-          
-          // MongoDB API로 신청 내역 검색
-          const response = await fetch(`${apiBaseUrl}/api/db/user-applications?${criteria.field}=${criteria.value}`)
-          const result = await response.json()
-          const applications = result.success ? result.data : []
-          if (applications.length > 0) {
-            allApplications = [...allApplications, ...applications]
-          }
-        } catch {
-          // 개별 검색 실패시 계속 진행
-          continue
-        }
-      }
-
-      // 🔥 중복 제거 (안전한 ID 접근)
-      const uniqueApplications = allApplications.reduce((acc: any[], current: any) => {
-        try {
-          if (!current || typeof current !== 'object') {
-            return acc
-          }
-
-          const currentId = current._id || current.id
-          if (!currentId) {
-            return acc
-          }
-
-          const existingIndex = acc.findIndex(item => {
-            try {
-              const itemId = item._id || item.id
-              return itemId === currentId
-            } catch {
-              return false
-            }
-          })
-          
-          if (existingIndex === -1) {
-            acc.push(current)
-          }
-          
-          return acc
-        } catch {
-          return acc
-        }
-      }, [])
-
-      // 🔥 각 신청에 체험단 정보 추가 (안전한 처리)
+      // 각 신청에 체험단 정보 추가
       const enrichedApplications = await Promise.all(
-        uniqueApplications.map(async (app: any) => {
+        userApplications.map(async (app: any) => {
           try {
-            if (!app || typeof app !== 'object' || !app.experience_id) {
+            if (!app.experience_id) {
               return {
                 ...app,
                 experience: null,
@@ -334,10 +202,7 @@ export const useExperiences = () => {
               }
             }
 
-            // MongoDB API로 체험단 정보 조회
-            const experienceResponse = await fetch(`${apiBaseUrl}/api/db/campaigns?campaign_id=${app.experience_id}`)
-            const experienceResult = await experienceResponse.json()
-            const experience = experienceResult.success && experienceResult.data.length > 0 ? experienceResult.data[0] : null
+            const experience = await dataService.entities.campaigns.get(app.experience_id)
             return {
               ...app,
               experience: experience || null,

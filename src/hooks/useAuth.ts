@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-// Lumi SDK 제거됨 - Supabase API 사용
-// lumiAuthService 제거됨 - Supabase API 사용
+import { dataService } from '../lib/dataService'
 import { getUserFromToken } from '../utils/auth'
 import toast from 'react-hot-toast'
 
@@ -33,11 +31,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// ultraSafeArray 함수 제거됨 - 사용하지 않음
-
-// safeDataAccess, safeFindInArray 함수 제거됨 - 사용하지 않음
-
-// 🔥 안전한 사용자 데이터 처리
+// 안전한 사용자 데이터 처리
 function processUserData(userData: any): User | null {
   try {
     if (!userData || typeof userData !== 'object') {
@@ -97,33 +91,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      // Supabase API로 사용자 로그인
-      const apiBaseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001'
-        : 'https://allthingbucket.com'
-      const response = await fetch(`${apiBaseUrl}/api/auth/user/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password })
+      // Supabase Auth를 사용한 로그인
+      const result = await dataService.auth.signInWithPassword({
+        email,
+        password
       })
       
-      const result = await response.json()
-      
-      if (result.success && result.data.user) {
-        // 토큰을 localStorage에 저장
-        if (result.data.token) {
-          localStorage.setItem('auth_token', result.data.token)
-        }
+      if (result.data?.user) {
+        // 사용자 프로필 정보 가져오기
+        const profile = await dataService.entities.user_profiles.get(result.data.user.id)
         
-        const processedUser = processUserData(result.data.user)
+        const processedUser = processUserData({
+          id: result.data.user.id,
+          email: result.data.user.email || '',
+          name: profile?.name || result.data.user.email?.split('@')[0] || '사용자',
+          role: 'user',
+          profile: profile
+        })
+        
         if (processedUser) {
           setUser(processedUser)
           toast.success(`환영합니다, ${processedUser.name}님!`)
         }
       } else {
-        throw new Error(result.error || '로그인에 실패했습니다')
+        throw new Error('로그인에 실패했습니다')
       }
     } catch (error: any) {
       console.error('로그인 실패:', error)
@@ -137,33 +128,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      // Supabase API로 사용자 등록
-      const apiBaseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001'
-        : 'https://allthingbucket.com'
-      const response = await fetch(`${apiBaseUrl}/api/db/user-register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData)
+      // Supabase Auth를 사용한 회원가입
+      const result = await dataService.auth.signUp({
+        email: userData.email,
+        password: userData.password
       })
       
-      const result = await response.json()
-      
-      if (result.success && result.data.user) {
-        // 토큰을 localStorage에 저장
-        if (result.data.token) {
-          localStorage.setItem('auth_token', result.data.token)
+      if (result.data?.user) {
+        // 사용자 프로필 생성
+        const profileData = {
+          id: result.data.user.id,
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          address: userData.address,
+          birth_date: userData.birth_date,
+          gender: userData.gender,
+          created_at: new Date().toISOString()
         }
         
-        const processedUser = processUserData(result.data.user)
+        await dataService.entities.user_profiles.create(profileData)
+        
+        const processedUser = processUserData({
+          id: result.data.user.id,
+          email: result.data.user.email || '',
+          name: userData.name,
+          role: 'user',
+          profile: profileData
+        })
+        
         if (processedUser) {
           setUser(processedUser)
           toast.success(`회원가입이 완료되었습니다, ${processedUser.name}님!`)
         }
       } else {
-        throw new Error(result.error || '회원가입에 실패했습니다')
+        throw new Error('회원가입에 실패했습니다')
       }
     } catch (error: any) {
       console.error('회원가입 실패:', error)
@@ -203,47 +202,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       
-      // Supabase API로 관리자 로그인
-      const apiBaseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001'
-        : 'https://allthingbucket.com'
-      const response = await fetch(`${apiBaseUrl}/api/auth/admin/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          admin_name: adminName,
-          password: password
-        })
-      })
+      // Supabase에서 관리자 정보 조회
+      const admins = await dataService.entities.admin_users.list()
+      const admin = admins.find((a: any) => a.username === adminName)
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      console.log('🔍 관리자 조회 결과:', { adminName, admins, foundAdmin: admin })
+      
+      if (!admin) {
+        throw new Error('관리자를 찾을 수 없습니다')
       }
       
-      const result = await response.json()
+      // 활성 상태 확인
+      if (!admin.is_active) {
+        throw new Error('비활성화된 관리자 계정입니다')
+      }
       
-      if (result.success && result.admin) {
-        const admin = result.admin
-        
-        const processedAdmin = processUserData({
-          _id: admin.id,
-          name: admin.username,
-          email: admin.email,
-          role: 'admin',
-          admin_name: admin.username,
-          admin_role: admin.role,
-          is_active: true
-        })
-        
-        if (processedAdmin) {
-          setUser(processedAdmin)
-          localStorage.setItem('admin_session', JSON.stringify(processedAdmin))
-          toast.success(`관리자 로그인 성공: ${processedAdmin.admin_name}님`, { duration: 2000 })
-        }
-      } else {
-        throw new Error(result.error || '관리자 로그인에 실패했습니다')
+      // 비밀번호 확인
+      if (admin.password !== password) {
+        throw new Error('비밀번호가 일치하지 않습니다')
+      }
+      
+      const processedAdmin = processUserData({
+        id: admin.id,
+        name: admin.username,
+        email: admin.email,
+        role: 'admin',
+        admin_name: admin.username,
+        admin_role: admin.role
+      })
+      
+      if (processedAdmin) {
+        setUser(processedAdmin)
+        localStorage.setItem('admin_session', JSON.stringify(processedAdmin))
+        toast.success(`관리자 로그인 성공: ${processedAdmin.admin_name}님`, { duration: 2000 })
       }
     } catch (error: any) {
       console.error('관리자 로그인 실패:', error)
@@ -257,7 +248,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setUser(null)
       
-      // Lumi SDK 제거됨 - Supabase API 사용으로 대체
+      // Supabase Auth 로그아웃
+      await dataService.auth.signOut()
       
       // 로컬 세션 정리
       localStorage.removeItem('admin_session')
@@ -306,8 +298,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         setLoading(true)
         
-        // lumiAuthService 제거됨 - Supabase API 사용으로 대체
-        
         // 관리자 토큰 체크
         const adminToken = localStorage.getItem('admin_token')
         if (adminToken) {
@@ -341,24 +331,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // 일반 사용자 토큰 체크
-        const authToken = localStorage.getItem('auth_token')
-        if (authToken) {
-          try {
-            const userData = getUserFromToken(authToken)
-            if (userData && userData.type === 'user') {
-              const processedUser = processUserData(userData)
-              if (processedUser) {
-                setUser(processedUser)
-                return
-              }
-            }
-          } catch {
-            localStorage.removeItem('auth_token')
+        // Supabase Auth 세션 체크
+        const { data: { session } } = await dataService.auth.getSession()
+        if (session?.user) {
+          const profile = await dataService.entities.user_profiles.get(session.user.id)
+          
+          const processedUser = processUserData({
+            id: session.user.id,
+            email: session.user.email,
+            name: profile?.name || session.user.email?.split('@')[0] || '사용자',
+            role: 'user',
+            profile: profile
+          })
+          
+          if (processedUser) {
+            setUser(processedUser)
+            return
           }
         }
-        
-        // Lumi SDK 제거됨 - Supabase API 사용으로 대체
       } catch (error) {
         console.error('자동 로그인 체크 실패:', error)
       } finally {
