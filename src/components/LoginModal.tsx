@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Mail, Lock, Eye, EyeOff, User, Phone, MapPin, Calendar, Users, X } from 'lucide-react'
 import { GoogleLoginButton } from './GoogleLoginButton'
+import { KakaoLoginButton } from './KakaoLoginButton'
 import toast from 'react-hot-toast'
 
 interface LoginModalProps {
@@ -31,7 +32,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     if (isAdminMode) {
       // 관리자 로그인
       if (!formData.admin_name || !formData.password) {
-        toast.error('관리자명과 비밀번호를 입력해주세요')
+        toast.error('관리자명과 비밀번호를 입력해주세요', { duration: 3000 })
         return
       }
       
@@ -44,7 +45,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     } else if (isLogin) {
       // 일반 사용자 로그인
       if (!formData.email || !formData.password) {
-        toast.error('이메일과 비밀번호를 입력해주세요')
+        toast.error('이메일과 비밀번호를 입력해주세요', { duration: 3000 })
         return
       }
       
@@ -197,7 +198,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           onError={(error) => {
             toast.error(error)
           }}
-          className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 mb-4"
+          className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 mb-3"
         >
           <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -207,6 +208,22 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           </svg>
           구글로 {isLogin ? '로그인' : '회원가입'}
         </GoogleLoginButton>
+
+        {/* 카카오 로그인 버튼 */}
+        <KakaoLoginButton
+          onSuccess={() => {
+            onClose()
+          }}
+          onError={(error) => {
+            toast.error(error)
+          }}
+          className="w-full py-3 rounded-xl font-medium transition-all duration-200 mb-4"
+        >
+          <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+            <path fill="#3C1E1E" d="M12 3C6.48 3 2 6.48 2 10.8c0 2.52 1.6 4.8 4.1 6.2L5.4 19.2c-.1.2.1.4.3.3l2.8-1.4c.8.2 1.6.3 2.5.3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z"/>
+          </svg>
+          카카오로 {isLogin ? '로그인' : '회원가입'}
+        </KakaoLoginButton>
 
         {/* 구분선 */}
         <div className="relative mb-4">

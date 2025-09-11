@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import ApplicationFormModal from '../components/ApplicationFormModal'
 import ReviewSubmissionManager from '../components/ReviewSubmissionManager'
-import {Calendar, Gift, Clock, ArrowLeft, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone, Users, Coins, MapPin} from 'lucide-react'
+import {Calendar, Gift, Clock, ArrowLeft, Target, Hash, Link, Info, Users, Coins, MapPin, ChevronDown, ChevronUp} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 
@@ -20,6 +20,7 @@ function ExperienceDetail() {
   const [showApplicationModal, setShowApplicationModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [isApplicationClosed, setIsApplicationClosed] = useState(false)
+  const [showAllDetailImages, setShowAllDetailImages] = useState(false)
 
   // 자동 스크롤 함수
   const scrollToSection = (sectionId: string) => {
@@ -87,32 +88,57 @@ function ExperienceDetail() {
           }, {} as any)
         })
         
-        // 🔥 캠페인 상태 체크
-        const campaignStatus = (experienceData as any)?.campaign_status || 'recruiting'
+        // 🔥 캠페인 상태 체크 - status 필드 기준으로 수정
+        const campaignStatus = (experienceData as any)?.status || 'active'
         
-        if (campaignStatus === 'recruitment_completed' || campaignStatus === 'campaign_ended') {
+        console.log('🔍 캠페인 상태 체크:', {
+          status: campaignStatus,
+          application_end_date: (experienceData as any)?.application_end_date,
+          application_end: (experienceData as any)?.application_end,
+          max_participants: (experienceData as any)?.max_participants,
+          current_participants: (experienceData as any)?.current_participants
+        })
+        
+        // 캠페인 상태가 'closed'이거나 'inactive'인 경우에만 마감 처리
+        if (campaignStatus === 'closed' || campaignStatus === 'inactive') {
           setIsApplicationClosed(true)
           console.log('🚫 캠페인 상태로 인한 신청 마감:', campaignStatus)
-        } else if (experienceData && (experienceData as any).max_participants) {
-          // 🔥 정확한 지원자 수 체크
-          const applications = await getUserApplications() || []
-          const experienceApplications = applications.filter((app: any) => 
-            app.experience_id === (experienceData as any)._id || app.experience_id === (experienceData as any).id
-          )
+        } else if (campaignStatus === 'active' || campaignStatus === 'recruiting') {
+          // 활성 상태인 경우 신청 가능
+          setIsApplicationClosed(false)
+          console.log('✅ 캠페인 활성 상태 - 신청 가능:', campaignStatus)
+        } else {
+          // 신청 마감일 체크
+          const applicationEndDate = (experienceData as any)?.application_end_date || (experienceData as any)?.application_end
+          if (applicationEndDate) {
+            const endDate = new Date(applicationEndDate)
+            const today = new Date()
+            today.setHours(23, 59, 59, 999) // 오늘 마지막 시간으로 설정
+            
+            if (endDate < today) {
+              setIsApplicationClosed(true)
+              console.log('🚫 신청 마감일 초과로 인한 신청 마감:', applicationEndDate)
+            }
+          }
           
-          console.log('🔍 신청자 체크:', {
-            maxParticipants: (experienceData as any).max_participants,
-            currentApplications: experienceApplications.length,
-            applications: experienceApplications
-          })
+          // 최대 참가자 수 체크 (현재 참가자 수 기준)
+          const maxParticipants = (experienceData as any)?.max_participants
+          const currentParticipants = (experienceData as any)?.current_participants || 0
           
-          if (experienceApplications.length >= (experienceData as any).max_participants) {
+          if (maxParticipants && currentParticipants >= maxParticipants) {
             setIsApplicationClosed(true)
-            console.log('🚫 최대 참가자 수 도달로 인한 신청 마감')
+            console.log('🚫 최대 참가자 수 도달로 인한 신청 마감:', { currentParticipants, maxParticipants })
           }
         }
         
         console.log('✅ 체험단 상세 정보 로드 완료:', experienceData)
+        console.log('🔍 체험단 상세 필드 확인:', {
+          campaign_name: experienceData?.campaign_name,
+          status: experienceData?.status,
+          main_images: experienceData?.main_images,
+          detail_images: experienceData?.detail_images,
+          allFields: Object.keys(experienceData || {})
+        })
       } catch (error) {
         console.error('❌ 체험단 정보 로드 실패:', error)
         toast.error('체험단 정보를 불러오는데 실패했습니다.')
@@ -132,7 +158,7 @@ function ExperienceDetail() {
       try {
         console.log('🔍 신청 상태 확인:', { userId: user.user_id, experienceId: experience._id })
         
-        const applications = await getUserApplications(user.user_id, true) // 강제 새로고침
+        const applications = await getUserApplications(user.user_id)
         const userApp = applications.find((app: any) => 
           app.experience_id === experience._id || app.experience_id === experience.id
         )
@@ -193,7 +219,7 @@ function ExperienceDetail() {
           {/* 체험단 이미지 */}
           <div className="aspect-video bg-gray-200 relative overflow-hidden">
             <img
-              src={experience.image_url || experience.main_image || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'}
+              src={experience.image_url || experience.main_image || (experience.main_images && experience.main_images.length > 0 ? experience.main_images[0] : null) || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'}
               alt={experience.title || experience.experience_name || '체험단 이미지'}
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -206,7 +232,7 @@ function ExperienceDetail() {
               <div className="p-8">
                 <div className="mb-6">
                   <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              {experience.title || experience.experience_name || '체험단 제목'}
+              {experience.campaign_name || experience.title || experience.experience_name || experience.name || '체험단 제목'}
             </h1>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                     <div className="flex items-center">
@@ -224,8 +250,70 @@ function ExperienceDetail() {
               </div>
             </div>
 
+            {/* 캠페인 일정 정보 - 메인 영역 */}
+            {(experience.application_start_date || experience.application_end_date || 
+              experience.influencer_announcement_date || experience.content_start_date || 
+              experience.content_end_date || experience.result_announcement_date) && (
+              <div id="campaign-schedule" className="mb-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">캠페인 일정</h2>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 리뷰어 신청기간 */}
+                    {(experience.application_start_date || experience.application_end_date) && (
+                      <div className="flex items-center justify-between py-3 px-4 bg-white rounded-lg shadow-sm">
+                        <span className="text-sm font-semibold text-gray-700">리뷰어 신청기간</span>
+                        <span className="text-sm font-bold text-blue-600">
+                          {experience.application_start_date && experience.application_end_date
+                            ? `${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { weekday: 'short' })}) ~ ${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { weekday: 'short' })})`
+                            : experience.application_start_date
+                              ? `${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { weekday: 'short' })}) ~`
+                              : `~ ${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { weekday: 'short' })})`
+                          }
+                        </span>
+                      </div>
+                    )}
+
+                    {/* 선정자 발표 */}
+                    {experience.influencer_announcement_date && (
+                      <div className="flex items-center justify-between py-3 px-4 bg-white rounded-lg shadow-sm">
+                        <span className="text-sm font-semibold text-gray-700">선정자 발표</span>
+                        <span className="text-sm font-bold text-green-600">
+                          {new Date(experience.influencer_announcement_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}({new Date(experience.influencer_announcement_date).toLocaleDateString('ko-KR', { weekday: 'short' })})
+                        </span>
+                      </div>
+                    )}
+
+                    {/* 리뷰 등록기간 */}
+                    {(experience.content_start_date || experience.content_end_date) && (
+                      <div className="flex items-center justify-between py-3 px-4 bg-white rounded-lg shadow-sm">
+                        <span className="text-sm font-semibold text-gray-700">리뷰 등록기간</span>
+                        <span className="text-sm font-bold text-purple-600">
+                          {experience.content_start_date && experience.content_end_date
+                            ? `${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { weekday: 'short' })}) ~ ${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { weekday: 'short' })})`
+                            : experience.content_start_date
+                              ? `${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { weekday: 'short' })}) ~`
+                              : `~ ${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { weekday: 'short' })})`
+                          }
+                        </span>
+                      </div>
+                    )}
+
+                    {/* 캠페인 결과발표 */}
+                    {experience.result_announcement_date && (
+                      <div className="flex items-center justify-between py-3 px-4 bg-white rounded-lg shadow-sm">
+                        <span className="text-sm font-semibold text-gray-700">캠페인 결과발표</span>
+                        <span className="text-sm font-bold text-orange-600">
+                          {new Date(experience.result_announcement_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}({new Date(experience.result_announcement_date).toLocaleDateString('ko-KR', { weekday: 'short' })})
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 체험단 설명 */}
-            <div className="mb-8">
+            <div id="campaign-info" className="mb-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">체험단 소개</h2>
               <div className="prose prose-gray max-w-none">
                 <p className="text-gray-700 leading-relaxed whitespace-pre-line">
@@ -233,6 +321,51 @@ function ExperienceDetail() {
                 </p>
               </div>
             </div>
+
+            {/* 상세 이미지 갤러리 - 댕댕뷰 스타일 */}
+            {experience.detail_images && experience.detail_images.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">상세 이미지</h2>
+                <div className="space-y-4">
+                  {(showAllDetailImages ? experience.detail_images : experience.detail_images.slice(0, 5)).map((image: string, index: number) => (
+                    <div key={index} className="w-full bg-gray-100 rounded-lg overflow-hidden">
+                      <img
+                        src={image}
+                        alt={`상세 이미지 ${index + 1}`}
+                        className="w-full h-auto object-contain cursor-pointer hover:opacity-90 transition-opacity duration-300"
+                        onClick={() => {
+                          // 이미지 확대 보기
+                          window.open(image, '_blank')
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {experience.detail_images.length > 5 && (
+                  <div className="text-center mt-4">
+                    <button
+                      onClick={() => setShowAllDetailImages(!showAllDetailImages)}
+                      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      {showAllDetailImages ? (
+                        <>
+                          <ChevronUp className="w-4 h-4 mr-2" />
+                          상세이미지 접기
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4 mr-2" />
+                          상세이미지 더보기 ({experience.detail_images.length - 5}장 더)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
                 {/* 추가 정보 */}
                 {(experience.application_deadline || experience.review_deadline || 
@@ -415,58 +548,49 @@ function ExperienceDetail() {
           {/* 오른쪽 사이드바 */}
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
-              {/* 캠페인 일정 정보 */}
+              {/* 캠페인 일정 정보 - 댕댕뷰 스타일 */}
               {(experience.application_start_date || experience.application_end_date || 
                 experience.influencer_announcement_date || experience.content_start_date || 
                 experience.content_end_date || experience.result_announcement_date || 
                 experience.current_applicants !== undefined) && (
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">캠페인 일정</h3>
-                  <div className="space-y-4">
-                    {/* 신청 기간 */}
+                  <div className="space-y-3">
+                    {/* 리뷰어 신청기간 */}
                     {(experience.application_start_date || experience.application_end_date) && (
                       <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm font-medium text-gray-700">캠페인 신청기간</span>
-                        </div>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm font-medium text-gray-700">리뷰어 신청기간</span>
+                        <span className="text-sm text-gray-600 font-medium">
                           {experience.application_start_date && experience.application_end_date
-                            ? `${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })} ~ ${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
+                            ? `${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { weekday: 'short' })}) ~ ${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { weekday: 'short' })})`
                             : experience.application_start_date
-                              ? `${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })} ~`
-                              : `~ ${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
+                              ? `${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.application_start_date).toLocaleDateString('ko-KR', { weekday: 'short' })}) ~`
+                              : `~ ${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.application_end_date).toLocaleDateString('ko-KR', { weekday: 'short' })})`
                           }
                         </span>
                       </div>
                     )}
 
-                    {/* 인플루언서 발표 */}
+                    {/* 선정자 발표 */}
                     {experience.influencer_announcement_date && (
                       <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <div className="flex items-center space-x-2">
-                          <UserCheck className="w-4 h-4 text-green-600" />
-                          <span className="text-sm font-medium text-gray-700">인플루언서 발표</span>
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {new Date(experience.influencer_announcement_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                        <span className="text-sm font-medium text-gray-700">선정자 발표</span>
+                        <span className="text-sm text-gray-600 font-medium">
+                          {new Date(experience.influencer_announcement_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}({new Date(experience.influencer_announcement_date).toLocaleDateString('ko-KR', { weekday: 'short' })})
                         </span>
                       </div>
                     )}
 
-                    {/* 콘텐츠 등록기간 */}
+                    {/* 리뷰 등록기간 */}
                     {(experience.content_start_date || experience.content_end_date) && (
                       <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <div className="flex items-center space-x-2">
-                          <CalendarDays className="w-4 h-4 text-purple-600" />
-                          <span className="text-sm font-medium text-gray-700">콘텐츠 등록기간</span>
-                        </div>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm font-medium text-gray-700">리뷰 등록기간</span>
+                        <span className="text-sm text-gray-600 font-medium">
                           {experience.content_start_date && experience.content_end_date
-                            ? `${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })} ~ ${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
+                            ? `${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { weekday: 'short' })}) ~ ${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { weekday: 'short' })})`
                             : experience.content_start_date
-                              ? `${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })} ~`
-                              : `~ ${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}`
+                              ? `${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.content_start_date).toLocaleDateString('ko-KR', { weekday: 'short' })}) ~`
+                              : `~ ${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}(${new Date(experience.content_end_date).toLocaleDateString('ko-KR', { weekday: 'short' })})`
                           }
                         </span>
                       </div>
@@ -474,26 +598,20 @@ function ExperienceDetail() {
 
                     {/* 캠페인 결과발표 */}
                     {experience.result_announcement_date && (
-                      <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <div className="flex items-center space-x-2">
-                          <Megaphone className="w-4 h-4 text-orange-600" />
-                          <span className="text-sm font-medium text-gray-700">캠페인 결과발표</span>
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {new Date(experience.result_announcement_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-sm font-medium text-gray-700">캠페인 결과발표</span>
+                        <span className="text-sm text-gray-600 font-medium">
+                          {new Date(experience.result_announcement_date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}({new Date(experience.result_announcement_date).toLocaleDateString('ko-KR', { weekday: 'short' })})
                         </span>
                       </div>
                     )}
 
                     {/* 신청자 수 */}
                     {experience.current_applicants !== undefined && experience.max_participants && (
-                      <div className="flex items-center justify-between py-2">
-                        <div className="flex items-center space-x-2">
-                          <Users className="w-4 h-4 text-indigo-600" />
-                          <span className="text-sm font-medium text-gray-700">신청자</span>
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {experience.current_applicants} / {experience.max_participants}명
+                      <div className="flex items-center justify-between py-2 border-t border-gray-200 mt-3 pt-3">
+                        <span className="text-sm font-medium text-gray-700">신청자</span>
+                        <span className="text-sm text-gray-600 font-medium">
+                          <span className="text-blue-600 font-bold">{experience.current_applicants}</span> / <span className="font-bold">{experience.max_participants}</span>명
                         </span>
                       </div>
                     )}
@@ -502,50 +620,69 @@ function ExperienceDetail() {
               )}
 
               {/* 빠른 링크 */}
-              {(experience.provided_items || experience.campaign_mission || 
-                experience.keywords || experience.additional_guidelines) && (
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">빠른 링크</h3>
-                  <div className="space-y-2">
-                    {experience.provided_items && (
-                      <button
-                        onClick={() => scrollToSection('provided-items')}
-                        className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group"
-                      >
-                        <Gift className="w-4 h-4 text-green-600 group-hover:text-green-700" />
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-green-700">제공내역</span>
-                      </button>
-                    )}
-                    {experience.campaign_mission && (
-                      <button
-                        onClick={() => scrollToSection('campaign-mission')}
-                        className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-colors group"
-                      >
-                        <Target className="w-4 h-4 text-blue-600 group-hover:text-blue-700" />
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">캠페인 미션</span>
-                      </button>
-                    )}
-                    {experience.keywords && (
-                      <button
-                        onClick={() => scrollToSection('keywords')}
-                        className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-50 transition-colors group"
-                      >
-                        <Hash className="w-4 h-4 text-purple-600 group-hover:text-purple-700" />
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">키워드</span>
-                      </button>
-                    )}
-                    {experience.additional_guidelines && (
-                      <button
-                        onClick={() => scrollToSection('additional-guidelines')}
-                        className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-                      >
-                        <Info className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-700">추가 안내사항</span>
-                      </button>
-                    )}
-                  </div>
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">빠른 링크</h3>
+                <div className="space-y-2">
+                  {/* 캠페인 일정 */}
+                  {(experience.application_start_date || experience.application_end_date || 
+                    experience.influencer_announcement_date || experience.content_start_date || 
+                    experience.content_end_date || experience.result_announcement_date) && (
+                    <button
+                      onClick={() => scrollToSection('campaign-schedule')}
+                      className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-indigo-50 transition-colors group"
+                    >
+                      <Calendar className="w-4 h-4 text-indigo-600 group-hover:text-indigo-700" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-700">캠페인 일정</span>
+                    </button>
+                  )}
+                  
+                  {/* 캠페인정보 */}
+                  <button
+                    onClick={() => scrollToSection('campaign-info')}
+                    className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-colors group"
+                  >
+                    <Info className="w-4 h-4 text-blue-600 group-hover:text-blue-700" />
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">캠페인정보</span>
+                  </button>
+                  
+                  {experience.provided_items && (
+                    <button
+                      onClick={() => scrollToSection('provided-items')}
+                      className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group"
+                    >
+                      <Gift className="w-4 h-4 text-green-600 group-hover:text-green-700" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-green-700">제공내역</span>
+                    </button>
+                  )}
+                  {experience.keywords && (
+                    <button
+                      onClick={() => scrollToSection('keywords')}
+                      className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-50 transition-colors group"
+                    >
+                      <Hash className="w-4 h-4 text-purple-600 group-hover:text-purple-700" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">키워드</span>
+                    </button>
+                  )}
+                  {experience.campaign_mission && (
+                    <button
+                      onClick={() => scrollToSection('campaign-mission')}
+                      className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-orange-50 transition-colors group"
+                    >
+                      <Target className="w-4 h-4 text-orange-600 group-hover:text-orange-700" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-orange-700">리뷰작성시 안내사항</span>
+                    </button>
+                  )}
+                  {experience.additional_guidelines && (
+                    <button
+                      onClick={() => scrollToSection('additional-guidelines')}
+                      className="w-full text-left flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                    >
+                      <Info className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-gray-700">추가 안내사항</span>
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

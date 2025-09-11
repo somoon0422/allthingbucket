@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import ImageUploadManager from './ImageUploadManager'
-import {X, Calendar, MapPin, Users, Coins, Clock, FileText, Phone, Mail, Image, Code, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
+import {X, Calendar, MapPin, Users, Coins, Clock, FileText, Phone, Mail, Image, Code} from 'lucide-react'
 import toast from 'react-hot-toast'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
 
 interface CampaignEditModalProps {
   isOpen: boolean
@@ -13,25 +11,6 @@ interface CampaignEditModalProps {
   campaign: any
 }
 
-// 리치 텍스트 에디터 설정
-const quillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }, { 'background': [] }],
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-    [{ 'indent': '-1'}, { 'indent': '+1' }],
-    [{ 'align': [] }],
-    ['link', 'image'],
-    ['clean']
-  ],
-}
-
-const quillFormats = [
-  'header', 'bold', 'italic', 'underline', 'strike',
-  'color', 'background', 'list', 'bullet', 'indent',
-  'align', 'link', 'image'
-]
 
 // 🔥 안전한 문자열 추출
 function safeString(obj: any, field: string, fallback = ''): string {
@@ -120,22 +99,12 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
     experience_period: '',
     requirements: '',
     additional_info: '',
-    contact_email: '',
-    contact_phone: '',
     status: 'active',
-    // 리뷰넷 스타일 새로운 필드들
-    provided_items: '',
-    campaign_mission: '',
-    keywords: '',
-    product_links: '',
-    additional_guidelines: '',
     // 캠페인 일정 정보
     application_start_date: '',
     application_end_date: '',
-    influencer_announcement_date: '',
     content_start_date: '',
     content_end_date: '',
-    result_announcement_date: '',
     current_applicants: 0
   })
 
@@ -143,6 +112,13 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
   useEffect(() => {
     if (campaign && isOpen) {
       console.log('📝 캠페인 편집 데이터 로드:', campaign)
+      console.log('📝 캠페인 필드별 데이터:', {
+        campaign_name: campaign.campaign_name,
+        description: campaign.description,
+        brand_name: campaign.brand_name,
+        product_name: campaign.product_name,
+        allFields: Object.keys(campaign)
+      })
       
       // 날짜 형식 변환 함수
       const formatDateForInput = (dateString: string) => {
@@ -156,37 +132,31 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       }
 
       setFormData({
-        experience_name: safeString(campaign, 'experience_name', ''),
+        experience_name: safeString(campaign, 'campaign_name', ''),
         brand_name: safeString(campaign, 'brand_name', ''),
         description: safeString(campaign, 'description', ''),
-        experience_type: safeString(campaign, 'experience_type', 'purchase_review') || 
-                        safeString(campaign, 'campaign_type', 'purchase_review') || 
-                        safeString(campaign, 'type', 'purchase_review'),
-        reward_points: safeNumber(campaign, 'reward_points', 0).toString(),
-        // 🔥 기간 설정에서 자동으로 가져오기 (application_deadline 필드 제거됨)
+        experience_type: safeString(campaign, 'type', 'purchase_review'),
+        reward_points: safeNumber(campaign, 'rewards', 0).toString().replace('P', ''),
         experience_location: safeString(campaign, 'experience_location', ''),
         max_participants: safeNumber(campaign, 'max_participants', 30).toString(),
         experience_period: safeString(campaign, 'experience_period', ''),
-        // 🔥 기간 설정에서 자동으로 가져오기 (review_deadline 필드 제거됨)
         requirements: safeString(campaign, 'requirements', ''),
         additional_info: safeString(campaign, 'additional_info', ''),
-        contact_email: safeString(campaign, 'contact_email', ''),
-        contact_phone: safeString(campaign, 'contact_phone', ''),
         status: safeString(campaign, 'status', 'active'),
-        // 리뷰넷 스타일 새로운 필드들
-        provided_items: safeString(campaign, 'provided_items', ''),
-        campaign_mission: safeString(campaign, 'campaign_mission', ''),
-        keywords: safeString(campaign, 'keywords', ''),
-        product_links: safeString(campaign, 'product_links', ''),
-        additional_guidelines: safeString(campaign, 'additional_guidelines', ''),
         // 캠페인 일정 정보
-        application_start_date: formatDateForInput(safeString(campaign, 'application_start_date')),
-        application_end_date: formatDateForInput(safeString(campaign, 'application_end_date')),
-        influencer_announcement_date: formatDateForInput(safeString(campaign, 'influencer_announcement_date')),
-        content_start_date: formatDateForInput(safeString(campaign, 'content_start_date')),
-        content_end_date: formatDateForInput(safeString(campaign, 'content_end_date')),
-        result_announcement_date: formatDateForInput(safeString(campaign, 'result_announcement_date')),
-        current_applicants: safeNumber(campaign, 'current_applicants', 0)
+        application_start_date: formatDateForInput(safeString(campaign, 'application_start')),
+        application_end_date: formatDateForInput(safeString(campaign, 'application_end')),
+        content_start_date: formatDateForInput(safeString(campaign, 'content_start')),
+        content_end_date: formatDateForInput(safeString(campaign, 'content_end')),
+        current_applicants: safeNumber(campaign, 'current_participants', 0)
+      })
+      
+      console.log('📝 폼 데이터 설정 완료:', {
+        experience_name: safeString(campaign, 'campaign_name', ''),
+        brand_name: safeString(campaign, 'brand_name', ''),
+        description: safeString(campaign, 'description', ''),
+        product_name: safeString(campaign, 'product_name', ''),
+        campaign_name: safeString(campaign, 'campaign_name', '')
       })
 
       // 이미지 데이터 로드 - 호환성 개선
@@ -214,11 +184,25 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         displayMainImages,
         allImageFields,
         campaignAllFields: Object.keys(campaign || {}),
-        campaignData: campaign
+        campaignData: campaign,
+        mainImagesType: typeof mainImagesData,
+        detailImagesType: typeof detailImagesData,
+        mainImagesIsArray: Array.isArray(mainImagesData),
+        detailImagesIsArray: Array.isArray(detailImagesData),
+        rawMainImages: campaign?.main_images,
+        rawDetailImages: campaign?.detail_images
       })
       
-      setMainImages(displayMainImages)
-      setDetailImages(detailImagesData)
+      // 🔥 이미지 데이터 강제 설정 (빈 배열이어도 명시적으로 설정)
+      console.log('🖼️ 이미지 상태 설정:', {
+        displayMainImages,
+        detailImagesData,
+        mainImagesLength: displayMainImages?.length || 0,
+        detailImagesLength: detailImagesData?.length || 0
+      })
+      
+      setMainImages(displayMainImages || [])
+      setDetailImages(detailImagesData || [])
       setHtmlContent(safeString(campaign, 'html_content', ''))
     }
   }, [campaign, isOpen])
@@ -246,7 +230,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!campaign?._id) {
+    if (!campaign?.id) {
       toast.error('캠페인 ID가 없습니다')
       return
     }
@@ -270,57 +254,39 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         return
       }
 
-      // 캠페인 데이터 업데이트
+      // 캠페인 데이터 업데이트 (캠페인 생성 시와 동일한 필드들만)
       const updateData = {
-        experience_name: formData.experience_name.trim(),
+        campaign_name: formData.experience_name.trim(),
+        product_name: formData.brand_name.trim(),
         brand_name: formData.brand_name.trim(),
         description: formData.description.trim(),
-        experience_type: formData.experience_type,
-        campaign_type: formData.experience_type, // 호환성을 위한 별칭
-        type: formData.experience_type, // 추가 호환성
-        reward_points: formData.reward_points ? parseInt(formData.reward_points) : 0,
-        // 🔥 기간 설정에서 자동으로 가져오기
-        application_deadline: formData.application_end_date || null,
-        experience_location: formData.experience_location.trim() || null,
+        type: formData.experience_type,
+        status: formData.status,
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : 0,
-        experience_period: formData.experience_period.trim() || null,
-        review_deadline: formData.content_end_date || null,
+        current_participants: parseInt(formData.current_applicants.toString()) || 0,
+        start_date: formData.application_start_date || new Date().toISOString(),
+        end_date: formData.application_end_date || null,
+        application_start: formData.application_start_date || new Date().toISOString(),
+        application_end: formData.application_end_date || null,
+        content_start: formData.content_start_date || new Date().toISOString(),
+        content_end: formData.content_end_date || null,
         requirements: formData.requirements.trim() || null,
-        additional_info: formData.additional_info.trim() || null,
-        contact_email: formData.contact_email.trim() || null,
-        contact_phone: formData.contact_phone.trim() || null,
-        
-        // 🔥 리뷰넷 스타일 새로운 필드들
-        provided_items: formData.provided_items.trim() || null,
-        campaign_mission: formData.campaign_mission.trim() || null,
-        keywords: formData.keywords.trim() || null,
-        product_links: formData.product_links.trim() || null,
-        additional_guidelines: formData.additional_guidelines.trim() || null,
-        
-        // 🔥 캠페인 일정 정보
-        application_start_date: formData.application_start_date || null,
-        application_end_date: formData.application_end_date || null,
-        influencer_announcement_date: formData.influencer_announcement_date || null,
-        content_start_date: formData.content_start_date || null,
-        content_end_date: formData.content_end_date || null,
-        result_announcement_date: formData.result_announcement_date || null,
-        current_applicants: parseInt(formData.current_applicants.toString()) || 0,
-        
-        // 🔥 이미지 관련 필드들
-        main_image_url: mainImages[0] || null,
+        rewards: formData.reward_points ? `${formData.reward_points}P` : null,
         main_images: mainImages,
         detail_images: detailImages,
-        html_content: htmlContent.trim() || null,
-        
-        // 🔥 기존 호환성을 위한 필드
-        image_url: mainImages[0] || null,
-        
-        status: formData.status,
         updated_at: new Date().toISOString()
       }
+      
+      console.log('🖼️ 캠페인 수정 시 이미지 데이터:', {
+        mainImages,
+        detailImages,
+        mainImagesLength: mainImages.length,
+        detailImagesLength: detailImages.length,
+        updateData
+      })
 
       // 캠페인 업데이트
-      await dataService.entities.experience_codes.update(campaign._id, updateData)
+      await (dataService.entities as any).campaigns.update(campaign.id, updateData)
       
       toast.success('캠페인이 성공적으로 수정되었습니다!')
       onSuccess()
@@ -341,7 +307,9 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">캠페인 편집</h3>
+            <h3 className="text-xl font-bold">
+              캠페인 편집 - {campaign?.campaign_name || campaign?.title || campaign?.experience_name || '제목 없음'}
+            </h3>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
@@ -567,10 +535,10 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
               <input
                 type="email"
                 name="contact_email"
-                value={formData.contact_email}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="contact@example.com"
+                value="support@allthingbucket.com"
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                placeholder="support@allthingbucket.com"
               />
             </div>
 
@@ -582,10 +550,10 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
               <input
                 type="tel"
                 name="contact_phone"
-                value={formData.contact_phone}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="02-1234-5678"
+                value="010-7290-7620"
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                placeholder="010-7290-7620"
               />
             </div>
           </div>
@@ -622,200 +590,114 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
             />
           </div>
 
-          {/* 리뷰넷 스타일 추가 필드들 */}
+          {/* 추가 정보 섹션 (기본 필드들만) */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">캠페인 상세 정보</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">추가 정보</h3>
             
-              {/* 제공내역 */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Gift className="w-4 h-4 inline mr-1" />
-                  제공내역
-                </label>
-                <div className="border border-gray-300 rounded-lg">
-                  <ReactQuill
-                    value={formData.provided_items}
-                    onChange={(value) => setFormData(prev => ({ ...prev, provided_items: value }))}
-                    modules={quillModules}
-                    formats={quillFormats}
-                    placeholder="제공되는 제품이나 혜택을 상세히 입력하세요"
-                    style={{ minHeight: '150px' }}
-                  />
-                </div>
-              </div>
-
-            {/* 캠페인 미션 */}
+            {/* 체험 지역 */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Target className="w-4 h-4 inline mr-1" />
-                캠페인 미션
-              </label>
-              <div className="border border-gray-300 rounded-lg">
-                <ReactQuill
-                  value={formData.campaign_mission}
-                  onChange={(value) => setFormData(prev => ({ ...prev, campaign_mission: value }))}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  placeholder="참여자가 수행해야 할 미션을 상세히 입력하세요"
-                  style={{ minHeight: '200px' }}
-                />
-              </div>
-            </div>
-
-            {/* 키워드 */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Hash className="w-4 h-4 inline mr-1" />
-                키워드
+                <MapPin className="w-4 h-4 inline mr-1" />
+                체험 지역
               </label>
               <input
                 type="text"
-                name="keywords"
-                value={formData.keywords}
+                name="experience_location"
+                value={formData.experience_location}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="예: #뷰티 #스킨케어 #자연주의 (쉼표로 구분)"
+                placeholder="예: 서울, 전국, 온라인"
               />
             </div>
 
-            {/* 링크 */}
+            {/* 체험 기간 */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Link className="w-4 h-4 inline mr-1" />
-                제품 링크
+                <Clock className="w-4 h-4 inline mr-1" />
+                체험 기간
               </label>
               <input
-                type="url"
-                name="product_links"
-                value={formData.product_links}
+                type="text"
+                name="experience_period"
+                value={formData.experience_period}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://example.com/product"
+                placeholder="예: 2주, 1개월"
               />
-            </div>
-
-            {/* 추가 안내사항 */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Info className="w-4 h-4 inline mr-1" />
-                추가 안내사항
-              </label>
-              <div className="border border-gray-300 rounded-lg">
-                <ReactQuill
-                  value={formData.additional_guidelines}
-                  onChange={(value) => setFormData(prev => ({ ...prev, additional_guidelines: value }))}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  placeholder="참여자에게 전달할 추가 안내사항이나 주의사항을 입력하세요"
-                  style={{ minHeight: '200px' }}
-                />
-              </div>
             </div>
           </div>
 
-          {/* 캠페인 일정 정보 */}
+          {/* 캠페인 일정 정보 (기본 필드들만) */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">캠페인 일정 정보</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 신청 기간 */}
-              <div className="space-y-4">
-                <h4 className="text-md font-medium text-gray-700 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-blue-600" />
-                  신청 기간
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">시작일</label>
-                    <input
-                      type="date"
-                      name="application_start_date"
-                      value={formData.application_start_date}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">종료일 (신청 마감일)</label>
-                    <input
-                      type="date"
-                      name="application_end_date"
-                      value={formData.application_end_date}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    {formData.application_end_date && (
-                      <p className="text-xs text-blue-600 mt-1">
-                        신청 마감일: {getDeadlineDisplay(formData.application_end_date)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* 인플루언서 발표 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <UserCheck className="w-4 h-4 mr-2 text-green-600" />
-                  인플루언서 발표일
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  신청 시작일
                 </label>
                 <input
                   type="date"
-                  name="influencer_announcement_date"
-                  value={formData.influencer_announcement_date}
+                  name="application_start_date"
+                  value={formData.application_start_date}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
-              {/* 콘텐츠 등록 기간 */}
-              <div className="space-y-4">
-                <h4 className="text-md font-medium text-gray-700 flex items-center">
-                  <CalendarDays className="w-4 h-4 mr-2 text-purple-600" />
-                  콘텐츠 등록 기간
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">시작일</label>
-                    <input
-                      type="date"
-                      name="content_start_date"
-                      value={formData.content_start_date}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">종료일 (리뷰 마감일)</label>
-                    <input
-                      type="date"
-                      name="content_end_date"
-                      value={formData.content_end_date}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    {formData.content_end_date && (
-                      <p className="text-xs text-purple-600 mt-1">
-                        리뷰 마감일: {getDeadlineDisplay(formData.content_end_date)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* 캠페인 결과발표 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <Megaphone className="w-4 h-4 mr-2 text-orange-600" />
-                  캠페인 결과발표일
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  신청 마감일
                 </label>
                 <input
                   type="date"
-                  name="result_announcement_date"
-                  value={formData.result_announcement_date}
+                  name="application_end_date"
+                  value={formData.application_end_date}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {formData.application_end_date && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    신청 마감일: {getDeadlineDisplay(formData.application_end_date)}
+                  </p>
+                )}
+              </div>
+
+              {/* 콘텐츠 기간 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  콘텐츠 시작일
+                </label>
+                <input
+                  type="date"
+                  name="content_start_date"
+                  value={formData.content_start_date}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  콘텐츠 마감일
+                </label>
+                <input
+                  type="date"
+                  name="content_end_date"
+                  value={formData.content_end_date}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {formData.content_end_date && (
+                  <p className="text-xs text-purple-600 mt-1">
+                    리뷰 마감일: {getDeadlineDisplay(formData.content_end_date)}
+                  </p>
+                )}
               </div>
 
               {/* 현재 신청자 수 */}

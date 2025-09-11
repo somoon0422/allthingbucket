@@ -70,7 +70,7 @@ export const useNotifications = () => {
       setLoading(true)
       console.log('📡 알림 조회 시작:', userId)
       
-      const response = await dataService.entities.notifications.list({
+      const response = await (dataService.entities as any).notifications.list({
         filter: { user_id: userId },
         sort: { created_at: -1 }
       })
@@ -95,7 +95,7 @@ export const useNotifications = () => {
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      await dataService.entities.notifications.update(notificationId, {
+      await (dataService.entities as any).notifications.update(notificationId, {
         read: true,
         read_at: new Date().toISOString()
       })
@@ -120,7 +120,7 @@ export const useNotifications = () => {
     type: string
   }) => {
     try {
-      const notification = await dataService.entities.notifications.create({
+      const notification = await (dataService.entities as any).notifications.create({
         ...notificationData,
         read: false,
         created_at: new Date().toISOString()

@@ -46,7 +46,7 @@ const Home: React.FC = () => {
   const loadFeaturedExperiences = async () => {
     try {
       console.log('🔥 추천 체험단 로드 시작...')
-      const campaigns = await dataService.entities.campaigns.list()
+      const campaigns = await (dataService.entities as any).campaigns.list()
       console.log('✅ 체험단 데이터 로드 성공:', campaigns)
       
       const safeCampaigns = Array.isArray(campaigns) ? campaigns : []
@@ -66,9 +66,9 @@ const Home: React.FC = () => {
     try {
       console.log('📊 통계 로드 시작...')
       const [campaigns, users, reviews] = await Promise.all([
-        dataService.entities.campaigns.list(),
-        dataService.entities.users.list(),
-        dataService.entities.review_submissions.list()
+        (dataService.entities as any).campaigns.list(),
+        (dataService.entities as any).users.list(),
+        (dataService.entities as any).review_submissions.list()
       ])
       
       setStats({
@@ -85,7 +85,7 @@ const Home: React.FC = () => {
   const loadReviews = async () => {
     try {
       console.log('💬 리뷰 로드 시작...')
-      const reviews = await dataService.entities.review_submissions.list()
+      const reviews = await (dataService.entities as any).review_submissions.list()
       const safeReviews = Array.isArray(reviews) ? reviews : []
       const approvedReviews = safeReviews
         .filter(review => review && review.status === 'approved')

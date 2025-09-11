@@ -12,8 +12,7 @@ import MyApplications from './pages/MyApplications'
 import Points from './pages/Points'
 import Profile from './pages/Profile'
 import WithdrawalRequest from './pages/WithdrawalRequest'
-import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
-import KakaoCallback from './pages/KakaoCallback'
+import AuthCallback from './pages/AuthCallback'
 
 // 관리자 페이지
 import AdminDashboard from './pages/AdminDashboard'
@@ -46,8 +45,7 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             
             {/* OAuth 콜백 */}
-            <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
-            <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             
             {/* 사용자 라우트 */}
             <Route path="/*" element={

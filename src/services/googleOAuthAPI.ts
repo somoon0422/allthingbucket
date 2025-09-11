@@ -87,12 +87,12 @@ export class GoogleOAuthAPI {
       }
       
       // 기존 프로필 확인
-      const existingProfile = await dataService.entities.user_profiles.get(googleUserInfo.id)
+      const existingProfile = await (dataService.entities as any).user_profiles.get(googleUserInfo.id)
       
       if (!existingProfile) {
-        await dataService.entities.user_profiles.create(profileData)
+        await (dataService.entities as any).user_profiles.create(profileData)
       } else {
-        await dataService.entities.user_profiles.update(googleUserInfo.id, profileData)
+        await (dataService.entities as any).user_profiles.update(googleUserInfo.id, profileData)
       }
       
       return {

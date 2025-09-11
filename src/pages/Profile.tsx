@@ -65,7 +65,7 @@ const Profile: React.FC = () => {
       setLoading(true)
       
       // 🏷️ 사용자 회원코드 조회 (수정 불가) - Supabase API 사용
-      const codes = await dataService.entities.user_codes.list()
+      const codes = await (dataService.entities as any).user_codes.list()
       const userCodeData = codes.find((code: any) => code && code.user_id === user.user_id)
       
       if (userCodeData && userCodeData.user_code) {
@@ -74,13 +74,13 @@ const Profile: React.FC = () => {
       }
       
       // 먼저 user_profiles에서 기본 정보 확인 - Supabase API 사용
-      const userProfiles = await dataService.entities.user_profiles.list()
+      const userProfiles = await (dataService.entities as any).user_profiles.list()
       const userProfile = Array.isArray(userProfiles) 
         ? userProfiles.find((p: any) => p && p.user_id === user.user_id)
         : null
       
       // influencer_profiles에서 상세 정보 확인 - Supabase API 사용
-      const influencerProfiles = await dataService.entities.influencer_profiles.list()
+      const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
       const influencerProfile = influencerProfiles.find((p: any) => p && p.user_id === user.user_id)
       
       if (influencerProfile) {
@@ -178,7 +178,7 @@ const Profile: React.FC = () => {
 
       if (profile && profile._id) {
         // influencer_profiles 업데이트 - Supabase API 사용
-        const result = await dataService.entities.influencer_profiles.update(profile._id, profileData)
+        const result = await (dataService.entities as any).influencer_profiles.update(profile._id, profileData)
         if (result.success) {
           toast.success('프로필이 업데이트되었습니다')
         } else {
@@ -186,7 +186,7 @@ const Profile: React.FC = () => {
         }
       } else {
         // 새 influencer_profile 생성 - Supabase API 사용
-        const result = await dataService.entities.influencer_profiles.create(profileData)
+        const result = await (dataService.entities as any).influencer_profiles.create(profileData)
         if (result.success) {
           toast.success('프로필이 생성되었습니다')
         } else {

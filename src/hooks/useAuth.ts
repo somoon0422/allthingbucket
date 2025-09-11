@@ -99,26 +99,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (result.data?.user) {
         // 사용자 프로필 정보 가져오기
-        const profile = await dataService.entities.user_profiles.get(result.data.user.id)
-        
-        const processedUser = processUserData({
-          id: result.data.user.id,
-          email: result.data.user.email || '',
-          name: profile?.name || result.data.user.email?.split('@')[0] || '사용자',
-          role: 'user',
-          profile: profile
-        })
-        
-        if (processedUser) {
-          setUser(processedUser)
-          toast.success(`환영합니다, ${processedUser.name}님!`)
+        try {
+          const profile = await (dataService.entities as any).user_profiles.get(result.data.user.id)
+          
+          const processedUser = processUserData({
+            id: result.data.user.id,
+            email: result.data.user.email || '',
+            name: profile?.name || result.data.user.email?.split('@')[0] || '사용자',
+            role: 'user',
+            profile: profile
+          })
+          
+          if (processedUser) {
+            setUser(processedUser)
+            return
+          }
+        } catch (profileError) {
+          console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
+          
+          // 프로필이 없는 경우 기본 사용자 정보로 처리
+          const processedUser = processUserData({
+            id: result.data.user.id,
+            email: result.data.user.email || '',
+            name: result.data.user.email?.split('@')[0] || '사용자',
+            role: 'user',
+            profile: null
+          })
+          
+          if (processedUser) {
+            setUser(processedUser)
+            return
+          }
         }
       } else {
         throw new Error('로그인에 실패했습니다')
       }
     } catch (error: any) {
       console.error('로그인 실패:', error)
-      toast.error(error.message || '로그인에 실패했습니다')
+      toast.error(error.message || '로그인에 실패했습니다', { duration: 3000 })
     } finally {
       setLoading(false)
     }
@@ -147,7 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           created_at: new Date().toISOString()
         }
         
-        await dataService.entities.user_profiles.create(profileData)
+        await (dataService.entities as any).user_profiles.create(profileData)
         
         const processedUser = processUserData({
           id: result.data.user.id,
@@ -238,7 +256,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error: any) {
       console.error('관리자 로그인 실패:', error)
-      toast.error(error.message || '관리자 로그인에 실패했습니다')
+      toast.error(error.message || '관리자 로그인에 실패했습니다', { duration: 3000 })
     } finally {
       setLoading(false)
     }
@@ -255,8 +273,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('admin_session')
       localStorage.removeItem('auth_token')
       localStorage.removeItem('admin_token')
-      
-      toast.success('로그아웃되었습니다')
     } catch (error) {
       console.error('로그아웃 실패:', error)
     }
@@ -334,19 +350,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Supabase Auth 세션 체크
         const { data: { session } } = await dataService.auth.getSession()
         if (session?.user) {
-          const profile = await dataService.entities.user_profiles.get(session.user.id)
-          
-          const processedUser = processUserData({
-            id: session.user.id,
-            email: session.user.email,
-            name: profile?.name || session.user.email?.split('@')[0] || '사용자',
-            role: 'user',
-            profile: profile
-          })
-          
-          if (processedUser) {
-            setUser(processedUser)
-            return
+          try {
+            const profile = await (dataService.entities as any).user_profiles.get(session.user.id)
+            
+            const processedUser = processUserData({
+              id: session.user.id,
+              email: session.user.email,
+              name: profile?.name || session.user.email?.split('@')[0] || '사용자',
+              role: 'user',
+              profile: profile
+            })
+            
+            if (processedUser) {
+              setUser(processedUser)
+              return
+            }
+          } catch (profileError) {
+            console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
+            
+            // 프로필이 없는 경우 기본 사용자 정보로 처리
+            const processedUser = processUserData({
+              id: session.user.id,
+              email: session.user.email,
+              name: session.user.email?.split('@')[0] || '사용자',
+              role: 'user',
+              profile: null
+            })
+            
+            if (processedUser) {
+              setUser(processedUser)
+              return
+            }
           }
         }
       } catch (error) {

@@ -49,12 +49,10 @@ export class SupabaseAuthService {
       }
 
       // 이메일 중복 체크
-      const existingUsersResponse = await dataService.entities.users.list({
-        filter: { email: userData.email }
-      })
-
+      const existingUsersResponse = await (dataService.entities as any).users.list()
       const existingUsers = Array.isArray(existingUsersResponse) ? existingUsersResponse : existingUsersResponse?.list || []
-      if (existingUsers.length > 0) {
+      const filteredUsers = existingUsers.filter((user: any) => user.email === userData.email)
+      if (filteredUsers.length > 0) {
         throw new Error('이미 사용 중인 이메일입니다')
       }
 
@@ -103,7 +101,7 @@ export class SupabaseAuthService {
         updated_at: new Date().toISOString()
       }
 
-      await dataService.entities.user_profiles.create(userProfile)
+      await (dataService.entities as any).user_profiles.create(userProfile)
 
       // 포인트 기록 생성
       const userPoints = {
@@ -141,16 +139,14 @@ export class SupabaseAuthService {
   async loginUser(credentials: LoginCredentials): Promise<{ user: any; token: string }> {
     try {
       // 사용자 조회
-      const usersResponse = await dataService.entities.users.list({
-        filter: { email: credentials.email }
-      })
-
+      const usersResponse = await (dataService.entities as any).users.list()
       const users = Array.isArray(usersResponse) ? usersResponse : usersResponse?.list || []
-      if (users.length === 0) {
+      const filteredUsers = users.filter((user: any) => user.email === credentials.email)
+      if (filteredUsers.length === 0) {
         throw new Error('존재하지 않는 이메일입니다')
       }
 
-      const user = users[0]
+      const user = filteredUsers[0]
 
       // 비밀번호 검증
       if (user.password !== credentials.password) {
@@ -195,12 +191,10 @@ export class SupabaseAuthService {
       }
 
       // 관리자명 중복 체크
-      const existingAdminsResponse = await dataService.entities.admin_users.list({
-        filter: { admin_name: adminData.admin_name }
-      })
-
+      const existingAdminsResponse = await (dataService.entities as any).admin_users.list()
       const existingAdmins = Array.isArray(existingAdminsResponse) ? existingAdminsResponse : existingAdminsResponse?.list || []
-      if (existingAdmins.length > 0) {
+      const filteredAdmins = existingAdmins.filter((admin: any) => admin.admin_name === adminData.admin_name)
+      if (filteredAdmins.length > 0) {
         throw new Error('이미 사용 중인 관리자명입니다')
       }
 
@@ -244,16 +238,14 @@ export class SupabaseAuthService {
   async loginAdmin(credentials: AdminLoginCredentials): Promise<{ admin: any; token: string }> {
     try {
       // 관리자 조회
-      const adminsResponse = await dataService.entities.admin_users.list({
-        filter: { admin_name: credentials.admin_name }
-      })
-
+      const adminsResponse = await (dataService.entities as any).admin_users.list()
       const admins = Array.isArray(adminsResponse) ? adminsResponse : adminsResponse?.list || []
-      if (admins.length === 0) {
+      const filteredAdmins = admins.filter((admin: any) => admin.admin_name === credentials.admin_name)
+      if (filteredAdmins.length === 0) {
         throw new Error('존재하지 않는 관리자명입니다')
       }
 
-      const admin = admins[0]
+      const admin = filteredAdmins[0]
 
       // 비밀번호 검증
       if (admin.password !== credentials.password) {
@@ -294,12 +286,10 @@ export class SupabaseAuthService {
   async createDefaultAdmin(): Promise<void> {
     try {
       // 기본 관리자 계정이 이미 있는지 확인
-      const existingAdminsResponse = await dataService.entities.admin_users.list({
-        filter: { admin_name: 'admin' }
-      })
-
+      const existingAdminsResponse = await (dataService.entities as any).admin_users.list()
       const existingAdmins = Array.isArray(existingAdminsResponse) ? existingAdminsResponse : existingAdminsResponse?.list || []
-      if (existingAdmins.length > 0) {
+      const filteredAdmins = existingAdmins.filter((admin: any) => admin.admin_name === 'admin')
+      if (filteredAdmins.length > 0) {
         console.log('기본 관리자 계정이 이미 존재합니다')
         return
       }
@@ -329,12 +319,10 @@ export class SupabaseAuthService {
   async createTestUser(): Promise<void> {
     try {
       // 테스트 사용자 계정이 이미 있는지 확인
-      const existingUsersResponse = await dataService.entities.users.list({
-        filter: { email: 'test@test.com' }
-      })
-
+      const existingUsersResponse = await (dataService.entities as any).users.list()
       const existingUsers = Array.isArray(existingUsersResponse) ? existingUsersResponse : existingUsersResponse?.list || []
-      if (existingUsers.length > 0) {
+      const filteredUsers = existingUsers.filter((user: any) => user.email === 'test@test.com')
+      if (filteredUsers.length > 0) {
         console.log('테스트 사용자 계정이 이미 존재합니다')
         return
       }
@@ -383,7 +371,7 @@ export class SupabaseAuthService {
         updated_at: new Date().toISOString()
       }
 
-      await dataService.entities.user_profiles.create(userProfile)
+      await (dataService.entities as any).user_profiles.create(userProfile)
 
       // 포인트 기록 생성
       const userPoints = {

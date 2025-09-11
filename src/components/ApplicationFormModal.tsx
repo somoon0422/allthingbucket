@@ -74,7 +74,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       const userId = user.id || user.user_id || (user as any)._id
 
       // user_profiles에서 사용자 정보 검색
-      const profileResponse = await dataService.entities.user_profiles.list({
+      const profileResponse = await (dataService.entities as any).user_profiles.list({
         filter: { user_id: userId }
       })
 

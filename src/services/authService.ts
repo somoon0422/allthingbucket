@@ -55,13 +55,13 @@ export class AuthService {
         password: userData.password
       })
 
-      if (!result.data.user) {
+      if (!result.data?.user) {
         throw new Error('회원가입에 실패했습니다')
       }
 
       // 사용자 프로필 생성
       const profileData = {
-        id: result.data.user.id,
+        id: result.data?.user.id,
         name: userData.name,
         email: userData.email,
         phone: userData.phone,
@@ -71,12 +71,12 @@ export class AuthService {
         created_at: new Date().toISOString()
       }
       
-      await dataService.entities.user_profiles.create(profileData)
+      await (dataService.entities as any).user_profiles.create(profileData)
 
       return {
         user: {
-          id: result.data.user.id,
-          email: result.data.user.email,
+          id: result.data?.user.id,
+          email: result.data?.user.email,
           name: userData.name,
           profile: profileData
         },
@@ -97,18 +97,18 @@ export class AuthService {
         password: credentials.password
       })
 
-      if (!result.data.user) {
+      if (!result.data?.user) {
         throw new Error('로그인에 실패했습니다')
       }
 
       // 사용자 프로필 정보 가져오기
-      const profile = await dataService.entities.user_profiles.get(result.data.user.id)
+      const profile = await (dataService.entities as any).user_profiles.get(result.data?.user.id)
 
       return {
         user: {
-          id: result.data.user.id,
-          email: result.data.user.email,
-          name: profile?.name || result.data.user.email?.split('@')[0] || '사용자',
+          id: result.data?.user.id,
+          email: result.data?.user.email,
+          name: profile?.name || result.data?.user.email?.split('@')[0] || '사용자',
           profile: profile
         },
         token: result.data.session?.access_token || ''
@@ -186,7 +186,7 @@ export class AuthService {
   // 사용자 ID로 사용자 정보 조회
   async getUserById(userId: string): Promise<any> {
     try {
-      const profile = await dataService.entities.user_profiles.get(userId)
+      const profile = await (dataService.entities as any).user_profiles.get(userId)
       return profile
     } catch (error) {
       console.error('사용자 조회 실패:', error)

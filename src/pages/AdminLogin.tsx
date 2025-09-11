@@ -26,7 +26,7 @@ const AdminLogin: React.FC = () => {
     e.preventDefault()
     
     if (!formData.admin_name || !formData.password) {
-      toast.error('관리자명과 비밀번호를 입력해주세요')
+      toast.error('관리자명과 비밀번호를 입력해주세요', { duration: 3000 })
       return
     }
 

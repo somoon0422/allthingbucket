@@ -161,12 +161,23 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         content_end: formData.content_end_date || null,
         requirements: formData.requirements.trim() || null,
         rewards: formData.reward_points ? `${formData.reward_points}P` : null,
+        contact_email: 'support@allthingbucket.com',
+        contact_phone: '010-7290-7620',
         main_images: mainImages,
         detail_images: detailImages
       }
 
+      // 🔥 디버깅: 이미지 데이터 확인
+      console.log('🖼️ 캠페인 생성 시 이미지 데이터:', {
+        mainImages,
+        detailImages,
+        mainImagesLength: mainImages.length,
+        detailImagesLength: detailImages.length,
+        campaignData
+      })
+
       // 캠페인 생성 (campaigns 테이블에 저장)
-      await dataService.entities.campaigns.create(campaignData)
+      await (dataService.entities as any).campaigns.create(campaignData)
       
       toast.success('캠페인이 성공적으로 등록되었습니다!')
       onSuccess()
@@ -447,10 +458,10 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               <input
                 type="email"
                 name="contact_email"
-                value={formData.contact_email}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="contact@example.com"
+                value="support@allthingbucket.com"
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                placeholder="support@allthingbucket.com"
               />
             </div>
 
@@ -462,10 +473,10 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               <input
                 type="tel"
                 name="contact_phone"
-                value={formData.contact_phone}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="02-1234-5678"
+                value="010-7290-7620"
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                placeholder="010-7290-7620"
               />
             </div>
           </div>

@@ -321,7 +321,7 @@ const MyApplications: React.FC = () => {
       }
 
       // 신청 상태를 "포인트 지급 전"으로 변경
-      await dataService.entities.user_applications.update(applicationId, {
+      await (dataService.entities as any).user_applications.update(applicationId, {
         status: 'point_pending',
         point_requested_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

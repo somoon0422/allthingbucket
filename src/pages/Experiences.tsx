@@ -49,8 +49,20 @@ const Experiences: React.FC = () => {
       // Supabase 데이터 확인
       await checkSupabaseData()
       
-      const campaigns = await dataService.entities.campaigns.list()
+      const campaigns = await (dataService.entities as any).campaigns.list()
       console.log('✅ Supabase 체험단 데이터 성공:', campaigns)
+      
+      // 🔥 디버깅: 각 캠페인의 필드 확인
+      if (Array.isArray(campaigns) && campaigns.length > 0) {
+        console.log('🔍 첫 번째 캠페인 상세 데이터:', {
+          campaign: campaigns[0],
+          campaign_name: campaigns[0]?.campaign_name,
+          status: campaigns[0]?.status,
+          main_images: campaigns[0]?.main_images,
+          detail_images: campaigns[0]?.detail_images,
+          allFields: Object.keys(campaigns[0] || {})
+        })
+      }
       
       const safeCampaigns = Array.isArray(campaigns) ? campaigns : []
       setExperiences(safeCampaigns)
@@ -71,7 +83,7 @@ const Experiences: React.FC = () => {
     // 검색어 필터링
     if (searchTerm) {
       filtered = filtered.filter(exp => 
-        (exp.title || exp.experience_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (exp.campaign_name || exp.title || exp.experience_name || exp.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (exp.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (exp.brand || exp.brand_name || '').toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -225,10 +237,10 @@ const Experiences: React.FC = () => {
                 <div className={`${
                   viewMode === 'list' ? 'w-64 h-48' : 'h-48'
                 } bg-gradient-to-r from-purple-400 to-pink-400 relative overflow-hidden`}>
-                  {experience.image_url ? (
+                  {(experience.image_url || (experience.main_images && experience.main_images.length > 0)) ? (
                     <img
-                      src={experience.image_url}
-                      alt={experience.title || experience.experience_name}
+                      src={experience.image_url || experience.main_images[0]}
+                      alt={experience.campaign_name || experience.title || experience.experience_name || experience.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
@@ -243,11 +255,11 @@ const Experiences: React.FC = () => {
                   {/* 상태 배지 */}
                   <div className="absolute top-4 right-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      experience.status === 'recruiting' 
+                      (experience.status === 'active' || experience.status === 'recruiting') 
                         ? 'bg-green-500 text-white' 
                         : 'bg-gray-500 text-white'
                     }`}>
-                      {experience.status === 'recruiting' ? '모집중' : '마감'}
+                      {(experience.status === 'active' || experience.status === 'recruiting') ? '모집중' : '마감'}
                     </span>
                   </div>
 
@@ -263,7 +275,7 @@ const Experiences: React.FC = () => {
                 <div className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="text-xl font-bold text-gray-900 line-clamp-2 flex-1">
-                      {experience.title || experience.experience_name || '제목 없음'}
+                      {experience.campaign_name || experience.title || experience.experience_name || experience.name || '제목 없음'}
                     </h3>
                     <button className="ml-2 p-2 text-gray-400 hover:text-red-500 transition-colors">
                       <Heart className="w-5 h-5" />

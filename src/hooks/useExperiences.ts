@@ -10,7 +10,7 @@ export const useExperiences = () => {
     try {
       setLoading(true)
       
-      const campaigns = await dataService.entities.campaigns.list()
+      const campaigns = await (dataService.entities as any).campaigns.list()
       return campaigns || []
     } catch (error) {
       console.error('체험단 목록 조회 실패:', error)
@@ -26,7 +26,7 @@ export const useExperiences = () => {
     try {
       setLoading(true)
       
-      const campaign = await dataService.entities.campaigns.get(id)
+      const campaign = await (dataService.entities as any).campaigns.get(id)
       return campaign
     } catch (error) {
       console.error('체험단 상세 조회 실패:', error)
@@ -40,7 +40,7 @@ export const useExperiences = () => {
   // 중복 신청 체크 함수
   const checkDuplicateApplication = useCallback(async (experienceId: string, userId: string) => {
     try {
-      const applications = await dataService.entities.user_applications.list()
+      const applications = await (dataService.entities as any).user_applications.list()
       const userApplications = applications.filter((app: any) => 
         app.user_id === userId && app.experience_id === experienceId
       )
@@ -78,10 +78,10 @@ export const useExperiences = () => {
 
       // 모집인원 체크
       try {
-        const experience = await dataService.entities.campaigns.get(experienceId)
+        const experience = await (dataService.entities as any).campaigns.get(experienceId)
         
         if (experience && experience.max_participants) {
-          const applications = await dataService.entities.user_applications.list()
+          const applications = await (dataService.entities as any).user_applications.list()
           const approvedApplications = applications.filter((app: any) => 
             app.experience_id === experienceId && app.status === 'approved'
           )
@@ -123,7 +123,7 @@ export const useExperiences = () => {
       }
 
       // Supabase API로 신청 생성
-      const result = await dataService.entities.user_applications.create(applicationData)
+      const result = await (dataService.entities as any).user_applications.create(applicationData)
       
       if (result.success) {
         toast.success('체험단 신청이 완료되었습니다!')
@@ -157,7 +157,7 @@ export const useExperiences = () => {
     try {
       setLoading(true)
       
-      const result = await dataService.entities.user_applications.update(applicationId, {
+      const result = await (dataService.entities as any).user_applications.update(applicationId, {
         status: 'cancelled',
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -187,7 +187,7 @@ export const useExperiences = () => {
         return []
       }
 
-      const applications = await dataService.entities.user_applications.list()
+      const applications = await (dataService.entities as any).user_applications.list()
       const userApplications = applications.filter((app: any) => app.user_id === userId)
 
       // 각 신청에 체험단 정보 추가
@@ -202,7 +202,7 @@ export const useExperiences = () => {
               }
             }
 
-            const experience = await dataService.entities.campaigns.get(app.experience_id)
+            const experience = await (dataService.entities as any).campaigns.get(app.experience_id)
             return {
               ...app,
               experience: experience || null,

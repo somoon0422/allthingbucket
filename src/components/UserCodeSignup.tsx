@@ -45,8 +45,8 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
     setLoading(true)
     try {
       // 1. 회원 코드 존재 여부 및 사용 여부 확인
-      const { list: codes } = await dataService.entities.user_codes.list()
-      const codeRecord = codes.find(c => c.user_code === userCode.toUpperCase())
+      const { list: codes } = await (dataService.entities as any).user_codes.list()
+      const codeRecord = codes.find((c: any) => c.user_code === userCode.toUpperCase())
 
       if (!codeRecord) {
         toast.error('존재하지 않는 회원 코드입니다')
@@ -99,8 +99,8 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
     setLoading(true)
     try {
       // 1. 프로필 정보 저장
-      await dataService.entities.user_profiles.create({
-        user_id: user.userId,
+      await (dataService.entities as any).user_profiles.create({
+        user_id: user.user_id,
         signup_code: isExistingUser ? 'EXISTING_USER' : userCode.toUpperCase(),
         name: profileData.name,
         phone: profileData.phone,
@@ -119,12 +119,12 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
 
       // 2. 신규 가입인 경우에만 회원 코드 업데이트
       if (!isExistingUser && userCode) {
-        const { list: codes } = await dataService.entities.user_codes.list()
-        const codeRecord = codes.find(c => c.user_code === userCode.toUpperCase())
+        const { list: codes } = await (dataService.entities as any).user_codes.list()
+        const codeRecord = codes.find((c: any) => c.user_code === userCode.toUpperCase())
         
         if (codeRecord) {
-          await dataService.entities.user_codes.update(codeRecord._id, {
-            user_id: user.userId,
+          await (dataService.entities as any).user_codes.update(codeRecord._id, {
+            user_id: user.user_id,
             updated_at: new Date().toISOString()
           })
         }

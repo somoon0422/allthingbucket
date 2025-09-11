@@ -33,7 +33,7 @@ export const useWithdrawal = () => {
     try {
       // 사용자 잔액 확인
       const profiles = await dataService.entities.user_profiles.list()
-      const userProfile = profiles.find(p => p.user_id === userId)
+      const userProfile = profiles.find((p: any) => p.user_id === userId)
       
       if (!userProfile || userProfile.current_balance < requestedAmount) {
         toast.error('잔액이 부족합니다')
@@ -50,7 +50,7 @@ export const useWithdrawal = () => {
       const { finalAmount } = calculateTax(requestedAmount)
 
       // 출금 요청 생성
-      await (dataService as any).withdrawal_requests.create({
+      await dataService.entities.withdrawal_requests.create({
         user_id: userId,
         amount: requestedAmount,
         bank_name: bankInfo.bankName,
@@ -87,10 +87,10 @@ export const useWithdrawal = () => {
   const getUserWithdrawals = async (userId: string) => {
     try {
       console.log('🔍 dataService 확인:', dataService)
-      console.log('🔍 entities 확인:', (dataService as any).entities)
-      console.log('🔍 withdrawal_requests 확인:', (dataService as any).withdrawal_requests)
+      console.log('🔍 entities 확인:', dataService.entities)
+      console.log('🔍 withdrawal_requests 확인:', dataService.entities.withdrawal_requests)
       
-      const withdrawals = await (dataService as any).withdrawal_requests.list()
+      const withdrawals = await dataService.entities.withdrawal_requests.list()
       return withdrawals.filter((w: any) => w.user_id === userId).sort((a: any, b: any) => 
         new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime()
       )
@@ -104,7 +104,7 @@ export const useWithdrawal = () => {
   const getWithdrawableAmount = async (userId: string) => {
     try {
       const profiles = await dataService.entities.user_profiles.list()
-      const userProfile = profiles.find(p => p.user_id === userId)
+      const userProfile = profiles.find((p: any) => p.user_id === userId)
       return userProfile?.current_balance || 0
     } catch (error) {
       console.error('출금 가능 금액 조회 실패:', error)

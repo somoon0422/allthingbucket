@@ -38,7 +38,7 @@ export const checkSupabaseData = async () => {
     
     if (campaignsError) {
       console.error('❌ 캠페인 데이터 조회 실패:', campaignsError)
-    } else {
+} else {
       console.log(`📊 캠페인 수: ${campaigns.length}`)
       if (campaigns.length > 0) {
         console.log('📋 캠페인 목록:')
@@ -104,14 +104,14 @@ export const dataService = {
             .from('user_profiles')
             .select('*')
             .eq('user_id', id)
-            .single()
+            .limit(1)
           
           if (error) {
             console.error('user_profiles 조회 실패:', error)
             return null
           }
           
-          return data
+          return data && data.length > 0 ? data[0] : null
         } catch (error) {
           console.error('사용자 프로필 조회 실패:', error)
           return null
@@ -124,7 +124,6 @@ export const dataService = {
             .from('user_profiles')
             .insert([data])
             .select()
-            .single()
           
           if (error) {
             console.error('❌ user_profiles 생성 실패:', error)
@@ -146,7 +145,6 @@ export const dataService = {
             .update(data)
             .eq('id', id)
             .select()
-            .single()
           
           if (error) {
             console.error('❌ user_profiles 수정 실패:', error)
@@ -285,7 +283,7 @@ export const dataService = {
             .single()
           
           if (error) {
-            return null
+        return null
           }
           
           return data
@@ -461,7 +459,7 @@ export const dataService = {
           
           if (error) {
             console.error('admin_notifications 조회 실패:', error)
-            return []
+        return []
           }
           
           return data || []
@@ -500,7 +498,7 @@ export const dataService = {
           
           if (error) {
             console.error('user_points 조회 실패:', error)
-            return []
+        return []
           }
           
           return data || []
@@ -573,7 +571,7 @@ export const dataService = {
           
           if (error) {
             console.error('points_history 조회 실패:', error)
-            return []
+        return []
           }
           
           return data || []
@@ -612,7 +610,7 @@ export const dataService = {
           
           if (error) {
             console.error('❌ review_submissions 조회 실패:', error)
-            return []
+        return []
           }
           
           console.log('✅ Supabase review_submissions.list 결과:', data)
@@ -631,7 +629,7 @@ export const dataService = {
             .single()
           
           if (error) {
-            return null
+        return null
           }
           
           return data
@@ -803,7 +801,7 @@ export const dataService = {
           
           if (error) {
             console.error('user_reviews 조회 실패:', error)
-            return []
+        return []
           }
           
           return data || []
@@ -1073,6 +1071,103 @@ export const dataService = {
           return { success: false, message: '관리자 사용자 삭제에 실패했습니다' }
         }
       }
+    },
+
+    // 출금 요청
+    withdrawal_requests: {
+      list: async () => {
+        try {
+          console.log('🔥 Supabase withdrawal_requests.list 호출됨')
+          const { data, error } = await supabase
+            .from('withdrawal_requests')
+            .select('*')
+          
+          if (error) {
+            console.error('❌ withdrawal_requests 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase withdrawal_requests.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ 출금 요청 목록 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('withdrawal_requests')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('withdrawal_requests 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('출금 요청 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('withdrawal_requests')
+            .insert([data])
+            .select()
+          
+          if (error) {
+            console.error('❌ withdrawal_requests 생성 실패:', error)
+            return { success: false, message: error.message }
+          }
+          
+          return { success: true, data: result }
+        } catch (error) {
+          console.error('❌ 출금 요청 생성 실패:', error)
+          return { success: false, message: '출금 요청 생성에 실패했습니다' }
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('withdrawal_requests')
+            .update(data)
+            .eq('id', id)
+            .select()
+          
+          if (error) {
+            console.error('❌ withdrawal_requests 수정 실패:', error)
+            return { success: false, message: error.message }
+          }
+          
+          return { success: true, data: result }
+        } catch (error) {
+          console.error('❌ 출금 요청 수정 실패:', error)
+          return { success: false, message: '출금 요청 수정에 실패했습니다' }
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('withdrawal_requests')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ withdrawal_requests 삭제 실패:', error)
+            return { success: false, message: error.message }
+          }
+          
+          return { success: true }
+        } catch (error) {
+          console.error('❌ 출금 요청 삭제 실패:', error)
+          return { success: false, message: '출금 요청 삭제에 실패했습니다' }
+        }
+      }
     }
   },
 
@@ -1193,7 +1288,7 @@ export const dataService = {
         
         if (error) {
           console.error('파일 업로드 실패:', error)
-          return null
+        return null
         }
         
         return data
@@ -1246,10 +1341,10 @@ export const dataService = {
         }
         
         return data
-      } catch (error) {
+        } catch (error) {
         console.error('출금 요청 조회 실패:', error)
-        return null
-      }
+          return null
+        }
     },
     create: async (data: any) => {
       try {

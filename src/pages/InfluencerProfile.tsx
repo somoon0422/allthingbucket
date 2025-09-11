@@ -110,7 +110,7 @@ const InfluencerProfile: React.FC = () => {
     }
 
     try {
-      await dataService.entities.user_applications.update(applicationId, {
+      await (dataService.entities as any).user_applications.update(applicationId, {
         status: 'cancelled',
         updated_at: new Date().toISOString(),
         cancellation_reason: '사용자 철회'
@@ -121,7 +121,7 @@ const InfluencerProfile: React.FC = () => {
 
       // 🔔 관리자 알림 (간단한 로깅)
       try {
-        const result = await dataService.entities.admin_notifications.create({
+        const result = await (dataService.entities as any).admin_notifications.create({
           type: 'application_cancelled',
           title: '체험단 신청 철회',
           message: `${user?.name || '사용자'}님이 "${experienceTitle}" 체험단 신청을 철회했습니다.`,

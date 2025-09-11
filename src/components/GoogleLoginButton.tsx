@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { GoogleAuthService } from '../services/googleAuthService'
+import { SupabaseOAuthService } from '../services/supabaseOAuthService'
 import toast from 'react-hot-toast'
 
 interface GoogleLoginButtonProps {
@@ -17,13 +17,31 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
 }) => {
   const handleGoogleLogin = async () => {
     try {
-      await GoogleAuthService.handleGoogleLogin()
-      // 성공 시 콜백만 호출 (메시지 없음)
-      onSuccess?.({}, '')
+      console.log('🔥 Supabase Google OAuth 로그인 시작...')
+      
+      const result = await SupabaseOAuthService.signInWithGoogle()
+      
+      console.log('✅ Google OAuth 로그인 성공:', result)
+      
+      // 토큰을 localStorage에 저장
+      localStorage.setItem('auth_token', result.token)
+      
+      // 성공 시 콜백 호출
+      onSuccess?.(result.user, result.token)
+      
+      // 홈화면으로 이동
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1000)
+      
     } catch (error: any) {
+      console.error('❌ Google OAuth 로그인 실패:', error)
+      
+      // 에러 메시지 표시
       const errorMessage = error.message || 'Google 로그인에 실패했습니다'
       toast.error(errorMessage)
-      onError?.(errorMessage)
+      
+      onError?.(error.message || 'Google 로그인에 실패했습니다')
     }
   }
 

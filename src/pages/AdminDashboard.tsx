@@ -20,6 +20,7 @@ const AdminDashboard: React.FC = () => {
   
   // 모달 상태들
   const [selectedApplication, setSelectedApplication] = useState<any>(null)
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(null)
   const [showApprovalModal, setShowApprovalModal] = useState(false)
   const [showRejectionModal, setShowRejectionModal] = useState(false)
   const [showCampaignModal, setShowCampaignModal] = useState(false)
@@ -42,7 +43,7 @@ const AdminDashboard: React.FC = () => {
   // 데이터 로드 함수들
   const loadApplications = async () => {
     try {
-      const applicationsData = await dataService.entities.user_applications.list()
+      const applicationsData = await (dataService.entities as any).user_applications.list()
       setApplications(applicationsData || [])
     } catch (error) {
       console.error('신청 내역 로드 실패:', error)
@@ -52,7 +53,22 @@ const AdminDashboard: React.FC = () => {
 
   const loadExperiences = async () => {
     try {
-      const experiencesData = await dataService.entities.campaigns.list()
+      const experiencesData = await (dataService.entities as any).campaigns.list()
+      console.log('🔥 어드민 대시보드 - 체험단 데이터 로드:', experiencesData)
+      
+      // 🔥 디버깅: 첫 번째 체험단의 필드 확인
+      if (Array.isArray(experiencesData) && experiencesData.length > 0) {
+        console.log('🔍 어드민 - 첫 번째 체험단 상세 데이터:', {
+          campaign: experiencesData[0],
+          campaign_name: experiencesData[0]?.campaign_name,
+          title: experiencesData[0]?.title,
+          status: experiencesData[0]?.status,
+          main_images: experiencesData[0]?.main_images,
+          detail_images: experiencesData[0]?.detail_images,
+          allFields: Object.keys(experiencesData[0] || {})
+        })
+      }
+      
       setExperiences(experiencesData || [])
     } catch (error) {
       console.error('체험단 데이터 로드 실패:', error)
@@ -95,7 +111,7 @@ const AdminDashboard: React.FC = () => {
       setBulkActionLoading(true)
       
       for (const applicationId of selectedApplications) {
-        await dataService.entities.user_applications.update(applicationId, {
+        await (dataService.entities as any).user_applications.update(applicationId, {
           status: 'approved',
           approved_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -120,8 +136,8 @@ const AdminDashboard: React.FC = () => {
     }
 
     try {
-      await dataService.entities.campaigns.delete(experienceId)
-        toast.success('체험단이 삭제되었습니다')
+      await (dataService.entities as any).campaigns.delete(experienceId)
+      toast.success('체험단이 삭제되었습니다')
       await loadExperiences()
     } catch (error) {
       console.error('체험단 삭제 실패:', error)
@@ -137,8 +153,17 @@ const AdminDashboard: React.FC = () => {
   })
 
   const filteredExperiences = experiences.filter(exp => {
-    if (experienceFilter !== 'all' && exp.status !== experienceFilter) return false
-    if (experienceSearch && !exp.title?.toLowerCase().includes(experienceSearch.toLowerCase())) return false
+    // 상태 필터링 - 'active'와 'recruiting'을 모두 '모집중'으로 처리
+    if (experienceFilter === 'recruiting' && !(exp.status === 'active' || exp.status === 'recruiting')) return false
+    if (experienceFilter === 'closed' && (exp.status === 'active' || exp.status === 'recruiting')) return false
+    
+    // 검색 필터링 - 모든 가능한 제목 필드 검색
+    if (experienceSearch) {
+      const searchTerm = experienceSearch.toLowerCase()
+      const title = (exp.campaign_name || exp.title || exp.experience_name || exp.name || '').toLowerCase()
+      const description = (exp.description || '').toLowerCase()
+      if (!title.includes(searchTerm) && !description.includes(searchTerm)) return false
+    }
     return true
   })
 
@@ -154,7 +179,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && isAdminUser()) {
       loadAllData()
-          } else {
+        } else {
       navigate('/')
     }
   }, [isAuthenticated, isAdminUser, navigate])
@@ -434,18 +459,20 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredExperiences.map((experience) => (
                 <div key={experience.id} className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">{experience.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3">{experience.description}</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    {experience.campaign_name || experience.title || experience.experience_name || experience.name || '제목 없음'}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-3">{experience.description || '설명이 없습니다.'}</p>
                   <div className="flex justify-between items-center">
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      experience.status === 'recruiting' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      (experience.status === 'active' || experience.status === 'recruiting') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {experience.status === 'recruiting' ? '모집중' : '마감'}
+                      {(experience.status === 'active' || experience.status === 'recruiting') ? '모집중' : '마감'}
                               </span>
                     <div className="flex gap-2">
                               <button
                                 onClick={() => {
-                                  setSelectedApplication(experience)
+                                  setSelectedCampaign(experience)
                           setShowEditModal(true)
                                 }}
                                 className="text-blue-600 hover:text-blue-900"
@@ -475,7 +502,7 @@ const AdminDashboard: React.FC = () => {
           onClose={() => setShowApprovalModal(false)}
           onApprovalComplete={async () => {
             if (selectedApplication) {
-              await dataService.entities.user_applications.update(selectedApplication.id, {
+              await (dataService.entities as any).user_applications.update(selectedApplication.id, {
                 status: 'approved',
                 approved_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -495,7 +522,7 @@ const AdminDashboard: React.FC = () => {
           onClose={() => setShowRejectionModal(false)}
           onRejectionComplete={async () => {
             if (selectedApplication) {
-              await dataService.entities.user_applications.update(selectedApplication.id, {
+              await (dataService.entities as any).user_applications.update(selectedApplication.id, {
                 status: 'rejected',
                 rejected_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -523,16 +550,20 @@ const AdminDashboard: React.FC = () => {
       {showEditModal && (
       <CampaignEditModal
           isOpen={showEditModal}
-          campaign={selectedApplication}
-          onClose={() => setShowEditModal(false)}
+        campaign={selectedCampaign}
+          onClose={() => {
+            setShowEditModal(false)
+            setSelectedCampaign(null)
+          }}
           onSuccess={async () => {
             toast.success('체험단이 수정되었습니다')
             await loadExperiences()
             setShowEditModal(false)
+            setSelectedCampaign(null)
           }}
         />
-      )}
-                </div>
+                    )}
+                  </div>
   )
 }
 

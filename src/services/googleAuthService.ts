@@ -110,7 +110,7 @@ export class GoogleAuthService {
       user = createdUser
       
       // 사용자 프로필 생성
-      await dataService.entities.user_profiles.create({
+      await (dataService.entities as any).user_profiles.create({
         user_id: newUser.user_id,
         name: newUser.name,
         email: newUser.email,
@@ -282,7 +282,7 @@ export class GoogleAuthService {
         console.log('📝 새 사용자 프로필 생성 중...')
         
         // 새 프로필 생성
-        await dataService.entities.user_profiles.create({
+        await (dataService.entities as any).user_profiles.create({
           user_id: user.id || user.user_id,
           name: user.name || user.email?.split('@')[0] || '사용자',
           email: user.email || '',
