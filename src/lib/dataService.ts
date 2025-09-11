@@ -504,7 +504,7 @@ export const dataService = {
     file: {
       upload: async (_file: File) => {
         try {
-          console.log('⚠️ MongoDB 모드에서는 파일 업로드가 지원되지 않습니다')
+          console.log('⚠️ 파일 업로드는 Base64 방식으로 처리됩니다')
           return null
         } catch (error) {
           console.error('파일 업로드 실패:', error)

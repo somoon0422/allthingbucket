@@ -199,15 +199,15 @@ router.post('/kakao/login', async (req, res) => {
 // 관리자 로그인
 router.post('/admin/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { admin_name, password } = req.body;
     
-    if (!username || !password) {
-      return res.status(400).json({ error: '사용자명과 비밀번호가 필요합니다' });
+    if (!admin_name || !password) {
+      return res.status(400).json({ error: '관리자명과 비밀번호가 필요합니다' });
     }
 
-    console.log('🔐 Supabase 관리자 로그인 시도:', username);
+    console.log('🔐 Supabase 관리자 로그인 시도:', admin_name);
 
-    const admin = await supabaseService.loginAdmin(username, password);
+    const admin = await supabaseService.loginAdmin(admin_name, password);
     
     if (!admin) {
       return res.status(401).json({ error: '존재하지 않는 관리자입니다' });

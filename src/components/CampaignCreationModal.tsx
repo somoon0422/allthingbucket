@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react'
-import { useDropzone } from 'react-dropzone'
 import { dataService } from '../lib/dataService'
-import {X, Upload, Calendar, MapPin, Users, Coins, Clock, FileText, Phone, Mail, Image, Code, Trash2, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
+import ImageUploadManager from './ImageUploadManager'
+import {X, Calendar, MapPin, Users, Coins, Clock, FileText, Phone, Mail, Image, Code, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
 import toast from 'react-hot-toast'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -101,119 +101,16 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     current_applicants: 0 // 현재 신청자 수
   })
 
-  // 🔥 메인 이미지 업로드 처리
-  const onMainImageDrop = async (acceptedFiles: File[]) => {
-    try {
-      setLoading(true)
-
-      for (const file of acceptedFiles) {
-        // 파일 크기 체크 (10MB 제한)
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error('파일 크기는 10MB 이하여야 합니다')
-          continue
-        }
-
-        // 파일 타입 체크
-        if (!file.type.startsWith('image/')) {
-          toast.error('이미지 파일만 업로드 가능합니다')
-          continue
-        }
-
-        // 파일을 Base64로 변환하여 저장
-        const uploadResult = await new Promise<{fileUrl: string}>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => {
-            resolve({ fileUrl: reader.result as string })
-          }
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-        
-        if (uploadResult && typeof uploadResult === 'object' && 'fileUrl' in uploadResult) {
-          const result = uploadResult as any
-          if (result.fileUrl) {
-            setMainImages(prev => [...prev, result.fileUrl].filter((url): url is string => Boolean(url)))
-            toast.success('메인 이미지가 업로드되었습니다')
-          } else if (result.uploadError) {
-            toast.error(`업로드 실패: ${result.uploadError}`)
-          }
-        } else {
-          toast.error('파일 업로드에 실패했습니다')
-        }
-      }
-    } catch (error) {
-      console.error('메인 이미지 업로드 실패:', error)
-      toast.error('메인 이미지 업로드에 실패했습니다')
-    } finally {
-      setLoading(false)
-    }
+  // 🔥 메인 이미지 변경 처리
+  const handleMainImagesChange = (images: string[]) => {
+    setMainImages(images)
   }
 
-  // 🔥 상세 이미지 업로드 처리
-  const onDetailImageDrop = async (acceptedFiles: File[]) => {
-    try {
-      setLoading(true)
-
-      for (const file of acceptedFiles) {
-        // 파일 크기 체크 (10MB 제한)
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error('파일 크기는 10MB 이하여야 합니다')
-          continue
-        }
-
-        // 파일 타입 체크
-        if (!file.type.startsWith('image/')) {
-          toast.error('이미지 파일만 업로드 가능합니다')
-          continue
-        }
-
-        // 파일을 Base64로 변환하여 저장
-        const uploadResult = await new Promise<{fileUrl: string}>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => {
-            resolve({ fileUrl: reader.result as string })
-          }
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-        
-        if (uploadResult && typeof uploadResult === 'object' && 'fileUrl' in uploadResult) {
-          const result = uploadResult as any
-          if (result.fileUrl) {
-            setDetailImages(prev => [...prev, result.fileUrl].filter((url): url is string => Boolean(url)))
-            toast.success('상세 이미지가 업로드되었습니다')
-          } else if (result.uploadError) {
-            toast.error(`업로드 실패: ${result.uploadError}`)
-          }
-        } else {
-          toast.error('파일 업로드에 실패했습니다')
-        }
-      }
-    } catch (error) {
-      console.error('상세 이미지 업로드 실패:', error)
-      toast.error('상세 이미지 업로드에 실패했습니다')
-    } finally {
-      setLoading(false)
-    }
+  // 🔥 상세 이미지 변경 처리
+  const handleDetailImagesChange = (images: string[]) => {
+    setDetailImages(images)
   }
 
-  const { getRootProps: getMainRootProps, getInputProps: getMainInputProps, isDragActive: isMainDragActive } = useDropzone({
-    onDrop: onMainImageDrop,
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp']
-    },
-    multiple: true,
-    disabled: loading
-  })
-
-  const { getRootProps: getDetailRootProps, getInputProps: getDetailInputProps, isDragActive: isDetailDragActive } = useDropzone({
-    onDrop: onDetailImageDrop,
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp']
-    },
-    multiple: true,
-    disabled: loading
-  })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -223,13 +120,6 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     }))
   }
 
-  const removeMainImage = (index: number) => {
-    setMainImages(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const removeDetailImage = (index: number) => {
-    setDetailImages(prev => prev.filter((_, i) => i !== index))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -364,52 +254,13 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 <Image className="w-4 h-4 inline mr-1" />
                 메인 이미지 (여러장 가능)
               </label>
-              <div
-                {...getMainRootProps()}
-                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                  isMainDragActive 
-                    ? 'border-blue-400 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <input {...getMainInputProps()} />
-                
-                {mainImages.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      {mainImages.map((url, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={url}
-                            alt={`메인 이미지 ${index + 1}`}
-                            className="w-full h-24 object-cover rounded"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              removeMainImage(index)
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-sm text-green-600">{mainImages.length}개 메인 이미지 업로드됨</p>
-                    <p className="text-xs text-gray-500">더 추가하려면 클릭하거나 드래그하세요</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto" />
-                    <p className="text-sm text-gray-600">
-                      {isMainDragActive ? '메인 이미지를 여기에 놓으세요' : '메인 이미지를 드래그하거나 클릭하여 업로드'}
-                    </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, GIF 파일 (최대 10MB)</p>
-                  </div>
-                )}
-              </div>
+              <ImageUploadManager
+                onImagesChange={handleMainImagesChange}
+                initialImages={mainImages}
+                maxImages={5}
+                allowFileUpload={true}
+                allowUrlInput={true}
+              />
             </div>
 
             {/* 상세 이미지 업로드 */}
@@ -418,52 +269,13 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 <FileText className="w-4 h-4 inline mr-1" />
                 상세 이미지 (여러장 가능)
               </label>
-              <div
-                {...getDetailRootProps()}
-                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                  isDetailDragActive 
-                    ? 'border-green-400 bg-green-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <input {...getDetailInputProps()} />
-                
-                {detailImages.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      {detailImages.map((url, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={url}
-                            alt={`상세 이미지 ${index + 1}`}
-                            className="w-full h-24 object-cover rounded"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              removeDetailImage(index)
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-sm text-green-600">{detailImages.length}개 상세 이미지 업로드됨</p>
-                    <p className="text-xs text-gray-500">더 추가하려면 클릭하거나 드래그하세요</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto" />
-                    <p className="text-sm text-gray-600">
-                      {isDetailDragActive ? '상세 이미지를 여기에 놓으세요' : '상세 이미지를 드래그하거나 클릭하여 업로드'}
-                    </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, GIF 파일 (최대 10MB)</p>
-                  </div>
-                )}
-              </div>
+              <ImageUploadManager
+                onImagesChange={handleDetailImagesChange}
+                initialImages={detailImages}
+                maxImages={10}
+                allowFileUpload={true}
+                allowUrlInput={true}
+              />
             </div>
           </div>
 

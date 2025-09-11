@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 // useExperiences 제거됨 - 사용하지 않음
 import ApplicationFormModal from '../components/ApplicationFormModal'
-// MongoDB API 사용
+// Supabase API 사용
 import { dataService } from '../lib/dataService'
 import {Gift, Calendar, MapPin, Users, Filter, Search, Coins, Eye} from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -62,10 +62,10 @@ const Experiences: React.FC = () => {
     loadExperiences()
   }, [isAuthenticated, user?.user_id])
 
-  // 🔥 필터링된 체험단 목록 - MongoDB + Lumi 데이터 지원
+  // 🔥 필터링된 체험단 목록 - Supabase 데이터 지원
   const filteredExperiences = React.useMemo(() => {
     try {
-      // Lumi SDK 데이터 사용
+      // Supabase 데이터 사용
       let dataToFilter = ultraSafeArray(experiences)
       
       if (!Array.isArray(dataToFilter) || dataToFilter.length === 0) {
@@ -78,7 +78,7 @@ const Experiences: React.FC = () => {
             return false
           }
 
-          // MongoDB 데이터와 Lumi 데이터 필드명 통합 처리
+          // Supabase 데이터 필드명 처리
           const experienceName = safeString(experience, 'title') || safeString(experience, 'campaign_name') || safeString(experience, 'experience_name')
           const brandName = safeString(experience, 'brand') || safeString(experience, 'brand_name')
           const description = safeString(experience, 'description')

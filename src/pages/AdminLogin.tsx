@@ -129,12 +129,6 @@ const AdminLogin: React.FC = () => {
             </button>
           </div>
 
-          <div className="text-center">
-            <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <p className="font-medium mb-2 text-gray-800">🔐 관리자 로그인</p>
-              <p className="text-gray-600">관리자 계정으로 로그인하세요</p>
-            </div>
-          </div>
 
           <div className="text-center">
             <button

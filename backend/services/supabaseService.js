@@ -242,8 +242,10 @@ class SupabaseService {
   // 관리자 로그인
   async loginAdmin(username, password) {
     try {
+      console.log('🔐 Supabase 관리자 로그인 시도:', username);
+      
       const { data, error } = await this.supabase
-        .from('admins')
+        .from('admin_users')
         .select('*')
         .eq('username', username)
         .eq('password', password)
@@ -254,9 +256,11 @@ class SupabaseService {
         return null;
       }
       
+      console.log('✅ Supabase 관리자 로그인 성공:', data.username);
+      
       // 마지막 로그인 시간 업데이트
       await this.supabase
-        .from('admins')
+        .from('admin_users')
         .update({ last_login: new Date().toISOString() })
         .eq('id', data.id);
       

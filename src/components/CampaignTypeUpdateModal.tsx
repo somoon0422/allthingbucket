@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, CheckSquare, Square, AlertTriangle, Info } from 'lucide-react'
+import { X, AlertTriangle } from 'lucide-react'
 
 interface CampaignTypeUpdateModalProps {
   isOpen: boolean

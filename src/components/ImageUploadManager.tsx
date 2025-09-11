@@ -1,7 +1,6 @@
 
 import React, { useState, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { dataService } from '../lib/dataService'
 import {Upload, X, Link as LinkIcon, AlertCircle, Loader2} from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -56,7 +55,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
     }
   }, [images, onImagesChange])
 
-  // 🔥 파일 업로드 처리 (Lumi 저장소 연동)
+  // 🔥 파일 업로드 처리 (Base64 방식)
   const handleFileUpload = useCallback(async (files: FileList) => {
     if (!allowFileUpload) {
       toast.error('파일 업로드가 허용되지 않습니다')
@@ -96,7 +95,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
     try {
       setUploading(true)
       console.log('🔄 파일 업로드 시작:', validFiles.map(f => f.name))
-      console.log('🔍 Lumi SDK 상태:', { lumi: !!lumi, tools: !!lumi?.tools, file: !!lumi?.tools?.file })
+      console.log('🔍 이미지 업로드 준비 완료')
       console.log('🔍 사용자 인증 상태:', { user: user?.name, id: user?.user_id })
       
       // 🚀 Base64 방식으로 파일 업로드
@@ -124,7 +123,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
             console.log(`✅ 업로드 성공: ${validFiles[index].name} -> ${result.fileUrl}`)
           } else {
             failedUploads.push(validFiles[index].name)
-            console.error(`❌ 업로드 실패: ${validFiles[index].name} - ${result.uploadError}`)
+            console.error(`❌ 업로드 실패: ${validFiles[index].name}`)
           }
         })
         
@@ -140,9 +139,9 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
           const failedFiles = validFiles.filter((_, index) => failedUploads.includes(validFiles[index].name))
           await handleAlternativeUpload(failedFiles)
         }
-      } catch (lumiError) {
-        console.warn('⚠️ Lumi SDK 업로드 실패, Base64 방식으로 전환:', lumiError)
-        // Lumi SDK 실패 시 바로 Base64 방식으로 전환
+      } catch (uploadError) {
+        console.warn('⚠️ 업로드 실패, Base64 방식으로 전환:', uploadError)
+        // 업로드 실패 시 Base64 방식으로 전환
         await handleAlternativeUpload(validFiles)
       }
       

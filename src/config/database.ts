@@ -1,5 +1,5 @@
 // API 엔드포인트 설정
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 // 컬렉션 이름 상수
 export const COLLECTIONS = {
