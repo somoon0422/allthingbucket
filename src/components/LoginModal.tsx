@@ -86,7 +86,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     }))
   }
 
-
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose()
@@ -208,8 +207,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           </svg>
           구글로 {isLogin ? '로그인' : '회원가입'}
         </GoogleLoginButton>
-
-
 
         {/* 구분선 */}
         <div className="relative mb-4">
