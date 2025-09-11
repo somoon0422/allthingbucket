@@ -67,7 +67,7 @@ const CampaignDetail: React.FC = () => {
         
         // 🔥 신청 상태 체크
         if (isAuthenticated && user?.user_id && campaignData) {
-          const duplicateCheck = await checkDuplicateApplication(id, user.user_id, user)
+          const duplicateCheck = await checkDuplicateApplication(id, user.user_id)
           if (duplicateCheck.isDuplicate) {
             setApplicationStatus(duplicateCheck.existingApplication)
           }

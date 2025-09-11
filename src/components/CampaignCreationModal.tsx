@@ -143,7 +143,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         return
       }
 
-      // 캠페인 데이터 생성 (Supabase campaigns 테이블 구조에 맞게)
+      // 캠페인 데이터 생성 (실제 campaigns 테이블 구조에 맞게)
       const campaignData = {
         campaign_name: formData.experience_name.trim(),
         product_name: formData.brand_name.trim(),
@@ -162,20 +162,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         requirements: formData.requirements.trim() || null,
         rewards: formData.reward_points ? `${formData.reward_points}P` : null,
         main_images: mainImages,
-        detail_images: detailImages,
-        html_content: htmlContent.trim() || null,
-        
-        // 🔥 캠페인 일정 정보
-        application_start_date: formData.application_start_date || null,
-        application_end_date: formData.application_end_date || null,
-        influencer_announcement_date: formData.influencer_announcement_date || null,
-        content_start_date: formData.content_start_date || null,
-        content_end_date: formData.content_end_date || null,
-        result_announcement_date: formData.result_announcement_date || null,
-        current_applicants: parseInt(formData.current_applicants.toString()) || 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        creator: 'admin'
+        detail_images: detailImages
       }
 
       // 캠페인 생성 (campaigns 테이블에 저장)

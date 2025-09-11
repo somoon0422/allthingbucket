@@ -263,7 +263,6 @@ export const dataService = {
           const { data, error } = await supabase
             .from('user_applications')
             .select('*')
-            .order('created_at', { ascending: false })
           
           if (error) {
             console.error('❌ user_applications 조회 실패:', error)
@@ -296,18 +295,47 @@ export const dataService = {
       },
       create: async (data: any) => {
         try {
+          // 현재 테이블 구조에 맞게 데이터 변환
+          const transformedData = {
+            user_id: data.user_id,
+            campaign_id: data.experience_id, // experience_id를 campaign_id로 매핑
+            status: data.status || 'pending',
+            application_data: {
+              name: data.name,
+              email: data.email,
+              phone: data.phone,
+              address: data.address,
+              detailed_address: data.detailed_address,
+              instagram_handle: data.instagram_handle,
+              blog_url: data.blog_url,
+              youtube_channel: data.youtube_channel,
+              application_reason: data.application_reason,
+              experience_plan: data.experience_plan,
+              platform_type: data.platform_type,
+              submitted_by_role: data.submitted_by_role,
+              submitted_by_admin_role: data.submitted_by_admin_role,
+              debug_info: data.debug_info
+            },
+            applied_at: data.applied_at || new Date().toISOString()
+          }
+          
+          console.log('🔥 user_applications.create 호출됨:', transformedData)
+          
           const { data: result, error } = await supabase
             .from('user_applications')
-            .insert([data])
+            .insert([transformedData])
             .select()
             .single()
           
           if (error) {
+            console.error('❌ user_applications 생성 실패:', error)
             return { success: false, message: error.message }
           }
           
+          console.log('✅ user_applications 생성 성공:', result)
           return { success: true, data: result }
         } catch (error) {
+          console.error('❌ user_applications 생성 실패:', error)
           return { success: false, message: '사용자 신청 생성에 실패했습니다' }
         }
       },
@@ -581,7 +609,6 @@ export const dataService = {
           const { data, error } = await supabase
             .from('review_submissions')
             .select('*')
-            .order('created_at', { ascending: false })
           
           if (error) {
             console.error('❌ review_submissions 조회 실패:', error)
@@ -1181,6 +1208,306 @@ export const dataService = {
         .getPublicUrl(path)
       
       return data.publicUrl
+    }
+  },
+
+  // 출금 요청
+  withdrawal_requests: {
+    list: async () => {
+      try {
+        console.log('🔥 Supabase withdrawal_requests.list 호출됨')
+        const { data, error } = await supabase
+          .from('withdrawal_requests')
+          .select('*')
+        
+        if (error) {
+          console.error('❌ withdrawal_requests 조회 실패:', error)
+          return []
+        }
+        
+        console.log('✅ Supabase withdrawal_requests.list 결과:', data)
+        return data || []
+      } catch (error) {
+        console.error('❌ 출금 요청 목록 조회 실패:', error)
+        return []
+      }
+    },
+    get: async (id: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('withdrawal_requests')
+          .select('*')
+          .eq('id', id)
+          .single()
+        
+        if (error) {
+          console.error('withdrawal_requests 조회 실패:', error)
+          return null
+        }
+        
+        return data
+      } catch (error) {
+        console.error('출금 요청 조회 실패:', error)
+        return null
+      }
+    },
+    create: async (data: any) => {
+      try {
+        const { data: result, error } = await supabase
+          .from('withdrawal_requests')
+          .insert([data])
+          .select()
+          .single()
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true, data: result }
+      } catch (error) {
+        return { success: false, message: '출금 요청 생성에 실패했습니다' }
+      }
+    },
+    update: async (id: string, data: any) => {
+      try {
+        const { data: result, error } = await supabase
+          .from('withdrawal_requests')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single()
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true, data: result }
+      } catch (error) {
+        return { success: false, message: '출금 요청 수정에 실패했습니다' }
+      }
+    },
+    delete: async (id: string) => {
+      try {
+        const { error } = await supabase
+          .from('withdrawal_requests')
+          .delete()
+          .eq('id', id)
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true }
+      } catch (error) {
+        return { success: false, message: '출금 요청 삭제에 실패했습니다' }
+      }
+    }
+  },
+
+  // 포인트 히스토리
+  points_history: {
+    list: async () => {
+      try {
+        console.log('🔥 Supabase points_history.list 호출됨')
+        const { data, error } = await supabase
+          .from('points_history')
+          .select('*')
+          .order('created_at', { ascending: false })
+        
+        if (error) {
+          console.error('❌ points_history 조회 실패:', error)
+          return []
+        }
+        
+        console.log('✅ Supabase points_history.list 결과:', data)
+        return data || []
+      } catch (error) {
+        console.error('❌ 포인트 히스토리 목록 조회 실패:', error)
+        return []
+      }
+    },
+    get: async (id: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('points_history')
+          .select('*')
+          .eq('id', id)
+          .single()
+        
+        if (error) {
+          console.error('points_history 조회 실패:', error)
+          return null
+        }
+        
+        return data
+      } catch (error) {
+        console.error('포인트 히스토리 조회 실패:', error)
+        return null
+      }
+    },
+    create: async (data: any) => {
+      try {
+        const { data: result, error } = await supabase
+          .from('points_history')
+          .insert([data])
+          .select()
+          .single()
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true, data: result }
+      } catch (error) {
+        return { success: false, message: '포인트 히스토리 생성에 실패했습니다' }
+      }
+    },
+    update: async (id: string, data: any) => {
+      try {
+        const { data: result, error } = await supabase
+          .from('points_history')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single()
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true, data: result }
+      } catch (error) {
+        return { success: false, message: '포인트 히스토리 수정에 실패했습니다' }
+      }
+    },
+    delete: async (id: string) => {
+      try {
+        const { error } = await supabase
+          .from('points_history')
+          .delete()
+          .eq('id', id)
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true }
+      } catch (error) {
+        return { success: false, message: '포인트 히스토리 삭제에 실패했습니다' }
+      }
+    }
+  },
+
+  // 사용자 포인트
+  user_points: {
+    list: async () => {
+      try {
+        console.log('🔥 Supabase user_points.list 호출됨')
+        const { data, error } = await supabase
+          .from('user_points')
+          .select('*')
+          .order('created_at', { ascending: false })
+        
+        if (error) {
+          console.error('❌ user_points 조회 실패:', error)
+          return []
+        }
+        
+        console.log('✅ Supabase user_points.list 결과:', data)
+        return data || []
+      } catch (error) {
+        console.error('❌ 사용자 포인트 목록 조회 실패:', error)
+        return []
+      }
+    },
+    get: async (id: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('user_points')
+          .select('*')
+          .eq('id', id)
+          .single()
+        
+        if (error) {
+          console.error('user_points 조회 실패:', error)
+          return null
+        }
+        
+        return data
+      } catch (error) {
+        console.error('사용자 포인트 조회 실패:', error)
+        return null
+      }
+    },
+    getByUserId: async (userId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('user_points')
+          .select('*')
+          .eq('user_id', userId)
+          .single()
+        
+        if (error) {
+          console.error('user_points 조회 실패:', error)
+          return null
+        }
+        
+        return data
+      } catch (error) {
+        console.error('사용자 포인트 조회 실패:', error)
+        return null
+      }
+    },
+    create: async (data: any) => {
+      try {
+        const { data: result, error } = await supabase
+          .from('user_points')
+          .insert([data])
+          .select()
+          .single()
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true, data: result }
+      } catch (error) {
+        return { success: false, message: '사용자 포인트 생성에 실패했습니다' }
+      }
+    },
+    update: async (id: string, data: any) => {
+      try {
+        const { data: result, error } = await supabase
+          .from('user_points')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single()
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true, data: result }
+      } catch (error) {
+        return { success: false, message: '사용자 포인트 수정에 실패했습니다' }
+      }
+    },
+    delete: async (id: string) => {
+      try {
+        const { error } = await supabase
+          .from('user_points')
+          .delete()
+          .eq('id', id)
+        
+        if (error) {
+          return { success: false, message: error.message }
+        }
+        
+        return { success: true }
+      } catch (error) {
+        return { success: false, message: '사용자 포인트 삭제에 실패했습니다' }
+      }
     }
   }
 }

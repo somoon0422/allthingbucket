@@ -32,7 +32,7 @@ export const useWithdrawal = () => {
     setLoading(true)
     try {
       // 사용자 잔액 확인
-      const { list: profiles } = await dataService.entities.user_profiles.list()
+      const profiles = await dataService.entities.user_profiles.list()
       const userProfile = profiles.find(p => p.user_id === userId)
       
       if (!userProfile || userProfile.current_balance < requestedAmount) {
@@ -47,47 +47,29 @@ export const useWithdrawal = () => {
       }
 
       // 세금 계산
-      const { taxRate, taxAmount, finalAmount } = calculateTax(requestedAmount)
+      const { finalAmount } = calculateTax(requestedAmount)
 
       // 출금 요청 생성
-      await dataService.entities.withdrawal_requests.create({
+      await (dataService as any).withdrawal_requests.create({
         user_id: userId,
-        requested_amount: requestedAmount,
+        amount: requestedAmount,
         bank_name: bankInfo.bankName,
         account_number: bankInfo.accountNumber,
         account_holder: bankInfo.accountHolder,
-        tax_rate: taxRate,
-        tax_amount: taxAmount,
-        final_amount: finalAmount,
-        status: 'pending',
-        admin_note: '',
-        processed_by: '',
-        processed_at: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        status: 'pending'
       })
 
       // 사용자 잔액에서 차감 (요청 시점에 차감)
-      await dataService.entities.user_profiles.update(userProfile._id, {
-        current_balance: userProfile.current_balance - requestedAmount,
-        updated_at: new Date().toISOString()
+      await dataService.entities.user_profiles.update(userProfile.id, {
+        current_balance: userProfile.current_balance - requestedAmount
       })
 
-      // 포인트 사용 기록 생성
-      await dataService.entities.user_points.create({
+      // 포인트 히스토리 기록 생성
+      await dataService.entities.points_history.create({
         user_id: userId,
-        transaction_type: 'withdrawal_requested',
-        amount: requestedAmount,
-        experience_code: '',
-        description: `출금 요청 (${bankInfo.bankName} ${bankInfo.accountNumber})`,
-        bank_name: bankInfo.bankName,
-        account_number: bankInfo.accountNumber,
-        account_holder: bankInfo.accountHolder,
-        tax_amount: taxAmount,
-        final_amount: finalAmount,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        processed_at: ''
+        points: -requestedAmount,
+        type: 'withdrawal_requested',
+        description: `출금 요청 (${bankInfo.bankName} ${bankInfo.accountNumber})`
       })
 
       toast.success(`출금 요청이 완료되었습니다. 실제 지급액: ${finalAmount.toLocaleString()}원`)
@@ -104,9 +86,13 @@ export const useWithdrawal = () => {
   // 사용자 출금 내역 조회
   const getUserWithdrawals = async (userId: string) => {
     try {
-      const { list: withdrawals } = await dataService.entities.withdrawal_requests.list()
-      return withdrawals.filter(w => w.user_id === userId).sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      console.log('🔍 dataService 확인:', dataService)
+      console.log('🔍 entities 확인:', (dataService as any).entities)
+      console.log('🔍 withdrawal_requests 확인:', (dataService as any).withdrawal_requests)
+      
+      const withdrawals = await (dataService as any).withdrawal_requests.list()
+      return withdrawals.filter((w: any) => w.user_id === userId).sort((a: any, b: any) => 
+        new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime()
       )
     } catch (error) {
       console.error('출금 내역 조회 실패:', error)
@@ -117,7 +103,7 @@ export const useWithdrawal = () => {
   // 출금 가능 금액 조회
   const getWithdrawableAmount = async (userId: string) => {
     try {
-      const { list: profiles } = await dataService.entities.user_profiles.list()
+      const profiles = await dataService.entities.user_profiles.list()
       const userProfile = profiles.find(p => p.user_id === userId)
       return userProfile?.current_balance || 0
     } catch (error) {

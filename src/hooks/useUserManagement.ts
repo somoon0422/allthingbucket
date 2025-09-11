@@ -130,28 +130,24 @@ export const useUserManagement = () => {
       try {
         // 사용자 프로필 삭제
         console.log('📋 사용자 프로필 삭제 중...')
-        const profilesResponse = await dataService.entities.user_profiles.list({
-          filter: { user_id: userId }
-        })
-        const profiles = ensureArray(profilesResponse)
+        const profilesResponse = await dataService.entities.user_profiles.list()
+        const profiles = ensureArray(profilesResponse).filter((p: any) => p.user_id === userId)
         console.log('발견된 프로필 수:', profiles.length)
         
         for (const profile of profiles) {
-          if (profile && profile._id) {
-            console.log('프로필 삭제:', profile._id)
-            await dataService.entities.user_profiles.delete(profile._id)
+          if (profile && profile.id) {
+            console.log('프로필 삭제:', profile.id)
+            await dataService.entities.user_profiles.delete(profile.id)
           }
         }
         
         // 사용자 포인트 삭제
-        const pointsResponse = await dataService.entities.user_points.list({
-          filter: { user_id: userId }
-        })
-        const points = ensureArray(pointsResponse)
+        const pointsResponse = await dataService.entities.user_points.list()
+        const points = ensureArray(pointsResponse).filter((p: any) => p.user_id === userId)
         
         for (const point of points) {
-          if (point && point._id) {
-            await dataService.entities.user_points.delete(point._id)
+          if (point && point.id) {
+            await dataService.entities.user_points.delete(point.id)
           }
         }
       } catch (cleanupError) {

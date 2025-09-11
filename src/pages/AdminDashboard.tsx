@@ -121,7 +121,7 @@ const AdminDashboard: React.FC = () => {
 
     try {
       await dataService.entities.campaigns.delete(experienceId)
-      toast.success('체험단이 삭제되었습니다')
+        toast.success('체험단이 삭제되었습니다')
       await loadExperiences()
     } catch (error) {
       console.error('체험단 삭제 실패:', error)
@@ -154,7 +154,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && isAdminUser()) {
       loadAllData()
-    } else {
+          } else {
       navigate('/')
     }
   }, [isAuthenticated, isAdminUser, navigate])
@@ -198,8 +198,8 @@ const AdminDashboard: React.FC = () => {
               </button>
             </div>
           </div>
+          </div>
         </div>
-      </div>
 
       {/* Stats */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -215,7 +215,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -227,7 +227,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -239,7 +239,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
@@ -259,38 +259,38 @@ const AdminDashboard: React.FC = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold text-gray-900">신청 관리</h2>
               <div className="flex gap-2">
-                <button
+          <button
                   onClick={handleBulkApprove}
                   disabled={selectedApplications.size === 0 || bulkActionLoading}
                   className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                >
+          >
                   <CheckCircle className="w-4 h-4" />
                   일괄 승인
-                </button>
-                <button
+          </button>
+          <button
                   onClick={() => setShowRejectionModal(true)}
                   disabled={selectedApplications.size === 0}
                   className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                 >
                   <XCircle className="w-4 h-4" />
                   일괄 거절
-                </button>
-              </div>
+          </button>
+        </div>
             </div>
-          </div>
-          
+            </div>
+            
           <div className="p-6">
             <div className="flex gap-4 mb-4">
-              <select
+            <select
                 value={applicationFilter}
                 onChange={(e) => setApplicationFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="all">전체</option>
                 <option value="pending">대기중</option>
-                <option value="approved">승인됨</option>
+              <option value="approved">승인됨</option>
                 <option value="rejected">거절됨</option>
-              </select>
+            </select>
               <input
                 type="text"
                 placeholder="신청자 검색..."
@@ -298,16 +298,16 @@ const AdminDashboard: React.FC = () => {
                 onChange={(e) => setApplicationSearch(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg flex-1"
               />
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <input
-                        type="checkbox"
-                        checked={selectedApplications.size === filteredApplications.length && filteredApplications.length > 0}
+        </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <input
+                          type="checkbox"
+                          checked={selectedApplications.size === filteredApplications.length && filteredApplications.length > 0}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedApplications(new Set(filteredApplications.map(app => app.id)))
@@ -316,21 +316,21 @@ const AdminDashboard: React.FC = () => {
                           }
                         }}
                         className="rounded border-gray-300"
-                      />
-                    </th>
+                        />
+                      </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">신청자</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">체험단</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">신청일</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
                   {filteredApplications.map((application) => (
                     <tr key={application.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <input
+                                type="checkbox"
                           checked={selectedApplications.has(application.id)}
                           onChange={(e) => {
                             const newSelected = new Set(selectedApplications)
@@ -342,18 +342,18 @@ const AdminDashboard: React.FC = () => {
                             setSelectedApplications(newSelected)
                           }}
                           className="rounded border-gray-300"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
+                              />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
                           <div className="text-sm font-medium text-gray-900">{application.name}</div>
                           <div className="text-sm text-gray-500">{application.email}</div>
-                        </div>
-                      </td>
+                              </div>
+                            </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {application.experience_id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                           application.status === 'approved' ? 'bg-green-100 text-green-800' :
                           application.status === 'rejected' ? 'bg-red-100 text-red-800' :
@@ -361,41 +361,41 @@ const AdminDashboard: React.FC = () => {
                         }`}>
                           {application.status === 'approved' ? '승인됨' :
                            application.status === 'rejected' ? '거절됨' : '대기중'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(application.created_at).toLocaleDateString()}
-                      </td>
+                            </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedApplication(application)
-                              setShowApprovalModal(true)
-                            }}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedApplication(application)
-                              setShowRejectionModal(true)
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedApplication(application)
+                                      setShowApprovalModal(true)
+                                    }}
+                                    className="text-green-600 hover:text-green-900"
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedApplication(application)
+                                      setShowRejectionModal(true)
+                                    }}
+                                    className="text-red-600 hover:text-red-900"
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                  </button>
                         </div>
-                      </td>
-                    </tr>
+                            </td>
+                          </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                  </tbody>
+                </table>
+              </div>
           </div>
-        </div>
-
+            </div>
+            
         {/* Experiences Section */}
         <div className="bg-white rounded-lg shadow mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -408,12 +408,12 @@ const AdminDashboard: React.FC = () => {
                 <Plus className="w-4 h-4" />
                 새 체험단
               </button>
+                </div>
             </div>
-          </div>
-          
+            
           <div className="p-6">
             <div className="flex gap-4 mb-4">
-              <select
+                  <select
                 value={experienceFilter}
                 onChange={(e) => setExperienceFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg"
@@ -421,8 +421,8 @@ const AdminDashboard: React.FC = () => {
                 <option value="all">전체</option>
                 <option value="recruiting">모집중</option>
                 <option value="closed">마감</option>
-              </select>
-              <input
+                  </select>
+                        <input
                 type="text"
                 placeholder="체험단 검색..."
                 value={experienceSearch}
@@ -441,31 +441,31 @@ const AdminDashboard: React.FC = () => {
                       experience.status === 'recruiting' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                     }`}>
                       {experience.status === 'recruiting' ? '모집중' : '마감'}
-                    </span>
+                              </span>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedApplication(experience)
+                              <button
+                                onClick={() => {
+                                  setSelectedApplication(experience)
                           setShowEditModal(true)
-                        }}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
+                                }}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
                         onClick={() => handleDeleteExperience(experience.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+              </div>
           </div>
-        </div>
-      </div>
+                  </div>
+              ))}
+                    </div>
+                </div>
+              </div>
+            </div>
 
       {/* Modals */}
       {showApprovalModal && (
@@ -509,9 +509,9 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {showCampaignModal && (
-        <CampaignCreationModal
-          isOpen={showCampaignModal}
-          onClose={() => setShowCampaignModal(false)}
+      <CampaignCreationModal
+        isOpen={showCampaignModal}
+        onClose={() => setShowCampaignModal(false)}
           onSuccess={async () => {
             toast.success('체험단이 생성되었습니다')
             await loadExperiences()
@@ -521,7 +521,7 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {showEditModal && (
-        <CampaignEditModal
+      <CampaignEditModal
           isOpen={showEditModal}
           campaign={selectedApplication}
           onClose={() => setShowEditModal(false)}
@@ -532,7 +532,7 @@ const AdminDashboard: React.FC = () => {
           }}
         />
       )}
-    </div>
+                </div>
   )
 }
 
