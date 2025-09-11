@@ -6,7 +6,7 @@ import {Shield, Eye, EyeOff} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const AdminLogin: React.FC = () => {
-  const { adminLogin, adminLoginWithCredentials, isAdminUser } = useAuth()
+  const { adminLoginWithCredentials, isAdminUser } = useAuth()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     admin_name: '',
@@ -33,17 +33,9 @@ const AdminLogin: React.FC = () => {
     setLoading(true)
     
     try {
-      // MongoDB 기반 관리자 인증 시도
-      try {
-        await adminLoginWithCredentials(formData.admin_name, formData.password)
-        navigate('/admin')
-        return
-      } catch (mongoError) {
-        console.log('MongoDB 인증 실패, 기본 인증 시도:', mongoError)
-      }
-
-      // Supabase 인증 실패 시 에러 처리
-      toast.error('관리자 로그인에 실패했습니다. 계정 정보를 확인해주세요.')
+      // Supabase 기반 관리자 인증
+      await adminLoginWithCredentials(formData.admin_name, formData.password)
+      navigate('/admin')
     } catch (error) {
       console.error('관리자 로그인 실패:', error)
       toast.error('로그인에 실패했습니다')

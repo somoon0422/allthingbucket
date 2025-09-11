@@ -22,7 +22,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     address: '',
     birth_date: '',
     gender: '',
-    admin_name: 'admin'
+    admin_name: ''
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -210,15 +210,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         </GoogleLoginButton>
 
 
-        {/* 관리자 계정 정보 */}
-        {isAdminMode && (
-          <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-700">
-              <strong>관리자 로그인:</strong><br />
-              관리자 계정으로 로그인하세요
-            </p>
-          </div>
-        )}
 
         {/* 구분선 */}
         <div className="relative mb-4">
