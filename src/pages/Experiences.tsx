@@ -32,10 +32,10 @@ const Experiences: React.FC = () => {
       console.log('🔥 dataService.entities 확인:', dataService.entities)
       console.log('🔥 dataService.entities.campaigns 확인:', dataService.entities.campaigns)
       
-      // dataService.campaigns.list를 통해 MongoDB 데이터 로드
+      // dataService.campaigns.list를 통해 Supabase 데이터 로드
       console.log('🔥 dataService.entities.campaigns.list() 호출 시작...')
       const campaigns = await dataService.entities.campaigns.list()
-      console.log('✅ MongoDB 캠페인 데이터 성공:', campaigns)
+      console.log('✅ Supabase 캠페인 데이터 성공:', campaigns)
       console.log('✅ 캠페인 데이터 타입:', typeof campaigns)
       console.log('✅ 캠페인 데이터 길이:', campaigns?.length)
       
@@ -187,7 +187,7 @@ const Experiences: React.FC = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">체험단 목록을 불러오는 중...</p>
-          <p className="text-sm text-gray-500 mt-2">MongoDB에서 데이터를 로드하고 있습니다</p>
+          <p className="text-sm text-gray-500 mt-2">Supabase에서 데이터를 로드하고 있습니다</p>
         </div>
       </div>
     )

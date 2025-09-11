@@ -3,6 +3,55 @@ const axios = require('axios');
 const router = express.Router();
 const supabaseService = require('../services/supabaseService');
 
+// 어드민 로그인 API
+router.post('/admin/login', async (req, res) => {
+  try {
+    console.log('🔐 어드민 로그인 요청:', req.body);
+    
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        error: '관리자명과 비밀번호를 입력해주세요'
+      });
+    }
+    
+    // Supabase에서 관리자 인증
+    const admin = await supabaseService.loginAdmin(username, password);
+    
+    if (admin) {
+      console.log('✅ 어드민 로그인 성공:', admin.username);
+      
+      res.json({
+        success: true,
+        admin: {
+          id: admin.id,
+          username: admin.username,
+          email: admin.email || '',
+          role: admin.role || 'admin',
+          is_active: admin.is_active !== false
+        },
+        message: '관리자 로그인 성공'
+      });
+    } else {
+      console.log('❌ 어드민 로그인 실패: 잘못된 인증 정보');
+      
+      res.status(401).json({
+        success: false,
+        error: '관리자명 또는 비밀번호가 올바르지 않습니다'
+      });
+    }
+  } catch (error) {
+    console.error('❌ 어드민 로그인 API 오류:', error);
+    
+    res.status(500).json({
+      success: false,
+      error: '서버 오류가 발생했습니다'
+    });
+  }
+});
+
 // Google OAuth 토큰 교환
 router.post('/google/token', async (req, res) => {
   try {
