@@ -76,9 +76,46 @@ const SafeData = {
   getNumber: (obj: any, field: string, fallback = 0): number => {
     try {
       if (!obj) return fallback
-      const value = obj[field]
-      const num = Number(value)
-      return isNaN(num) ? fallback : num
+      
+      // 여러 필드에서 숫자 찾기
+      const fields = [field, 'rewards', 'reward_points', 'points']
+      for (const f of fields) {
+        const value = obj[f]
+        if (value !== undefined && value !== null) {
+          const num = Number(value)
+          if (!isNaN(num) && num > 0) {
+            return num
+          }
+        }
+      }
+      
+      // campaignInfo에서도 찾기
+      if (obj.campaignInfo) {
+        for (const f of fields) {
+          const value = obj.campaignInfo[f]
+          if (value !== undefined && value !== null) {
+            const num = Number(value)
+            if (!isNaN(num) && num > 0) {
+              return num
+            }
+          }
+        }
+      }
+      
+      // experience에서도 찾기
+      if (obj.experience) {
+        for (const f of fields) {
+          const value = obj.experience[f]
+          if (value !== undefined && value !== null) {
+            const num = Number(value)
+            if (!isNaN(num) && num > 0) {
+              return num
+            }
+          }
+        }
+      }
+      
+      return fallback
     } catch {
       return fallback
     }
@@ -128,25 +165,32 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   // 🔥 이메일 템플릿
   const emailTemplates = {
     'approval': {
-      subject: `🎉 {campaign_name} 리뷰 승인 안내`,
+      subject: `🎉 {campaign_name} 체험단 선정 안내`,
       content: `안녕하세요 {name}님!
 
-🎉 축하드립니다! {campaign_name} 리뷰가 승인되었습니다.
+🎉 축하드립니다! {campaign_name} 체험단에 선정되었습니다!
 
-📋 리뷰 승인 안내:
+📋 체험단 선정 안내:
 - 체험단: {campaign_name}
 - 브랜드: {brand_name}
 - 리워드: {reward_points}P
-- 승인일: {approval_date}
+- 선정일: {approval_date}
+
+🎁 체험 진행 안내:
+1. 체험 제품이 발송됩니다 (배송형인 경우)
+2. 체험 기간 동안 제품을 사용해보세요
+3. 체험 완료 후 리뷰를 작성해주세요
 
 💰 포인트 지급 안내:
-리뷰 승인으로 인해 {reward_points}P가 지급 예정입니다.
+리뷰 작성 및 검수 완료 후 {reward_points}P가 지급됩니다.
 포인트 지급을 원하시면 "내 신청" 페이지에서 "포인트 지급 요청" 버튼을 클릭해주세요.
 
 📝 다음 단계:
-1. "내 신청" 페이지로 이동
-2. "포인트 지급 요청" 버튼 클릭
-3. 관리자 검토 후 포인트 지급
+1. 체험 제품 수령 및 체험 진행
+2. 리뷰 작성 및 제출
+3. 관리자 리뷰 검수 대기
+4. 검수 완료 후 "포인트 지급 요청" 버튼 클릭
+5. 관리자 최종 승인 후 포인트 지급
 
 📞 문의사항이 있으시면 고객센터로 연락주세요:
 - 이메일: support@allthingbucket.com
@@ -156,12 +200,14 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 올띵버킷 체험단 팀`
     },
     'simple': {
-      subject: `✅ {campaign_name} 승인 완료`,
+      subject: `✅ {campaign_name} 체험단 선정`,
       content: `안녕하세요 {name}님!
 
-{campaign_name} 신청이 승인되었습니다.
+{campaign_name} 체험단에 선정되었습니다!
 
-체험 진행에 대한 자세한 안내는 추후 별도로 연락드리겠습니다.
+체험 진행 및 리뷰 작성에 대한 자세한 안내는 추후 별도로 연락드리겠습니다.
+
+리뷰 작성 완료 후 포인트 지급 요청을 해주세요.
 
 📞 문의사항: support@allthingbucket.com / 02-1234-5678
 
@@ -299,6 +345,18 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
       const finalMessage = replaceVariables(emailContent)
 
       // 메일/카톡 발송
+      console.log('🚀 이메일 발송 시작:', {
+        to: editableRecipient.email,
+        subject: finalSubject,
+        message: finalMessage,
+        type: sendMethod,
+        userInfo: {
+          name: editableRecipient.name,
+          email: editableRecipient.email,
+          phone: editableRecipient.phone
+        }
+      })
+      
       const results = await sendMessage({
         to: editableRecipient.email,
         subject: finalSubject,
@@ -310,6 +368,24 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
           phone: editableRecipient.phone
         }
       })
+      
+      console.log('📧 이메일 발송 결과:', results)
+      
+      // 결과 확인 및 사용자 피드백
+      if (results && results.length > 0) {
+        const successCount = results.filter((r: any) => r.success).length
+        const totalCount = results.length
+        
+        if (successCount === totalCount) {
+          toast.success(`모든 메시지가 성공적으로 발송되었습니다! (${successCount}/${totalCount})`)
+        } else if (successCount > 0) {
+          toast.success(`일부 메시지가 발송되었습니다. (${successCount}/${totalCount})`)
+        } else {
+          toast.error('메시지 발송에 실패했습니다. 다시 시도해주세요.')
+        }
+      } else {
+        toast.error('메시지 발송 결과를 받을 수 없습니다.')
+      }
 
       // 발송 성공 시 상태 변경
       const hasSuccess = results.some(r => r.success)

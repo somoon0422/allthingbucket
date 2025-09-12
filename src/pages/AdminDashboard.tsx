@@ -6,7 +6,7 @@ import ApprovalModal from '../components/ApprovalModal'
 import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
-import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3} from 'lucide-react'
+import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const AdminDashboard: React.FC = () => {
@@ -25,6 +25,7 @@ const AdminDashboard: React.FC = () => {
   const [showRejectionModal, setShowRejectionModal] = useState(false)
   const [showCampaignModal, setShowCampaignModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showApplicationDetailModal, setShowApplicationDetailModal] = useState(false)
   
   // 선택 상태들
   const [selectedApplications, setSelectedApplications] = useState<Set<string>>(new Set())
@@ -32,19 +33,167 @@ const AdminDashboard: React.FC = () => {
   // 필터링 상태들
   const [applicationFilter, setApplicationFilter] = useState('all')
   const [experienceFilter, setExperienceFilter] = useState('all')
+  const [reviewFilter, setReviewFilter] = useState('all')
   
   // 검색 상태들
   const [applicationSearch, setApplicationSearch] = useState('')
   const [experienceSearch, setExperienceSearch] = useState('')
+  const [reviewSearch, setReviewSearch] = useState('')
   
   // 로딩 상태들
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
+
+  // 컬럼명 한글 번역 함수
+  const translateFieldName = (fieldName: string): string => {
+    const translations: { [key: string]: string } = {
+      // 기본 정보
+      'name': '이름',
+      'email': '이메일',
+      'phone': '연락처',
+      'user_name': '사용자명',
+      'user_email': '사용자 이메일',
+      'user_phone': '사용자 연락처',
+      'age': '나이',
+      'gender': '성별',
+      'birth_date': '생년월일',
+      'address': '주소',
+      'postal_code': '우편번호',
+      
+      // 소셜미디어 정보
+      'instagram_id': '인스타그램 ID',
+      'instagram_followers': '인스타그램 팔로워 수',
+      'instagram_handle': '인스타그램 핸들',
+      'youtube_id': '유튜브 ID',
+      'youtube_subscribers': '유튜브 구독자 수',
+      'youtube_channel': '유튜브 채널',
+      'tiktok_id': '틱톡 ID',
+      'tiktok_followers': '틱톡 팔로워 수',
+      'blog_url': '블로그 URL',
+      'blog_visitors': '블로그 방문자 수',
+      
+      // 체험 관련
+      'experience_reason': '체험 신청 이유',
+      'experience_expectation': '체험 기대사항',
+      'experience_plan': '체험 계획',
+      'review_plan': '리뷰 작성 계획',
+      'content_style': '콘텐츠 스타일',
+      'shooting_environment': '촬영 환경',
+      'previous_experience': '이전 체험 경험',
+      'product_interest': '제품 관심도',
+      'brand_awareness': '브랜드 인지도',
+      'application_reason': '신청 이유',
+      
+      // 개인정보
+      'personal_info_consent': '개인정보 수집 동의',
+      'marketing_consent': '마케팅 정보 수신 동의',
+      'terms_agreement': '이용약관 동의',
+      'privacy_policy_agreement': '개인정보처리방침 동의',
+      
+      // 기타
+      'additional_info': '추가 정보',
+      'special_requests': '특별 요청사항',
+      'questions': '질문사항',
+      'suggestions': '제안사항',
+      'feedback': '피드백',
+      'comments': '댓글',
+      'notes': '메모',
+      'remarks': '비고',
+      'memo': '메모',
+      'description': '설명',
+      'details': '상세내용',
+      'detailed_address': '상세 주소',
+      'content': '내용',
+      'message': '메시지',
+      'text': '텍스트',
+      'data': '데이터',
+      'info': '정보',
+      'information': '정보',
+      'debug_info': '디버그 정보',
+      'submitted_by_role': '제출자 역할',
+      'submitted_by_admin_role': '관리자 제출자 역할'
+    }
+    
+    // 정확한 매칭이 있으면 반환
+    if (translations[fieldName]) {
+      return translations[fieldName]
+    }
+    
+    // 언더스코어를 공백으로 바꾸고 각 단어의 첫 글자를 대문자로
+    const formatted = fieldName
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+    
+    return formatted
+  }
 
   // 데이터 로드 함수들
   const loadApplications = async () => {
     try {
       const applicationsData = await (dataService.entities as any).user_applications.list()
-      setApplications(applicationsData || [])
+      
+      // 각 신청에 사용자 정보와 캠페인 정보 추가
+      const enrichedApplications = await Promise.all(
+        (applicationsData || []).map(async (app: any) => {
+          try {
+            let userInfo = null
+            let campaignInfo = null
+            
+            // 사용자 정보 로드
+            if (app.user_id) {
+              try {
+                const userData = await (dataService.entities as any).users.get(app.user_id)
+                userInfo = userData
+              } catch (userError) {
+                console.warn('사용자 정보 로드 실패:', app.user_id, userError)
+              }
+            }
+            
+            // 캠페인 정보 로드
+            if (app.campaign_id) {
+              try {
+                const campaignData = await (dataService.entities as any).campaigns.get(app.campaign_id)
+                campaignInfo = campaignData
+              } catch (campaignError) {
+                console.warn('캠페인 정보 로드 실패:', app.campaign_id, campaignError)
+              }
+            }
+            
+            // application_data에서 기본 정보 추출
+            const appData = app.application_data || {}
+            
+            return {
+              ...app,
+              // 사용자 정보 매핑 (application_data 우선, 그 다음 userInfo, 마지막으로 app 필드)
+              name: appData.name || userInfo?.name || userInfo?.user_name || app.name || '이름 없음',
+              email: appData.email || userInfo?.email || userInfo?.user_email || app.email || '이메일 없음',
+              phone: appData.phone || userInfo?.phone || userInfo?.user_phone || app.phone || '',
+                   // 캠페인 정보 매핑
+                   campaign_name: campaignInfo?.campaign_name || campaignInfo?.product_name || campaignInfo?.name || '캠페인명 없음',
+                   campaign_description: campaignInfo?.description || '',
+                   experience_name: campaignInfo?.campaign_name || campaignInfo?.product_name || '체험단 정보 없음',
+              // 원본 데이터 보존
+              userInfo,
+              campaignInfo,
+              application_data: appData
+            }
+          } catch (error) {
+            console.warn('신청 정보 처리 실패:', app.id, error)
+            return {
+              ...app,
+              name: app.name || '이름 없음',
+              email: app.email || '이메일 없음',
+              phone: app.phone || '',
+              campaign_name: '캠페인명 없음',
+              campaign_description: '',
+              userInfo: null,
+              campaignInfo: null,
+              application_data: app.application_data || {}
+            }
+          }
+        })
+      )
+      
+      setApplications(enrichedApplications)
     } catch (error) {
       console.error('신청 내역 로드 실패:', error)
       setApplications([])
@@ -75,6 +224,7 @@ const AdminDashboard: React.FC = () => {
       setExperiences([])
     }
   }
+
 
   // 전체 데이터 로드
   const loadAllData = async () => {
@@ -113,8 +263,7 @@ const AdminDashboard: React.FC = () => {
       for (const applicationId of selectedApplications) {
         await (dataService.entities as any).user_applications.update(applicationId, {
           status: 'approved',
-          approved_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          reviewed_at: new Date().toISOString()
         })
       }
 
@@ -372,13 +521,25 @@ const AdminDashboard: React.FC = () => {
                               />
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div>
+                              <div 
+                                className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                                onClick={() => {
+                                  setSelectedApplication(application)
+                                  setShowApplicationDetailModal(true)
+                                }}
+                              >
                           <div className="text-sm font-medium text-gray-900">{application.name}</div>
                           <div className="text-sm text-gray-500">{application.email}</div>
+                          <div className="text-xs text-blue-600 mt-1">클릭하여 상세보기</div>
                               </div>
                             </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {application.experience_id}
+                        <div>
+                          <div className="font-medium">{application.campaign_name}</div>
+                          <div className="text-xs text-gray-500 truncate max-w-48">
+                            {application.campaign_description}
+                          </div>
+                        </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
@@ -391,7 +552,17 @@ const AdminDashboard: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(application.created_at).toLocaleDateString()}
+                        {(() => {
+                          const dateStr = application.applied_at || application.created_at
+                          if (!dateStr) return '날짜 없음'
+                          try {
+                            const date = new Date(dateStr)
+                            if (isNaN(date.getTime())) return '날짜 없음'
+                            return date.toLocaleDateString('ko-KR')
+                          } catch {
+                            return '날짜 없음'
+                          }
+                        })()}
                             </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
@@ -526,6 +697,58 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
+        {/* 리뷰 검수 관리 Section */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-900">리뷰 검수 관리</h2>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <div className="flex gap-4 mb-4">
+              <select
+                value={reviewFilter}
+                onChange={(e) => setReviewFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="all">전체</option>
+                <option value="submitted">제출됨</option>
+                <option value="approved">승인됨</option>
+                <option value="rejected">거절됨</option>
+              </select>
+              <input
+                type="text"
+                placeholder="리뷰 검색..."
+                value={reviewSearch}
+                onChange={(e) => setReviewSearch(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg flex-1"
+              />
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">리뷰어</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">캠페인</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">리뷰 상태</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제출일</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                      리뷰 검수 기능은 준비 중입니다.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       {/* Modals */}
       {showApprovalModal && (
         <ApprovalModal
@@ -536,8 +759,7 @@ const AdminDashboard: React.FC = () => {
             if (selectedApplication) {
               await (dataService.entities as any).user_applications.update(selectedApplication.id, {
                 status: 'approved',
-                approved_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                reviewed_at: new Date().toISOString()
               })
               toast.success('신청이 승인되었습니다')
               await loadApplications()
@@ -556,8 +778,7 @@ const AdminDashboard: React.FC = () => {
             if (selectedApplication) {
               await (dataService.entities as any).user_applications.update(selectedApplication.id, {
                 status: 'rejected',
-                rejected_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                reviewed_at: new Date().toISOString()
               })
               toast.success('신청이 거절되었습니다')
               await loadApplications()
@@ -595,6 +816,145 @@ const AdminDashboard: React.FC = () => {
           }}
         />
                     )}
+
+      {/* 신청 상세 정보 모달 */}
+      {showApplicationDetailModal && selectedApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">신청 상세 정보</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {selectedApplication.name} - {selectedApplication.campaign_name}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowApplicationDetailModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* 기본 정보 */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3">기본 정보</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">신청자:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">이메일:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.email}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">연락처:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.phone || '없음'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">신청일:</span>
+                      <span className="ml-2 font-medium">
+                        {(() => {
+                          const dateStr = selectedApplication.applied_at || selectedApplication.created_at
+                          if (!dateStr) return '날짜 없음'
+                          try {
+                            const date = new Date(dateStr)
+                            if (isNaN(date.getTime())) return '날짜 없음'
+                            return date.toLocaleDateString('ko-KR')
+                          } catch {
+                            return '날짜 없음'
+                          }
+                        })()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">상태:</span>
+                      <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${
+                        selectedApplication.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        selectedApplication.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {selectedApplication.status === 'approved' ? '승인됨' :
+                         selectedApplication.status === 'rejected' ? '거절됨' : '대기중'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">캠페인:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.campaign_name}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 신청 데이터 */}
+                {selectedApplication.application_data && Object.keys(selectedApplication.application_data).length > 0 && (
+                  <div className="bg-white border rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-3">신청 내용</h4>
+                    <div className="space-y-3">
+                      {Object.entries(selectedApplication.application_data).map(([key, value]: [string, any]) => (
+                        <div key={key} className="border-b border-gray-100 pb-2">
+                          <div className="text-sm font-medium text-gray-700 mb-1">
+                            {translateFieldName(key)}
+                          </div>
+                          <div className="text-sm text-gray-600 whitespace-pre-wrap">
+                            {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 신청 데이터가 없는 경우 */}
+                {(!selectedApplication.application_data || Object.keys(selectedApplication.application_data).length === 0) && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2" />
+                      <span className="text-yellow-800">신청 상세 정보가 없습니다.</span>
+                    </div>
+                    <p className="text-yellow-700 text-sm mt-1">
+                      신청자가 추가 정보를 입력하지 않았거나 데이터가 저장되지 않았습니다.
+                    </p>
+                  </div>
+                )}
+
+                {/* 액션 버튼 */}
+                <div className="flex space-x-3 pt-4 border-t">
+                  <button
+                    onClick={() => {
+                      setShowApplicationDetailModal(false)
+                      setShowApprovalModal(true)
+                    }}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>승인</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowApplicationDetailModal(false)
+                      setShowRejectionModal(true)
+                    }}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>거절</span>
+                  </button>
+                  <button
+                    onClick={() => setShowApplicationDetailModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    닫기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
                   </div>
   )
 }

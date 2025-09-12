@@ -651,7 +651,7 @@ const CampaignDetail: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
               {/* 캠페인 정보 */}
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white rounded-xl shadow-sm p-6 min-w-80">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                   <Info className="w-5 h-5 mr-2 text-blue-600" />
                   캠페인 정보
@@ -669,51 +669,116 @@ const CampaignDetail: React.FC = () => {
                   </div>
                   
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">신청 마감일</span>
-                    <div className="text-right">
-                      <div className="font-medium text-gray-900">
-                        {safeString(campaign, 'application_end') ? new Date(safeString(campaign, 'application_end')).toLocaleDateString('ko-KR') : '미정'}
+                    <span className="text-gray-600 flex-shrink-0">캠페인 신청기간</span>
+                    <div className="text-right min-w-0 flex-1 ml-4">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
+                        {(() => {
+                          const startDate = safeString(campaign, 'application_start')
+                          const endDate = safeString(campaign, 'application_end')
+                          
+                          const formatDate = (dateStr: string) => {
+                            try {
+                              const date = new Date(dateStr)
+                              if (isNaN(date.getTime())) return '미정'
+                              return date.toLocaleDateString('ko-KR', {
+                                year: 'numeric',
+                                month: 'numeric',
+                                day: 'numeric'
+                              })
+                            } catch {
+                              return '미정'
+                            }
+                          }
+                          
+                          if (startDate && endDate) {
+                            return `${formatDate(startDate)} ~ ${formatDate(endDate)}`
+                          } else if (startDate) {
+                            return `${formatDate(startDate)} ~ 미정`
+                          } else if (endDate) {
+                            return `미정 ~ ${formatDate(endDate)}`
+                          }
+                          return '미정'
+                        })()}
                       </div>
-                      {applicationDeadline && (
-                        <div className="text-sm text-blue-600">
-                          {getDeadlineDisplay(applicationDeadline)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">콘텐츠 시작일</span>
-                    <span className="font-medium text-gray-900">
-                      {safeString(campaign, 'content_start') ? new Date(safeString(campaign, 'content_start')).toLocaleDateString('ko-KR') : '미정'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">리뷰 마감일</span>
-                    <div className="text-right">
-                      <div className="font-medium text-gray-900">
-                        {safeString(campaign, 'review_deadline') ? new Date(safeString(campaign, 'review_deadline')).toLocaleDateString('ko-KR') : '미정'}
-                      </div>
-                      {reviewDeadline && (
-                        <div className="text-sm text-purple-600">
-                          {getDeadlineDisplay(reviewDeadline)}
-                        </div>
-                      )}
                     </div>
                   </div>
                   
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">체험단 발표일</span>
                     <span className="font-medium text-gray-900">
-                      {safeString(campaign, 'experience_announcement') ? new Date(safeString(campaign, 'experience_announcement')).toLocaleDateString('ko-KR') : '미정'}
+                      {(() => {
+                        const dateStr = safeString(campaign, 'experience_announcement')
+                        if (!dateStr) return '미정'
+                        
+                        try {
+                          const date = new Date(dateStr)
+                          if (isNaN(date.getTime())) return '미정'
+                          return date.toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric'
+                          })
+                        } catch {
+                          return '미정'
+                        }
+                      })()}
                     </span>
                   </div>
                   
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600 flex-shrink-0">캠페인 리뷰 기간</span>
+                    <div className="text-right min-w-0 flex-1 ml-4">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
+                        {(() => {
+                          const startDate = safeString(campaign, 'content_start')
+                          const endDate = safeString(campaign, 'content_end')
+                          
+                          const formatDate = (dateStr: string) => {
+                            try {
+                              const date = new Date(dateStr)
+                              if (isNaN(date.getTime())) return '미정'
+                              return date.toLocaleDateString('ko-KR', {
+                                year: 'numeric',
+                                month: 'numeric',
+                                day: 'numeric'
+                              })
+                            } catch {
+                              return '미정'
+                            }
+                          }
+                          
+                          if (startDate && endDate) {
+                            return `${formatDate(startDate)} ~ ${formatDate(endDate)}`
+                          } else if (startDate) {
+                            return `${formatDate(startDate)} ~ 미정`
+                          } else if (endDate) {
+                            return `미정 ~ ${formatDate(endDate)}`
+                          }
+                          return '미정'
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="flex justify-between items-center py-2">
-                    <span className="text-gray-600">캠페인 결과발표</span>
+                    <span className="text-gray-600">캠페인 평가 마감일</span>
                     <span className="font-medium text-gray-900">
-                      {safeString(campaign, 'result_announcement') ? new Date(safeString(campaign, 'result_announcement')).toLocaleDateString('ko-KR') : '미정'}
+                      {(() => {
+                        const dateStr = safeString(campaign, 'result_announcement')
+                        if (!dateStr) return '미정'
+                        
+                        try {
+                          const date = new Date(dateStr)
+                          if (isNaN(date.getTime())) return '미정'
+                          return date.toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric'
+                          })
+                        } catch {
+                          return '미정'
+                        }
+                      })()}
                     </span>
                   </div>
                 </div>

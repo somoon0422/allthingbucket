@@ -293,11 +293,11 @@ export const dataService = {
       },
       create: async (data: any) => {
         try {
-          // 현재 테이블 구조에 맞게 데이터 변환
+          // 기존 테이블 구조에 맞게 데이터 변환
           const transformedData = {
-            user_id: data.user_id,
-            campaign_id: data.experience_id, // experience_id를 campaign_id로 매핑
-            status: data.status || 'pending',
+            user_id: data.user_id, // character varying(255)
+            campaign_id: data.experience_id, // uuid
+            status: data.status || 'pending', // character varying(20)
             application_data: {
               name: data.name,
               email: data.email,
@@ -313,8 +313,8 @@ export const dataService = {
               submitted_by_role: data.submitted_by_role,
               submitted_by_admin_role: data.submitted_by_admin_role,
               debug_info: data.debug_info
-            },
-            applied_at: data.applied_at || new Date().toISOString()
+            }, // jsonb
+            applied_at: data.applied_at || new Date().toISOString() // timestamp with time zone
           }
           
           console.log('🔥 user_applications.create 호출됨:', transformedData)

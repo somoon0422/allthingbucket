@@ -143,7 +143,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       return
     }
 
-    if (!targetCampaign?._id) {
+    if (!targetCampaign?.id) {
       toast.error('캠페인 정보가 없습니다')
       return
     }
@@ -165,11 +165,34 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     }
 
     try {
+      // 🔥 사용자 ID 확정
+      const userId = user.id || user.user_id || (user as any)._id
+      
+      // 🔥 users 테이블에 사용자 존재 여부 확인 및 생성
+      try {
+        const existingUsers = await (dataService.entities as any).users.list()
+        const userExists = existingUsers.some((u: any) => u.user_id === userId)
+        
+        if (!userExists) {
+          console.log('🔍 사용자를 users 테이블에 생성합니다:', userId)
+          await (dataService.entities as any).users.create({
+            user_id: userId,
+            name: user.name || user.admin_name || '사용자',
+            email: user.email || '',
+            role: user.role || 'user',
+            created_at: new Date().toISOString()
+          })
+          console.log('✅ 사용자 생성 완료')
+        }
+      } catch (userCreateError) {
+        console.warn('⚠️ 사용자 생성 실패, 신청은 계속 진행합니다:', userCreateError)
+      }
+
       // 🔥 신청 데이터에 정확한 사용자 ID 포함
       const applicationData = {
         ...formData,
         // 🔥 다중 사용자 ID 보장 (우선순위: id > user_id > _id)
-        user_id: user.id || user.user_id || (user as any)._id,
+        user_id: userId,
         // 🔥 추가 사용자 정보 (디버깅용)
         original_user_object: user,
         submitted_by_role: user.role,
@@ -184,16 +207,25 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
       console.log('🚀 최종 신청 데이터:', applicationData)
 
-      const success = await applyForCampaign(
-        targetCampaign._id,
-        user.id || user.user_id || (user as any)._id,
+      const result = await applyForCampaign(
+        targetCampaign.id,
+        userId,
         applicationData
       )
 
-      if (success) {
+      if (result && result.success) {
         console.log('✅ 신청 성공!')
         onClose()
         if (onSuccess) onSuccess()
+      } else {
+        console.error('❌ 신청 실패:', result)
+        if (result && result.reason === 'duplicate') {
+          toast.error('이미 신청하신 캠페인입니다')
+        } else if (result && result.reason === 'full') {
+          toast.error('모집인원이 마감되었습니다')
+        } else {
+          toast.error('신청에 실패했습니다. 다시 시도해주세요.')
+        }
       }
     } catch (error) {
       console.error('❌ 신청 제출 실패:', error)

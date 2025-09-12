@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../lib/dataService'
 
 interface MessageOptions {
   to: string
@@ -21,7 +22,7 @@ interface KakaoConfig {
 export const useMessaging = () => {
   const [loading, setLoading] = useState(false)
 
-  // 이메일 발송 (시뮬레이션)
+  // 이메일 발송 (실제 API 호출)
   const sendEmail = async (options: {
     to: string
     subject: string
@@ -29,14 +30,31 @@ export const useMessaging = () => {
     userInfo?: { name: string }
   }) => {
     try {
-      console.log('📧 이메일 발송 시뮬레이션:', options.to)
+      console.log('📧 이메일 발송 시작:', options.to)
       
-      // 실제 이메일 발송은 백엔드에서 처리
-      // 여기서는 시뮬레이션만 수행
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: options.to,
+          subject: options.subject,
+          message: options.message,
+          from: 'support@allthingbucket.com'
+        }
+      })
+
+      if (error) {
+        console.error('❌ Supabase 함수 호출 실패:', error)
+        throw new Error(`이메일 발송 실패: ${error.message}`)
+      }
+
+      if (!data.success) {
+        console.error('❌ 이메일 발송 실패:', data.error)
+        console.error('❌ 전체 응답 데이터:', data)
+        throw new Error(`이메일 발송 실패: ${data.error}`)
+      }
       
-      console.log('✅ 이메일 발송 시뮬레이션 완료')
-      return { success: true, method: 'email_simulation' }
+      console.log('✅ 이메일 발송 완료:', data.messageId)
+      console.log('✅ 전체 응답 데이터:', data)
+      return { success: true, method: 'email', messageId: data.messageId }
       
     } catch (error: any) {
       console.error('❌ 이메일 발송 실패:', error)
@@ -44,25 +62,39 @@ export const useMessaging = () => {
     }
   }
 
-  // SMS 발송 (시뮬레이션)
+  // SMS 발송 (실제 API 호출)
   const sendSMS = async (options: {
     phone: string
     message: string
     userInfo?: { name: string }
   }) => {
     try {
-      console.log('📱 SMS 발송 시뮬레이션:', options.phone)
+      console.log('📱 SMS 발송 시작:', options.phone)
       
-      // 실제 SMS 발송은 백엔드에서 처리
-      // 여기서는 시뮬레이션만 수행
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { data, error } = await supabase.functions.invoke('send-sms', {
+        body: {
+          to: options.phone,
+          message: options.message,
+          from: '+821012345678'
+        }
+      })
+
+      if (error) {
+        console.error('❌ Supabase 함수 호출 실패:', error)
+        throw new Error(`SMS 발송 실패: ${error.message}`)
+      }
+
+      if (!data.success) {
+        console.error('❌ SMS 발송 실패:', data.error)
+        throw new Error(`SMS 발송 실패: ${data.error}`)
+      }
       
-      console.log('✅ SMS 발송 시뮬레이션 완료')
-      return { success: true, method: 'sms_simulation' }
+      console.log('✅ SMS 발송 완료:', data.messageId)
+      return { success: true, method: 'sms', messageId: data.messageId }
       
     } catch (error: any) {
       console.error('❌ SMS 발송 실패:', error)
-      return { success: true, method: 'sms_simulation' }
+      throw new Error(`SMS 발송 실패: ${error.message}`)
     }
   }
 

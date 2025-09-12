@@ -42,7 +42,7 @@ export const useExperiences = () => {
     try {
       const applications = await (dataService.entities as any).user_applications.list()
       const userApplications = applications.filter((app: any) => 
-        app.user_id === userId && app.experience_id === experienceId
+        app.user_id === userId && app.campaign_id === experienceId
       )
       
       if (userApplications.length > 0) {
@@ -83,7 +83,7 @@ export const useExperiences = () => {
         if (experience && experience.max_participants) {
           const applications = await (dataService.entities as any).user_applications.list()
           const approvedApplications = applications.filter((app: any) => 
-            app.experience_id === experienceId && app.status === 'approved'
+            app.campaign_id === experienceId && app.status === 'approved'
           )
           
           if (approvedApplications.length >= experience.max_participants) {
@@ -146,7 +146,7 @@ export const useExperiences = () => {
         toast.error('체험단 신청에 실패했습니다')
       }
       
-      return { success: false, reason: 'error' }
+      return { success: false, reason: 'error', error: error }
     } finally {
       setLoading(false)
     }
@@ -159,8 +159,7 @@ export const useExperiences = () => {
       
       const result = await (dataService.entities as any).user_applications.update(applicationId, {
         status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        reviewed_at: new Date().toISOString()
       })
       
       if (result.success) {
@@ -179,7 +178,7 @@ export const useExperiences = () => {
   }, [])
 
   // 사용자 신청 내역 조회
-  const getUserApplications = useCallback(async (userId?: string) => {
+  const getUserApplications = useCallback(async (userId?: string, user?: any, forceRefresh?: boolean) => {
     try {
       setLoading(true)
 
@@ -187,37 +186,66 @@ export const useExperiences = () => {
         return []
       }
 
+      console.log('🔍 사용자 신청 내역 조회 시작:', userId)
+
       const applications = await (dataService.entities as any).user_applications.list()
+      console.log('📋 전체 신청 내역:', applications?.length || 0, '개')
+      
       const userApplications = applications.filter((app: any) => app.user_id === userId)
+      console.log('👤 사용자 신청 내역:', userApplications.length, '개')
 
       // 각 신청에 체험단 정보 추가
       const enrichedApplications = await Promise.all(
         userApplications.map(async (app: any) => {
           try {
-            if (!app.experience_id) {
+            console.log('🔍 신청 처리 중:', {
+              app_id: app.id,
+              campaign_id: app.campaign_id,
+              user_id: app.user_id
+            })
+
+            if (!app.campaign_id) {
+              console.log('⚠️ campaign_id가 없음:', app.id)
               return {
                 ...app,
                 experience: null,
-                campaign: null
+                campaign: null,
+                experience_name: '체험단 정보 없음'
               }
             }
 
-            const experience = await (dataService.entities as any).campaigns.get(app.experience_id)
+            // campaigns 테이블에서 체험단 정보 조회
+            const experience = await (dataService.entities as any).campaigns.get(app.campaign_id)
+            console.log('📦 체험단 정보 조회 결과:', {
+              campaign_id: app.campaign_id,
+              found: !!experience,
+              experience_name: experience?.campaign_name || experience?.product_name || '정보 없음',
+              full_experience_data: experience
+            })
+
             return {
               ...app,
               experience: experience || null,
-              campaign: experience || null
+              campaign: experience || null,
+              experience_name: experience?.campaign_name || experience?.product_name || '체험단 정보 없음',
+              experience_id: app.campaign_id, // experience_id도 설정
+              created_at: app.applied_at || app.created_at // created_at 필드 추가
             }
-          } catch {
+          } catch (error) {
+            console.error('❌ 체험단 정보 조회 실패:', app.id, error)
             return {
               ...app,
               experience: null,
-              campaign: null
+              campaign: null,
+              experience_name: '체험단 정보 없음',
+              experience_id: app.campaign_id,
+              created_at: app.applied_at || app.created_at // created_at 필드 추가
             }
           }
         })
       )
 
+      console.log('✅ 신청 내역 처리 완료:', enrichedApplications.length, '개')
       return enrichedApplications
     } catch (error) {
       console.error('신청 내역 조회 실패:', error)

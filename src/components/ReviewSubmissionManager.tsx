@@ -186,51 +186,59 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
         return
       }
       
-      // 리뷰 제출 데이터 생성
-      const reviewData = {
-        application_id: applicationId,
-        experience_id: experienceId,
-        experience_name: experienceName,
+      // 1. 먼저 user_reviews 테이블에 리뷰 내용 저장
+      const userReviewData = {
         user_id: userId,
-        user_name: user?.name || (user as any)?.userName || '사용자',
-        
-        // 🔥 리뷰 내용
-        blog_url: blogUrl.trim() || null,
-        review_images: reviewImages,
-        main_image: reviewImages.length > 0 ? reviewImages[0] : null,
-        additional_notes: additionalNotes.trim() || null,
-        
-        // 상태 및 메타데이터
-        status: 'pending', // 검수 대기
-        submitted_at: new Date().toISOString(),
-        review_type: blogUrl.trim() ? 'blog' : 'image', // 블로그 or 이미지 리뷰
-        
-        // 검수 관련
-        admin_review_status: 'pending',
-        admin_review_notes: null,
-        reviewed_at: null,
-        reviewed_by: null
+        campaign_id: experienceId,
+        rating: 5, // 기본값, 나중에 별점 기능 추가 가능
+        title: `${experienceName} 체험 후기`,
+        content: additionalNotes.trim() || '체험 후기를 작성했습니다.',
+        images: reviewImages,
+        video_url: null,
+        social_media_links: blogUrl.trim() ? [blogUrl.trim()] : [],
+        status: 'pending',
+        submitted_at: new Date().toISOString()
       }
 
-      console.log('📝 리뷰 제출 데이터:', reviewData)
+      console.log('📝 user_reviews 데이터:', userReviewData)
 
-      let reviewResult
+      // user_reviews 테이블에 저장
+      const userReviewResult = await (dataService.entities as any).user_reviews.create(userReviewData)
+      console.log('✅ user_reviews 생성 결과:', userReviewResult)
+
+      if (!userReviewResult.success) {
+        throw new Error('리뷰 저장에 실패했습니다')
+      }
+
+      // 2. review_submissions 테이블에 제출 신청 저장
+      const submissionData = {
+        user_id: userId,
+        campaign_id: experienceId,
+        review_id: userReviewResult.data.id,
+        submission_data: userReviewData, // user_reviews 정보를 JSON으로 저장
+        status: 'pending',
+        submitted_at: new Date().toISOString()
+      }
+
+      console.log('📝 review_submissions 데이터:', submissionData)
+
+      let submissionResult
       if (existingReview) {
-        // 기존 리뷰 업데이트
-        const reviewId = (existingReview as any)._id || (existingReview as any).id
-        reviewResult = await (dataService.entities as any).review_submissions.update(reviewId, reviewData)
-        console.log('✅ 리뷰 업데이트 결과:', reviewResult)
+        // 기존 제출 업데이트
+        const submissionId = (existingReview as any)._id || (existingReview as any).id
+        submissionResult = await (dataService.entities as any).review_submissions.update(submissionId, submissionData)
+        console.log('✅ 리뷰 제출 업데이트 결과:', submissionResult)
       } else {
-        // 새 리뷰 생성
-        reviewResult = await (dataService.entities as any).review_submissions.create(reviewData)
-        console.log('✅ 리뷰 제출 결과:', reviewResult)
+        // 새 제출 생성
+        submissionResult = await (dataService.entities as any).review_submissions.create(submissionData)
+        console.log('✅ 리뷰 제출 결과:', submissionResult)
       }
 
       // 🚀 user_applications 상태 업데이트
       await (dataService.entities as any).user_applications.update(applicationId, {
         status: 'review_submitted',
         review_submitted_at: new Date().toISOString(),
-        review_submission_id: (reviewResult as any)._id || (reviewResult as any).id,
+        review_submission_id: (submissionResult as any)._id || (submissionResult as any).id,
         blog_url: blogUrl.trim() || null,
         review_images: reviewImages,
         additional_notes: additionalNotes.trim() || null
@@ -248,7 +256,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
             application_id: applicationId,
             experience_id: experienceId,
             user_id: userId,
-            review_submission_id: (reviewResult as any)._id || (reviewResult as any).id,
+            review_submission_id: (submissionResult as any)._id || (submissionResult as any).id,
             review_type: blogUrl.trim() ? 'blog' : 'image'
           },
           created_at: new Date().toISOString(),

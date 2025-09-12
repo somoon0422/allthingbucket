@@ -360,12 +360,15 @@ const MyApplications: React.FC = () => {
   // 🔥 캠페인 상세페이지로 이동 (수정됨)
   const handleViewCampaign = (application: any) => {
     try {
-      const experienceId = safeString(application, 'experience_id')
-      if (experienceId) {
-        console.log('🎯 캠페인 상세페이지로 이동:', experienceId)
-        navigate(`/experiences/${experienceId}`)
+      // campaign_id 또는 experience_id 중 하나라도 있으면 사용
+      const campaignId = safeString(application, 'campaign_id') || safeString(application, 'experience_id')
+      
+      if (campaignId) {
+        console.log('🎯 캠페인 상세페이지로 이동:', campaignId)
+        // CampaignDetail 컴포넌트로 이동
+        navigate(`/campaign/${campaignId}`)
       } else {
-        console.error('❌ experience_id 없음:', application)
+        console.error('❌ campaign_id 또는 experience_id 없음:', application)
         toast.error('체험단 정보를 찾을 수 없습니다')
       }
     } catch (error) {
@@ -556,11 +559,11 @@ const MyApplications: React.FC = () => {
                 
                 const experienceData = safeObject(application, 'experience')
                 const experienceName = experienceData ? 
-                  safeString(experienceData, 'experience_name', '체험단 정보 없음') :
+                  (safeString(experienceData, 'campaign_name') || safeString(experienceData, 'product_name') || safeString(experienceData, 'experience_name', '체험단 정보 없음')) :
                   safeString(application, 'experience_name', '체험단 정보 없음')
                 
                 const brandName = experienceData ? safeString(experienceData, 'brand_name') : ''
-                const rewardPoints = experienceData ? safeString(experienceData, 'reward_points') : ''
+                const rewardPoints = experienceData ? (experienceData.rewards || experienceData.reward_points || 0) : 0
                 const imageUrl = experienceData ? safeString(experienceData, 'main_image_url') || safeString(experienceData, 'image_url') : ''
                 
                 const appliedAt = safeString(application, 'applied_at') || safeString(application, 'created_at')
@@ -607,7 +610,7 @@ const MyApplications: React.FC = () => {
                               </div>
                             )}
                             
-                            {rewardPoints && (
+                            {rewardPoints > 0 && (
                               <div className="flex items-center space-x-1">
                                 <Coins className="w-4 h-4" />
                                 <span>리워드: {rewardPoints}P</span>
@@ -630,8 +633,8 @@ const MyApplications: React.FC = () => {
                           
                           {/* 신청 사유 미리보기 */}
                           {applicationReason && (
-                            <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                              <p className="text-sm text-gray-700 line-clamp-2">
+                            <div className="bg-gray-50 rounded-lg p-4 mb-4 min-h-[80px]">
+                              <p className="text-sm text-gray-700 line-clamp-4 leading-relaxed">
                                 {applicationReason}
                               </p>
                             </div>
@@ -681,6 +684,17 @@ const MyApplications: React.FC = () => {
                             >
                               <Gift className="w-4 h-4 mr-2" />
                               포인트 지급 신청
+                            </button>
+                          )}
+
+                          {/* 🔥 리뷰 제출 버튼 (승인된 경우만) */}
+                          {status === 'approved' && (
+                            <button
+                              onClick={() => handleWriteReview(application)}
+                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              <FileText className="w-4 h-4 mr-2" />
+                              리뷰 작성하기
                             </button>
                           )}
 
@@ -747,7 +761,9 @@ const MyApplications: React.FC = () => {
                   <div>
                     <span className="font-medium">체험단명:</span>{' '}
                     {safeObject(selectedApplication, 'experience') ? 
-                      safeString(safeObject(selectedApplication, 'experience'), 'experience_name', '정보 없음') :
+                      (safeString(safeObject(selectedApplication, 'experience'), 'campaign_name') || 
+                       safeString(safeObject(selectedApplication, 'experience'), 'product_name') || 
+                       safeString(safeObject(selectedApplication, 'experience'), 'experience_name', '정보 없음')) :
                       safeString(selectedApplication, 'experience_name', '정보 없음')}
                   </div>
                   {safeObject(selectedApplication, 'experience') && safeString(safeObject(selectedApplication, 'experience'), 'brand_name') && (
@@ -756,12 +772,16 @@ const MyApplications: React.FC = () => {
                       {safeString(safeObject(selectedApplication, 'experience'), 'brand_name')}
                     </div>
                   )}
-                  {safeObject(selectedApplication, 'experience') && safeString(safeObject(selectedApplication, 'experience'), 'reward_points') && (
-                    <div>
-                      <span className="font-medium">리워드:</span>{' '}
-                      {safeString(safeObject(selectedApplication, 'experience'), 'reward_points')}P
-                    </div>
-                  )}
+                  {safeObject(selectedApplication, 'experience') && (() => {
+                    const exp = safeObject(selectedApplication, 'experience')
+                    const points = exp?.rewards || exp?.reward_points || 0
+                    return points > 0 ? (
+                      <div>
+                        <span className="font-medium">리워드:</span>{' '}
+                        {points}P
+                      </div>
+                    ) : null
+                  })()}
                 </div>
               </div>
 
@@ -944,8 +964,8 @@ const MyApplications: React.FC = () => {
             loadApplications() // 신청 목록 새로고침
           }}
           applicationId={selectedApplication._id || selectedApplication.id || ''}
-          experienceId={selectedApplication.experience_id || ''}
-          experienceName={selectedApplication.experience?.name || selectedApplication.experience_name || ''}
+          experienceId={selectedApplication.campaign_id || selectedApplication.experience_id || ''}
+          experienceName={selectedApplication.experience?.campaign_name || selectedApplication.experience?.product_name || selectedApplication.experience_name || ''}
         />
       )}
     </div>
