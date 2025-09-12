@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { dataService, checkSupabaseData } from '../lib/dataService'
+import { setExperiencesOGTags } from '../utils/ogTags'
 import { useAuth } from '../hooks/useAuth'
 import { useWishlist } from '../hooks/useWishlist'
 import {
@@ -145,6 +146,9 @@ const Experiences: React.FC = () => {
   }, [experiences, searchTerm, selectedCategory, sortBy])
 
   useEffect(() => {
+    // 🔥 체험단 목록 페이지 OG 태그 설정 (카카오톡 링크 공유용)
+    setExperiencesOGTags()
+    
     loadExperiences()
   }, [])
 

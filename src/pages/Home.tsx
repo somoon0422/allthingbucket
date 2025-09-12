@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { dataService } from '../lib/dataService'
+import { setHomeOGTags } from '../utils/ogTags'
 import { 
   Gift, Star, Users, ArrowRight, Calendar, MapPin, 
   Coins, Sparkles, Award, Zap, Target, CheckCircle, Heart
@@ -115,6 +116,9 @@ const Home: React.FC = () => {
   }
 
   useEffect(() => {
+    // 🔥 홈페이지 OG 태그 설정 (카카오톡 링크 공유용)
+    setHomeOGTags()
+    
     const loadData = async () => {
       setLoading(true)
       try {

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import { useWishlist } from '../hooks/useWishlist'
 import { ApplicationFormModal } from '../components/ApplicationFormModal'
+import { setCampaignOGTags } from '../utils/ogTags'
 import {Clock, ArrowLeft, CheckCircle, XCircle, AlertCircle, Share2, ChevronLeft, ChevronRight, ChevronUp, Heart, Hash, Info, Gift, Target} from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -132,6 +133,11 @@ const CampaignDetail: React.FC = () => {
         console.log('🔍 캠페인 상세 정보 로딩:', id)
         const campaignData = await getCampaignById(id)
         setCampaign(campaignData)
+        
+        // 🔥 OG 태그 설정 (카카오톡 링크 공유용)
+        if (campaignData) {
+          setCampaignOGTags(campaignData)
+        }
         
         // 🔥 신청 상태 체크
         if (isAuthenticated && user?.user_id && campaignData) {
