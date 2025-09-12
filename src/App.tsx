@@ -8,7 +8,9 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Experiences from './pages/Experiences'
 import ExperienceDetail from './pages/ExperienceDetail'
+import CampaignDetail from './pages/CampaignDetail'
 import MyApplications from './pages/MyApplications'
+import Wishlist from './pages/Wishlist'
 import Points from './pages/Points'
 import Profile from './pages/Profile'
 import WithdrawalRequest from './pages/WithdrawalRequest'
@@ -55,7 +57,9 @@ function App() {
                   <Route path="/home" element={<Home />} />
                   <Route path="/experiences" element={<Experiences />} />
                   <Route path="/experiences/:id" element={<ExperienceDetail />} />
+                  <Route path="/campaign/:id" element={<CampaignDetail />} />
                   <Route path="/my-applications" element={<MyApplications />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/points" element={<Points />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/withdrawal" element={<WithdrawalRequest />} />

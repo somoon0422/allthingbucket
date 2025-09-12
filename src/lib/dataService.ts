@@ -1073,6 +1073,120 @@ export const dataService = {
       }
     },
 
+    // 찜하기
+    wishlist: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase wishlist.list 호출됨')
+          let query = supabase
+            .from('wishlist')
+            .select('*')
+            .order('created_at', { ascending: false })
+          
+          if (options?.filter) {
+            Object.keys(options.filter).forEach(key => {
+              query = query.eq(key, options.filter[key])
+            })
+          }
+          
+          const { data, error } = await query
+          
+          if (error) {
+            console.error('❌ wishlist 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase wishlist.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ 찜목록 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('wishlist')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('wishlist 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('찜목록 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          console.log('🔥 Supabase wishlist.create 호출됨:', data)
+          const { data: result, error } = await supabase
+            .from('wishlist')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ wishlist 생성 실패:', error)
+            return { success: false, message: error.message }
+          }
+          
+          console.log('✅ Supabase wishlist.create 결과:', result)
+          return { success: true, data: result }
+        } catch (error) {
+          console.error('❌ 찜목록 생성 실패:', error)
+          return { success: false, message: '찜목록 생성에 실패했습니다' }
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          console.log('🔥 Supabase wishlist.update 호출됨:', id, data)
+          const { data: result, error } = await supabase
+            .from('wishlist')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ wishlist 수정 실패:', error)
+            return { success: false, message: error.message }
+          }
+          
+          console.log('✅ Supabase wishlist.update 결과:', result)
+          return { success: true, data: result }
+        } catch (error) {
+          console.error('❌ 찜목록 수정 실패:', error)
+          return { success: false, message: '찜목록 수정에 실패했습니다' }
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          console.log('🔥 Supabase wishlist.delete 호출됨:', id)
+          const { error } = await supabase
+            .from('wishlist')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ wishlist 삭제 실패:', error)
+            return { success: false, message: error.message }
+          }
+          
+          console.log('✅ Supabase wishlist.delete 성공')
+          return { success: true }
+        } catch (error) {
+          console.error('❌ 찜목록 삭제 실패:', error)
+          return { success: false, message: '찜목록 삭제에 실패했습니다' }
+        }
+      }
+    },
+
     // 출금 요청
     withdrawal_requests: {
       list: async () => {

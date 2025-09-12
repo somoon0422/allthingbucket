@@ -1,0 +1,29 @@
+{
+  "name": "wishlist",
+  "fields": {
+    "_id": {
+      "type": "string",
+      "title": "찜하기 ID"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "사용자 ID",
+      "required": true
+    },
+    "campaign_id": {
+      "type": "string",
+      "title": "캠페인 ID",
+      "required": true
+    },
+    "created_at": {
+      "type": "string",
+      "title": "생성일",
+      "format": "datetime"
+    },
+    "updated_at": {
+      "type": "string",
+      "title": "수정일",
+      "format": "datetime"
+    }
+  }
+}

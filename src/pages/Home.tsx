@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom'
 import { dataService } from '../lib/dataService'
 import { 
   Gift, Star, Users, ArrowRight, Calendar, MapPin, 
-  Coins, Sparkles, Award, Zap, Target, CheckCircle
+  Coins, Sparkles, Award, Zap, Target, CheckCircle, Heart
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useWishlist } from '../hooks/useWishlist'
 
 const Home: React.FC = () => {
   const { isAuthenticated } = useAuth()
+  const { wishlist, toggleWishlist } = useWishlist()
   const [featuredExperiences, setFeaturedExperiences] = useState<any[]>([])
   const [stats, setStats] = useState({
     totalExperiences: 0,
@@ -19,9 +21,23 @@ const Home: React.FC = () => {
   const [reviews, setReviews] = useState<any[]>([])
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0)
 
-  // D-Day 계산 함수
-  const getDeadlineDisplay = (deadline: string) => {
-    if (!deadline) return '상시모집'
+  // D-Day 계산 함수 - 실제 날짜 기반
+  const getDeadlineDisplay = (experience: any) => {
+    // 다양한 날짜 필드명 시도
+    const deadline = experience.application_end_date || 
+                    experience.application_deadline ||
+                    experience.end_date ||
+                    experience.deadline ||
+                    experience.신청_마감일 ||
+                    experience.application_end
+    
+    if (!deadline) {
+      // 날짜가 없으면 기본값 대신 상태 기반으로 표시
+      const status = experience.status || experience.campaign_status
+      if (status === 'closed' || status === 'completed') return '마감됨'
+      if (status === 'active' || status === 'recruiting') return '모집중'
+      return '진행중'
+    }
     
     try {
       const deadlineDate = new Date(deadline)
@@ -38,7 +54,7 @@ const Home: React.FC = () => {
       return `D-${diffDays}`
     } catch (error) {
       console.error('날짜 계산 오류:', error)
-      return '상시모집'
+      return '진행중'
     }
   }
 
@@ -233,10 +249,28 @@ const Home: React.FC = () => {
                           e.currentTarget.style.display = 'none'
                         }}
                       />
-                      <div className="absolute top-4 right-4">
+                      <div className="absolute top-4 right-4 flex items-center space-x-2">
                         <span className="bg-white/90 text-purple-600 px-3 py-1 rounded-full text-sm font-semibold">
-                          {getDeadlineDisplay(experience.application_deadline)}
+                          {getDeadlineDisplay(experience)}
                         </span>
+                        {isAuthenticated && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              toggleWishlist(experience.id)
+                            }}
+                            className="bg-white/90 hover:bg-white p-2 rounded-full transition-colors"
+                          >
+                            <Heart 
+                              className={`w-5 h-5 ${
+                                wishlist.some(item => item.campaign_id === experience.id) 
+                                  ? 'text-red-500 fill-current' 
+                                  : 'text-gray-400'
+                              }`} 
+                            />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -260,10 +294,10 @@ const Home: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center text-purple-600 font-semibold">
                         <Coins className="w-5 h-5 mr-1" />
-                        {experience.reward_points || 0}P
+                        {experience.rewards || 0} P
                       </div>
                       <Link
-                        to={`/experiences/${experience.id}`}
+                        to={`/campaign/${experience.id}`}
                         className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
                       >
                         자세히 보기

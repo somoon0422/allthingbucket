@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { dataService } from '../lib/dataService'
 import ImageUploadManager from './ImageUploadManager'
-import {X, Calendar, MapPin, Users, Coins, Clock, FileText, Phone, Mail, Image, Code, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
+import {X, Calendar, Users, Coins, FileText, Phone, Mail, Image, Code, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
 import toast from 'react-hot-toast'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -45,7 +45,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
   
   // 🔥 D-Day 계산 함수
   const getDeadlineDisplay = (deadline: string) => {
-    if (!deadline) return '상시모집'
+    if (!deadline) return 'D-7'
     
     try {
       const deadlineDate = new Date(deadline)
@@ -67,7 +67,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
       }
     } catch (error) {
       console.error('날짜 계산 오류:', error)
-      return '상시모집'
+      return 'D-7'
     }
   }
   
@@ -77,9 +77,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     description: '',
     experience_type: 'purchase_review', // 새로 추가: 체험단 타입
     reward_points: '',
-    experience_location: '',
     max_participants: '30',
-    experience_period: '',
     requirements: '',
     additional_info: '',
     contact_email: '',
@@ -97,6 +95,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     influencer_announcement_date: '', // 인플루언서 발표일
     content_start_date: '', // 콘텐츠 등록 시작일
     content_end_date: '', // 콘텐츠 등록 종료일
+    experience_announcement_date: '', // 체험단 발표일
     result_announcement_date: '', // 캠페인 결과발표일
     current_applicants: 0 // 현재 신청자 수
   })
@@ -157,10 +156,14 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         end_date: formData.application_end_date || null,
         application_start: formData.application_start_date || new Date().toISOString(),
         application_end: formData.application_end_date || null,
-        content_start: formData.application_start_date || new Date().toISOString(),
+        content_start: formData.content_start_date || new Date().toISOString(),
         content_end: formData.content_end_date || null,
+        review_deadline: formData.content_end_date || null,
+        experience_announcement: formData.experience_announcement_date || null,
+        result_announcement: formData.result_announcement_date || null,
+        additional_info: formData.additional_info || null,
         requirements: formData.requirements.trim() || null,
-        rewards: formData.reward_points ? `${formData.reward_points}P` : null,
+        rewards: formData.reward_points ? parseInt(formData.reward_points) : 0,
         contact_email: 'support@allthingbucket.com',
         contact_phone: '010-7290-7620',
         main_images: mainImages,
@@ -190,9 +193,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         description: '',
         experience_type: 'purchase_review',
         reward_points: '',
-        experience_location: '',
         max_participants: '',
-        experience_period: '',
         requirements: '',
         additional_info: '',
         contact_email: '',
@@ -210,6 +211,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         influencer_announcement_date: '',
         content_start_date: '',
         content_end_date: '',
+        experience_announcement_date: '',
         result_announcement_date: '',
         current_applicants: 0
       })
@@ -415,38 +417,6 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
           </div>
 
 
-          {/* 위치 및 기간 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin className="w-4 h-4 inline mr-1" />
-                체험 지역
-              </label>
-              <input
-                type="text"
-                name="experience_location"
-                value={formData.experience_location}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="예: 서울, 전국, 온라인"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="w-4 h-4 inline mr-1" />
-                체험 기간
-              </label>
-              <input
-                type="text"
-                name="experience_period"
-                value={formData.experience_period}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="예: 2주, 1개월"
-              />
-            </div>
-          </div>
 
           {/* 연락처 정보 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -498,20 +468,6 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
             />
           </div>
 
-          {/* 추가 정보 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              추가 정보
-            </label>
-            <textarea
-              name="additional_info"
-              value={formData.additional_info}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="기타 안내사항이나 주의사항을 입력하세요"
-            />
-          </div>
 
           {/* 리뷰넷 스타일 추가 필드들 */}
           <div className="border-t pt-6">
@@ -694,19 +650,35 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 </div>
               </div>
 
-              {/* 캠페인 결과발표 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <Megaphone className="w-4 h-4 mr-2 text-orange-600" />
-                  캠페인 결과발표일
-                </label>
-                <input
-                  type="date"
-                  name="result_announcement_date"
-                  value={formData.result_announcement_date}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+              {/* 발표 일정 */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-green-600" />
+                    체험단 발표일
+                  </label>
+                  <input
+                    type="date"
+                    name="experience_announcement_date"
+                    value={formData.experience_announcement_date}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <Megaphone className="w-4 h-4 mr-2 text-orange-600" />
+                    캠페인 결과발표일
+                  </label>
+                  <input
+                    type="date"
+                    name="result_announcement_date"
+                    value={formData.result_announcement_date}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
               </div>
 
               {/* 현재 신청자 수 */}

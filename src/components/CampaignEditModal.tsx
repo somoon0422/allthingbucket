@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import ImageUploadManager from './ImageUploadManager'
-import {X, Calendar, MapPin, Users, Coins, Clock, FileText, Phone, Mail, Image, Code} from 'lucide-react'
+import {X, Calendar, Users, Coins, FileText, Phone, Mail, Image, Code} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface CampaignEditModalProps {
@@ -90,14 +90,20 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
   
   const [formData, setFormData] = useState({
     experience_name: '',
+    product_name: '',
     brand_name: '',
     description: '',
     experience_type: 'purchase_review',
+    platform: '인스타그램',
+    delivery_type: '배송형',
     reward_points: '',
-    experience_location: '',
     max_participants: '30',
+    experience_location: '',
     experience_period: '',
     requirements: '',
+    provided_items: '',
+    keywords: '',
+    review_guidelines: '',
     additional_info: '',
     status: 'active',
     // 캠페인 일정 정보
@@ -105,6 +111,8 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
     application_end_date: '',
     content_start_date: '',
     content_end_date: '',
+    experience_announcement_date: '',
+    result_announcement_date: '',
     current_applicants: 0
   })
 
@@ -133,14 +141,20 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
 
       setFormData({
         experience_name: safeString(campaign, 'campaign_name', ''),
+        product_name: safeString(campaign, 'product_name', ''),
         brand_name: safeString(campaign, 'brand_name', ''),
         description: safeString(campaign, 'description', ''),
         experience_type: safeString(campaign, 'type', 'purchase_review'),
-        reward_points: safeNumber(campaign, 'rewards', 0).toString().replace('P', ''),
-        experience_location: safeString(campaign, 'experience_location', ''),
+        platform: safeString(campaign, 'platform', '인스타그램'),
+        delivery_type: safeString(campaign, 'delivery_type', '배송형'),
+        reward_points: safeNumber(campaign, 'rewards', 0).toString(),
         max_participants: safeNumber(campaign, 'max_participants', 30).toString(),
+        experience_location: safeString(campaign, 'experience_location', ''),
         experience_period: safeString(campaign, 'experience_period', ''),
         requirements: safeString(campaign, 'requirements', ''),
+        provided_items: safeString(campaign, 'provided_items', ''),
+        keywords: safeString(campaign, 'keywords', ''),
+        review_guidelines: safeString(campaign, 'review_guidelines', ''),
         additional_info: safeString(campaign, 'additional_info', ''),
         status: safeString(campaign, 'status', 'active'),
         // 캠페인 일정 정보
@@ -148,6 +162,8 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         application_end_date: formatDateForInput(safeString(campaign, 'application_end')),
         content_start_date: formatDateForInput(safeString(campaign, 'content_start')),
         content_end_date: formatDateForInput(safeString(campaign, 'content_end')),
+        experience_announcement_date: formatDateForInput(safeString(campaign, 'experience_announcement')),
+        result_announcement_date: formatDateForInput(safeString(campaign, 'result_announcement')),
         current_applicants: safeNumber(campaign, 'current_participants', 0)
       })
       
@@ -249,6 +265,11 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         return
       }
 
+      if (!formData.product_name.trim()) {
+        toast.error('제품명을 입력해주세요')
+        return
+      }
+
       if (!formData.description.trim()) {
         toast.error('설명을 입력해주세요')
         return
@@ -257,10 +278,12 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       // 캠페인 데이터 업데이트 (캠페인 생성 시와 동일한 필드들만)
       const updateData = {
         campaign_name: formData.experience_name.trim(),
-        product_name: formData.brand_name.trim(),
+        product_name: formData.product_name.trim(),
         brand_name: formData.brand_name.trim(),
         description: formData.description.trim(),
         type: formData.experience_type,
+        platform: formData.platform,
+        delivery_type: formData.delivery_type,
         status: formData.status,
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : 0,
         current_participants: parseInt(formData.current_applicants.toString()) || 0,
@@ -270,8 +293,17 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         application_end: formData.application_end_date || null,
         content_start: formData.content_start_date || new Date().toISOString(),
         content_end: formData.content_end_date || null,
+        review_deadline: formData.content_end_date || null,
+        experience_announcement: formData.experience_announcement_date || null,
+        result_announcement: formData.result_announcement_date || null,
+        experience_location: formData.experience_location || null,
+        experience_period: formData.experience_period || null,
         requirements: formData.requirements.trim() || null,
-        rewards: formData.reward_points ? `${formData.reward_points}P` : null,
+        provided_items: formData.provided_items.trim() || null,
+        keywords: formData.keywords.trim() || null,
+        review_guidelines: formData.review_guidelines.trim() || null,
+        additional_info: formData.additional_info.trim() || null,
+        rewards: formData.reward_points ? parseInt(formData.reward_points) : 0,
         main_images: mainImages,
         detail_images: detailImages,
         updated_at: new Date().toISOString()
@@ -284,13 +316,31 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         detailImagesLength: detailImages.length,
         updateData
       })
+      
+      console.log('🔑 키워드 데이터:', {
+        keywords: formData.keywords,
+        keywordsTrimmed: formData.keywords.trim(),
+        keywordsInUpdateData: updateData.keywords
+      })
+      
+      console.log('ℹ️ 추가 정보 데이터:', {
+        additionalInfo: formData.additional_info,
+        additionalInfoTrimmed: formData.additional_info.trim(),
+        additionalInfoInUpdateData: updateData.additional_info
+      })
 
       // 캠페인 업데이트
-      await (dataService.entities as any).campaigns.update(campaign.id, updateData)
+      console.log('🚀 캠페인 업데이트 시작:', { campaignId: campaign.id, updateData })
+      const updateResult = await dataService.entities.campaigns.update(campaign.id, updateData)
+      console.log('🚀 캠페인 업데이트 결과:', updateResult)
       
-      toast.success('캠페인이 성공적으로 수정되었습니다!')
-      onSuccess()
-      onClose()
+      if (updateResult && updateResult.success) {
+        toast.success('캠페인이 성공적으로 수정되었습니다!')
+        onSuccess()
+        onClose()
+      } else {
+        throw new Error(updateResult?.message || '캠페인 업데이트 실패')
+      }
       
     } catch (error) {
       console.error('캠페인 수정 실패:', error)
@@ -385,6 +435,21 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
                 required
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                제품명 *
+              </label>
+              <input
+                type="text"
+                name="product_name"
+                value={formData.product_name}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="제품명을 입력하세요"
+                required
+              />
+            </div>
           </div>
 
           {/* 체험단 타입 선택 */}
@@ -404,6 +469,46 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
               <option value="press">기자단</option>
               <option value="local">지역 체험</option>
             </select>
+          </div>
+
+          {/* 플랫폼과 배송형 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                플랫폼 *
+              </label>
+              <select
+                name="platform"
+                value={formData.platform}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                <option value="인스타그램">인스타그램</option>
+                <option value="유튜브">유튜브</option>
+                <option value="블로그">블로그</option>
+                <option value="틱톡">틱톡</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                배송형 *
+              </label>
+              <select
+                name="delivery_type"
+                value={formData.delivery_type}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                <option value="배송형">배송형</option>
+                <option value="방문형">방문형</option>
+                <option value="온라인">온라인</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
           </div>
 
           {/* 설명 */}
@@ -492,38 +597,6 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
           </div>
 
 
-          {/* 위치 및 기간 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin className="w-4 h-4 inline mr-1" />
-                체험 지역
-              </label>
-              <input
-                type="text"
-                name="experience_location"
-                value={formData.experience_location}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="예: 서울, 전국, 온라인"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="w-4 h-4 inline mr-1" />
-                체험 기간
-              </label>
-              <input
-                type="text"
-                name="experience_period"
-                value={formData.experience_period}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="예: 2주, 1개월"
-              />
-            </div>
-          </div>
 
           {/* 연락처 정보 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -575,6 +648,54 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
             />
           </div>
 
+          {/* 제공내역 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              제공내역
+            </label>
+            <textarea
+              name="provided_items"
+              value={formData.provided_items}
+              onChange={handleInputChange}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="캠페인에서 제공하는 제품이나 혜택을 입력하세요"
+            />
+          </div>
+
+          {/* 키워드 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              키워드
+            </label>
+            <textarea
+              name="keywords"
+              value={formData.keywords}
+              onChange={handleInputChange}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="예: #농심 #반려다움 #반려동물 #반려동물영양제 #반려견영양제 #강아지영양제 #반려다움프로바이오틱스"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              해시태그 형태로 키워드를 입력하세요 (예: #키워드1 #키워드2)
+            </p>
+          </div>
+
+          {/* 리뷰 작성시 안내사항 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              리뷰 작성시 안내사항
+            </label>
+            <textarea
+              name="review_guidelines"
+              value={formData.review_guidelines}
+              onChange={handleInputChange}
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="리뷰 작성 시 참고해야 할 가이드라인이나 주의사항을 입력하세요"
+            />
+          </div>
+
           {/* 추가 정보 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -590,40 +711,38 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
             />
           </div>
 
-          {/* 추가 정보 섹션 (기본 필드들만) */}
+          {/* 추가 정보 섹션 */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">추가 정보</h3>
             
-            {/* 체험 지역 */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin className="w-4 h-4 inline mr-1" />
-                체험 지역
-              </label>
-              <input
-                type="text"
-                name="experience_location"
-                value={formData.experience_location}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="예: 서울, 전국, 온라인"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  체험 지역
+                </label>
+                <input
+                  type="text"
+                  name="experience_location"
+                  value={formData.experience_location || ''}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="예: 서울, 전국, 온라인"
+                />
+              </div>
 
-            {/* 체험 기간 */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="w-4 h-4 inline mr-1" />
-                체험 기간
-              </label>
-              <input
-                type="text"
-                name="experience_period"
-                value={formData.experience_period}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="예: 2주, 1개월"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  체험 기간
+                </label>
+                <input
+                  type="text"
+                  name="experience_period"
+                  value={formData.experience_period || ''}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="예: 2주, 1개월"
+                />
+              </div>
             </div>
           </div>
 
@@ -632,11 +751,11 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
             <h3 className="text-lg font-semibold text-gray-900 mb-4">캠페인 일정 정보</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 신청 기간 */}
+              {/* 체험단 신청기간 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
-                  신청 시작일
+                  체험단 신청 시작일
                 </label>
                 <input
                   type="date"
@@ -650,7 +769,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
-                  신청 마감일
+                  체험단 신청 마감일
                 </label>
                 <input
                   type="date"
@@ -666,11 +785,11 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
                 )}
               </div>
 
-              {/* 콘텐츠 기간 */}
+              {/* 리뷰 등록기간 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
-                  콘텐츠 시작일
+                  리뷰 등록 시작일
                 </label>
                 <input
                   type="date"
@@ -684,7 +803,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
-                  콘텐츠 마감일
+                  리뷰 등록 마감일
                 </label>
                 <input
                   type="date"
@@ -698,6 +817,36 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
                     리뷰 마감일: {getDeadlineDisplay(formData.content_end_date)}
                   </p>
                 )}
+              </div>
+
+              {/* 선정자 발표일 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Calendar className="w-4 h-4 mr-2 text-green-600" />
+                  선정자 발표일
+                </label>
+                <input
+                  type="date"
+                  name="experience_announcement_date"
+                  value={formData.experience_announcement_date}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* 캠페인 결과발표일 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Calendar className="w-4 h-4 mr-2 text-orange-600" />
+                  캠페인 결과발표일
+                </label>
+                <input
+                  type="date"
+                  name="result_announcement_date"
+                  value={formData.result_announcement_date}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
 
               {/* 현재 신청자 수 */}

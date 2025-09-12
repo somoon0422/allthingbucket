@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield} from 'lucide-react'
+import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield, Heart} from 'lucide-react'
 import LoginModal from './LoginModal'
 
 interface LayoutProps {
@@ -20,6 +20,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: '홈', href: '/', icon: Home },
     { name: '체험단', href: '/experiences', icon: Gift },
     ...(isAuthenticated ? [
+      { name: '찜목록', href: '/wishlist', icon: Heart },
       { name: '내 신청', href: '/my-applications', icon: FileText },
       { name: '포인트', href: '/points', icon: Coins },
       { name: '프로필', href: '/profile', icon: User },
@@ -255,6 +256,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h3 className="text-sm font-semibold text-gray-900 mb-4">서비스</h3>
               <ul className="space-y-2">
                 <li><Link to="/experiences" className="text-sm text-gray-600 hover:text-blue-600">체험단 목록</Link></li>
+                <li><Link to="/wishlist" className="text-sm text-gray-600 hover:text-blue-600">찜 목록</Link></li>
                 <li><Link to="/my-applications" className="text-sm text-gray-600 hover:text-blue-600">내 신청내역</Link></li>
                 <li><Link to="/points" className="text-sm text-gray-600 hover:text-blue-600">포인트 관리</Link></li>
               </ul>

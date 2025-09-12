@@ -153,14 +153,16 @@ const AdminDashboard: React.FC = () => {
   })
 
   const filteredExperiences = experiences.filter(exp => {
-    // 상태 필터링 - 'active'와 'recruiting'을 모두 '모집중'으로 처리
-    if (experienceFilter === 'recruiting' && !(exp.status === 'active' || exp.status === 'recruiting')) return false
-    if (experienceFilter === 'closed' && (exp.status === 'active' || exp.status === 'recruiting')) return false
+    const currentStatus = exp.status || exp.campaign_status || 'active'
     
-    // 검색 필터링 - 모든 가능한 제목 필드 검색
+    // 상태 필터링 - status 값 기반으로 수정
+    if (experienceFilter === 'recruiting' && !(currentStatus === 'active' || currentStatus === 'recruiting')) return false
+    if (experienceFilter === 'closed' && !(currentStatus === 'closed' || currentStatus === 'completed')) return false
+    
+    // 검색 필터링 - 모든 가능한 제목 필드 검색 (campaign_name 우선)
     if (experienceSearch) {
       const searchTerm = experienceSearch.toLowerCase()
-      const title = (exp.campaign_name || exp.title || exp.experience_name || exp.name || '').toLowerCase()
+      const title = (exp.campaign_name || exp.product_name || exp.title || exp.experience_name || exp.name || '').toLowerCase()
       const description = (exp.description || '').toLowerCase()
       if (!title.includes(searchTerm) && !description.includes(searchTerm)) return false
     }
@@ -457,39 +459,69 @@ const AdminDashboard: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredExperiences.map((experience) => (
-                <div key={experience.id} className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    {experience.campaign_name || experience.title || experience.experience_name || experience.name || '제목 없음'}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">{experience.description || '설명이 없습니다.'}</p>
-                  <div className="flex justify-between items-center">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      (experience.status === 'active' || experience.status === 'recruiting') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {(experience.status === 'active' || experience.status === 'recruiting') ? '모집중' : '마감'}
-                              </span>
-                    <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  setSelectedCampaign(experience)
-                          setShowEditModal(true)
-                                }}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-                              <button
-                        onClick={() => handleDeleteExperience(experience.id)}
-                                className="text-red-600 hover:text-red-900"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-              </div>
-          </div>
-                  </div>
-              ))}
+              {filteredExperiences.map((experience) => {
+                // 🔥 체험단명 우선 표시 (campaign_name이 있으면 사용, 없으면 다른 필드들 확인)
+                const displayName = experience.campaign_name || 
+                                  experience.product_name || 
+                                  experience.title || 
+                                  experience.experience_name || 
+                                  experience.name || 
+                                  '제목 없음'
+                
+                // 🔥 status 값 기반으로 상태 표시
+                const getStatusInfo = (status: string) => {
+                  switch (status) {
+                    case 'active':
+                    case 'recruiting':
+                      return { label: '모집중', color: 'bg-green-100 text-green-800' }
+                    case 'closed':
+                    case 'completed':
+                      return { label: '마감', color: 'bg-red-100 text-red-800' }
+                    case 'pending':
+                      return { label: '준비중', color: 'bg-yellow-100 text-yellow-800' }
+                    case 'cancelled':
+                      return { label: '취소', color: 'bg-gray-100 text-gray-800' }
+                    default:
+                      return { label: '알 수 없음', color: 'bg-gray-100 text-gray-800' }
+                  }
+                }
+                
+                const statusInfo = getStatusInfo(experience.status || experience.campaign_status || 'active')
+                
+                return (
+                  <div key={experience.id} className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      {displayName}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      {experience.description || '설명이 없습니다.'}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedCampaign(experience)
+                            setShowEditModal(true)
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteExperience(experience.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
+                  </div>
+                )
+              })}
+            </div>
                 </div>
               </div>
             </div>
