@@ -86,6 +86,29 @@ export class GoogleOAuthAPI {
         created_at: new Date().toISOString()
       }
       
+      // public.users 테이블에 사용자 정보 저장
+      const userData = {
+        id: googleUserInfo.id,
+        user_id: googleUserInfo.id,
+        name: googleUserInfo.name,
+        email: googleUserInfo.email,
+        avatar_url: googleUserInfo.picture,
+        provider: 'google',
+        created_at: new Date().toISOString()
+      }
+      
+      // 기존 사용자 확인
+      const existingUsers = await (dataService.entities as any).users.list()
+      const existingUser = existingUsers.find((user: any) => user.user_id === googleUserInfo.id)
+      
+      if (!existingUser) {
+        await (dataService.entities as any).users.create(userData)
+        console.log('✅ public.users에 새 사용자 생성:', userData)
+      } else {
+        await (dataService.entities as any).users.update(existingUser.id, userData)
+        console.log('✅ public.users 사용자 정보 업데이트:', userData)
+      }
+      
       // 기존 프로필 확인
       const existingProfile = await (dataService.entities as any).user_profiles.get(googleUserInfo.id)
       

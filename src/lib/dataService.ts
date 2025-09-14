@@ -5,7 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nwwwesxzlpotab
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53d3dlc3h6bHBvdGFidGN2a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MDkyNzQsImV4cCI6MjA3MzA4NTI3NH0.Xw7l2aARgkxognpP1G94_lIMHEKS_fwqkpFTXauSKYE'
 
 // Supabase 클라이언트 초기화
-const supabase = createClient(supabaseUrl, supabaseKey)
+export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Supabase 연결 상태 확인 함수
 export const checkDatabaseConnection = async () => {
@@ -69,35 +69,41 @@ export const checkSupabaseData = async () => {
 // Supabase Client API 래퍼 - 모든 엔티티와 메서드 지원
 export const dataService = {
   entities: {
-    // 사용자 프로필
-    user_profiles: {
-      list: async () => {
-        try {
-          console.log('🔥 Supabase user_profiles.list 호출됨')
-          
-          // Supabase 연결 상태 확인
-          if (!supabase) {
-            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
-            return []
-          }
-          
-          const { data, error } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('❌ user_profiles 조회 실패:', error)
-            return []
-          }
-          
-          console.log('✅ Supabase user_profiles.list 결과:', data)
-          return Array.isArray(data) ? data : []
-        } catch (error) {
-          console.error('❌ 사용자 프로필 목록 조회 실패:', error)
+  // 사용자 프로필
+  user_profiles: {
+    list: async (options?: { filter?: any }) => {
+      try {
+        console.log('🔥 Supabase user_profiles.list 호출됨', options)
+        
+        // Supabase 연결 상태 확인
+        if (!supabase) {
+          console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
           return []
         }
-      },
+        
+        let query = supabase.from('user_profiles').select('*')
+        
+        // 필터 옵션이 있으면 적용
+        if (options?.filter) {
+          Object.entries(options.filter).forEach(([key, value]) => {
+            query = query.eq(key, value)
+          })
+        }
+        
+        const { data, error } = await query.order('created_at', { ascending: false })
+        
+        if (error) {
+          console.error('❌ user_profiles 조회 실패:', error)
+          return []
+        }
+        
+        console.log('✅ Supabase user_profiles.list 결과:', data)
+        return Array.isArray(data) ? data : []
+      } catch (error) {
+        console.error('❌ 사용자 프로필 목록 조회 실패:', error)
+        return []
+      }
+    },
       get: async (id: string) => {
         try {
           const { data, error } = await supabase
@@ -202,36 +208,44 @@ export const dataService = {
       },
       create: async (data: any) => {
         try {
+          console.log('🔥 Supabase users.create 호출됨:', data)
+          
           const { data: result, error } = await supabase
             .from('users')
             .insert([data])
             .select()
-            .single()
           
           if (error) {
+            console.error('❌ users 생성 실패:', error)
             return { success: false, message: error.message }
           }
           
+          console.log('✅ Supabase users.create 성공:', result)
           return { success: true, data: result }
         } catch (error) {
+          console.error('❌ users 생성 예외:', error)
           return { success: false, message: '사용자 생성에 실패했습니다' }
         }
       },
       update: async (id: string, data: any) => {
         try {
+          console.log('🔥 Supabase users.update 호출됨:', { id, data })
+          
           const { data: result, error } = await supabase
             .from('users')
             .update(data)
             .eq('id', id)
             .select()
-            .single()
           
           if (error) {
+            console.error('❌ users 업데이트 실패:', error)
             return { success: false, message: error.message }
           }
           
+          console.log('✅ Supabase users.update 성공:', result)
           return { success: true, data: result }
         } catch (error) {
+          console.error('❌ users 업데이트 예외:', error)
           return { success: false, message: '사용자 수정에 실패했습니다' }
         }
       },
@@ -255,12 +269,20 @@ export const dataService = {
 
     // 사용자 신청
     user_applications: {
-      list: async () => {
+      list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase user_applications.list 호출됨')
-          const { data, error } = await supabase
-            .from('user_applications')
-            .select('*')
+          console.log('🔥 Supabase user_applications.list 호출됨', options)
+          
+          let query = supabase.from('user_applications').select('*')
+          
+          // 필터 옵션이 있으면 적용
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+          
+          const { data, error } = await query
           
           if (error) {
             console.error('❌ user_applications 조회 실패:', error)
@@ -1515,13 +1537,29 @@ export const dataService = {
 
   // 포인트 히스토리
   points_history: {
-    list: async () => {
+    list: async (options?: { filter?: any, sort?: any }) => {
       try {
-        console.log('🔥 Supabase points_history.list 호출됨')
-        const { data, error } = await supabase
-          .from('points_history')
-          .select('*')
-          .order('created_at', { ascending: false })
+        console.log('🔥 Supabase points_history.list 호출됨', options)
+        
+        let query = supabase.from('points_history').select('*')
+        
+        // 필터 옵션이 있으면 적용
+        if (options?.filter) {
+          Object.entries(options.filter).forEach(([key, value]) => {
+            query = query.eq(key, value)
+          })
+        }
+        
+        // 정렬 옵션이 있으면 적용
+        if (options?.sort) {
+          Object.entries(options.sort).forEach(([key, value]) => {
+            query = query.order(key, { ascending: value === 1 })
+          })
+        } else {
+          query = query.order('created_at', { ascending: false })
+        }
+        
+        const { data, error } = await query
         
         if (error) {
           console.error('❌ points_history 조회 실패:', error)
@@ -1609,13 +1647,20 @@ export const dataService = {
 
   // 사용자 포인트
   user_points: {
-    list: async () => {
+    list: async (options?: { filter?: any }) => {
       try {
-        console.log('🔥 Supabase user_points.list 호출됨')
-        const { data, error } = await supabase
-          .from('user_points')
-          .select('*')
-          .order('created_at', { ascending: false })
+        console.log('🔥 Supabase user_points.list 호출됨', options)
+        
+        let query = supabase.from('user_points').select('*')
+        
+        // 필터 옵션이 있으면 적용
+        if (options?.filter) {
+          Object.entries(options.filter).forEach(([key, value]) => {
+            query = query.eq(key, value)
+          })
+        }
+        
+        const { data, error } = await query.order('created_at', { ascending: false })
         
         if (error) {
           console.error('❌ user_points 조회 실패:', error)
@@ -1623,6 +1668,15 @@ export const dataService = {
         }
         
         console.log('✅ Supabase user_points.list 결과:', data)
+        
+        // 🔍 테이블 구조 확인을 위한 상세 로깅
+        if (data && data.length > 0) {
+          console.log('🔍 user_points 테이블 첫 번째 레코드:', data[0])
+          console.log('🔍 user_points 테이블 컬럼명들:', Object.keys(data[0]))
+        } else {
+          console.log('🔍 user_points 테이블이 비어있음')
+        }
+        
         return data || []
       } catch (error) {
         console.error('❌ 사용자 포인트 목록 조회 실패:', error)
@@ -1669,6 +1723,7 @@ export const dataService = {
     },
     create: async (data: any) => {
       try {
+        console.log('🔥 Supabase user_points.create 호출됨:', data)
         const { data: result, error } = await supabase
           .from('user_points')
           .insert([data])
@@ -1676,11 +1731,14 @@ export const dataService = {
           .single()
         
         if (error) {
+          console.error('❌ user_points 생성 실패:', error)
           return { success: false, message: error.message }
         }
         
+        console.log('✅ Supabase user_points.create 성공:', result)
         return { success: true, data: result }
       } catch (error) {
+        console.error('❌ user_points 생성 예외:', error)
         return { success: false, message: '사용자 포인트 생성에 실패했습니다' }
       }
     },
@@ -1720,6 +1778,3 @@ export const dataService = {
     }
   }
 }
-
-// Supabase 클라이언트 내보내기
-export { supabase }

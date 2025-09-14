@@ -26,8 +26,14 @@
     "points_type": {
       "type": "string",
       "title": "포인트 유형",
-      "enum": ["earned", "used", "withdrawn", "expired", "refunded"],
+      "enum": ["earned", "used", "withdrawn", "expired", "refunded", "pending"],
       "required": true
+    },
+    "status": {
+      "type": "string",
+      "title": "처리 상태",
+      "enum": ["pending", "success", "failed", "cancelled"],
+      "default": "pending"
     },
     "points_amount": {
       "type": "number",

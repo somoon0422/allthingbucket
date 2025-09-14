@@ -1,16 +1,14 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { SupabaseOAuthService } from '../services/supabaseOAuthService'
 import toast from 'react-hot-toast'
 
 interface GoogleLoginButtonProps {
-  onSuccess?: (user: any, token: string) => void
   onError?: (error: string) => void
   className?: string
   children?: React.ReactNode
 }
 
 export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
-  onSuccess,
   onError,
   className = '',
   children
@@ -19,20 +17,11 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     try {
       console.log('🔥 Supabase Google OAuth 로그인 시작...')
       
-      const result = await SupabaseOAuthService.signInWithGoogle()
+      // 모달 닫기 이벤트 발생
+      window.dispatchEvent(new CustomEvent('closeLoginModal'))
       
-      console.log('✅ Google OAuth 로그인 성공:', result)
-      
-      // 토큰을 localStorage에 저장
-      localStorage.setItem('auth_token', result.token)
-      
-      // 성공 시 콜백 호출
-      onSuccess?.(result.user, result.token)
-      
-      // 홈화면으로 이동
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 1000)
+      // 직접 리다이렉트 방식이므로 Promise는 resolve되지 않음
+      await SupabaseOAuthService.signInWithGoogle()
       
     } catch (error: any) {
       console.error('❌ Google OAuth 로그인 실패:', error)
@@ -45,18 +34,7 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     }
   }
 
-  // Google 로그인 성공 이벤트 리스너
-  useEffect(() => {
-    const handleGoogleLoginSuccess = () => {
-      // 성공 시 콜백만 호출 (메시지 없음)
-      onSuccess?.({}, '')
-    }
-
-    window.addEventListener('googleLoginSuccess', handleGoogleLoginSuccess)
-    return () => {
-      window.removeEventListener('googleLoginSuccess', handleGoogleLoginSuccess)
-    }
-  }, [onSuccess])
+  // Google 로그인 성공 이벤트 리스너는 제거 (중복 처리 방지)
 
   return (
     <button

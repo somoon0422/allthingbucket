@@ -27,8 +27,8 @@
       "status": {
         "type": "string",
         "title": "신청 상태",
-        "enum": ["pending", "approved", "rejected", "in_progress", "review_submitted", "completed"],
-        "enumLabels": ["승인 대기", "승인 완료", "승인 거절", "진행 중", "리뷰 제출", "완료"],
+        "enum": ["pending", "approved", "rejected", "in_progress", "review_submitted", "review_in_progress", "review_completed", "point_requested", "point_completed", "completed"],
+        "enumLabels": ["승인 대기", "승인 완료", "승인 거절", "진행 중", "리뷰 제출", "리뷰 검수중", "리뷰 승인완료", "포인트 지급 요청", "포인트 지급 완료", "완료"],
         "default": "pending"
       },
       "application_reason": {

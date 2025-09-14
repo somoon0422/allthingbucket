@@ -53,12 +53,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setIsLoginModalOpen(true)
     }
 
+    const handleCloseLoginModal = () => {
+      setIsLoginModalOpen(false)
+    }
+
     window.addEventListener('openLoginModal', handleOpenLoginModal)
     window.addEventListener('openAdminLoginModal', handleOpenAdminLoginModal)
+    window.addEventListener('closeLoginModal', handleCloseLoginModal)
     
     return () => {
       window.removeEventListener('openLoginModal', handleOpenLoginModal)
       window.removeEventListener('openAdminLoginModal', handleOpenAdminLoginModal)
+      window.removeEventListener('closeLoginModal', handleCloseLoginModal)
     }
   }, [])
 

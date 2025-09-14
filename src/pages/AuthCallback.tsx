@@ -18,35 +18,16 @@ const AuthCallback: React.FC = () => {
         // 토큰을 localStorage에 저장
         localStorage.setItem('auth_token', result.token)
         
-        // 부모 창에 성공 메시지 전송
-        if (window.opener) {
-          window.opener.postMessage({
-            type: 'SUPABASE_AUTH_SUCCESS',
-            result: result
-          }, window.location.origin)
-          
-          // 팝업 창 닫기
-          window.close()
-        } else {
-          // 팝업이 아닌 경우 홈으로 리다이렉트
-          window.location.href = '/'
-        }
+        // 직접 리다이렉트 방식이므로 홈으로 이동
+        window.location.href = '/'
         
       } catch (error: any) {
         console.error('❌ OAuth 콜백 처리 실패:', error)
         setError(error.message || '인증 처리에 실패했습니다')
         
-        // 부모 창에 에러 메시지 전송
-        if (window.opener) {
-          window.opener.postMessage({
-            type: 'SUPABASE_AUTH_ERROR',
-            error: error.message || '인증 처리에 실패했습니다'
-          }, window.location.origin)
-        }
-        
-        // 에러 발생 시 3초 후 팝업 닫기
+        // 에러 발생 시 3초 후 홈으로 리다이렉트
         setTimeout(() => {
-          window.close()
+          window.location.href = '/'
         }, 3000)
       } finally {
         setIsProcessing(false)

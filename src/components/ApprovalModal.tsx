@@ -144,10 +144,30 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   const brandName = SafeData.getBrandName(application)
   const rewardPoints = SafeData.getNumber(application, 'reward_points', 0)
   
+  // 🔥 상태에 따른 제목과 템플릿 결정
+  const getModalTitle = () => {
+    const status = application?.status
+    if (status === 'point_completed') {
+      return '💰 포인트 지급 완료'
+    }
+    if (status === 'point_requested') {
+      return '💰 포인트 지급 승인'
+    }
+    return '✅ 체험단 신청 승인'
+  }
+  
+  const getDefaultTemplate = () => {
+    const status = application?.status
+    if (status === 'point_completed') {
+      return 'point_completed'
+    }
+    return 'approval'
+  }
+  
   const [emailContent, setEmailContent] = useState('')
   const [sendMethod, setSendMethod] = useState<'email' | 'sms' | 'kakao' | 'both'>('email')
   const [subject, setSubject] = useState('')
-  const [selectedTemplate, setSelectedTemplate] = useState('approval')
+  const [selectedTemplate, setSelectedTemplate] = useState(getDefaultTemplate())
   
   // 🔥 수신자 정보 상태 (직접 수정 가능)
   const [editableRecipient, setEditableRecipient] = useState({
@@ -194,7 +214,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
 📞 문의사항이 있으시면 고객센터로 연락주세요:
 - 이메일: support@allthingbucket.com
-- 전화: 02-1234-5678
+- 전화: 010-7290-7620
 
 감사합니다.
 올띵버킷 체험단 팀`
@@ -209,10 +229,79 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
 리뷰 작성 완료 후 포인트 지급 요청을 해주세요.
 
-📞 문의사항: support@allthingbucket.com / 02-1234-5678
+📞 문의사항: support@allthingbucket.com / 010-7290-7620
 
 감사합니다.
 올띵버킷 체험단 팀`
+    },
+    'point_requested': {
+      subject: `💰 {campaign_name} 포인트 지급 승인 안내`,
+      content: `안녕하세요 {name}님!
+
+💰 포인트 지급 요청이 승인되었습니다!
+
+📋 포인트 지급 승인 안내:
+- 체험단: {campaign_name}
+- 브랜드: {brand_name}
+- 지급 포인트: {reward_points}P
+- 승인일: {approval_date}
+
+🎉 리뷰 검수 완료:
+{name}님의 {campaign_name} 리뷰가 성공적으로 검수 완료되었습니다.
+포인트 지급 요청이 승인되어 곧 포인트가 지급됩니다.
+
+💳 포인트 지급:
+- 지급 예정 포인트: {reward_points}P
+- 지급 완료 후 "포인트" 탭에서 확인 가능
+- 포인트 출금은 1,000P 이상부터 가능
+
+📝 포인트 사용 안내:
+- 포인트 내역: 포인트 탭에서 상세 내역 확인 가능
+- 출금 요청: 1,000P 이상 시 출금 신청 가능
+- 포인트 유효기간: 영구 유효
+
+📞 문의사항이 있으시면 고객센터로 연락주세요:
+- 이메일: support@allthingbucket.com
+- 전화: 010-7290-7620
+
+감사합니다.
+올띵버킷 팀`
+    },
+    'point_completed': {
+      subject: `💰 {campaign_name} 포인트 지급 완료 안내`,
+      content: `안녕하세요 {name}님!
+
+💰 포인트 지급이 완료되었습니다!
+
+📋 포인트 지급 안내:
+- 체험단: {campaign_name}
+- 브랜드: {brand_name}
+- 지급 포인트: {reward_points}P
+- 지급일: {approval_date}
+
+🎉 체험단 참여 완료:
+{name}님의 {campaign_name} 체험단 참여가 성공적으로 완료되었습니다.
+리뷰 작성과 포인트 지급까지 모든 과정이 완료되었습니다.
+
+💳 포인트 확인:
+지급된 포인트는 "포인트" 탭에서 확인하실 수 있습니다.
+- 현재 잔액: {reward_points}P
+- 총 적립 포인트: 누적 포인트에서 확인 가능
+
+🔄 포인트 사용:
+- 포인트 출금: 1,000P 이상부터 출금 가능
+- 포인트 내역: 포인트 탭에서 상세 내역 확인 가능
+
+📝 다음 체험단 참여:
+더 많은 체험단에 참여하여 포인트를 적립해보세요!
+새로운 체험단이 업로드되면 알림을 받으실 수 있습니다.
+
+📞 문의사항이 있으시면 고객센터로 연락주세요:
+- 이메일: support@allthingbucket.com
+- 전화: 010-7290-7620
+
+감사합니다.
+올띵버킷 팀`
     },
     'custom': {
       subject: '',
@@ -222,12 +311,23 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
   // 🔥 초기 템플릿 설정
   React.useEffect(() => {
-    if (selectedTemplate && emailTemplates[selectedTemplate as keyof typeof emailTemplates]) {
-      const template = emailTemplates[selectedTemplate as keyof typeof emailTemplates]
+    // status에 따라 자동으로 템플릿 선택
+    let templateKey = selectedTemplate
+    if (application?.status === 'point_requested') {
+      templateKey = 'point_requested'
+    } else if (application?.status === 'point_completed') {
+      templateKey = 'point_completed'
+    } else if (application?.status === 'approved') {
+      templateKey = 'approval'
+    }
+    
+    if (templateKey && emailTemplates[templateKey as keyof typeof emailTemplates]) {
+      const template = emailTemplates[templateKey as keyof typeof emailTemplates]
       setSubject(template.subject)
       setEmailContent(template.content)
+      setSelectedTemplate(templateKey)
     }
-  }, [selectedTemplate, experienceName])
+  }, [selectedTemplate, experienceName, application?.status])
 
   // 🔥 수신자 정보 업데이트
   const handleRecipientChange = (field: string, value: string) => {
@@ -411,7 +511,9 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="text-xl font-bold text-green-600">✅ 체험단 신청 승인</h3>
+              <h3 className={`text-xl font-bold ${application?.status === 'point_completed' ? 'text-blue-600' : 'text-green-600'}`}>
+                {getModalTitle()}
+              </h3>
               <p className="text-sm text-gray-500 mt-1">
                 {userName} - {experienceName}
               </p>
@@ -489,7 +591,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 이메일 템플릿
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setSelectedTemplate('approval')}
                   className={`p-2 rounded-lg border text-sm transition-colors ${
@@ -509,6 +611,16 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   }`}
                 >
                   간단 승인 안내
+                </button>
+                <button
+                  onClick={() => setSelectedTemplate('point_completed')}
+                  className={`p-2 rounded-lg border text-sm transition-colors ${
+                    selectedTemplate === 'point_completed'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  포인트 지급 완료
                 </button>
                 <button
                   onClick={() => setSelectedTemplate('custom')}

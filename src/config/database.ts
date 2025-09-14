@@ -1,10 +1,5 @@
-// Supabase 설정
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nwwwesxzlpotabtcvkgj.supabase.co'
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53d3dlc3h6bHBvdGFidGN2a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MDkyNzQsImV4cCI6MjA3MzA4NTI3NH0.Xw7l2aARgkxognpP1G94_lIMHEKS_fwqkpFTXauSKYE'
-
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// 중앙화된 Supabase 클라이언트 사용
+import { supabase } from '../lib/dataService'
 
 // 테이블 이름 상수
 export const TABLES = {

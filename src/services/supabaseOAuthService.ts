@@ -1,16 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
-import { dataService } from '../lib/dataService'
-
-// Supabase 설정
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nwwwesxzlpotabtcvkgj.supabase.co'
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53d3dlc3h6bHBvdGFidGN2a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MDkyNzQsImV4cCI6MjA3MzA4NTI3NH0.Xw7l2aARgkxognpP1G94_lIMHEKS_fwqkpFTXauSKYE'
-
-// 앱 설정 (필요시 사용)
-// const APP_DOMAIN = import.meta.env.VITE_APP_DOMAIN || 'allthingbucket.com'
-// const APP_NAME = import.meta.env.VITE_APP_NAME || '올띵버킷'
-
-// Supabase 클라이언트 초기화
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { supabase, dataService } from '../lib/dataService'
 
 export interface OAuthUser {
   id: string
@@ -21,6 +9,42 @@ export interface OAuthUser {
 }
 
 export class SupabaseOAuthService {
+  // 로그를 localStorage에 저장하는 헬퍼 함수
+  private static saveLog(message: string, data?: any) {
+    const timestamp = new Date().toISOString()
+    const logEntry = {
+      timestamp,
+      message,
+      data: data ? JSON.stringify(data, null, 2) : null
+    }
+    
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem('oauth_logs') || '[]')
+      existingLogs.push(logEntry)
+      
+      // 최대 100개 로그만 유지
+      if (existingLogs.length > 100) {
+        existingLogs.splice(0, existingLogs.length - 100)
+      }
+      
+      localStorage.setItem('oauth_logs', JSON.stringify(existingLogs))
+      
+      // 콘솔에도 출력
+      console.log(`[${timestamp}] ${message}`, data)
+      
+      // 중요한 로그는 sessionStorage에도 저장 (페이지 리다이렉트 후에도 유지)
+      if (message.includes('❌') || message.includes('✅') || message.includes('🔥')) {
+        const sessionLogs = JSON.parse(sessionStorage.getItem('oauth_session_logs') || '[]')
+        sessionLogs.push(logEntry)
+        if (sessionLogs.length > 20) {
+          sessionLogs.splice(0, sessionLogs.length - 20)
+        }
+        sessionStorage.setItem('oauth_session_logs', JSON.stringify(sessionLogs))
+      }
+    } catch (error) {
+      console.error('로그 저장 실패:', error)
+    }
+  }
   // Google OAuth 로그인
   static async signInWithGoogle(): Promise<{ user: OAuthUser; token: string }> {
     try {
@@ -44,49 +68,11 @@ export class SupabaseOAuthService {
 
       console.log('✅ Google OAuth 리다이렉트 URL:', data.url)
       
-      // 팝업으로 OAuth 진행
-      return new Promise((resolve, reject) => {
-        const popup = window.open(
-          data.url,
-          'supabase-oauth',
-          'width=500,height=600,scrollbars=yes,resizable=yes'
-        )
-
-        // 팝업이 제대로 열렸는지 확인
-        if (!popup) {
-          console.warn('팝업 창을 열 수 없습니다. 팝업 차단이 활성화되어 있을 수 있습니다.')
-          // 팝업이 열리지 않으면 직접 리다이렉트
-          window.location.href = data.url
-          return
-        }
-
-        // 팝업에서 결과를 기다림
-        const checkClosed = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(checkClosed)
-            reject(new Error('로그인이 취소되었습니다'))
-          }
-        }, 1000)
-
-        // 메시지 리스너로 결과 받기
-        const messageListener = (event: MessageEvent) => {
-          if (event.origin !== window.location.origin) return
-
-          if (event.data.type === 'SUPABASE_AUTH_SUCCESS') {
-            clearInterval(checkClosed)
-            window.removeEventListener('message', messageListener)
-            popup.close()
-            resolve(event.data.result)
-          } else if (event.data.type === 'SUPABASE_AUTH_ERROR') {
-            clearInterval(checkClosed)
-            window.removeEventListener('message', messageListener)
-            popup.close()
-            reject(new Error(event.data.error || 'OAuth 로그인에 실패했습니다'))
-          }
-        }
-
-        window.addEventListener('message', messageListener)
-      })
+      // 직접 리다이렉트 방식으로 OAuth 진행 (팝업 제거)
+      window.location.href = data.url
+      
+      // 리다이렉트되므로 Promise는 resolve되지 않음
+      return new Promise(() => {})
 
     } catch (error) {
       console.error('❌ Supabase Google OAuth 실패:', error)
@@ -117,49 +103,11 @@ export class SupabaseOAuthService {
 
       console.log('✅ Kakao OAuth 리다이렉트 URL:', data.url)
       
-      // 팝업으로 OAuth 진행
-      return new Promise((resolve, reject) => {
-        const popup = window.open(
-          data.url,
-          'supabase-oauth',
-          'width=500,height=600,scrollbars=yes,resizable=yes'
-        )
-
-        // 팝업이 제대로 열렸는지 확인
-        if (!popup) {
-          console.warn('팝업 창을 열 수 없습니다. 팝업 차단이 활성화되어 있을 수 있습니다.')
-          // 팝업이 열리지 않으면 직접 리다이렉트
-          window.location.href = data.url
-          return
-        }
-
-        // 팝업에서 결과를 기다림
-        const checkClosed = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(checkClosed)
-            reject(new Error('로그인이 취소되었습니다'))
-          }
-        }, 1000)
-
-        // 메시지 리스너로 결과 받기
-        const messageListener = (event: MessageEvent) => {
-          if (event.origin !== window.location.origin) return
-
-          if (event.data.type === 'SUPABASE_AUTH_SUCCESS') {
-            clearInterval(checkClosed)
-            window.removeEventListener('message', messageListener)
-            popup.close()
-            resolve(event.data.result)
-          } else if (event.data.type === 'SUPABASE_AUTH_ERROR') {
-            clearInterval(checkClosed)
-            window.removeEventListener('message', messageListener)
-            popup.close()
-            reject(new Error(event.data.error || 'OAuth 로그인에 실패했습니다'))
-          }
-        }
-
-        window.addEventListener('message', messageListener)
-      })
+      // 직접 리다이렉트 방식으로 OAuth 진행 (팝업 제거)
+      window.location.href = data.url
+      
+      // 리다이렉트되므로 Promise는 resolve되지 않음
+      return new Promise(() => {})
 
     } catch (error) {
       console.error('❌ Supabase Kakao OAuth 실패:', error)
@@ -170,21 +118,28 @@ export class SupabaseOAuthService {
   // OAuth 콜백 처리 (콜백 페이지에서 호출)
   static async handleOAuthCallback(): Promise<{ user: OAuthUser; token: string }> {
     try {
-      console.log('🔥 Supabase OAuth 콜백 처리 시작...')
+      this.saveLog('🔥 Supabase OAuth 콜백 처리 시작...')
       
       const { data, error } = await supabase.auth.getSession()
       
       if (error) {
-        console.error('❌ 세션 가져오기 실패:', error)
+        this.saveLog('❌ 세션 가져오기 실패:', error)
         throw new Error(`인증 처리에 실패했습니다: ${error.message}`)
       }
 
       if (!data.session) {
+        this.saveLog('❌ 인증 세션을 찾을 수 없습니다')
         throw new Error('인증 세션을 찾을 수 없습니다')
       }
 
       const supabaseUser = data.session.user
-      console.log('✅ Supabase 사용자 정보:', supabaseUser)
+      this.saveLog('✅ Supabase 사용자 정보:', supabaseUser)
+      this.saveLog('🔍 Supabase 사용자 메타데이터:', {
+        user_metadata: supabaseUser.user_metadata,
+        app_metadata: supabaseUser.app_metadata,
+        email: supabaseUser.email,
+        id: supabaseUser.id
+      })
 
       // OAuth 사용자 정보 변환
       const oauthUser: OAuthUser = {
@@ -194,12 +149,28 @@ export class SupabaseOAuthService {
         avatar_url: supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture,
         provider: supabaseUser.app_metadata?.provider as 'google' | 'kakao' || 'google'
       }
+      
+      this.saveLog('🔄 변환된 OAuth 사용자 정보:', oauthUser)
 
       // 로컬 데이터베이스에 사용자 정보 저장/업데이트
-      await this.syncUserToLocalDatabase(oauthUser)
+      this.saveLog('🔄 1단계: 사용자 정보 동기화 시작...', oauthUser)
+      try {
+        await this.syncUserToLocalDatabase(oauthUser)
+        this.saveLog('✅ 1단계: 사용자 정보 동기화 완료')
+      } catch (syncError) {
+        this.saveLog('❌ 1단계: 사용자 정보 동기화 실패:', syncError)
+        throw syncError
+      }
+      
+      // users 테이블에서 사용자 정보 검증
+      this.saveLog('🔄 2단계: 사용자 정보 검증 시작...')
+      await this.validateUserInDatabase(oauthUser)
+      this.saveLog('✅ 2단계: 사용자 정보 검증 완료')
       
       // 사용자 프로필이 없으면 생성
+      this.saveLog('🔄 3단계: 사용자 프로필 확인/생성 시작...')
       await this.ensureUserProfile(oauthUser)
+      this.saveLog('✅ 3단계: 사용자 프로필 확인/생성 완료')
 
       // 토큰 생성
       const token = this.generateToken({
@@ -223,49 +194,104 @@ export class SupabaseOAuthService {
   // 로컬 데이터베이스에 사용자 정보 동기화
   private static async syncUserToLocalDatabase(oauthUser: OAuthUser): Promise<void> {
     try {
-      console.log('🔄 로컬 데이터베이스에 사용자 정보 동기화 중...', oauthUser)
+      this.saveLog('🔄 로컬 데이터베이스에 사용자 정보 동기화 중...', oauthUser)
 
-      // 기존 사용자 확인
+      // 기존 사용자 확인 (email로 검색)
+      this.saveLog('🔍 기존 사용자 목록 조회 중...')
       const existingUsersResponse = await (dataService.entities as any).users.list()
+      this.saveLog('📋 기존 사용자 목록 응답:', existingUsersResponse)
+      
       const existingUsers = Array.isArray(existingUsersResponse) ? existingUsersResponse : []
+      this.saveLog('📊 기존 사용자 수:', existingUsers.length)
+      
       const existingUser = existingUsers.find((u: any) => u.email === oauthUser.email)
+      this.saveLog('🔍 기존 사용자 검색 결과:', existingUser)
 
       if (existingUser) {
         // 기존 사용자 업데이트
         console.log('✅ 기존 사용자 업데이트:', existingUser)
-        await (dataService.entities as any).users.update(existingUser.id || existingUser._id, {
-          [`${oauthUser.provider}_id`]: oauthUser.id,
-          profile_image: oauthUser.avatar_url,
-          updated_at: new Date().toISOString()
-        })
-      } else {
-        // 새 사용자 생성
-        const newUser = {
-          user_id: oauthUser.id,
-          email: oauthUser.email,
-          name: oauthUser.name,
-          [`${oauthUser.provider}_id`]: oauthUser.id,
-          profile_image: oauthUser.avatar_url,
-          is_verified: true,
-          total_points: 0,
-          available_points: 0,
-          used_points: 0,
-          pending_points: 0,
-          login_count: 0,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+        const updateData: any = {
+          // updated_at은 Supabase에서 자동으로 처리됨
+        }
+        
+        // Google ID 업데이트 (Google 로그인인 경우)
+        if (oauthUser.provider === 'google') {
+          updateData.google_id = oauthUser.id
+        }
+        
+        // 프로필 이미지 업데이트
+        if (oauthUser.avatar_url) {
+          updateData.profile_image_url = oauthUser.avatar_url
+        }
+        
+        // 이름 업데이트 (기존 이름이 없거나 비어있는 경우)
+        if (!existingUser.name && oauthUser.name) {
+          updateData.name = oauthUser.name
         }
 
-        console.log('📝 새 사용자 생성:', newUser)
-        await (dataService.entities as any).users.create(newUser)
+        await (dataService.entities as any).users.update(existingUser.id, updateData)
+        console.log('✅ 기존 사용자 업데이트 완료')
+      } else {
+        // 새 사용자 생성 (Supabase users 테이블 스키마에 맞게)
+        const newUser = {
+          user_id: oauthUser.id, // Supabase auth.users.id와 동일
+          email: oauthUser.email,
+          name: oauthUser.name || null, // name이 비어있으면 null로 설정
+          phone: null, // OAuth에서는 전화번호를 받지 않음
+          google_id: oauthUser.provider === 'google' ? oauthUser.id : null,
+          profile_image_url: oauthUser.avatar_url || null,
+          is_active: true
+          // created_at, updated_at은 Supabase에서 자동으로 처리됨
+        }
+
+        this.saveLog('📝 새 사용자 생성 데이터:', newUser)
+        this.saveLog('🚀 users.create 호출 시작...')
+        
+        try {
+          this.saveLog('🚀 users.create 직접 호출 시작...')
+          
+          // dataService를 통한 시도
+          try {
+            const createResult = await (dataService.entities as any).users.create(newUser)
+            this.saveLog('✅ dataService users.create 결과:', createResult)
+            
+            if (!createResult || !createResult.success) {
+              this.saveLog('❌ dataService 사용자 생성 실패:', createResult)
+              throw new Error(createResult?.message || 'dataService 사용자 생성에 실패했습니다')
+            }
+            
+            this.saveLog('🎉 dataService 사용자 생성 성공! 생성된 데이터:', createResult.data)
+          } catch (dataServiceError: any) {
+            this.saveLog('❌ dataService 실패, 직접 Supabase 시도:', dataServiceError)
+            
+            // dataService 실패 시 직접 Supabase 호출
+            const { data: directResult, error: directError } = await supabase
+              .from('users')
+              .insert([newUser])
+              .select()
+            
+            if (directError) {
+              this.saveLog('❌ 직접 Supabase 사용자 생성 실패:', directError)
+              throw new Error(`직접 Supabase 사용자 생성 실패: ${directError.message}`)
+            }
+            
+            this.saveLog('🎉 직접 Supabase 사용자 생성 성공! 생성된 데이터:', directResult)
+          }
+          
+        } catch (createError: any) {
+          this.saveLog('❌ users.create 최종 실패:', createError)
+          this.saveLog('❌ 에러 타입:', typeof createError)
+          this.saveLog('❌ 에러 메시지:', createError?.message)
+          this.saveLog('❌ 에러 스택:', createError?.stack)
+          throw createError
+        }
 
         // 사용자 프로필 생성
         await (dataService.entities as any).user_profiles.create({
           user_id: oauthUser.id,
           name: oauthUser.name,
           email: oauthUser.email,
-          profile_image: oauthUser.avatar_url,
+          profile_image: oauthUser.avatar_url || '',
           total_points: 0,
           available_points: 0,
           used_points: 0,
@@ -310,6 +336,52 @@ export class SupabaseOAuthService {
     } catch (error) {
       console.error('토큰 생성 실패:', error)
       return `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    }
+  }
+
+  // users 테이블에서 사용자 정보 검증
+  private static async validateUserInDatabase(oauthUser: OAuthUser): Promise<void> {
+    try {
+      this.saveLog('🔍 users 테이블에서 사용자 정보 검증 중...', oauthUser)
+
+      // users 테이블에서 사용자 확인
+      this.saveLog('🔄 users.list() 호출 중...')
+      const usersResponse = await (dataService.entities as any).users.list()
+      this.saveLog('📋 users.list() 응답:', usersResponse)
+      
+      const users = Array.isArray(usersResponse) ? usersResponse : []
+      this.saveLog('📊 전체 사용자 수:', users.length)
+      this.saveLog('📋 전체 사용자 목록:', users)
+      
+      const dbUser = users.find((u: any) => u.user_id === oauthUser.id || u.email === oauthUser.email)
+      this.saveLog('🔍 검색된 사용자:', dbUser)
+
+      if (!dbUser) {
+        this.saveLog('❌ users 테이블에서 사용자를 찾을 수 없음:', { 
+          oauthUserId: oauthUser.id, 
+          oauthUserEmail: oauthUser.email,
+          searchCriteria: {
+            byUserId: users.find((u: any) => u.user_id === oauthUser.id),
+            byEmail: users.find((u: any) => u.email === oauthUser.email)
+          }
+        })
+        throw new Error('사용자 정보가 데이터베이스에 저장되지 않았습니다. 다시 로그인해주세요.')
+      }
+
+      this.saveLog('✅ users 테이블에서 사용자 확인됨:', dbUser)
+      
+      // 사용자 정보가 올바른지 검증
+      if (dbUser.email !== oauthUser.email) {
+        this.saveLog('⚠️ 이메일 불일치:', { dbEmail: dbUser.email, oauthEmail: oauthUser.email })
+      }
+
+      if (oauthUser.provider === 'google' && dbUser.google_id !== oauthUser.id) {
+        this.saveLog('⚠️ Google ID 불일치:', { dbGoogleId: dbUser.google_id, oauthId: oauthUser.id })
+      }
+
+    } catch (error) {
+      this.saveLog('❌ 사용자 정보 검증 실패:', error)
+      throw error
     }
   }
 
@@ -389,6 +461,154 @@ export class SupabaseOAuthService {
     } catch (error) {
       console.error('❌ 세션 확인 실패:', error)
       return null
+    }
+  }
+
+  // 저장된 로그 확인
+  static getStoredLogs(): any[] {
+    try {
+      return JSON.parse(localStorage.getItem('oauth_logs') || '[]')
+    } catch (error) {
+      console.error('로그 조회 실패:', error)
+      return []
+    }
+  }
+
+  // 세션 로그 확인 (페이지 리다이렉트 후에도 유지)
+  static getSessionLogs(): any[] {
+    try {
+      return JSON.parse(sessionStorage.getItem('oauth_session_logs') || '[]')
+    } catch (error) {
+      console.error('세션 로그 조회 실패:', error)
+      return []
+    }
+  }
+
+  // 저장된 로그 삭제
+  static clearStoredLogs(): void {
+    localStorage.removeItem('oauth_logs')
+    sessionStorage.removeItem('oauth_session_logs')
+  }
+
+  // 디버깅용: 현재 저장된 모든 로그 출력
+  static debugLogs(): void {
+    console.log('=== OAuth 로그 디버깅 ===')
+    console.log('localStorage 로그:', this.getStoredLogs())
+    console.log('sessionStorage 로그:', this.getSessionLogs())
+    console.log('========================')
+  }
+
+  // 디버깅용: users 테이블 직접 테스트
+  static async testUsersTable(): Promise<void> {
+    try {
+      console.log('🧪 users 테이블 테스트 시작...')
+      
+      // 1. 현재 users 테이블 상태 확인
+      const { data: existingUsers, error: listError } = await supabase
+        .from('users')
+        .select('*')
+      
+      if (listError) {
+        console.error('❌ users 테이블 조회 실패:', listError)
+        return
+      }
+      
+      console.log('📋 현재 users 테이블 데이터:', existingUsers)
+      
+      // 2. 테스트 데이터 삽입 시도
+      const testUser = {
+        user_id: `test_${Date.now()}`,
+        email: `test_${Date.now()}@example.com`,
+        name: '테스트 사용자',
+        phone: null,
+        google_id: null,
+        profile_image_url: null,
+        is_active: true
+      }
+      
+      console.log('📝 테스트 데이터 삽입 시도:', testUser)
+      
+      const { data: insertResult, error: insertError } = await supabase
+        .from('users')
+        .insert([testUser])
+        .select()
+      
+      if (insertError) {
+        console.error('❌ users 테이블 삽입 실패:', insertError)
+        console.error('❌ 에러 상세:', {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code
+        })
+      } else {
+        console.log('✅ users 테이블 삽입 성공:', insertResult)
+        
+        // 3. 삽입된 데이터 삭제 (정리)
+        if (insertResult && insertResult.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', insertResult[0].id)
+          
+          if (deleteError) {
+            console.error('❌ 테스트 데이터 삭제 실패:', deleteError)
+          } else {
+            console.log('✅ 테스트 데이터 삭제 완료')
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ users 테이블 테스트 실패:', error)
+    }
+  }
+
+  // 디버깅용: dataService vs 직접 Supabase 비교 테스트
+  static async compareDataServiceVsDirect(): Promise<void> {
+    try {
+      console.log('🔍 dataService vs 직접 Supabase 비교 테스트 시작...')
+      
+      const testUser = {
+        user_id: `compare_${Date.now()}`,
+        email: `compare_${Date.now()}@example.com`,
+        name: '비교 테스트 사용자',
+        phone: null,
+        google_id: null,
+        profile_image_url: null,
+        is_active: true
+      }
+      
+      console.log('📝 테스트 데이터:', testUser)
+      
+      // 1. dataService를 통한 삽입
+      console.log('🔄 1단계: dataService.entities.users.create 테스트...')
+      try {
+        const dataServiceResult = await (dataService.entities as any).users.create(testUser)
+        console.log('✅ dataService 결과:', dataServiceResult)
+      } catch (dataServiceError) {
+        console.error('❌ dataService 실패:', dataServiceError)
+      }
+      
+      // 2. 직접 Supabase를 통한 삽입
+      console.log('🔄 2단계: 직접 Supabase 테스트...')
+      try {
+        const { data: directResult, error: directError } = await supabase
+          .from('users')
+          .insert([{...testUser, user_id: `direct_${Date.now()}`}])
+          .select()
+        
+        if (directError) {
+          console.error('❌ 직접 Supabase 실패:', directError)
+        } else {
+          console.log('✅ 직접 Supabase 성공:', directResult)
+        }
+      } catch (directException) {
+        console.error('❌ 직접 Supabase 예외:', directException)
+      }
+      
+    } catch (error) {
+      console.error('❌ 비교 테스트 실패:', error)
     }
   }
 }

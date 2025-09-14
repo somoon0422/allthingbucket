@@ -3,14 +3,12 @@ import { SupabaseOAuthService } from '../services/supabaseOAuthService'
 import toast from 'react-hot-toast'
 
 interface KakaoLoginButtonProps {
-  onSuccess?: (user: any, token: string) => void
   onError?: (error: string) => void
   className?: string
   children?: React.ReactNode
 }
 
 export const KakaoLoginButton: React.FC<KakaoLoginButtonProps> = ({
-  onSuccess,
   onError,
   className = '',
   children
@@ -19,20 +17,8 @@ export const KakaoLoginButton: React.FC<KakaoLoginButtonProps> = ({
     try {
       console.log('🔥 Supabase Kakao OAuth 로그인 시작...')
       
-      const result = await SupabaseOAuthService.signInWithKakao()
-      
-      console.log('✅ Kakao OAuth 로그인 성공:', result)
-      
-      // 토큰을 localStorage에 저장
-      localStorage.setItem('auth_token', result.token)
-      
-      // 성공 시 콜백 호출
-      onSuccess?.(result.user, result.token)
-      
-      // 홈화면으로 이동
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 1000)
+      // 직접 리다이렉트 방식이므로 Promise는 resolve되지 않음
+      await SupabaseOAuthService.signInWithKakao()
       
     } catch (error: any) {
       console.error('❌ Kakao OAuth 로그인 실패:', error)

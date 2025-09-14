@@ -106,13 +106,17 @@ function safeObject(obj: any, field: string): any {
 
 const MyApplications: React.FC = () => {
   const navigate = useNavigate()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
   const { getUserApplications, cancelApplication } = useExperiences()
   
   const [applications, setApplications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedApplication, setSelectedApplication] = useState<any>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  
+  // 포인트 지급 요청 모달 상태
+  const [showPointRequestModal, setShowPointRequestModal] = useState(false)
+  const [selectedPointApplication, setSelectedPointApplication] = useState<any>(null)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [statusFilter, setStatusFilter] = useState('all')
@@ -156,7 +160,13 @@ const MyApplications: React.FC = () => {
 
   // 🔥 컴포넌트 마운트 시 실행
   useEffect(() => {
-    console.log('🔄 useEffect 실행:', { isAuthenticated, userId: user?.user_id })
+    console.log('🔄 useEffect 실행:', { isAuthenticated, userId: user?.user_id, authLoading })
+    
+    // 인증 체크가 완료될 때까지 기다림
+    if (authLoading) {
+      console.log('⏳ 인증 체크 중...')
+      return
+    }
     
     if (isAuthenticated && user?.user_id) {
       loadApplications()
@@ -165,7 +175,7 @@ const MyApplications: React.FC = () => {
       setApplications([]) // 안전한 초기화
       setLoading(false)
     }
-  }, [isAuthenticated, user?.user_id, loadApplications])
+  }, [isAuthenticated, user?.user_id, authLoading, loadApplications])
 
   // 🔥 자동 새로고침 (30초마다)
   useEffect(() => {
@@ -229,16 +239,28 @@ const MyApplications: React.FC = () => {
           color: 'bg-blue-100 text-blue-800',
           icon: CheckCircle
         }
-      case 'review_submitted':
+      case 'review_in_progress':
         return {
           label: '리뷰 검수중',
-          color: 'bg-purple-100 text-purple-800',
+          color: 'bg-blue-100 text-blue-800',
           icon: FileText
         }
       case 'review_completed':
         return {
           label: '리뷰 승인완료',
-          color: 'bg-blue-100 text-blue-800',
+          color: 'bg-green-100 text-green-800',
+          icon: CheckCircle
+        }
+      case 'point_requested':
+        return {
+          label: '포인트 지급 대기중',
+          color: 'bg-orange-100 text-orange-800',
+          icon: Coins
+        }
+      case 'point_completed':
+        return {
+          label: '포인트 지급 완료',
+          color: 'bg-emerald-100 text-emerald-800',
           icon: CheckCircle
         }
       case 'point_pending':
@@ -311,35 +333,6 @@ const MyApplications: React.FC = () => {
     }
   }
 
-  // 🔥 포인트 지급 요청
-  const handlePointRequest = async (application: any) => {
-    try {
-      const applicationId = (application as any)._id || (application as any).id
-      if (!applicationId) {
-        toast.error('신청 정보를 찾을 수 없습니다')
-        return
-      }
-
-      // 신청 상태를 "포인트 지급 전"으로 변경
-      await (dataService.entities as any).user_applications.update(applicationId, {
-        status: 'point_pending',
-        point_requested_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-
-      toast.success('포인트 지급 요청이 완료되었습니다. 관리자 검토 후 포인트가 지급됩니다.')
-
-      // 데이터 새로고침
-      const userApplications = await getUserApplications(user?.user_id, user, true)
-      const finalApplications = ultraSafeArray(userApplications)
-      setApplications(finalApplications)
-      setLastRefresh(new Date())
-
-    } catch (error) {
-      console.error('포인트 지급 요청 실패:', error)
-      toast.error('포인트 지급 요청에 실패했습니다')
-    }
-  }
 
   const handleViewDetail = (application: any) => {
     try {
@@ -437,6 +430,142 @@ const MyApplications: React.FC = () => {
     }
   }
 
+  // 포인트 지급 요청 모달 열기
+  const handleRequestPoints = (application: any) => {
+    console.log('🔍 포인트 지급 요청 모달 열기 - 신청 데이터:', application)
+    console.log('🔍 experience 데이터:', application.experience)
+    console.log('🔍 campaignInfo 데이터:', application.campaignInfo)
+    
+    setSelectedPointApplication(application)
+    setShowPointRequestModal(true)
+  }
+
+  // 포인트 지급 요청 최종 처리
+  const handleConfirmPointRequest = async () => {
+    if (!selectedPointApplication) return
+    
+    try {
+      console.log('포인트 지급 요청 시작:', selectedPointApplication)
+      
+      const applicationId = selectedPointApplication.id || selectedPointApplication._id
+      if (!applicationId) {
+        toast.error('신청 ID를 찾을 수 없습니다')
+        return
+      }
+
+      // 1. user_applications 테이블 상태 업데이트 (point_requested)
+      try {
+        const updateResult = await (dataService.entities as any).user_applications.update(applicationId, {
+          status: 'point_requested',
+          updated_at: new Date().toISOString()
+        })
+        console.log('✅ user_applications 상태 업데이트 완료: point_requested', updateResult)
+      } catch (appUpdateError: any) {
+        console.error('❌ user_applications 상태 업데이트 실패:', appUpdateError)
+        console.error('에러 상세:', {
+          message: appUpdateError.message,
+          details: appUpdateError.details,
+          hint: appUpdateError.hint,
+          code: appUpdateError.code
+        })
+        toast.error('신청 상태 업데이트에 실패했습니다.')
+        return
+      }
+
+      // 2. points_history 테이블에 요청 기록 추가
+      try {
+        const pointAmount = selectedPointApplication.experience?.rewards || 
+                          selectedPointApplication.experience?.reward_points || 
+                          selectedPointApplication.campaignInfo?.rewards ||
+                          selectedPointApplication.campaignInfo?.point_reward || 
+                          selectedPointApplication.point_reward || 
+                          0
+        
+        const pointsData = {
+          user_id: selectedPointApplication.user_id || user?.user_id,
+          campaign_id: selectedPointApplication.campaign_id || selectedPointApplication.experience_id,
+          points_amount: pointAmount,
+          points_type: 'pending',
+          status: 'pending',
+          payment_status: '지급대기중', // 포인트 지급 상태 명시
+          description: `캠페인 "${selectedPointApplication.experience_name || selectedPointApplication.campaign_name}" 포인트 지급 요청`,
+          transaction_date: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        }
+        
+        console.log('📝 points_history 생성 데이터:', pointsData)
+        const pointsResult = await (dataService.entities as any).points_history.create(pointsData)
+        console.log('✅ points_history 요청 기록 추가 완료', pointsResult)
+      } catch (pointsError: any) {
+        console.error('❌ points_history 요청 기록 추가 실패:', pointsError)
+        console.error('에러 상세:', {
+          message: pointsError.message,
+          details: pointsError.details,
+          hint: pointsError.hint,
+          code: pointsError.code
+        })
+        toast.error('포인트 기록 추가에 실패했습니다.')
+        return
+      }
+
+      // 3. 관리자에게 포인트 지급 요청 알림 생성
+      try {
+        const notificationData = {
+          type: 'point_request',
+          title: '포인트 지급 요청',
+          message: `${selectedPointApplication.name || user?.name || '사용자'}님이 포인트 지급을 요청했습니다.`,
+          data: {
+            application_id: applicationId,
+            user_name: selectedPointApplication.name || user?.name,
+            user_email: selectedPointApplication.email || user?.email,
+            campaign_name: selectedPointApplication.experience_name || selectedPointApplication.campaign_name,
+            point_amount: selectedPointApplication.experience?.rewards || 
+                         selectedPointApplication.experience?.reward_points || 
+                         selectedPointApplication.campaignInfo?.rewards ||
+                         selectedPointApplication.campaignInfo?.point_reward || 
+                         selectedPointApplication.point_reward || 
+                         0
+          },
+          read: false,
+          created_at: new Date().toISOString()
+        }
+        
+        console.log('📝 admin_notifications 생성 데이터:', notificationData)
+        const notificationResult = await (dataService.entities as any).admin_notifications.create(notificationData)
+        console.log('✅ 관리자 알림 생성 완료: 포인트 지급 요청', notificationResult)
+      } catch (notificationError: any) {
+        console.error('❌ 관리자 알림 생성 실패:', notificationError)
+        console.error('에러 상세:', {
+          message: notificationError.message,
+          details: notificationError.details,
+          hint: notificationError.hint,
+          code: notificationError.code
+        })
+        toast.error('관리자 알림 생성에 실패했습니다.')
+        return
+      }
+      
+      toast.success('포인트 지급 요청이 전송되었습니다.')
+      setShowPointRequestModal(false)
+      setSelectedPointApplication(null)
+      
+      // 신청 내역 새로고침
+      setTimeout(async () => {
+        try {
+          const userApplications = await getUserApplications(user?.user_id, user, true)
+          const finalApplications = ultraSafeArray(userApplications)
+          setApplications(finalApplications)
+          setLastRefresh(new Date())
+        } catch (error) {
+          console.error('신청 내역 새로고침 실패:', error)
+        }
+      }, 1000)
+    } catch (error) {
+      console.error('포인트 지급 요청 실패:', error)
+      toast.error('포인트 지급 요청에 실패했습니다.')
+    }
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -449,7 +578,7 @@ const MyApplications: React.FC = () => {
     )
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -462,16 +591,16 @@ const MyApplications: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
         {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">내 신청 내역</h1>
-              <p className="mt-2 text-gray-600">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">내 신청 내역</h1>
+              <p className="mt-2 text-sm sm:text-base text-gray-600">
                 체험단 신청 현황을 확인하고 관리하세요
               </p>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">
                 마지막 업데이트: {lastRefresh.toLocaleTimeString('ko-KR')}
               </p>
             </div>
@@ -492,22 +621,23 @@ const MyApplications: React.FC = () => {
                 }
               }}
               disabled={loading}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>새로고침</span>
+              <span className="hidden sm:inline">새로고침</span>
+              <span className="sm:hidden">새로고침</span>
             </button>
           </div>
         </div>
 
         {/* 필터 */}
-        <div className="mb-6 flex items-center space-x-4">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <div className="flex items-center">
-            <Filter className="w-5 h-5 text-gray-400 mr-2" />
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mr-2" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
               <option value="all">전체 상태</option>
               <option value="pending">검토중</option>
@@ -516,7 +646,7 @@ const MyApplications: React.FC = () => {
             </select>
           </div>
           
-          <div className="text-sm text-gray-600">
+          <div className="text-xs sm:text-sm text-gray-600">
             총 {filteredApplications.length}개 신청
           </div>
         </div>
@@ -563,7 +693,7 @@ const MyApplications: React.FC = () => {
                   safeString(application, 'experience_name', '체험단 정보 없음')
                 
                 const brandName = experienceData ? safeString(experienceData, 'brand_name') : ''
-                const rewardPoints = experienceData ? (experienceData.rewards || experienceData.reward_points || 0) : 0
+                const rewardPoints = experienceData ? (experienceData.rewards || experienceData.reward_points || experienceData.point_reward || 0) : 0
                 const imageUrl = experienceData ? safeString(experienceData, 'main_image_url') || safeString(experienceData, 'image_url') : ''
                 
                 const appliedAt = safeString(application, 'applied_at') || safeString(application, 'created_at')
@@ -658,32 +788,35 @@ const MyApplications: React.FC = () => {
                       </div>
                       
                       {/* 액션 버튼들 */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex space-x-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-100 gap-3">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => handleViewDetail(application)}
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                           >
-                            <Eye className="w-4 h-4 mr-2" />
-                            상세보기
+                            <Eye className="w-4 h-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">상세보기</span>
+                            <span className="sm:hidden">상세</span>
                           </button>
                           
                           <button
                             onClick={() => handleViewCampaign(application)}
-                            className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                            className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                           >
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            체험단 보기
+                            <ExternalLink className="w-4 h-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">체험단 보기</span>
+                            <span className="sm:hidden">체험단</span>
                           </button>
 
                           {/* 🔥 포인트 지급 신청 버튼 (리뷰 승인완료된 경우) */}
                           {status === 'review_completed' && (
                             <button
-                              onClick={() => handlePointRequest(application)}
-                              className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors"
+                              onClick={() => handleRequestPoints(application)}
+                              className="inline-flex items-center px-3 py-2 bg-yellow-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors"
                             >
-                              <Gift className="w-4 h-4 mr-2" />
-                              포인트 지급 신청
+                              <Gift className="w-4 h-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">포인트 지급 신청</span>
+                              <span className="sm:hidden">포인트</span>
                             </button>
                           )}
 
@@ -691,23 +824,26 @@ const MyApplications: React.FC = () => {
                           {status === 'approved' && (
                             <button
                               onClick={() => handleWriteReview(application)}
-                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                              className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                             >
-                              <FileText className="w-4 h-4 mr-2" />
-                              리뷰 작성하기
+                              <FileText className="w-4 h-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">리뷰 작성하기</span>
+                              <span className="sm:hidden">리뷰</span>
                             </button>
                           )}
 
                           {/* 🔥 리뷰 수정 버튼 (리뷰 제출된 경우만) */}
-                          {status === 'review_submitted' && (
+                          {status === 'review_in_progress' && (
                             <button
                               onClick={() => handleWriteReview(application)}
-                              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                              className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
                             >
-                              <Edit3 className="w-4 h-4 mr-2" />
-                              리뷰 수정하기
+                              <Edit3 className="w-4 h-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">리뷰 수정하기</span>
+                              <span className="sm:hidden">수정</span>
                             </button>
                           )}
+
 
                         </div>
                         
@@ -715,10 +851,11 @@ const MyApplications: React.FC = () => {
                         {status === 'pending' && (
                           <button
                             onClick={() => handleCancelClick(application)}
-                            className="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-lg hover:bg-red-200 transition-colors"
+                            className="inline-flex items-center px-3 py-2 bg-red-100 text-red-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-red-200 transition-colors"
                           >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            신청 취소
+                            <Trash2 className="w-4 h-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">신청 취소</span>
+                            <span className="sm:hidden">취소</span>
                           </button>
                         )}
                       </div>
@@ -967,6 +1104,59 @@ const MyApplications: React.FC = () => {
           experienceId={selectedApplication.campaign_id || selectedApplication.experience_id || ''}
           experienceName={selectedApplication.experience?.campaign_name || selectedApplication.experience?.product_name || selectedApplication.experience_name || ''}
         />
+      )}
+
+      {/* 포인트 지급 요청 모달 */}
+      {showPointRequestModal && selectedPointApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <Coins className="w-6 h-6 text-orange-500 mr-3" />
+                <h3 className="text-lg font-semibold text-gray-900">포인트 지급 요청</h3>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  <strong>캠페인:</strong> {selectedPointApplication.experience_name || '캠페인명 없음'}
+                </p>
+                <p className="text-sm text-gray-600 mb-4">
+                  <strong>예상 포인트:</strong> {
+                    selectedPointApplication.experience?.rewards || 
+                    selectedPointApplication.experience?.reward_points || 
+                    selectedPointApplication.campaignInfo?.rewards ||
+                    selectedPointApplication.campaignInfo?.point_reward || 
+                    selectedPointApplication.point_reward || 
+                    0
+                  }P
+                </p>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <p className="text-sm text-orange-800">
+                    리뷰가 승인되었습니다. 포인트 지급을 요청하시겠습니까?
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleConfirmPointRequest}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  요청하기
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPointRequestModal(false)
+                    setSelectedPointApplication(null)
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

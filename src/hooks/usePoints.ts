@@ -7,8 +7,10 @@ import { ultraSafeArray } from '../utils/arrayUtils'
 interface PointsHistory {
   _id: string
   user_id: string
-  points: number
-  type: string
+  points_amount: number
+  points_type: string
+  status: string
+  payment_status?: string
   description: string
   created_at: string
 }
@@ -20,17 +22,23 @@ interface UserPoints {
   available_points: number
   withdrawn_points: number
   pending_points: number
+  experience_count?: number
 }
 
 // Entity를 UserPoints 타입으로 변환
 function convertToUserPoints(entity: any): UserPoints {
+  console.log('🔍 convertToUserPoints - 입력 엔티티:', entity)
+  console.log('🔍 convertToUserPoints - 엔티티의 모든 키:', Object.keys(entity || {}))
+  
+  // 🔥 실제 Supabase 테이블 컬럼명에 맞게 매핑
   return {
     _id: entity._id || entity.id || '',
     user_id: entity.user_id || '',
-    total_points: entity.total_points || 0,
-    available_points: entity.available_points || 0,
-    withdrawn_points: entity.withdrawn_points || 0,
-    pending_points: entity.pending_points || 0
+    total_points: entity.earned_points || entity.points || 0, // earned_points가 총 적립 포인트
+    available_points: entity.points || 0, // points가 사용 가능한 포인트
+    withdrawn_points: entity.used_points || 0, // used_points가 출금된 포인트
+    pending_points: 0, // pending_points는 별도 컬럼이 없으므로 0
+    experience_count: entity.experience_count || 0
   }
 }
 
@@ -39,8 +47,10 @@ function convertToPointsHistory(entity: any): PointsHistory {
   return {
     _id: entity._id || entity.id || '',
     user_id: entity.user_id || '',
-    points: entity.points || 0,
-    type: entity.type || '',
+    points_amount: entity.points_amount || entity.points || 0,
+    points_type: entity.points_type || entity.type || '',
+    status: entity.status || 'pending',
+    payment_status: entity.payment_status,
     description: entity.description || '',
     created_at: entity.created_at || new Date().toISOString()
   }
@@ -56,33 +66,119 @@ export const usePoints = () => {
       setLoading(true)
       console.log('💰 사용자 포인트 조회:', userId)
       
-      const response = await (dataService.entities as any).user_points.list({
-        filter: { user_id: userId }
-      })
+      // user_points와 user_profiles를 병렬로 조회 (필터링 없이 전체 조회 후 클라이언트에서 필터링)
+      const [pointsResponse, profileResponse] = await Promise.all([
+        (dataService.entities as any).user_points.list(),
+        (dataService.entities as any).user_profiles.list()
+      ])
       
-      const pointsList = ultraSafeArray(response)
+      // 🔍 실제 user_points 테이블 구조 확인
+      if (pointsResponse && pointsResponse.length > 0) {
+        console.log('🔍 실제 user_points 테이블 구조 (첫 번째 레코드):', pointsResponse[0])
+        console.log('🔍 user_points 테이블의 모든 컬럼명:', Object.keys(pointsResponse[0]))
+      } else {
+        console.log('🔍 user_points 테이블이 비어있음 - 테이블 구조를 확인할 수 없음')
+      }
+      
+      const pointsList = ultraSafeArray(pointsResponse)
+      console.log('🔍 전체 user_points 데이터:', pointsList)
+      
       const userPointsData = pointsList
         .filter((points: any) => points && points.user_id === userId)[0] || null
       
+      console.log('🔍 필터링된 user_points 데이터:', userPointsData)
+      
+      const profileList = ultraSafeArray(profileResponse)
+      console.log('🔍 전체 user_profiles 데이터:', profileList)
+      
+      const userProfileData = profileList
+        .filter((profile: any) => profile && profile.user_id === userId)[0] || null
+      
+      console.log('🔍 필터링된 user_profiles 데이터:', userProfileData)
+      
       if (userPointsData) {
         const convertedPoints = convertToUserPoints(userPointsData)
-        setUserPoints(convertedPoints)
-        console.log('✅ 포인트 조회 완료:', convertedPoints.total_points)
-        return convertedPoints
+        
+        // 🔥 포인트 히스토리에서 실제 포인트 금액 계산
+        const pointsHistory = await (dataService.entities as any).points_history.list()
+        const userPointsHistory = pointsHistory.filter((history: any) => 
+          history.user_id === userId && history.status === 'success' && history.payment_status === '지급완료'
+        )
+        
+        const totalEarnedFromHistory = userPointsHistory.reduce((sum: number, history: any) => 
+          sum + (history.points_amount || 0), 0
+        )
+        
+        // 🔥 출금된 포인트 계산 (withdrawal 타입이거나 payment_status가 '출금완료'인 경우)
+        const withdrawalHistory = pointsHistory.filter((history: any) => 
+          history.user_id === userId && (
+            history.points_type === 'withdrawal' || 
+            history.payment_status === '출금완료' ||
+            history.status === 'withdrawn'
+          )
+        )
+        
+        const totalWithdrawnFromHistory = withdrawalHistory.reduce((sum: number, history: any) => 
+          sum + (history.points_amount || 0), 0
+        )
+        
+        console.log('🔍 포인트 히스토리에서 계산된 총 적립 포인트:', totalEarnedFromHistory)
+        console.log('🔍 포인트 히스토리에서 계산된 총 출금 포인트:', totalWithdrawnFromHistory)
+        console.log('🔍 포인트 히스토리 상세:', userPointsHistory)
+        console.log('🔍 출금 히스토리 상세:', withdrawalHistory)
+        
+        // experience_count 추가 (히스토리 기반으로 보정)
+        const calculatedTotalPoints = totalEarnedFromHistory > 0 ? totalEarnedFromHistory : convertedPoints.total_points
+        const calculatedAvailablePoints = Math.max(0, calculatedTotalPoints - totalWithdrawnFromHistory)
+        
+        const pointsWithExperience: UserPoints = { 
+          ...convertedPoints, 
+          total_points: calculatedTotalPoints,
+          available_points: calculatedAvailablePoints,
+          withdrawn_points: totalWithdrawnFromHistory,
+          experience_count: (userProfileData as any)?.experience_count || userPointsHistory.length || 0
+        }
+        setUserPoints(pointsWithExperience)
+        console.log('✅ 포인트 조회 완료:', pointsWithExperience.total_points, '체험단 참여:', pointsWithExperience.experience_count)
+        return pointsWithExperience
       } else {
         // 포인트 데이터가 없으면 초기 생성
-        const newUserPoints = await (dataService.entities as any).user_points.create({
+        console.log('🔄 초기 포인트 데이터 생성 시도:', userId)
+        // 🔥 실제 컬럼명으로 초기 포인트 생성
+        const createResult = await (dataService.entities as any).user_points.create({
           user_id: userId,
-          total_points: 0,
-          available_points: 0,
-          withdrawn_points: 0,
-          pending_points: 0,
-          created_at: new Date().toISOString()
+          points: 0, // 사용 가능한 포인트
+          earned_points: 0, // 총 적립 포인트
+          used_points: 0 // 출금된 포인트
         })
-        const convertedNewPoints = convertToUserPoints(newUserPoints)
-        setUserPoints(convertedNewPoints)
-        console.log('✅ 초기 포인트 생성:', convertedNewPoints)
-        return convertedNewPoints
+        
+        console.log('🔍 user_points.create 결과:', createResult)
+        
+        if (createResult.success && createResult.data) {
+          const convertedNewPoints = convertToUserPoints(createResult.data)
+          // experience_count 추가
+          const newPointsWithExperience: UserPoints = { 
+            ...convertedNewPoints, 
+            experience_count: (userProfileData as any)?.experience_count || 0 
+          }
+          setUserPoints(newPointsWithExperience)
+          console.log('✅ 초기 포인트 생성 성공:', newPointsWithExperience)
+          return newPointsWithExperience
+        } else {
+          console.error('❌ 초기 포인트 생성 실패:', createResult.message)
+          // 생성 실패 시 기본값 반환
+          const defaultPoints: UserPoints = {
+            _id: '',
+            user_id: userId,
+            total_points: 0,
+            available_points: 0,
+            withdrawn_points: 0,
+            pending_points: 0,
+            experience_count: (userProfileData as any)?.experience_count || 0
+          }
+          setUserPoints(defaultPoints)
+          return defaultPoints
+        }
       }
     } catch (error) {
       console.error('❌ 포인트 조회 실패:', error)
@@ -96,15 +192,23 @@ export const usePoints = () => {
     try {
       console.log('📜 포인트 히스토리 조회:', userId)
       
-      const response = await (dataService.entities as any).points_history.list({
-        filter: { user_id: userId },
-        sort: { created_at: -1 }
-      })
+      const response = await (dataService.entities as any).points_history.list()
+      
+      console.log('🔍 전체 포인트 히스토리 응답:', response)
       
       const historyList = ultraSafeArray(response)
       const userHistory = historyList
         .filter((history: any) => history && history.user_id === userId)
         .map(convertToPointsHistory)
+      
+      console.log('🔍 필터링된 사용자 히스토리:', userHistory)
+      console.log('🔍 각 히스토리 항목의 payment_status:', userHistory.map(h => ({ 
+        id: h._id, 
+        description: h.description, 
+        payment_status: h.payment_status, 
+        status: h.status,
+        points_amount: h.points_amount 
+      })))
       
       setPointsHistory(userHistory)
       console.log('✅ 히스토리 조회 완료:', userHistory.length, '건')
@@ -124,23 +228,30 @@ export const usePoints = () => {
       // 포인트 히스토리 추가
       await (dataService.entities as any).points_history.create({
         user_id: userId,
-        points: points,
-        type: type,
+        points_amount: points,
+        points_type: type,
+        status: 'success',
+        payment_status: '지급완료',
         description: description,
+        transaction_date: new Date().toISOString(),
         created_at: new Date().toISOString()
       })
       
-      // 사용자 포인트 업데이트
+      // 사용자 포인트 업데이트 (실제 컬럼명 사용)
       const currentPoints = await fetchUserPoints(userId)
       if (currentPoints) {
         const updatedPoints = {
-          total_points: (currentPoints.total_points || 0) + points,
-          available_points: (currentPoints.available_points || 0) + points,
+          points: (currentPoints.available_points || 0) + points, // 사용 가능한 포인트 증가
+          earned_points: (currentPoints.total_points || 0) + points, // 총 적립 포인트 증가
           updated_at: new Date().toISOString()
         }
         
         await (dataService.entities as any).user_points.update(currentPoints._id, updatedPoints)
-        setUserPoints(prev => prev ? { ...prev, ...updatedPoints } : null)
+        setUserPoints(prev => prev ? { 
+          ...prev, 
+          total_points: (prev.total_points || 0) + points,
+          available_points: (prev.available_points || 0) + points
+        } : null)
       }
       
       console.log('✅ 포인트 추가 완료:', points)
@@ -159,7 +270,7 @@ export const usePoints = () => {
       console.log('➖ 포인트 차감:', { userId, points, description, type })
       
       const currentPoints = await fetchUserPoints(userId)
-      if (!currentPoints || currentPoints.available_points < points) {
+      if (!currentPoints || (currentPoints.available_points || currentPoints.total_points) < points) {
         toast.error('사용 가능한 포인트가 부족합니다')
         return false
       }
@@ -167,21 +278,28 @@ export const usePoints = () => {
       // 포인트 히스토리 추가
       await (dataService.entities as any).points_history.create({
         user_id: userId,
-        points: -points,
-        type: type,
+        points_amount: -points,
+        points_type: type,
+        status: 'success',
+        payment_status: '출금완료',
         description: description,
+        transaction_date: new Date().toISOString(),
         created_at: new Date().toISOString()
       })
       
-      // 사용자 포인트 업데이트
+      // 사용자 포인트 업데이트 (실제 컬럼명 사용)
       const updatedPoints = {
-        available_points: currentPoints.available_points - points,
-        withdrawn_points: (currentPoints.withdrawn_points || 0) + points,
+        points: (currentPoints.available_points || 0) - points, // 사용 가능한 포인트 감소
+        used_points: (currentPoints.withdrawn_points || 0) + points, // 출금된 포인트 증가
         updated_at: new Date().toISOString()
       }
       
       await (dataService.entities as any).user_points.update(currentPoints._id, updatedPoints)
-      setUserPoints(prev => prev ? { ...prev, ...updatedPoints } : null)
+      setUserPoints(prev => prev ? { 
+        ...prev, 
+        available_points: (prev.available_points || 0) - points,
+        withdrawn_points: (prev.withdrawn_points || 0) + points
+      } : null)
       
       console.log('✅ 포인트 차감 완료:', points)
       toast.success(`${points} 포인트가 차감되었습니다`)
@@ -194,6 +312,19 @@ export const usePoints = () => {
     }
   }, [fetchUserPoints])
 
+  const refreshPointsData = useCallback(async (userId: string) => {
+    try {
+      console.log('🔄 포인트 데이터 새로고침:', userId)
+      await Promise.all([
+        fetchUserPoints(userId),
+        fetchPointsHistory(userId)
+      ])
+      console.log('✅ 포인트 데이터 새로고침 완료')
+    } catch (error) {
+      console.error('❌ 포인트 데이터 새로고침 실패:', error)
+    }
+  }, [fetchUserPoints, fetchPointsHistory])
+
   return {
     userPoints,
     pointsHistory,
@@ -201,6 +332,8 @@ export const usePoints = () => {
     fetchUserPoints,
     fetchPointsHistory,
     addPoints,
-    deductPoints
+    deductPoints,
+    refreshPointsData,
+    setUserPoints
   }
 }

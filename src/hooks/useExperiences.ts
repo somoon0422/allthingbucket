@@ -214,12 +214,17 @@ export const useExperiences = () => {
               }
             }
 
-            // campaigns 테이블에서 체험단 정보 조회
-            const experience = await (dataService.entities as any).campaigns.get(app.campaign_id)
+            // campaigns 테이블에서 체험단 정보 조회 (필요한 필드만)
+            const experience = await (dataService.entities as any).campaigns.get(app.campaign_id, {
+              select: 'id,campaign_name,product_name,point_reward,rewards,reward_points,created_at'
+            })
             console.log('📦 체험단 정보 조회 결과:', {
               campaign_id: app.campaign_id,
               found: !!experience,
               experience_name: experience?.campaign_name || experience?.product_name || '정보 없음',
+              point_reward: experience?.point_reward,
+              rewards: experience?.rewards,
+              reward_points: experience?.reward_points,
               full_experience_data: experience
             })
 

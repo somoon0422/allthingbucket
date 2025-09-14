@@ -1,0 +1,44 @@
+{
+  "name": "admin_notifications",
+  "fields": {
+    "_id": {
+      "type": "string",
+      "title": "알림 ID"
+    },
+    "type": {
+      "type": "string",
+      "title": "알림 유형",
+      "enum": ["application", "review", "point_request", "withdrawal", "system"],
+      "required": true
+    },
+    "title": {
+      "type": "string",
+      "title": "제목",
+      "required": true
+    },
+    "message": {
+      "type": "string",
+      "title": "메시지",
+      "required": true
+    },
+    "data": {
+      "type": "object",
+      "title": "추가 데이터"
+    },
+    "read": {
+      "type": "boolean",
+      "title": "읽음 상태",
+      "default": false
+    },
+    "created_at": {
+      "type": "string",
+      "title": "생성일",
+      "format": "datetime"
+    },
+    "updated_at": {
+      "type": "string",
+      "title": "수정일",
+      "format": "datetime"
+    }
+  }
+}

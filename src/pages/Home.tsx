@@ -63,12 +63,21 @@ const Home: React.FC = () => {
   const loadFeaturedExperiences = async () => {
     try {
       console.log('🔥 추천 체험단 로드 시작...')
-      const campaigns = await (dataService.entities as any).campaigns.list()
+      
+      // 타임아웃 방지를 위해 더 효율적인 쿼리 시도
+      let campaigns = []
+      try {
+        campaigns = await (dataService.entities as any).campaigns.list()
+      } catch (timeoutError) {
+        console.warn('⚠️ campaigns 타임아웃, 빈 배열로 처리:', timeoutError)
+        campaigns = []
+      }
+      
       console.log('✅ 체험단 데이터 로드 성공:', campaigns)
       
       const safeCampaigns = Array.isArray(campaigns) ? campaigns : []
       const featured = safeCampaigns
-        .filter(campaign => campaign && campaign.status === 'recruiting')
+        .filter(campaign => campaign && (campaign.status === 'recruiting' || campaign.status === 'active'))
         .slice(0, 6)
       
       setFeaturedExperiences(featured)
@@ -82,11 +91,27 @@ const Home: React.FC = () => {
   const loadStats = async () => {
     try {
       console.log('📊 통계 로드 시작...')
-      const [campaigns, users, reviews] = await Promise.all([
-        (dataService.entities as any).campaigns.list(),
-        (dataService.entities as any).users.list(),
-        (dataService.entities as any).review_submissions.list()
-      ])
+      
+      // 타임아웃 방지를 위해 개별적으로 로드
+      let campaigns = [], users = [], reviews = []
+      
+      try {
+        campaigns = await (dataService.entities as any).campaigns.list()
+      } catch (error) {
+        console.warn('⚠️ campaigns 통계 로드 실패:', error)
+      }
+      
+      try {
+        users = await (dataService.entities as any).users.list()
+      } catch (error) {
+        console.warn('⚠️ users 통계 로드 실패:', error)
+      }
+      
+      try {
+        reviews = await (dataService.entities as any).review_submissions.list()
+      } catch (error) {
+        console.warn('⚠️ reviews 통계 로드 실패:', error)
+      }
       
       setStats({
         totalExperiences: Array.isArray(campaigns) ? campaigns.length : 0,

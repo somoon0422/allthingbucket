@@ -7,7 +7,7 @@ import { DollarSign, TrendingUp, CreditCard, ArrowUpRight, ArrowDownLeft } from 
 
 const Points: React.FC = () => {
   const { user } = useAuth()
-  const { fetchPointsHistory, userPoints } = usePoints()
+  const { fetchUserPoints, fetchPointsHistory, userPoints, refreshPointsData, setUserPoints } = usePoints()
   const { requestWithdrawal, getUserWithdrawals, calculateTax } = useWithdrawal()
   const [pointHistory, setPointHistory] = useState<any[]>([])
   const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([])
@@ -43,15 +43,50 @@ const Points: React.FC = () => {
     
     try {
       setLoading(true)
-      const [pointsHistory, userWithdrawals] = await Promise.all([
+      console.log('🔄 포인트 페이지 데이터 로딩 시작:', user.user_id)
+      
+      const [userPointsData, pointsHistory, userWithdrawals] = await Promise.all([
+        fetchUserPoints(user.user_id),
         fetchPointsHistory(user.user_id),
         getUserWithdrawals(user.user_id)
       ])
       
       setPointHistory(pointsHistory)
       setWithdrawalHistory(userWithdrawals)
+      
+      console.log('✅ 포인트 페이지 데이터 로딩 완료:', {
+        userPointsData,
+        pointsHistory: pointsHistory.length,
+        userWithdrawals: userWithdrawals.length,
+        userPoints: userPoints
+      })
     } catch (error) {
-      console.error('데이터 로딩 실패:', error)
+      console.error('❌ 데이터 로딩 실패:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    if (!user) return
+    
+    try {
+      console.log('🔄 포인트 데이터 수동 새로고침')
+      
+      // 강제로 데이터 새로고침
+      setLoading(true)
+      setUserPoints(null)
+      setPointHistory([])
+      
+      // 잠시 대기 후 데이터 로드
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      await refreshPointsData(user.user_id)
+      await loadData()
+      
+      console.log('✅ 포인트 데이터 새로고침 완료')
+    } catch (error) {
+      console.error('❌ 포인트 데이터 새로고침 실패:', error)
     } finally {
       setLoading(false)
     }
@@ -115,10 +150,21 @@ const Points: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">포인트</h1>
-        <p className="text-gray-600">
-          체험단 활동으로 적립한 포인트를 관리하고 출금하세요
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">포인트</h1>
+            <p className="text-gray-600">
+              체험단 활동으로 적립한 포인트를 관리하고 출금하세요
+            </p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+          >
+            <ArrowUpRight className="w-4 h-4" />
+            새로고침
+          </button>
+        </div>
       </div>
 
       {/* 포인트 요약 */}
@@ -129,7 +175,10 @@ const Points: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">현재 잔액</p>
               <p className="text-2xl font-bold text-gray-900">
-                {userPoints?.available_points?.toLocaleString() || 0}P
+                {(userPoints?.available_points || userPoints?.total_points || 0).toLocaleString()}P
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                출금 가능한 포인트
               </p>
             </div>
           </div>
@@ -143,6 +192,9 @@ const Points: React.FC = () => {
               <p className="text-2xl font-bold text-gray-900">
                 {userPoints?.total_points?.toLocaleString() || 0}P
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                출금해도 유지되는 누적 포인트
+              </p>
             </div>
           </div>
         </div>
@@ -153,7 +205,10 @@ const Points: React.FC = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">체험단 참여</p>
               <p className="text-2xl font-bold text-gray-900">
-                {pointHistory.filter((h: any) => h.type === 'earned').length}회
+                {userPoints?.experience_count || 0}회
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                완료된 체험단 수
               </p>
             </div>
           </div>
@@ -238,7 +293,7 @@ const Points: React.FC = () => {
               <div key={point._id} className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    {point.transaction_type === 'earned' ? (
+                    {point.points_type === 'earned' ? (
                       <ArrowDownLeft className="w-5 h-5 text-green-500" />
                     ) : (
                       <ArrowUpRight className="w-5 h-5 text-red-500" />
@@ -247,18 +302,35 @@ const Points: React.FC = () => {
                       <h3 className="font-medium text-gray-900">
                         {point.description}
                       </h3>
-                      {point.experience_code && (
+                      {point.campaign_name && (
                         <p className="text-sm text-gray-600">
-                          체험단: {point.experience_code}
+                          캠페인: {point.campaign_name}
                         </p>
                       )}
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          point.payment_status === '지급완료' ? 'bg-green-100 text-green-800' :
+                          point.payment_status === '지급대기중' ? 'bg-yellow-100 text-yellow-800' :
+                          point.status === 'success' ? 'bg-green-100 text-green-800' :
+                          point.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          point.status === 'failed' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {point.payment_status === '지급완료' ? '포인트 지급 완료' :
+                           point.payment_status === '지급대기중' ? '대기중' :
+                           point.payment_status || 
+                           (point.status === 'success' ? '완료' :
+                            point.status === 'pending' ? '대기중' :
+                            point.status === 'failed' ? '실패' : '알 수 없음')}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className={`text-lg font-bold ${
-                      point.transaction_type === 'earned' ? 'text-green-600' : 'text-red-600'
+                      point.points_type === 'earned' ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {point.transaction_type === 'earned' ? '+' : ''}{point.amount?.toLocaleString()}P
+                      {point.points_type === 'earned' ? '+' : ''}{(point.points_amount || point.points || 0).toLocaleString()}P
                     </p>
                     <p className="text-sm text-gray-500">
                       {new Date(point.created_at).toLocaleDateString()}

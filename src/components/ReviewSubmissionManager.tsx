@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { useAuth } from '../hooks/useAuth'
+import { SupabaseOAuthService } from '../services/supabaseOAuthService'
 import ImageUploadManager from './ImageUploadManager'
 import {FileText, Link, Image, Send, X, AlertCircle, CheckCircle, ExternalLink} from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -69,6 +70,12 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
                               (review.main_image ? [review.main_image] : []) ||
                               []
           
+          // 🔥 submission_data 필드에서도 이미지 확인
+          if (review.submission_data && review.submission_data.images) {
+            existingImages = review.submission_data.images
+            console.log('🔄 submission_data에서 이미지 데이터 발견:', review.submission_data.images)
+          }
+          
           // 🔥 user_applications에서도 이미지 데이터 확인
           if (applicationResponse && (existingImages.length === 0 || !existingImages[0])) {
             const appImages = (applicationResponse as any).review_images || 
@@ -80,6 +87,12 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
               existingImages = appImages
               console.log('🔄 user_applications에서 이미지 데이터 발견:', appImages)
             }
+          }
+          
+          // 🔥 최종적으로 빈 배열이면 현재 reviewImages 상태 유지
+          if (existingImages.length === 0 && reviewImages.length > 0) {
+            console.log('🔄 기존 reviewImages 상태 유지:', reviewImages)
+            existingImages = reviewImages
           }
           
           console.log('🔍 전체 리뷰 데이터:', review)
@@ -179,16 +192,99 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
     try {
       setSubmitting(true)
       
-      // 사용자 ID 우선순위로 확인
-      const userId = user?.user_id || user?.id || (user as any)?._id
-      if (!userId) {
+      // 사용자 ID 확인 및 users 테이블에서 실제 ID 조회
+      const authUserId = user?.user_id || user?.id || (user as any)?._id
+      if (!authUserId) {
         toast.error('사용자 인증 정보가 없습니다')
         return
       }
       
+      console.log('🔍 리뷰 제출 시 사용자 ID 확인:', { authUserId, user })
+      
+      // users 테이블에서 실제 사용자 ID 조회
+      const usersResponse = await (dataService.entities as any).users.list()
+      const users = Array.isArray(usersResponse) ? usersResponse : []
+      
+      console.log('🔍 users 테이블 조회 결과:', { 
+        usersResponse, 
+        users, 
+        authUserId, 
+        userEmail: user?.email,
+        totalUsers: users.length 
+      })
+      
+      // OAuth 로그도 함께 확인
+      console.log('🔍 저장된 OAuth 로그:', SupabaseOAuthService.getStoredLogs())
+      console.log('🔍 세션 OAuth 로그:', SupabaseOAuthService.getSessionLogs())
+      
+      let dbUser = users.find((u: any) => u.user_id === authUserId || u.email === user?.email)
+      
+      console.log('🔍 사용자 검색 결과:', { 
+        dbUser, 
+        searchCriteria: {
+          byUserId: users.find((u: any) => u.user_id === authUserId),
+          byEmail: users.find((u: any) => u.email === user?.email)
+        }
+      })
+      
+      if (!dbUser) {
+        console.error('❌ users 테이블에서 사용자를 찾을 수 없음:', { 
+          authUserId, 
+          email: user?.email, 
+          users: users.map(u => ({ id: u.id, user_id: u.user_id, email: u.email }))
+        })
+        
+        // 현재 로그인된 사용자 정보를 users 테이블에 자동으로 생성
+        console.log('🔄 users 테이블에 현재 사용자 자동 생성 중...')
+        try {
+          const newUser = {
+            user_id: authUserId,
+            email: user?.email || '',
+            name: user?.name || user?.email?.split('@')[0] || '사용자',
+            phone: null,
+            google_id: authUserId, // 현재 사용자의 ID를 google_id로 설정
+            profile_image_url: null,
+            is_active: true
+          }
+          
+          console.log('📝 생성할 사용자 데이터:', newUser)
+          const createResult = await (dataService.entities as any).users.create(newUser)
+          
+          if (createResult && createResult.success) {
+            console.log('✅ users 테이블에 사용자 생성 완료:', createResult.data)
+            // 생성된 사용자를 dbUser로 설정
+            const createdUser = createResult.data
+            dbUser = createdUser
+          } else {
+            console.error('❌ users 테이블 사용자 생성 실패:', createResult)
+            toast.error('사용자 정보 생성에 실패했습니다. 다시 로그인해주세요.')
+            return
+          }
+        } catch (createError) {
+          console.error('❌ users 테이블 사용자 생성 중 오류:', createError)
+          toast.error('사용자 정보 생성 중 오류가 발생했습니다. 다시 로그인해주세요.')
+          return
+        }
+      }
+      
+      console.log('✅ users 테이블에서 찾은 사용자:', dbUser)
+      
+      // dbUser 검증
+      if (!dbUser || !dbUser.id || !dbUser.user_id) {
+        console.error('❌ dbUser가 유효하지 않음:', dbUser)
+        toast.error('사용자 정보가 유효하지 않습니다. 다시 로그인해주세요.')
+        return
+      }
+      
+      console.log('🔍 사용할 사용자 ID들:', {
+        dbUser_id: dbUser.id,
+        dbUser_user_id: dbUser.user_id,
+        authUserId: authUserId
+      })
+      
       // 1. 먼저 user_reviews 테이블에 리뷰 내용 저장
       const userReviewData = {
-        user_id: userId,
+        user_id: dbUser.user_id, // users.user_id (문자열) 사용 - FK 제약 조건에 맞춤
         campaign_id: experienceId,
         rating: 5, // 기본값, 나중에 별점 기능 추가 가능
         title: `${experienceName} 체험 후기`,
@@ -196,7 +292,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
         images: reviewImages,
         video_url: null,
         social_media_links: blogUrl.trim() ? [blogUrl.trim()] : [],
-        status: 'pending',
+        status: 'submitted',
         submitted_at: new Date().toISOString()
       }
 
@@ -212,11 +308,11 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
 
       // 2. review_submissions 테이블에 제출 신청 저장
       const submissionData = {
-        user_id: userId,
+        user_id: dbUser.user_id, // users.user_id (문자열) 사용 - FK 제약 조건에 맞춤
         campaign_id: experienceId,
         review_id: userReviewResult.data.id,
         submission_data: userReviewData, // user_reviews 정보를 JSON으로 저장
-        status: 'pending',
+        status: 'submitted',
         submitted_at: new Date().toISOString()
       }
 
@@ -235,16 +331,31 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
       }
 
       // 🚀 user_applications 상태 업데이트
-      await (dataService.entities as any).user_applications.update(applicationId, {
-        status: 'review_submitted',
-        review_submitted_at: new Date().toISOString(),
-        review_submission_id: (submissionResult as any)._id || (submissionResult as any).id,
-        blog_url: blogUrl.trim() || null,
-        review_images: reviewImages,
-        additional_notes: additionalNotes.trim() || null
-      })
-
-      console.log('✅ 신청 내역 상태 업데이트 완료')
+      try {
+        // user_applications 테이블의 기존 데이터 확인
+        const currentApplication = await (dataService.entities as any).user_applications.get(applicationId)
+        console.log('🔍 현재 신청 데이터:', currentApplication)
+        
+        const updateData: any = {
+          status: 'review_in_progress', // 리뷰검수중으로 변경
+          review_submitted_at: new Date().toISOString() // 리뷰 제출 날짜 항상 설정
+        }
+        
+        // 기존 필드가 있는 경우만 업데이트
+        if (currentApplication && currentApplication.data) {
+          const app = currentApplication.data
+          if (app.review_submission_id !== undefined) updateData.review_submission_id = (submissionResult as any)._id || (submissionResult as any).id
+          if (app.blog_url !== undefined) updateData.blog_url = blogUrl.trim() || null
+          if (app.review_images !== undefined) updateData.review_images = reviewImages
+        }
+        
+        console.log('📝 user_applications 업데이트 데이터:', { applicationId, updateData })
+        const updateResult = await (dataService.entities as any).user_applications.update(applicationId, updateData)
+        console.log('✅ 신청 내역 상태 업데이트 결과:', updateResult)
+      } catch (updateError) {
+        console.error('❌ user_applications 업데이트 실패:', updateError)
+        // 업데이트 실패해도 리뷰 제출은 성공한 것으로 처리
+      }
 
       // 🚀 어드민 알림 생성
       try {
@@ -255,7 +366,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
           data: {
             application_id: applicationId,
             experience_id: experienceId,
-            user_id: userId,
+            user_id: dbUser.id,
             review_submission_id: (submissionResult as any)._id || (submissionResult as any).id,
             review_type: blogUrl.trim() ? 'blog' : 'image'
           },
@@ -268,6 +379,12 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
       }
 
       toast.success(existingReview ? '리뷰가 수정되었습니다! 검수 후 포인트가 지급됩니다.' : '리뷰가 제출되었습니다! 검수 후 포인트가 지급됩니다.')
+      
+      // 페이지 새로고침하여 상태 업데이트 반영
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+      
       onSubmitComplete()
       
     } catch (error) {

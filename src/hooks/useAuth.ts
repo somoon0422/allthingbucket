@@ -350,36 +350,154 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Supabase Auth 세션 체크
         const { data: { session } } = await dataService.auth.getSession()
         if (session?.user) {
+          console.log('🔍 Supabase 세션에서 사용자 확인:', session.user)
+          
           try {
-            const profile = await (dataService.entities as any).user_profiles.get(session.user.id)
+            // users 테이블에서 사용자 정보 검증
+            const usersResponse = await (dataService.entities as any).users.list()
+            const users = Array.isArray(usersResponse) ? usersResponse : []
+            const dbUser = users.find((u: any) => u.user_id === session.user.id || u.email === session.user.email)
             
-            const processedUser = processUserData({
-              id: session.user.id,
-              email: session.user.email,
-              name: profile?.name || session.user.email?.split('@')[0] || '사용자',
-              role: 'user',
-              profile: profile
-            })
-            
-            if (processedUser) {
-              setUser(processedUser)
-              return
+            if (dbUser) {
+              console.log('✅ users 테이블에서 사용자 확인됨:', dbUser)
+              
+              // 사용자 프로필 정보 가져오기
+              try {
+                const profile = await (dataService.entities as any).user_profiles.get(session.user.id)
+                
+                const processedUser = processUserData({
+                  id: session.user.id,
+                  user_id: session.user.id,
+                  email: session.user.email,
+                  name: dbUser.name || profile?.name || session.user.email?.split('@')[0] || '사용자',
+                  role: 'user',
+                  profile: profile
+                })
+                
+                if (processedUser) {
+                  setUser(processedUser)
+                  return
+                }
+              } catch (profileError) {
+                console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
+                
+                // 프로필이 없는 경우 기본 사용자 정보로 처리
+                const processedUser = processUserData({
+                  id: session.user.id,
+                  user_id: session.user.id,
+                  email: session.user.email,
+                  name: dbUser.name || session.user.email?.split('@')[0] || '사용자',
+                  role: 'user',
+                  profile: null
+                })
+                
+                if (processedUser) {
+                  setUser(processedUser)
+                  return
+                }
+              }
+            } else {
+              console.warn('⚠️ users 테이블에서 사용자를 찾을 수 없음. 자동으로 생성합니다:', session.user.id, session.user.email)
+              
+              try {
+                // users 테이블에 사용자가 없으면 자동으로 생성
+                const newUser = {
+                  user_id: session.user.id,
+                  email: session.user.email,
+                  name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자',
+                  phone: null,
+                  google_id: session.user.app_metadata?.provider === 'google' ? session.user.id : null,
+                  profile_image_url: session.user.user_metadata?.avatar_url || null,
+                  is_active: true
+                }
+                
+                console.log('📝 users 테이블에 새 사용자 생성 중:', newUser)
+                const createResult = await (dataService.entities as any).users.create(newUser)
+                
+                if (createResult && createResult.success) {
+                  console.log('✅ users 테이블에 사용자 생성 완료')
+                  
+                  // 사용자 프로필도 생성
+                  try {
+                    await (dataService.entities as any).user_profiles.create({
+                      user_id: session.user.id,
+                      name: newUser.name,
+                      email: session.user.email,
+                      profile_image: newUser.profile_image_url || '',
+                      total_points: 0,
+                      available_points: 0,
+                      used_points: 0,
+                      pending_points: 0,
+                      last_login: new Date().toISOString(),
+                      login_count: 0,
+                      is_active: true
+                    })
+                    console.log('✅ 사용자 프로필 생성 완료')
+                  } catch (profileError) {
+                    console.warn('⚠️ 사용자 프로필 생성 실패 (무시):', profileError)
+                  }
+                  
+                  // 생성된 사용자 정보로 로그인 처리
+                  const processedUser = processUserData({
+                    id: session.user.id,
+                    user_id: session.user.id,
+                    email: session.user.email,
+                    name: newUser.name,
+                    role: 'user',
+                    profile: null
+                  })
+                  
+                  if (processedUser) {
+                    setUser(processedUser)
+                    return
+                  }
+                } else {
+                  console.error('❌ users 테이블 사용자 생성 실패:', createResult)
+                  await dataService.auth.signOut()
+                  toast.error('사용자 정보 생성에 실패했습니다. 다시 로그인해주세요.')
+                }
+              } catch (createError) {
+                console.error('❌ users 테이블 사용자 생성 중 오류:', createError)
+                await dataService.auth.signOut()
+                toast.error('사용자 정보 생성 중 오류가 발생했습니다. 다시 로그인해주세요.')
+              }
             }
-          } catch (profileError) {
-            console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
-            
-            // 프로필이 없는 경우 기본 사용자 정보로 처리
-            const processedUser = processUserData({
-              id: session.user.id,
-              email: session.user.email,
-              name: session.user.email?.split('@')[0] || '사용자',
-              role: 'user',
-              profile: null
-            })
-            
-            if (processedUser) {
-              setUser(processedUser)
-              return
+          } catch (usersError) {
+            console.error('users 테이블 조회 실패:', usersError)
+            // users 테이블 조회 실패 시 기존 방식으로 진행
+            try {
+              const profile = await (dataService.entities as any).user_profiles.get(session.user.id)
+              
+              const processedUser = processUserData({
+                id: session.user.id,
+                user_id: session.user.id,
+                email: session.user.email,
+                name: profile?.name || session.user.email?.split('@')[0] || '사용자',
+                role: 'user',
+                profile: profile
+              })
+              
+              if (processedUser) {
+                setUser(processedUser)
+                return
+              }
+            } catch (profileError) {
+              console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
+              
+              // 프로필이 없는 경우 기본 사용자 정보로 처리
+              const processedUser = processUserData({
+                id: session.user.id,
+                user_id: session.user.id,
+                email: session.user.email,
+                name: session.user.email?.split('@')[0] || '사용자',
+                role: 'user',
+                profile: null
+              })
+              
+              if (processedUser) {
+                setUser(processedUser)
+                return
+              }
             }
           }
         }
@@ -396,33 +514,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
     }, 100)
 
-    // Google 로그인 성공 이벤트 리스너
-    const handleGoogleLoginSuccess = (event: CustomEvent) => {
-      try {
-        console.log('Google 로그인 성공 이벤트 수신:', event.detail)
-        const { user: googleUser, token } = event.detail
-        
-        if (googleUser) {
-          const processedUser = processUserData(googleUser)
-          if (processedUser) {
-            setUser(processedUser)
-            // 토큰 저장
-            if (token) {
-              localStorage.setItem('auth_token', token)
-            }
-            console.log('Google 로그인 사용자 설정 완료:', processedUser)
-          }
-        }
-      } catch (error) {
-        console.error('Google 로그인 성공 이벤트 처리 실패:', error)
-      }
-    }
-
-    window.addEventListener('googleLoginSuccess', handleGoogleLoginSuccess as EventListener)
-
     return () => {
       clearTimeout(timer)
-      window.removeEventListener('googleLoginSuccess', handleGoogleLoginSuccess as EventListener)
     }
   }, [])
 

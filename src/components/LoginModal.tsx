@@ -192,9 +192,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
         {/* 구글 로그인 버튼 */}
         <GoogleLoginButton
-          onSuccess={() => {
-            onClose()
-          }}
           onError={(error) => {
             toast.error(error)
           }}
