@@ -6,7 +6,7 @@ import ApprovalModal from '../components/ApprovalModal'
 import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
-import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings} from 'lucide-react'
+import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const AdminDashboard: React.FC = () => {
@@ -69,6 +69,15 @@ const AdminDashboard: React.FC = () => {
   // 회원 관리 모달 상태
   const [showUserManagementModal, setShowUserManagementModal] = useState(false)
   const [selectedUserForManagement, setSelectedUserForManagement] = useState<any>(null)
+  
+  // 출금 요청 관리 상태
+  const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([])
+  const [withdrawalFilter, setWithdrawalFilter] = useState('all')
+  const [withdrawalSearch, setWithdrawalSearch] = useState('')
+  const [showWithdrawalDetailModal, setShowWithdrawalDetailModal] = useState(false)
+  const [selectedWithdrawalRequest, setSelectedWithdrawalRequest] = useState<any>(null)
+  const [showWithdrawalApprovalModal, setShowWithdrawalApprovalModal] = useState(false)
+  const [showWithdrawalRejectionModal, setShowWithdrawalRejectionModal] = useState(false)
 
   // 컬럼명 한글 번역 함수
   const translateFieldName = (fieldName: string): string => {
@@ -264,7 +273,7 @@ const AdminDashboard: React.FC = () => {
     try {
       // 필요한 필드만 선택해서 조회 (타임아웃 방지)
       const experiencesData = await (dataService.entities as any).campaigns.list({
-        select: 'id,campaign_name,product_name,point_reward,rewards,reward_points,created_at'
+        select: 'id,campaign_name,product_name,rewards,created_at'
       })
       console.log('🔥 어드민 대시보드 - 체험단 데이터 로드:', experiencesData)
       
@@ -467,7 +476,7 @@ const AdminDashboard: React.FC = () => {
       
       // 3. points_history 테이블에 요청 기록 추가 (실제 지급은 아님)
       try {
-        const pointAmount = selectedPointApplication.campaignInfo?.point_reward || 0
+        const pointAmount = selectedPointApplication.campaignInfo?.rewards || 0
         await (dataService.entities as any).points_history.create({
           user_id: selectedPointApplication.user_id,
           campaign_id: selectedPointApplication.campaign_id,
@@ -495,7 +504,7 @@ const AdminDashboard: React.FC = () => {
             user_name: selectedPointApplication.name,
             user_email: selectedPointApplication.email,
             campaign_name: selectedPointApplication.campaign_name,
-            point_amount: selectedPointApplication.campaignInfo?.point_reward || 0
+            point_amount: selectedPointApplication.campaignInfo?.rewards || 0
           },
           read: false,
           created_at: new Date().toISOString()
@@ -521,23 +530,36 @@ const AdminDashboard: React.FC = () => {
       try {
         console.log('포인트 지급 완료 시작:', applicationId)
         
-        // 1. user_applications 상태를 point_completed로 변경
+        // 1. user_applications 상태를 point_approved로 변경 (승인 단계)
         try {
           await (dataService.entities as any).user_applications.update(applicationId, {
-            status: 'point_completed',
+            status: 'point_approved',
             updated_at: new Date().toISOString()
           })
-          console.log('✅ user_applications 상태 업데이트 완료: point_completed')
+          console.log('✅ user_applications 상태 업데이트 완료: point_approved')
         } catch (updateError) {
           console.warn('⚠️ user_applications 업데이트 실패 (무시):', updateError)
         }
+        
+        // 2. 잠시 대기 후 point_completed로 변경 (완료 단계)
+        setTimeout(async () => {
+          try {
+            await (dataService.entities as any).user_applications.update(applicationId, {
+              status: 'point_completed',
+              updated_at: new Date().toISOString()
+            })
+            console.log('✅ user_applications 상태 업데이트 완료: point_completed')
+          } catch (updateError) {
+            console.warn('⚠️ user_applications 최종 업데이트 실패 (무시):', updateError)
+          }
+        }, 1000)
         
         await syncReviewStatus(applicationId, 'point_completed')
         
         // 2. points_history에서 해당 신청의 pending 상태를 success로 변경
         try {
           const application = applications.find(app => (app.id || app._id) === applicationId)
-          const pointAmount = application?.campaignInfo?.point_reward || application?.experience?.rewards || 0
+          const pointAmount = application?.campaignInfo?.rewards || application?.experience?.rewards || 0
           
           const pointsHistory = await (dataService.entities as any).points_history.list()
           console.log('🔍 전체 points_history:', pointsHistory)
@@ -639,7 +661,7 @@ const AdminDashboard: React.FC = () => {
             // points_history 레코드가 없으면 새로 생성
             const application = applications.find(app => (app.id || app._id) === applicationId)
             if (application) {
-              const pointAmount = application.campaignInfo?.point_reward || application.experience?.rewards || 0
+              const pointAmount = application.campaignInfo?.rewards || application.experience?.rewards || 0
               
               // 🔥 포인트 지급 완료 레코드 생성
               await (dataService.entities as any).points_history.create({
@@ -861,6 +883,128 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
+  // 출금 요청 데이터 로드
+  const loadWithdrawalRequests = async () => {
+    try {
+      const requests = await (dataService.entities as any).withdrawal_requests.list()
+      
+      // 계좌 정보와 사용자 정보와 함께 조회
+      const requestsWithDetails = await Promise.all(
+        (requests || []).map(async (request: any) => {
+          try {
+            const [account, userProfile] = await Promise.all([
+              (dataService.entities as any).bank_accounts.get(request.bank_account_id),
+              (dataService.entities as any).user_profiles.list({
+                filter: { user_id: request.user_id }
+              })
+            ])
+            
+            return {
+              ...request,
+              bank_account: account,
+              user_profile: userProfile?.[0]
+            }
+          } catch (error) {
+            console.error('상세 정보 조회 실패:', error)
+            return request
+          }
+        })
+      )
+      
+      setWithdrawalRequests(requestsWithDetails.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ))
+    } catch (error) {
+      console.error('출금 요청 조회 실패:', error)
+    }
+  }
+
+
+  // 출금 요청 승인
+  const handleApproveWithdrawal = async (requestId: string, adminNotes?: string) => {
+    try {
+      const request = withdrawalRequests.find(r => r.id === requestId)
+      if (!request) {
+        toast.error('출금 요청을 찾을 수 없습니다')
+        return
+      }
+
+      // 사용자 포인트 재확인
+      const userPoints = await (dataService.entities as any).user_points.list({
+        filter: { user_id: request.user_id }
+      })
+      
+      const currentPoints = userPoints?.[0]?.points || 0
+      
+      if (currentPoints < request.points_amount) {
+        toast.error('사용자 포인트가 부족합니다')
+        return
+      }
+
+      // 출금 요청 상태 업데이트
+      const updateData = {
+        status: 'approved',
+        processed_by: 'admin', // 실제로는 현재 관리자 ID
+        processed_at: new Date().toISOString(),
+        admin_notes: adminNotes,
+        updated_at: new Date().toISOString()
+      }
+
+      await (dataService.entities as any).withdrawal_requests.update(requestId, updateData)
+      
+      toast.success('출금 요청이 승인되었습니다')
+      await loadWithdrawalRequests()
+      setShowWithdrawalApprovalModal(false)
+      setSelectedWithdrawalRequest(null)
+    } catch (error) {
+      console.error('출금 승인 실패:', error)
+      toast.error('출금 승인 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 출금 요청 거절
+  const handleRejectWithdrawal = async (requestId: string, adminNotes: string) => {
+    try {
+      const updateData = {
+        status: 'rejected',
+        processed_by: 'admin', // 실제로는 현재 관리자 ID
+        processed_at: new Date().toISOString(),
+        admin_notes: adminNotes,
+        updated_at: new Date().toISOString()
+      }
+
+      await (dataService.entities as any).withdrawal_requests.update(requestId, updateData)
+      
+      toast.success('출금 요청이 거절되었습니다')
+      await loadWithdrawalRequests()
+      setShowWithdrawalRejectionModal(false)
+      setSelectedWithdrawalRequest(null)
+    } catch (error) {
+      console.error('출금 거절 실패:', error)
+      toast.error('출금 거절 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 출금 완료 처리
+  const handleCompleteWithdrawal = async (requestId: string, adminNotes?: string) => {
+    try {
+      const updateData = {
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        admin_notes: adminNotes,
+        updated_at: new Date().toISOString()
+      }
+
+      await (dataService.entities as any).withdrawal_requests.update(requestId, updateData)
+      
+      toast.success('출금 처리가 완료되었습니다')
+      await loadWithdrawalRequests()
+    } catch (error) {
+      console.error('출금 완료 처리 실패:', error)
+      toast.error('출금 완료 처리 중 오류가 발생했습니다.')
+    }
+  }
+
   // 전체 데이터 로드
   const loadAllData = async () => {
     try {
@@ -869,7 +1013,8 @@ const AdminDashboard: React.FC = () => {
         loadApplications(),
         loadExperiences(),
         loadNotifications(),
-        loadUsers()
+        loadUsers(),
+        loadWithdrawalRequests()
       ])
     } catch (error) {
       console.error('데이터 로드 실패:', error)
@@ -1261,6 +1406,16 @@ const AdminDashboard: React.FC = () => {
               >
                 회원 관리
               </button>
+              <button
+                onClick={() => setActiveTab('withdrawals')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'withdrawals'
+                    ? 'border-orange-500 text-orange-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                출금 요청 관리
+              </button>
             </nav>
           </div>
         </div>
@@ -1471,6 +1626,7 @@ const AdminDashboard: React.FC = () => {
               >
                 <option value="all">전체</option>
                 <option value="point_requested">포인트 지급 요청</option>
+                <option value="point_approved">포인트 지급 승인</option>
                 <option value="point_completed">포인트 지급 완료</option>
               </select>
             </div>
@@ -1478,7 +1634,7 @@ const AdminDashboard: React.FC = () => {
             {(() => {
               const filteredPointRequests = applications.filter(app => {
                 if (pointRequestFilter === 'all') {
-                  return app.status === 'point_requested' || app.status === 'point_completed'
+                  return app.status === 'point_requested' || app.status === 'point_approved' || app.status === 'point_completed'
                 }
                 return app.status === pointRequestFilter
               })
@@ -1489,6 +1645,7 @@ const AdminDashboard: React.FC = () => {
                   <p className="text-gray-500">
                     {pointRequestFilter === 'all' ? '포인트 지급 요청이 없습니다.' :
                      pointRequestFilter === 'point_requested' ? '포인트 지급 요청이 없습니다.' :
+                     pointRequestFilter === 'point_approved' ? '포인트 지급 승인 내역이 없습니다.' :
                      '포인트 지급 완료 내역이 없습니다.'}
                   </p>
                 </div>
@@ -1522,14 +1679,12 @@ const AdminDashboard: React.FC = () => {
                                 const pointAmount = application.experience?.rewards || 
                                                    application.experience?.reward_points || 
                                                    application.campaignInfo?.rewards ||
-                                                   application.campaignInfo?.point_reward || 
-                                                   application.point_reward || 
                                                    0;
                                 console.log('🔍 포인트 정보 디버깅:', {
                                   applicationId: application.id || application._id,
                                   experience: application.experience,
                                   campaignInfo: application.campaignInfo,
-                                  point_reward: application.point_reward,
+                                  rewards: application.campaignInfo?.rewards,
                                   finalAmount: pointAmount
                                 });
                                 console.log('🔍 campaignInfo 전체 필드:', application.campaignInfo);
@@ -1551,7 +1706,7 @@ const AdminDashboard: React.FC = () => {
                                   <button
                                     onClick={() => handleCompletePoints(application.id || application._id)}
                                     className="text-green-600 hover:text-green-900"
-                                    title="포인트 지급 완료"
+                                    title="포인트 지급 승인"
                                   >
                                     <CheckCircle className="w-4 h-4" />
                                   </button>
@@ -1566,6 +1721,11 @@ const AdminDashboard: React.FC = () => {
                                     <XCircle className="w-4 h-4" />
                                   </button>
                                 </>
+                              )}
+                              {application.status === 'point_approved' && (
+                                <span className="text-purple-600" title="지급 승인됨">
+                                  <CheckCircle className="w-4 h-4" />
+                                </span>
                               )}
                               {application.status === 'point_completed' && (
                                 <span className="text-green-600" title="지급 완료">
@@ -2230,8 +2390,7 @@ const AdminDashboard: React.FC = () => {
                 <strong>포인트:</strong> {
                   selectedPointApplication.experience?.rewards || 
                   selectedPointApplication.experience?.reward_points || 
-                  selectedPointApplication.campaignInfo?.point_reward || 
-                  selectedPointApplication.point_reward || 
+                  selectedPointApplication.campaignInfo?.rewards || 
                   0
                 }P
               </p>
@@ -2555,6 +2714,447 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+        {/* 출금 요청 관리 Section */}
+        {activeTab === 'withdrawals' && (
+          <div className="bg-white rounded-lg shadow mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Banknote className="w-5 h-5 mr-2" />
+                  출금 요청 관리
+                </h2>
+                <div className="text-sm text-gray-600">
+                  총 {withdrawalRequests.length}개의 요청
+                </div>
+              </div>
+            </div>
+
+            {/* 필터 및 검색 */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="사용자명, 계좌번호로 검색..."
+                    value={withdrawalSearch}
+                    onChange={(e) => setWithdrawalSearch(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={withdrawalFilter}
+                    onChange={(e) => setWithdrawalFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  >
+                    <option value="all">전체</option>
+                    <option value="pending">대기중</option>
+                    <option value="approved">승인됨</option>
+                    <option value="rejected">거절됨</option>
+                    <option value="completed">완료됨</option>
+                    <option value="failed">실패</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* 출금 요청 목록 */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      사용자 정보
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      출금 정보
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      계좌 정보
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      상태
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      요청일
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      액션
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {withdrawalRequests
+                    .filter(request => {
+                      if (withdrawalFilter !== 'all' && request.status !== withdrawalFilter) return false
+                      if (withdrawalSearch) {
+                        const searchLower = withdrawalSearch.toLowerCase()
+                        const userName = request.user_profile?.name || request.user_profile?.display_name || ''
+                        const accountNumber = request.bank_account?.account_number || ''
+                        return userName.toLowerCase().includes(searchLower) || 
+                               accountNumber.includes(searchLower)
+                      }
+                      return true
+                    })
+                    .map((request) => (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {request.user_profile?.name || request.user_profile?.display_name || '이름 없음'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {request.user_profile?.email || '이메일 없음'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {request.points_amount.toLocaleString()}P
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            → {request.withdrawal_amount.toLocaleString()}원
+                          </div>
+                          {request.request_reason && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              {request.request_reason}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {request.bank_account?.bank_name || '은행 정보 없음'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {request.bank_account?.account_number || '계좌번호 없음'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {request.bank_account?.account_holder || '예금주 없음'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          request.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                          request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                          request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          request.status === 'failed' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {request.status === 'pending' ? '대기중' :
+                           request.status === 'approved' ? '승인됨' :
+                           request.status === 'rejected' ? '거절됨' :
+                           request.status === 'completed' ? '완료됨' :
+                           request.status === 'failed' ? '실패' :
+                           '알 수 없음'}
+                        </span>
+                        {request.admin_notes && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            관리자 메모: {request.admin_notes}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(request.created_at).toLocaleDateString('ko-KR')}
+                        <div className="text-xs text-gray-400">
+                          {new Date(request.created_at).toLocaleTimeString('ko-KR')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              setSelectedWithdrawalRequest(request)
+                              setShowWithdrawalDetailModal(true)
+                            }}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {request.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setSelectedWithdrawalRequest(request)
+                                  setShowWithdrawalApprovalModal(true)
+                                }}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedWithdrawalRequest(request)
+                                  setShowWithdrawalRejectionModal(true)
+                                }}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {request.status === 'approved' && (
+                            <button
+                              onClick={() => handleCompleteWithdrawal(request.id)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              완료 처리
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {withdrawalRequests.length === 0 && (
+              <div className="text-center py-12">
+                <Banknote className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">출금 요청이 없습니다</h3>
+                <p className="text-gray-500">사용자들이 출금을 요청하면 여기에 표시됩니다.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 출금 요청 상세 모달 */}
+        {showWithdrawalDetailModal && selectedWithdrawalRequest && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">출금 요청 상세</h3>
+                <button
+                  onClick={() => {
+                    setShowWithdrawalDetailModal(false)
+                    setSelectedWithdrawalRequest(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* 사용자 정보 */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">사용자 정보</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="font-medium">이름:</span> {selectedWithdrawalRequest.user_profile?.name || '이름 없음'}</div>
+                    <div><span className="font-medium">이메일:</span> {selectedWithdrawalRequest.user_profile?.email || '이메일 없음'}</div>
+                    <div><span className="font-medium">연락처:</span> {selectedWithdrawalRequest.user_profile?.phone || '연락처 없음'}</div>
+                    <div><span className="font-medium">사용자 ID:</span> {selectedWithdrawalRequest.user_id}</div>
+                  </div>
+                </div>
+
+                {/* 출금 정보 */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">출금 정보</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="font-medium">포인트:</span> {selectedWithdrawalRequest.points_amount.toLocaleString()}P</div>
+                    <div><span className="font-medium">출금 금액:</span> {selectedWithdrawalRequest.withdrawal_amount.toLocaleString()}원</div>
+                    <div><span className="font-medium">환율:</span> {selectedWithdrawalRequest.exchange_rate}</div>
+                    <div><span className="font-medium">상태:</span> 
+                      <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                        selectedWithdrawalRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                        selectedWithdrawalRequest.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        selectedWithdrawalRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {selectedWithdrawalRequest.status === 'pending' ? '대기중' :
+                         selectedWithdrawalRequest.status === 'approved' ? '승인됨' :
+                         selectedWithdrawalRequest.status === 'rejected' ? '거절됨' :
+                         selectedWithdrawalRequest.status === 'completed' ? '완료됨' :
+                         '알 수 없음'}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedWithdrawalRequest.request_reason && (
+                    <div className="mt-2">
+                      <span className="font-medium">출금 사유:</span>
+                      <p className="text-sm text-gray-600 mt-1">{selectedWithdrawalRequest.request_reason}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 계좌 정보 */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">계좌 정보</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="font-medium">은행:</span> {selectedWithdrawalRequest.bank_account?.bank_name || '은행 정보 없음'}</div>
+                    <div><span className="font-medium">계좌번호:</span> {selectedWithdrawalRequest.bank_account?.account_number || '계좌번호 없음'}</div>
+                    <div><span className="font-medium">예금주:</span> {selectedWithdrawalRequest.bank_account?.account_holder || '예금주 없음'}</div>
+                    <div><span className="font-medium">인증 상태:</span> 
+                      <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                        selectedWithdrawalRequest.bank_account?.is_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {selectedWithdrawalRequest.bank_account?.is_verified ? '인증됨' : '미인증'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 처리 정보 */}
+                {(selectedWithdrawalRequest.processed_at || selectedWithdrawalRequest.admin_notes) && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-2">처리 정보</h4>
+                    <div className="space-y-2 text-sm">
+                      {selectedWithdrawalRequest.processed_at && (
+                        <div><span className="font-medium">처리일:</span> {new Date(selectedWithdrawalRequest.processed_at).toLocaleString('ko-KR')}</div>
+                      )}
+                      {selectedWithdrawalRequest.completed_at && (
+                        <div><span className="font-medium">완료일:</span> {new Date(selectedWithdrawalRequest.completed_at).toLocaleString('ko-KR')}</div>
+                      )}
+                      {selectedWithdrawalRequest.admin_notes && (
+                        <div>
+                          <span className="font-medium">관리자 메모:</span>
+                          <p className="text-gray-600 mt-1">{selectedWithdrawalRequest.admin_notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 출금 승인 모달 */}
+        {showWithdrawalApprovalModal && selectedWithdrawalRequest && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">출금 요청 승인</h3>
+                <button
+                  onClick={() => {
+                    setShowWithdrawalApprovalModal(false)
+                    setSelectedWithdrawalRequest(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>{selectedWithdrawalRequest.user_profile?.name || '사용자'}</strong>님의 
+                  <strong> {selectedWithdrawalRequest.points_amount.toLocaleString()}P</strong> 
+                  출금 요청을 승인하시겠습니까?
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  출금 금액: {selectedWithdrawalRequest.withdrawal_amount.toLocaleString()}원
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  관리자 메모 (선택사항)
+                </label>
+                <textarea
+                  id="approvalNotes"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="승인 관련 메모를 입력하세요"
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowWithdrawalApprovalModal(false)
+                    setSelectedWithdrawalRequest(null)
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => {
+                    const notes = (document.getElementById('approvalNotes') as HTMLTextAreaElement)?.value || ''
+                    handleApproveWithdrawal(selectedWithdrawalRequest.id, notes)
+                  }}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  승인
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 출금 거절 모달 */}
+        {showWithdrawalRejectionModal && selectedWithdrawalRequest && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">출금 요청 거절</h3>
+                <button
+                  onClick={() => {
+                    setShowWithdrawalRejectionModal(false)
+                    setSelectedWithdrawalRequest(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-4 p-3 bg-red-50 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>{selectedWithdrawalRequest.user_profile?.name || '사용자'}</strong>님의 
+                  <strong> {selectedWithdrawalRequest.points_amount.toLocaleString()}P</strong> 
+                  출금 요청을 거절하시겠습니까?
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  거절 사유 <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="rejectionNotes"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="거절 사유를 입력하세요"
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowWithdrawalRejectionModal(false)
+                    setSelectedWithdrawalRequest(null)
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => {
+                    const notes = (document.getElementById('rejectionNotes') as HTMLTextAreaElement)?.value
+                    if (!notes?.trim()) {
+                      alert('거절 사유를 입력해주세요.')
+                      return
+                    }
+                    handleRejectWithdrawal(selectedWithdrawalRequest.id, notes)
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  거절
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   )
 }

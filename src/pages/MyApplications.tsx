@@ -239,41 +239,47 @@ const MyApplications: React.FC = () => {
           color: 'bg-blue-100 text-blue-800',
           icon: CheckCircle
         }
-      case 'review_in_progress':
+      case 'review_submitted':
         return {
-          label: '리뷰 검수중',
+          label: '리뷰 제출됨',
           color: 'bg-blue-100 text-blue-800',
           icon: FileText
         }
-      case 'review_completed':
+      case 'review_approved':
         return {
-          label: '리뷰 승인완료',
+          label: '리뷰 승인됨',
           color: 'bg-green-100 text-green-800',
           icon: CheckCircle
         }
+      case 'review_rejected':
+        return {
+          label: '리뷰 반려됨',
+          color: 'bg-red-100 text-red-800',
+          icon: XCircle
+        }
       case 'point_requested':
         return {
-          label: '포인트 지급 대기중',
+          label: '포인트 지급 요청됨',
           color: 'bg-orange-100 text-orange-800',
           icon: Coins
         }
+      case 'point_approved':
+        return {
+          label: '포인트 지급 승인됨',
+          color: 'bg-purple-100 text-purple-800',
+          icon: CheckCircle
+        }
       case 'point_completed':
         return {
-          label: '포인트 지급 완료',
+          label: '포인트 지급 완료됨',
           color: 'bg-emerald-100 text-emerald-800',
           icon: CheckCircle
         }
-      case 'point_pending':
+      case 'cancelled':
         return {
-          label: '포인트 지급 전',
-          color: 'bg-yellow-100 text-yellow-800',
-          icon: Clock
-        }
-      case 'completed':
-        return {
-          label: '포인트 지급완료',
-          color: 'bg-emerald-100 text-emerald-800',
-          icon: CheckCircle
+          label: '취소됨',
+          color: 'bg-gray-100 text-gray-800',
+          icon: XCircle
         }
       case 'rejected':
         return {

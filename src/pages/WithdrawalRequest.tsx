@@ -1,358 +1,517 @@
-
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { usePointsManagement } from '../hooks/usePointsManagement'
-// Lumi SDK 제거됨 - Supabase API 사용
-import toast from 'react-hot-toast'
-import { 
-  Calculator, AlertCircle, CheckCircle, 
-  Clock, X, DollarSign, Receipt, TrendingDown
-} from 'lucide-react'
+import { useWithdrawal } from '../hooks/useWithdrawal'
+import { usePoints } from '../hooks/usePoints'
+import { CreditCard, DollarSign, AlertCircle, CheckCircle, Clock, X, Banknote, Shield, Plus } from 'lucide-react'
+
+interface BankAccount {
+  id: string
+  bank_name: string
+  account_number: string
+  account_holder: string
+  is_verified: boolean
+  verified_at?: string
+  created_at: string
+}
+
+interface WithdrawalRequest {
+  id: string
+  user_id: string
+  bank_account_id: string
+  points_amount: number
+  withdrawal_amount: number
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'failed'
+  request_reason?: string
+  admin_notes?: string
+  created_at: string
+  processed_at?: string
+  bank_account?: BankAccount
+}
 
 const WithdrawalRequest: React.FC = () => {
   const { user } = useAuth()
-  const { calculateTax, requestWithdrawal, getWithdrawalRequests, loading } = usePointsManagement()
-  const [userProfile, setUserProfile] = useState<any>(null)
-  const [withdrawalAmount, setWithdrawalAmount] = useState('')
-  const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([])
-  const [showTaxInfo, setShowTaxInfo] = useState(false)
-  const [profileLoading, setProfileLoading] = useState(true)
+  const { userPoints } = usePoints()
+  const { requestWithdrawal, getUserWithdrawals, getBankAccounts, addBankAccount } = useWithdrawal()
+  
+  // 상태 관리
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showAddAccount, setShowAddAccount] = useState(false)
+  const [showWithdrawalForm, setShowWithdrawalForm] = useState(false)
+  const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(null)
+  
+  // 계좌 추가 폼
+  const [accountForm, setAccountForm] = useState({
+    bank_name: '',
+    account_number: '',
+    account_holder: ''
+  })
+  
+  // 출금 요청 폼
+  const [withdrawalForm, setWithdrawalForm] = useState({
+    points_amount: 0,
+    request_reason: ''
+  })
 
+  // 은행 목록
+  const bankList = [
+    '국민은행', '신한은행', '우리은행', '하나은행', '농협은행', 
+    '기업은행', '새마을금고', '신협', '우체국', '카카오뱅크', 
+    '토스뱅크', '케이뱅크', '부산은행', '대구은행', '경남은행'
+  ]
+
+  // 데이터 로드
   useEffect(() => {
-    loadUserData()
-  }, [user])
+    if (user?.user_id) {
+      loadBankAccounts()
+      loadWithdrawalRequests()
+    }
+  }, [user?.user_id])
 
-  const loadUserData = async () => {
-    if (!user) return
+  const loadBankAccounts = async () => {
+    try {
+      setLoading(true)
+      const accounts = await getBankAccounts(user?.user_id || '')
+      setBankAccounts(accounts || [])
+    } catch (error) {
+      console.error('계좌 정보 로드 실패:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadWithdrawalRequests = async () => {
+    try {
+      const requests = await getUserWithdrawals()
+      setWithdrawalRequests(requests || [])
+    } catch (error) {
+      console.error('출금 요청 내역 로드 실패:', error)
+    }
+  }
+
+  // 계좌 추가
+  const handleAddAccount = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!accountForm.bank_name || !accountForm.account_number || !accountForm.account_holder) {
+      alert('모든 필드를 입력해주세요.')
+      return
+    }
 
     try {
-      setProfileLoading(true)
+      setLoading(true)
+      const newAccount = await addBankAccount(user?.user_id || '', accountForm)
       
-      // 사용자 프로필 조회 - Supabase API 사용
-      const profilesResponse = await fetch('/api/db/user-profiles')
-      const profilesResult = await profilesResponse.json()
-      const profiles = profilesResult.success ? profilesResult.data : []
-      const profile = Array.isArray(profiles) 
-        ? profiles.find((p: any) => p && p.user_id === user.user_id)
-        : null
-      setUserProfile(profile)
-
-      // 출금 요청 내역 조회
-      const withdrawals = await getWithdrawalRequests()
-      const userWithdrawals = withdrawals.filter(w => w.user_id === user.user_id)
-      setWithdrawalHistory(userWithdrawals)
-
+      if (newAccount) {
+        setAccountForm({ bank_name: '', account_number: '', account_holder: '' })
+        setShowAddAccount(false)
+        loadBankAccounts()
+      }
     } catch (error) {
-      console.error('사용자 데이터 로딩 실패:', error)
-      toast.error('데이터를 불러오는데 실패했습니다')
+      console.error('계좌 등록 실패:', error)
+      alert('계좌 등록 중 오류가 발생했습니다.')
     } finally {
-      setProfileLoading(false)
+      setLoading(false)
     }
   }
 
-  const handleWithdrawalRequest = async () => {
-    if (!user || !userProfile) {
-      toast.error('사용자 정보를 불러오는 중입니다')
-      return
-    }
-
-    const amount = parseInt(withdrawalAmount)
-    if (!amount || amount <= 0) {
-      toast.error('올바른 금액을 입력해주세요')
-      return
-    }
-
-    if (amount < 10000) {
-      toast.error('최소 출금 금액은 10,000P입니다')
-      return
-    }
-
-    if (amount > (userProfile.current_balance || 0)) {
-      toast.error('잔액이 부족합니다')
-      return
-    }
-
-    if (!userProfile.bank_name || !userProfile.account_number || !userProfile.account_holder) {
-      toast.error('계좌 정보를 먼저 등록해주세요')
-      return
-    }
-
-    const success = await requestWithdrawal(user.user_id, amount, {
-      bankName: userProfile.bank_name,
-      accountNumber: userProfile.account_number,
-      accountHolder: userProfile.account_holder
-    })
-
-    if (success) {
-      setWithdrawalAmount('')
-      loadUserData() // 데이터 새로고침
-    }
-  }
-
-  const taxInfo = withdrawalAmount ? calculateTax(parseInt(withdrawalAmount) || 0) : null
-
-  const getStatusBadge = (status: string) => {
-    const statusInfo = {
-      pending: { text: '검토중', icon: Clock, color: 'bg-yellow-100 text-yellow-800' },
-      approved: { text: '승인완료', icon: CheckCircle, color: 'bg-green-100 text-green-800' },
-      rejected: { text: '거절됨', icon: X, color: 'bg-red-100 text-red-800' },
-      completed: { text: '입금완료', icon: CheckCircle, color: 'bg-blue-100 text-blue-800' }
-    }
-    const info = statusInfo[status as keyof typeof statusInfo] || statusInfo.pending
-    const Icon = info.icon
+  // 출금 요청
+  const handleWithdrawalRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
     
-    return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${info.color}`}>
-        <Icon className="w-3 h-3 mr-1" />
-        {info.text}
-      </span>
-    )
+    if (!selectedAccount) {
+      alert('출금 계좌를 선택해주세요.')
+      return
+    }
+
+    if (withdrawalForm.points_amount <= 0) {
+      alert('출금할 포인트를 입력해주세요.')
+      return
+    }
+
+    if (withdrawalForm.points_amount > (userPoints?.available_points || 0)) {
+      alert('보유 포인트보다 많은 금액을 출금할 수 없습니다.')
+      return
+    }
+
+    if (withdrawalForm.points_amount < 1000) {
+      alert('최소 출금 금액은 1,000P입니다.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      const newRequest = await requestWithdrawal(
+        user?.user_id || '',
+        selectedAccount.id,
+        withdrawalForm.points_amount,
+        withdrawalForm.request_reason
+      )
+      
+      if (newRequest) {
+        setWithdrawalForm({ points_amount: 0, request_reason: '' })
+        setShowWithdrawalForm(false)
+        setSelectedAccount(null)
+        loadWithdrawalRequests()
+      }
+    } catch (error) {
+      console.error('출금 요청 실패:', error)
+      alert('출금 요청 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (profileLoading) {
+  // 상태별 색상 및 아이콘
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return { color: 'text-yellow-600 bg-yellow-100', icon: Clock, text: '대기중' }
+      case 'approved':
+        return { color: 'text-blue-600 bg-blue-100', icon: CheckCircle, text: '승인됨' }
+      case 'rejected':
+        return { color: 'text-red-600 bg-red-100', icon: X, text: '거절됨' }
+      case 'completed':
+        return { color: 'text-green-600 bg-green-100', icon: CheckCircle, text: '완료됨' }
+      case 'failed':
+        return { color: 'text-red-600 bg-red-100', icon: X, text: '실패' }
+      default:
+        return { color: 'text-gray-600 bg-gray-100', icon: Clock, text: '알 수 없음' }
+    }
+  }
+
+  if (!user) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">정보를 불러오는 중...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!userProfile) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center bg-white rounded-xl shadow-sm p-8">
           <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">프로필 정보가 필요합니다</h2>
-          <p className="text-gray-500 mb-4">출금을 위해서는 먼저 프로필을 등록해주세요</p>
-          <button
-            onClick={() => window.location.href = '/profile'}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"
-          >
-            프로필 등록하기
-          </button>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">로그인이 필요합니다</h2>
+          <p className="text-gray-600">포인트 출금을 위해 먼저 로그인해주세요.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">포인트 출금</h1>
-        <p className="text-gray-600">
-          적립된 포인트를 현금으로 출금할 수 있습니다 (3.3% 세금 자동 차감)
-        </p>
-      </div>
-
-      {/* 🔹 잔액 정보 */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">내 포인트 현황</h2>
-          <DollarSign className="w-6 h-6 text-green-500" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <p className="text-2xl font-bold text-green-600">
-              {(userProfile.current_balance || 0).toLocaleString()}P
-            </p>
-            <p className="text-sm text-green-700 mt-1">현재 잔액</p>
-          </div>
-
-          <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <p className="text-2xl font-bold text-blue-600">
-              {(userProfile.total_points_earned || 0).toLocaleString()}P
-            </p>
-            <p className="text-sm text-blue-700 mt-1">총 적립</p>
-          </div>
-
-          <div className="text-center p-4 bg-orange-50 rounded-lg">
-            <p className="text-2xl font-bold text-orange-600">
-              {(userProfile.total_points_withdrawn || 0).toLocaleString()}P
-            </p>
-            <p className="text-sm text-orange-700 mt-1">총 출금</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 🔹 출금 요청 */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">출금 요청</h2>
-          <button
-            onClick={() => setShowTaxInfo(!showTaxInfo)}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
-          >
-            <Calculator className="w-4 h-4" />
-            <span>세금 정보</span>
-          </button>
-        </div>
-
-        {/* 세금 정보 */}
-        {showTaxInfo && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start space-x-3">
-              <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5" />
-              <div>
-                <h3 className="font-medium text-blue-900 mb-2">세금 차감 안내</h3>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• 모든 출금 시 3.3% 원천징수세가 자동 차감됩니다</li>
-                  <li>• 최소 출금 금액: 10,000P</li>
-                  <li>• 출금은 영업일 기준 1-3일 소요됩니다</li>
-                  <li>• 세금계산서는 별도로 발행되지 않습니다</li>
-                </ul>
-              </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 헤더 */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                <Banknote className="w-8 h-8 mr-3 text-blue-600" />
+                포인트 출금
+              </h1>
+              <p className="text-gray-600 mt-1">보유 포인트를 현금으로 출금하세요</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">보유 포인트</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {(userPoints?.available_points || 0).toLocaleString()}P
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* 출금 금액 입력 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              출금 금액 (포인트)
-            </label>
-            <input
-              type="number"
-              value={withdrawalAmount}
-              onChange={(e) => setWithdrawalAmount(e.target.value)}
-              placeholder="10000"
-              min="10000"
-              max={userProfile.current_balance || 0}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              최소 10,000P, 최대 {(userProfile.current_balance || 0).toLocaleString()}P
-            </p>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 계좌 관리 */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <CreditCard className="w-5 h-5 mr-2" />
+                등록된 계좌
+              </h2>
+              <button
+                onClick={() => setShowAddAccount(true)}
+                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                계좌 추가
+              </button>
+            </div>
 
-          {/* 세금 계산 결과 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              실제 수령액 계산
-            </label>
-            {taxInfo ? (
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex justify-between text-sm mb-1">
-                  <span>출금 요청액:</span>
-                  <span>{taxInfo.grossAmount.toLocaleString()}원</span>
-                </div>
-                <div className="flex justify-between text-sm mb-1 text-red-600">
-                  <span>차감 세금 (3.3%):</span>
-                  <span>-{taxInfo.taxAmount.toLocaleString()}원</span>
-                </div>
-                <div className="flex justify-between font-medium text-green-600 border-t pt-1">
-                  <span>실수령액:</span>
-                  <span>{taxInfo.netAmount.toLocaleString()}원</span>
-                </div>
+            {bankAccounts.length === 0 ? (
+              <div className="text-center py-8">
+                <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500">등록된 계좌가 없습니다</p>
+                <p className="text-sm text-gray-400">출금을 위해 계좌를 등록해주세요</p>
               </div>
             ) : (
-              <div className="bg-gray-50 p-3 rounded-lg text-gray-500 text-sm">
-                금액을 입력하면 계산됩니다
+              <div className="space-y-3">
+                {bankAccounts.map((account) => (
+                  <div
+                    key={account.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedAccount?.id === account.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedAccount(account)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center">
+                          <span className="font-medium text-gray-900">{account.bank_name}</span>
+                          {account.is_verified && (
+                            <Shield className="w-4 h-4 text-green-500 ml-2" />
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600">{account.account_number}</p>
+                        <p className="text-sm text-gray-500">{account.account_holder}</p>
+                      </div>
+                      <div className="text-right">
+                        {account.is_verified ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            인증됨
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <Clock className="w-3 h-3 mr-1" />
+                            대기중
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {selectedAccount && selectedAccount.is_verified && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowWithdrawalForm(true)}
+                  className="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700"
+                >
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  출금 요청하기
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 출금 요청 내역 */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center mb-4">
+              <Clock className="w-5 h-5 mr-2" />
+              출금 요청 내역
+            </h2>
+
+            {withdrawalRequests.length === 0 ? (
+              <div className="text-center py-8">
+                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500">출금 요청 내역이 없습니다</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {withdrawalRequests.map((request) => {
+                  const statusInfo = getStatusInfo(request.status)
+                  const StatusIcon = statusInfo.icon
+                  
+                  return (
+                    <div key={request.id} className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                            <StatusIcon className="w-3 h-3 mr-1" />
+                            {statusInfo.text}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {new Date(request.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="font-medium text-gray-900">
+                          {request.points_amount.toLocaleString()}P → {request.withdrawal_amount.toLocaleString()}원
+                        </p>
+                        {request.bank_account && (
+                          <p className="text-sm text-gray-600">
+                            {request.bank_account.bank_name} {request.bank_account.account_number}
+                          </p>
+                        )}
+                        {request.request_reason && (
+                          <p className="text-sm text-gray-500">{request.request_reason}</p>
+                        )}
+                        {request.admin_notes && (
+                          <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+                            관리자 메모: {request.admin_notes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
         </div>
 
-        {/* 계좌 정보 */}
-        <div className="mt-6 pt-6 border-t">
-          <h3 className="font-medium text-gray-900 mb-3">출금 계좌 정보</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">은행명</p>
-              <p className="font-medium">{userProfile.bank_name || '미등록'}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">계좌번호</p>
-              <p className="font-medium">{userProfile.account_number || '미등록'}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-sm text-gray-500">예금주</p>
-              <p className="font-medium">{userProfile.account_holder || '미등록'}</p>
+        {/* 계좌 추가 모달 */}
+        {showAddAccount && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">계좌 정보 등록</h3>
+                <button
+                  onClick={() => setShowAddAccount(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddAccount} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    은행명
+                  </label>
+                  <select
+                    value={accountForm.bank_name}
+                    onChange={(e) => setAccountForm({ ...accountForm, bank_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="">은행을 선택하세요</option>
+                    {bankList.map((bank) => (
+                      <option key={bank} value={bank}>{bank}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    계좌번호
+                  </label>
+                  <input
+                    type="text"
+                    value={accountForm.account_number}
+                    onChange={(e) => setAccountForm({ ...accountForm, account_number: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="계좌번호를 입력하세요"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    예금주명
+                  </label>
+                  <input
+                    type="text"
+                    value={accountForm.account_holder}
+                    onChange={(e) => setAccountForm({ ...accountForm, account_holder: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="예금주명을 입력하세요"
+                    required
+                  />
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAccount(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {loading ? '등록중...' : '등록'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* 출금 요청 버튼 */}
-        <div className="mt-6">
-          <button
-            onClick={handleWithdrawalRequest}
-            disabled={loading || !withdrawalAmount || parseInt(withdrawalAmount) < 10000}
-            className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? '처리 중...' : '출금 요청하기'}
-          </button>
-        </div>
-      </div>
+        {/* 출금 요청 모달 */}
+        {showWithdrawalForm && selectedAccount && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">출금 요청</h3>
+                <button
+                  onClick={() => setShowWithdrawalForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-      {/* 🔹 출금 내역 */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex items-center space-x-3 mb-6">
-          <Receipt className="w-6 h-6 text-gray-600" />
-          <h2 className="text-xl font-bold text-gray-900">출금 내역</h2>
-        </div>
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">출금 계좌</p>
+                <p className="font-medium">{selectedAccount.bank_name} {selectedAccount.account_number}</p>
+                <p className="text-sm text-gray-500">{selectedAccount.account_holder}</p>
+              </div>
 
-        {withdrawalHistory.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    요청일
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    출금액
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    차감 세금
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    실수령액
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    상태
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    처리일
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {withdrawalHistory.map((withdrawal) => (
-                  <tr key={withdrawal._id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(withdrawal.requested_at).toLocaleDateString('ko-KR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {withdrawal.requested_amount.toLocaleString()}P
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                      -{withdrawal.tax_amount.toLocaleString()}원
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                      {withdrawal.net_amount.toLocaleString()}원
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(withdrawal.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {withdrawal.processed_at 
-                        ? new Date(withdrawal.processed_at).toLocaleDateString('ko-KR')
-                        : '-'
-                      }
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <TrendingDown className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">출금 내역이 없습니다</p>
+              <form onSubmit={handleWithdrawalRequest} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    출금할 포인트
+                  </label>
+                  <input
+                    type="number"
+                    value={withdrawalForm.points_amount}
+                    onChange={(e) => setWithdrawalForm({ ...withdrawalForm, points_amount: parseInt(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="출금할 포인트를 입력하세요"
+                    min="1000"
+                    max={userPoints?.available_points || 0}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    최소 1,000P, 최대 {(userPoints?.available_points || 0).toLocaleString()}P
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    출금 사유 (선택사항)
+                  </label>
+                  <textarea
+                    value={withdrawalForm.request_reason}
+                    onChange={(e) => setWithdrawalForm({ ...withdrawalForm, request_reason: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                    placeholder="출금 사유를 입력하세요"
+                  />
+                </div>
+
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>예상 출금 금액:</strong> {withdrawalForm.points_amount.toLocaleString()}원
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    * 환율: 1P = 1원 (실제 출금 시 환율이 적용될 수 있습니다)
+                  </p>
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowWithdrawalForm(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {loading ? '요청중...' : '출금 요청'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>

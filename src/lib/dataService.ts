@@ -38,7 +38,7 @@ export const checkSupabaseData = async () => {
     
     if (campaignsError) {
       console.error('❌ 캠페인 데이터 조회 실패:', campaignsError)
-} else {
+    } else {
       console.log(`📊 캠페인 수: ${campaigns.length}`)
       if (campaigns.length > 0) {
         console.log('📋 캠페인 목록:')
@@ -69,99 +69,95 @@ export const checkSupabaseData = async () => {
 // Supabase Client API 래퍼 - 모든 엔티티와 메서드 지원
 export const dataService = {
   entities: {
-  // 사용자 프로필
-  user_profiles: {
-    list: async (options?: { filter?: any }) => {
-      try {
-        console.log('🔥 Supabase user_profiles.list 호출됨', options)
-        
-        // Supabase 연결 상태 확인
-        if (!supabase) {
-          console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
-          return []
-        }
-        
-        let query = supabase.from('user_profiles').select('*')
-        
-        // 필터 옵션이 있으면 적용
-        if (options?.filter) {
-          Object.entries(options.filter).forEach(([key, value]) => {
-            query = query.eq(key, value)
-          })
-        }
-        
-        const { data, error } = await query.order('created_at', { ascending: false })
-        
-        if (error) {
+    // 사용자 프로필
+    user_profiles: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase user_profiles.list 호출됨', options)
+          
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+          
+          let query = supabase.from('user_profiles').select('*')
+          
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+          
+          const { data, error } = await query.order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ user_profiles 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase user_profiles.list 결과:', data)
+          return data || []
+        } catch (error) {
           console.error('❌ user_profiles 조회 실패:', error)
           return []
         }
-        
-        console.log('✅ Supabase user_profiles.list 결과:', data)
-        return Array.isArray(data) ? data : []
-      } catch (error) {
-        console.error('❌ 사용자 프로필 목록 조회 실패:', error)
-        return []
-      }
-    },
+      },
       get: async (id: string) => {
         try {
           const { data, error } = await supabase
             .from('user_profiles')
             .select('*')
-            .eq('user_id', id)
-            .limit(1)
+            .eq('id', id)
+            .single()
           
           if (error) {
-            console.error('user_profiles 조회 실패:', error)
+            console.error('❌ user_profiles 조회 실패:', error)
             return null
           }
           
-          return data && data.length > 0 ? data[0] : null
+          return data
         } catch (error) {
-          console.error('사용자 프로필 조회 실패:', error)
+          console.error('❌ user_profiles 조회 실패:', error)
           return null
         }
       },
       create: async (data: any) => {
         try {
-          console.log('🔥 Supabase user_profiles.create 호출됨:', data)
           const { data: result, error } = await supabase
             .from('user_profiles')
             .insert([data])
             .select()
+            .single()
           
           if (error) {
             console.error('❌ user_profiles 생성 실패:', error)
-            return { success: false, message: error.message }
+            return null
           }
           
-          console.log('✅ Supabase user_profiles.create 결과:', result)
-          return { success: true, data: result }
+          return result
         } catch (error) {
-          console.error('❌ 사용자 프로필 생성 실패:', error)
-          return { success: false, message: '사용자 프로필 생성에 실패했습니다' }
+          console.error('❌ user_profiles 생성 실패:', error)
+          return null
         }
       },
       update: async (id: string, data: any) => {
         try {
-          console.log('🔥 Supabase user_profiles.update 호출됨:', id, data)
           const { data: result, error } = await supabase
             .from('user_profiles')
             .update(data)
             .eq('id', id)
             .select()
+            .single()
           
           if (error) {
-            console.error('❌ user_profiles 수정 실패:', error)
-            return { success: false, message: error.message }
+            console.error('❌ user_profiles 업데이트 실패:', error)
+            return null
           }
           
-          console.log('✅ Supabase user_profiles.update 결과:', result)
-          return { success: true, data: result }
+          return result
         } catch (error) {
-          console.error('❌ 사용자 프로필 수정 실패:', error)
-          return { success: false, message: '사용자 프로필 수정에 실패했습니다' }
+          console.error('❌ user_profiles 업데이트 실패:', error)
+          return null
         }
       },
       delete: async (id: string) => {
@@ -172,18 +168,745 @@ export const dataService = {
             .eq('id', id)
           
           if (error) {
-            console.error('user_profiles 삭제 실패:', error)
-            return { success: false, message: error.message }
+            console.error('❌ user_profiles 삭제 실패:', error)
+            return false
           }
           
-          return { success: true }
+          return true
         } catch (error) {
-          console.error('사용자 프로필 삭제 실패:', error)
-          return { success: false, message: '사용자 프로필 삭제에 실패했습니다' }
+          console.error('❌ user_profiles 삭제 실패:', error)
+          return false
         }
       }
     },
-    
+
+    // 사용자 포인트
+    user_points: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase user_points.list 호출됨', options)
+          
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+          
+          let query = supabase.from('user_points').select('*')
+          
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+          
+          const { data, error } = await query.order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ user_points 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase user_points.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ user_points 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('user_points')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ user_points 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ user_points 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('user_points')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ user_points 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ user_points 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('user_points')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ user_points 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ user_points 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('user_points')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ user_points 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ user_points 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
+    // 포인트 히스토리
+    points_history: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase points_history.list 호출됨', options)
+          
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+          
+          let query = supabase.from('points_history').select('*')
+          
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+          
+          const { data, error } = await query.order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ points_history 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase points_history.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ points_history 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('points_history')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ points_history 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ points_history 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('points_history')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ points_history 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ points_history 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('points_history')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ points_history 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ points_history 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('points_history')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ points_history 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ points_history 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
+    // 캠페인
+    campaigns: {
+      list: async (options?: { select?: string }) => {
+        try {
+          console.log('🔥 Supabase campaigns.list 호출됨', options)
+          
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+          
+          let query = supabase.from('campaigns').select(options?.select || '*')
+          
+          const { data, error } = await query.order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ campaigns 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase campaigns.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ campaigns 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('campaigns')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ campaigns 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ campaigns 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('campaigns')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ campaigns 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ campaigns 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('campaigns')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ campaigns 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ campaigns 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('campaigns')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ campaigns 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ campaigns 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
+    // 사용자 신청
+    user_applications: {
+      list: async () => {
+        try {
+          console.log('🔥 Supabase user_applications.list 호출됨')
+          const { data, error } = await supabase
+            .from('user_applications')
+            .select('*')
+            .order('updated_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ user_applications 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase user_applications.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ user_applications 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('user_applications')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ user_applications 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ user_applications 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('user_applications')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ user_applications 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ user_applications 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('user_applications')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ user_applications 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ user_applications 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('user_applications')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ user_applications 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ user_applications 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
+    // 리뷰 제출
+    review_submissions: {
+      list: async () => {
+        try {
+          console.log('🔥 Supabase review_submissions.list 호출됨')
+          const { data, error } = await supabase
+            .from('review_submissions')
+            .select('*')
+            .order('updated_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ review_submissions 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase review_submissions.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ review_submissions 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('review_submissions')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ review_submissions 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ review_submissions 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('review_submissions')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ review_submissions 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ review_submissions 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('review_submissions')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ review_submissions 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ review_submissions 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('review_submissions')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ review_submissions 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ review_submissions 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
+    // 사용자 리뷰
+    user_reviews: {
+      list: async () => {
+        try {
+          console.log('🔥 Supabase user_reviews.list 호출됨')
+          const { data, error } = await supabase
+            .from('user_reviews')
+            .select('*')
+            .order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ user_reviews 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase user_reviews.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ user_reviews 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('user_reviews')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ user_reviews 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ user_reviews 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('user_reviews')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ user_reviews 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ user_reviews 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('user_reviews')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ user_reviews 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ user_reviews 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('user_reviews')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ user_reviews 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ user_reviews 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
+    // 관리자 알림
+    admin_notifications: {
+      list: async () => {
+        try {
+          console.log('🔥 Supabase admin_notifications.list 호출됨')
+          const { data, error } = await supabase
+            .from('admin_notifications')
+            .select('*')
+            .order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ admin_notifications 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase admin_notifications.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ admin_notifications 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('admin_notifications')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ admin_notifications 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ admin_notifications 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('admin_notifications')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ admin_notifications 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ admin_notifications 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('admin_notifications')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ admin_notifications 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ admin_notifications 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('admin_notifications')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ admin_notifications 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ admin_notifications 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
     // 사용자
     users: {
       list: async () => {
@@ -202,51 +925,66 @@ export const dataService = {
           console.log('✅ Supabase users.list 결과:', data)
           return data || []
         } catch (error) {
-          console.error('❌ 사용자 목록 조회 실패:', error)
+          console.error('❌ users 조회 실패:', error)
           return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ users 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ users 조회 실패:', error)
+          return null
         }
       },
       create: async (data: any) => {
         try {
-          console.log('🔥 Supabase users.create 호출됨:', data)
-          
           const { data: result, error } = await supabase
             .from('users')
             .insert([data])
             .select()
+            .single()
           
           if (error) {
             console.error('❌ users 생성 실패:', error)
-            return { success: false, message: error.message }
+            return null
           }
           
-          console.log('✅ Supabase users.create 성공:', result)
-          return { success: true, data: result }
+          return result
         } catch (error) {
-          console.error('❌ users 생성 예외:', error)
-          return { success: false, message: '사용자 생성에 실패했습니다' }
+          console.error('❌ users 생성 실패:', error)
+          return null
         }
       },
       update: async (id: string, data: any) => {
         try {
-          console.log('🔥 Supabase users.update 호출됨:', { id, data })
-          
           const { data: result, error } = await supabase
             .from('users')
             .update(data)
             .eq('id', id)
             .select()
+            .single()
           
           if (error) {
             console.error('❌ users 업데이트 실패:', error)
-            return { success: false, message: error.message }
+            return null
           }
           
-          console.log('✅ Supabase users.update 성공:', result)
-          return { success: true, data: result }
+          return result
         } catch (error) {
-          console.error('❌ users 업데이트 예외:', error)
-          return { success: false, message: '사용자 수정에 실패했습니다' }
+          console.error('❌ users 업데이트 실패:', error)
+          return null
         }
       },
       delete: async (id: string) => {
@@ -257,966 +995,149 @@ export const dataService = {
             .eq('id', id)
           
           if (error) {
-            return { success: false, message: error.message }
+            console.error('❌ users 삭제 실패:', error)
+            return false
           }
           
-          return { success: true }
+          return true
         } catch (error) {
-          return { success: false, message: '사용자 삭제에 실패했습니다' }
+          console.error('❌ users 삭제 실패:', error)
+          return false
         }
       }
     },
 
-    // 사용자 신청
-    user_applications: {
+    // 은행 계좌
+    bank_accounts: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase user_applications.list 호출됨', options)
+          console.log('🔥 Supabase bank_accounts.list 호출됨', options)
           
-          let query = supabase.from('user_applications').select('*')
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
           
-          // 필터 옵션이 있으면 적용
+          let query = supabase.from('bank_accounts').select('*')
+          
           if (options?.filter) {
             Object.entries(options.filter).forEach(([key, value]) => {
               query = query.eq(key, value)
             })
           }
           
-          const { data, error } = await query
+          const { data, error } = await query.order('created_at', { ascending: false })
           
           if (error) {
-            console.error('❌ user_applications 조회 실패:', error)
+            console.error('❌ bank_accounts 조회 실패:', error)
             return []
           }
           
-          console.log('✅ Supabase user_applications.list 결과:', data)
+          console.log('✅ Supabase bank_accounts.list 결과:', data)
           return data || []
         } catch (error) {
-          console.error('❌ 사용자 신청 목록 조회 실패:', error)
+          console.error('❌ bank_accounts 조회 실패:', error)
           return []
         }
       },
       get: async (id: string) => {
         try {
           const { data, error } = await supabase
-            .from('user_applications')
+            .from('bank_accounts')
             .select('*')
             .eq('id', id)
             .single()
           
           if (error) {
-        return null
-          }
-          
-          return data
-        } catch (error) {
-          return null
-        }
-      },
-      create: async (data: any) => {
-        try {
-          // 기존 테이블 구조에 맞게 데이터 변환
-          const transformedData = {
-            user_id: data.user_id, // character varying(255)
-            campaign_id: data.experience_id, // uuid
-            status: data.status || 'pending', // character varying(20)
-            application_data: {
-              name: data.name,
-              email: data.email,
-              phone: data.phone,
-              address: data.address,
-              detailed_address: data.detailed_address,
-              instagram_handle: data.instagram_handle,
-              blog_url: data.blog_url,
-              youtube_channel: data.youtube_channel,
-              application_reason: data.application_reason,
-              experience_plan: data.experience_plan,
-              platform_type: data.platform_type,
-              submitted_by_role: data.submitted_by_role,
-              submitted_by_admin_role: data.submitted_by_admin_role,
-              debug_info: data.debug_info
-            }, // jsonb
-            applied_at: data.applied_at || new Date().toISOString() // timestamp with time zone
-          }
-          
-          console.log('🔥 user_applications.create 호출됨:', transformedData)
-          
-          const { data: result, error } = await supabase
-            .from('user_applications')
-            .insert([transformedData])
-            .select()
-            .single()
-          
-          if (error) {
-            console.error('❌ user_applications 생성 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ user_applications 생성 성공:', result)
-          return { success: true, data: result }
-        } catch (error) {
-          console.error('❌ user_applications 생성 실패:', error)
-          return { success: false, message: '사용자 신청 생성에 실패했습니다' }
-        }
-      },
-      update: async (id: string, data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('user_applications')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '사용자 신청 수정에 실패했습니다' }
-        }
-      },
-      delete: async (id: string) => {
-        try {
-          const { error } = await supabase
-            .from('user_applications')
-            .delete()
-            .eq('id', id)
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true }
-        } catch (error) {
-          return { success: false, message: '사용자 신청 삭제에 실패했습니다' }
-        }
-      }
-    },
-
-    // 체험단 코드
-    experience_codes: {
-      list: async () => {
-        try {
-          console.log('🔥 Supabase experience_codes.list 호출됨')
-          const { data, error } = await supabase
-            .from('experience_codes')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('❌ experience_codes 조회 실패:', error)
-            return []
-          }
-          
-          console.log('✅ Supabase experience_codes.list 결과:', data)
-          return data || []
-        } catch (error) {
-          console.error('❌ 체험단 코드 목록 조회 실패:', error)
-          return []
-        }
-      },
-      create: async (data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('experience_codes')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '체험단 코드 생성에 실패했습니다' }
-        }
-      },
-      update: async (id: string, data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('experience_codes')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '체험단 코드 수정에 실패했습니다' }
-        }
-      },
-      delete: async (id: string) => {
-        try {
-          const { error } = await supabase
-            .from('experience_codes')
-            .delete()
-            .eq('id', id)
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true }
-        } catch (error) {
-          return { success: false, message: '체험단 코드 삭제에 실패했습니다' }
-        }
-      }
-    },
-
-    // 관리자 알림
-    admin_notifications: {
-      list: async () => {
-        try {
-          const { data, error } = await supabase
-            .from('admin_notifications')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('admin_notifications 조회 실패:', error)
-        return []
-          }
-          
-          return data || []
-        } catch (error) {
-          console.error('관리자 알림 조회 실패:', error)
-          return []
-        }
-      },
-      create: async (data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('admin_notifications')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '관리자 알림 생성에 실패했습니다' }
-        }
-      }
-    },
-
-    // 사용자 포인트
-    user_points: {
-      list: async () => {
-        try {
-          const { data, error } = await supabase
-            .from('user_points')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('user_points 조회 실패:', error)
-        return []
-          }
-          
-          return data || []
-        } catch (error) {
-          console.error('사용자 포인트 조회 실패:', error)
-          return []
-        }
-      },
-      create: async (data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('user_points')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '사용자 포인트 생성에 실패했습니다' }
-        }
-      },
-      update: async (id: string, data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('user_points')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '사용자 포인트 수정에 실패했습니다' }
-        }
-      },
-      delete: async (id: string) => {
-        try {
-          const { error } = await supabase
-            .from('user_points')
-            .delete()
-            .eq('id', id)
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true }
-        } catch (error) {
-          return { success: false, message: '사용자 포인트 삭제에 실패했습니다' }
-        }
-      }
-    },
-
-    // 포인트 내역
-    points_history: {
-      list: async () => {
-        try {
-          const { data, error } = await supabase
-            .from('points_history')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('points_history 조회 실패:', error)
-        return []
-          }
-          
-          return data || []
-        } catch (error) {
-          console.error('포인트 내역 조회 실패:', error)
-          return []
-        }
-      },
-      create: async (data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('points_history')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '포인트 내역 생성에 실패했습니다' }
-        }
-      }
-    },
-
-    // 리뷰 제출
-    review_submissions: {
-      list: async () => {
-        try {
-          console.log('🔥 Supabase review_submissions.list 호출됨')
-          const { data, error } = await supabase
-            .from('review_submissions')
-            .select('*')
-          
-          if (error) {
-            console.error('❌ review_submissions 조회 실패:', error)
-        return []
-          }
-          
-          console.log('✅ Supabase review_submissions.list 결과:', data)
-          return data || []
-        } catch (error) {
-          console.error('❌ 리뷰 제출 목록 조회 실패:', error)
-          return []
-        }
-      },
-      get: async (id: string) => {
-        try {
-          const { data, error } = await supabase
-            .from('review_submissions')
-            .select('*')
-            .eq('id', id)
-            .single()
-          
-          if (error) {
-        return null
-          }
-          
-          return data
-        } catch (error) {
-          return null
-        }
-      },
-      create: async (data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('review_submissions')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '리뷰 제출 생성에 실패했습니다' }
-        }
-      },
-      update: async (id: string, data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('review_submissions')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '리뷰 제출 수정에 실패했습니다' }
-        }
-      },
-      delete: async (id: string) => {
-        try {
-          const { error } = await supabase
-            .from('review_submissions')
-            .delete()
-            .eq('id', id)
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true }
-        } catch (error) {
-          return { success: false, message: '리뷰 제출 삭제에 실패했습니다' }
-        }
-      }
-    },
-
-    // 사용자 코드
-    user_codes: {
-      list: async () => {
-        try {
-          console.log('🔥 Supabase user_codes.list 호출됨')
-          const { data, error } = await supabase
-            .from('user_codes')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('❌ user_codes 조회 실패:', error)
-            return []
-          }
-          
-          console.log('✅ Supabase user_codes.list 결과:', data)
-          return data || []
-        } catch (error) {
-          console.error('❌ 사용자 코드 목록 조회 실패:', error)
-          return []
-        }
-      },
-      create: async (data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('user_codes')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '사용자 코드 생성에 실패했습니다' }
-        }
-      }
-    },
-
-    // 인플루언서 프로필
-    influencer_profiles: {
-      list: async () => {
-        try {
-          console.log('🔥 Supabase influencer_profiles.list 호출됨')
-          const { data, error } = await supabase
-            .from('influencer_profiles')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('❌ influencer_profiles 조회 실패:', error)
-            return []
-          }
-          
-          console.log('✅ Supabase influencer_profiles.list 결과:', data)
-          return data || []
-        } catch (error) {
-          console.error('❌ 인플루언서 프로필 목록 조회 실패:', error)
-          return []
-        }
-      },
-      create: async (data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('influencer_profiles')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '인플루언서 프로필 생성에 실패했습니다' }
-        }
-      },
-      update: async (id: string, data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('influencer_profiles')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '인플루언서 프로필 수정에 실패했습니다' }
-        }
-      }
-    },
-
-    // 사용자 리뷰
-    user_reviews: {
-      list: async () => {
-        try {
-          const { data, error } = await supabase
-            .from('user_reviews')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('user_reviews 조회 실패:', error)
-        return []
-          }
-          
-          return data || []
-        } catch (error) {
-          console.error('사용자 리뷰 조회 실패:', error)
-          return []
-        }
-      },
-      create: async (data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('user_reviews')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '사용자 리뷰 생성에 실패했습니다' }
-        }
-      },
-      update: async (id: string, data: any) => {
-        try {
-          const { data: result, error } = await supabase
-            .from('user_reviews')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true, data: result }
-        } catch (error) {
-          return { success: false, message: '사용자 리뷰 업데이트에 실패했습니다' }
-        }
-      },
-      delete: async (id: string) => {
-        try {
-          const { error } = await supabase
-            .from('user_reviews')
-            .delete()
-            .eq('id', id)
-          
-          if (error) {
-            return { success: false, message: error.message }
-          }
-          
-          return { success: true }
-        } catch (error) {
-          return { success: false, message: '사용자 리뷰 삭제에 실패했습니다' }
-        }
-      }
-    },
-
-    // 캠페인 (체험단)
-    campaigns: {
-      list: async () => {
-        try {
-          console.log('🔥 Supabase campaigns.list 호출됨')
-          const { data, error } = await supabase
-            .from('campaigns')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('❌ campaigns 조회 실패:', error)
-            return []
-          }
-          
-          console.log('✅ Supabase campaigns.list 결과:', data)
-          return data || []
-        } catch (error) {
-          console.error('❌ 캠페인 목록 조회 실패:', error)
-          return []
-        }
-      },
-      get: async (id: string) => {
-        try {
-          const { data, error } = await supabase
-            .from('campaigns')
-            .select('*')
-            .eq('id', id)
-            .single()
-          
-          if (error) {
-            console.error('campaigns 조회 실패:', error)
+            console.error('❌ bank_accounts 조회 실패:', error)
             return null
           }
           
           return data
         } catch (error) {
-          console.error('캠페인 조회 실패:', error)
+          console.error('❌ bank_accounts 조회 실패:', error)
           return null
         }
       },
       create: async (data: any) => {
         try {
-          console.log('🔥 Supabase campaigns.create 호출됨:', data)
           const { data: result, error } = await supabase
-            .from('campaigns')
+            .from('bank_accounts')
             .insert([data])
             .select()
             .single()
           
           if (error) {
-            console.error('❌ campaigns 생성 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ Supabase campaigns.create 결과:', result)
-          return { success: true, data: result }
-        } catch (error) {
-          console.error('❌ 캠페인 생성 실패:', error)
-          return { success: false, message: '캠페인 생성에 실패했습니다' }
-        }
-      },
-      update: async (id: string, data: any) => {
-        try {
-          console.log('🔥 Supabase campaigns.update 호출됨:', id, data)
-          const { data: result, error } = await supabase
-            .from('campaigns')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (error) {
-            console.error('❌ campaigns 수정 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ Supabase campaigns.update 결과:', result)
-          return { success: true, data: result }
-        } catch (error) {
-          console.error('❌ 캠페인 수정 실패:', error)
-          return { success: false, message: '캠페인 수정에 실패했습니다' }
-        }
-      },
-      delete: async (id: string) => {
-        try {
-          console.log('🔥 Supabase campaigns.delete 호출됨:', id)
-          const { error } = await supabase
-            .from('campaigns')
-            .delete()
-            .eq('id', id)
-          
-          if (error) {
-            console.error('❌ campaigns 삭제 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ Supabase campaigns.delete 성공')
-          return { success: true }
-        } catch (error) {
-          console.error('❌ 캠페인 삭제 실패:', error)
-          return { success: false, message: '캠페인 삭제에 실패했습니다' }
-        }
-      }
-    },
-
-    // 관리자 사용자
-    admin_users: {
-      list: async () => {
-        try {
-          console.log('🔥 Supabase admin_users.list 호출됨')
-          const { data, error } = await supabase
-            .from('admins')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (error) {
-            console.error('❌ admins 조회 실패:', error)
-            return []
-          }
-          
-          console.log('✅ Supabase admins.list 결과:', data)
-          return data || []
-        } catch (error) {
-          console.error('❌ 관리자 사용자 목록 조회 실패:', error)
-          return []
-        }
-      },
-      get: async (id: string) => {
-        try {
-          const { data, error } = await supabase
-            .from('admins')
-            .select('*')
-            .eq('id', id)
-            .single()
-          
-          if (error) {
+            console.error('❌ bank_accounts 생성 실패:', error)
             return null
           }
           
-          return data
+          return result
         } catch (error) {
+          console.error('❌ bank_accounts 생성 실패:', error)
           return null
-        }
-      },
-      create: async (data: any) => {
-        try {
-          console.log('🔥 Supabase admins.create 호출됨:', data)
-          const { data: result, error } = await supabase
-            .from('admins')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            console.error('❌ admins 생성 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ Supabase admins.create 결과:', result)
-          return { success: true, data: result }
-        } catch (error) {
-          console.error('❌ 관리자 사용자 생성 실패:', error)
-          return { success: false, message: '관리자 사용자 생성에 실패했습니다' }
         }
       },
       update: async (id: string, data: any) => {
         try {
-          console.log('🔥 Supabase admins.update 호출됨:', id, data)
           const { data: result, error } = await supabase
-            .from('admins')
+            .from('bank_accounts')
             .update(data)
             .eq('id', id)
             .select()
             .single()
           
           if (error) {
-            console.error('❌ admins 수정 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ Supabase admins.update 결과:', result)
-          return { success: true, data: result }
-        } catch (error) {
-          console.error('❌ 관리자 사용자 수정 실패:', error)
-          return { success: false, message: '관리자 사용자 수정에 실패했습니다' }
-        }
-      },
-      delete: async (id: string) => {
-        try {
-          console.log('🔥 Supabase admins.delete 호출됨:', id)
-          const { error } = await supabase
-            .from('admins')
-            .delete()
-            .eq('id', id)
-          
-          if (error) {
-            console.error('❌ admins 삭제 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ Supabase admins.delete 성공')
-          return { success: true }
-        } catch (error) {
-          console.error('❌ 관리자 사용자 삭제 실패:', error)
-          return { success: false, message: '관리자 사용자 삭제에 실패했습니다' }
-        }
-      }
-    },
-
-    // 찜하기
-    wishlist: {
-      list: async (options?: { filter?: any }) => {
-        try {
-          console.log('🔥 Supabase wishlist.list 호출됨')
-          let query = supabase
-            .from('wishlist')
-            .select('*')
-            .order('created_at', { ascending: false })
-          
-          if (options?.filter) {
-            Object.keys(options.filter).forEach(key => {
-              query = query.eq(key, options.filter[key])
-            })
-          }
-          
-          const { data, error } = await query
-          
-          if (error) {
-            console.error('❌ wishlist 조회 실패:', error)
-            return []
-          }
-          
-          console.log('✅ Supabase wishlist.list 결과:', data)
-          return data || []
-        } catch (error) {
-          console.error('❌ 찜목록 조회 실패:', error)
-          return []
-        }
-      },
-      get: async (id: string) => {
-        try {
-          const { data, error } = await supabase
-            .from('wishlist')
-            .select('*')
-            .eq('id', id)
-            .single()
-          
-          if (error) {
-            console.error('wishlist 조회 실패:', error)
+            console.error('❌ bank_accounts 업데이트 실패:', error)
             return null
           }
           
-          return data
+          return result
         } catch (error) {
-          console.error('찜목록 조회 실패:', error)
+          console.error('❌ bank_accounts 업데이트 실패:', error)
           return null
-        }
-      },
-      create: async (data: any) => {
-        try {
-          console.log('🔥 Supabase wishlist.create 호출됨:', data)
-          const { data: result, error } = await supabase
-            .from('wishlist')
-            .insert([data])
-            .select()
-            .single()
-          
-          if (error) {
-            console.error('❌ wishlist 생성 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ Supabase wishlist.create 결과:', result)
-          return { success: true, data: result }
-        } catch (error) {
-          console.error('❌ 찜목록 생성 실패:', error)
-          return { success: false, message: '찜목록 생성에 실패했습니다' }
-        }
-      },
-      update: async (id: string, data: any) => {
-        try {
-          console.log('🔥 Supabase wishlist.update 호출됨:', id, data)
-          const { data: result, error } = await supabase
-            .from('wishlist')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single()
-          
-          if (error) {
-            console.error('❌ wishlist 수정 실패:', error)
-            return { success: false, message: error.message }
-          }
-          
-          console.log('✅ Supabase wishlist.update 결과:', result)
-          return { success: true, data: result }
-        } catch (error) {
-          console.error('❌ 찜목록 수정 실패:', error)
-          return { success: false, message: '찜목록 수정에 실패했습니다' }
         }
       },
       delete: async (id: string) => {
         try {
-          console.log('🔥 Supabase wishlist.delete 호출됨:', id)
           const { error } = await supabase
-            .from('wishlist')
+            .from('bank_accounts')
             .delete()
             .eq('id', id)
           
           if (error) {
-            console.error('❌ wishlist 삭제 실패:', error)
-            return { success: false, message: error.message }
+            console.error('❌ bank_accounts 삭제 실패:', error)
+            return false
           }
           
-          console.log('✅ Supabase wishlist.delete 성공')
-          return { success: true }
+          return true
         } catch (error) {
-          console.error('❌ 찜목록 삭제 실패:', error)
-          return { success: false, message: '찜목록 삭제에 실패했습니다' }
+          console.error('❌ bank_accounts 삭제 실패:', error)
+          return false
         }
       }
     },
 
     // 출금 요청
     withdrawal_requests: {
-      list: async () => {
+      list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase withdrawal_requests.list 호출됨')
-          const { data, error } = await supabase
-            .from('withdrawal_requests')
-            .select('*')
+          console.log('🔥 Supabase withdrawal_requests.list 호출됨', options)
+          
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+          
+          let query = supabase.from('withdrawal_requests').select('*')
+          
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+          
+          const { data, error } = await query.order('created_at', { ascending: false })
           
           if (error) {
             console.error('❌ withdrawal_requests 조회 실패:', error)
@@ -1226,7 +1147,7 @@ export const dataService = {
           console.log('✅ Supabase withdrawal_requests.list 결과:', data)
           return data || []
         } catch (error) {
-          console.error('❌ 출금 요청 목록 조회 실패:', error)
+          console.error('❌ withdrawal_requests 조회 실패:', error)
           return []
         }
       },
@@ -1239,13 +1160,13 @@ export const dataService = {
             .single()
           
           if (error) {
-            console.error('withdrawal_requests 조회 실패:', error)
+            console.error('❌ withdrawal_requests 조회 실패:', error)
             return null
           }
           
           return data
         } catch (error) {
-          console.error('출금 요청 조회 실패:', error)
+          console.error('❌ withdrawal_requests 조회 실패:', error)
           return null
         }
       },
@@ -1255,16 +1176,17 @@ export const dataService = {
             .from('withdrawal_requests')
             .insert([data])
             .select()
+            .single()
           
           if (error) {
             console.error('❌ withdrawal_requests 생성 실패:', error)
-            return { success: false, message: error.message }
+            return null
           }
           
-          return { success: true, data: result }
+          return result
         } catch (error) {
-          console.error('❌ 출금 요청 생성 실패:', error)
-          return { success: false, message: '출금 요청 생성에 실패했습니다' }
+          console.error('❌ withdrawal_requests 생성 실패:', error)
+          return null
         }
       },
       update: async (id: string, data: any) => {
@@ -1274,16 +1196,17 @@ export const dataService = {
             .update(data)
             .eq('id', id)
             .select()
+            .single()
           
           if (error) {
-            console.error('❌ withdrawal_requests 수정 실패:', error)
-            return { success: false, message: error.message }
+            console.error('❌ withdrawal_requests 업데이트 실패:', error)
+            return null
           }
           
-          return { success: true, data: result }
+          return result
         } catch (error) {
-          console.error('❌ 출금 요청 수정 실패:', error)
-          return { success: false, message: '출금 요청 수정에 실패했습니다' }
+          console.error('❌ withdrawal_requests 업데이트 실패:', error)
+          return null
         }
       },
       delete: async (id: string) => {
@@ -1295,485 +1218,347 @@ export const dataService = {
           
           if (error) {
             console.error('❌ withdrawal_requests 삭제 실패:', error)
-            return { success: false, message: error.message }
+            return false
           }
           
-          return { success: true }
+          return true
         } catch (error) {
-          console.error('❌ 출금 요청 삭제 실패:', error)
-          return { success: false, message: '출금 요청 삭제에 실패했습니다' }
+          console.error('❌ withdrawal_requests 삭제 실패:', error)
+          return false
         }
       }
-    }
-  },
+    },
 
-  // Supabase 인증
-  auth: {
-    signIn: async (provider?: string) => {
-      try {
-        if (provider === 'google') {
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: `${window.location.origin}/auth/google/callback`
-            }
-          })
+    // 찜목록
+    wishlist: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase wishlist.list 호출됨', options)
+          
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+          
+          let query = supabase.from('wishlist').select('*')
+          
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+          
+          const { data, error } = await query.order('created_at', { ascending: false })
           
           if (error) {
-            console.error('Google 로그인 실패:', error)
+            console.error('❌ wishlist 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase wishlist.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ wishlist 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('wishlist')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ wishlist 조회 실패:', error)
             return null
           }
           
           return data
+        } catch (error) {
+          console.error('❌ wishlist 조회 실패:', error)
+          return null
         }
-        
-        return null
-      } catch (error) {
-        console.error('인증 실패:', error)
-        return null
-      }
-    },
-    signInWithPassword: async (credentials: { email: string; password: string }) => {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword(credentials)
-        
-        if (error) {
-          console.error('로그인 실패:', error)
-          return { data: null, error }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('wishlist')
+            .insert([data])
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ wishlist 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ wishlist 생성 실패:', error)
+          return null
         }
-        
-        return { data, error: null }
-      } catch (error) {
-        console.error('로그인 실패:', error)
-        return { data: null, error }
-      }
-    },
-    signUp: async (credentials: { email: string; password: string }) => {
-      try {
-        const { data, error } = await supabase.auth.signUp(credentials)
-        
-        if (error) {
-          console.error('회원가입 실패:', error)
-          return { data: null, error }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('wishlist')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ wishlist 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ wishlist 업데이트 실패:', error)
+          return null
         }
-        
-        return { data, error: null }
-      } catch (error) {
-        console.error('회원가입 실패:', error)
-        return { data: null, error }
-      }
-    },
-    getSession: async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          console.error('세션 조회 실패:', error)
-          return { data: { session: null }, error }
-        }
-        
-        return { data, error: null }
-      } catch (error) {
-        console.error('세션 조회 실패:', error)
-        return { data: { session: null }, error }
-      }
-    },
-    signInWithOAuth: async (options: { provider: string; options?: any }) => {
-      try {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: options.provider as any,
-          options: options.options
-        })
-        
-        if (error) {
-          console.error('OAuth 로그인 실패:', error)
-          return { data: null, error }
-        }
-        
-        return { data, error: null }
-      } catch (error) {
-        console.error('OAuth 로그인 실패:', error)
-        return { data: null, error }
-      }
-    },
-    signOut: async () => {
-      try {
-        const { error } = await supabase.auth.signOut()
-        
-        if (error) {
-          console.error('로그아웃 실패:', error)
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('wishlist')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ wishlist 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ wishlist 삭제 실패:', error)
           return false
         }
-        
-        return true
-      } catch (error) {
-        console.error('로그아웃 실패:', error)
-        return false
       }
     },
-    user: null
-  },
-
-  // Supabase Storage
-  storage: {
-    upload: async (file: File, bucket: string, path: string) => {
-      try {
-        const { data, error } = await supabase.storage
-          .from(bucket)
-          .upload(path, file)
-        
-        if (error) {
-          console.error('파일 업로드 실패:', error)
-        return null
-        }
-        
-        return data
-      } catch (error) {
-        console.error('파일 업로드 실패:', error)
-        return null
-      }
-    },
-    getPublicUrl: (bucket: string, path: string) => {
-      const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(path)
-      
-      return data.publicUrl
-    }
-  },
-
-  // 출금 요청
-  withdrawal_requests: {
-    list: async () => {
-      try {
-        console.log('🔥 Supabase withdrawal_requests.list 호출됨')
-        const { data, error } = await supabase
-          .from('withdrawal_requests')
-          .select('*')
-        
-        if (error) {
-          console.error('❌ withdrawal_requests 조회 실패:', error)
-          return []
-        }
-        
-        console.log('✅ Supabase withdrawal_requests.list 결과:', data)
-        return data || []
-      } catch (error) {
-        console.error('❌ 출금 요청 목록 조회 실패:', error)
-        return []
-      }
-    },
-    get: async (id: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('withdrawal_requests')
-          .select('*')
-          .eq('id', id)
-          .single()
-        
-        if (error) {
-          console.error('withdrawal_requests 조회 실패:', error)
-          return null
-        }
-        
-        return data
+    
+    // 사용자 코드
+    user_codes: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase user_codes.list 호출됨', options)
+          
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+          
+          let query = supabase.from('user_codes').select('*')
+          
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+          
+          const { data, error } = await query.order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ user_codes 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase user_codes.list 결과:', data)
+          return data || []
         } catch (error) {
-        console.error('출금 요청 조회 실패:', error)
-          return null
-        }
-    },
-    create: async (data: any) => {
-      try {
-        const { data: result, error } = await supabase
-          .from('withdrawal_requests')
-          .insert([data])
-          .select()
-          .single()
-        
-        if (error) {
-          return { success: false, message: error.message }
-        }
-        
-        return { success: true, data: result }
-      } catch (error) {
-        return { success: false, message: '출금 요청 생성에 실패했습니다' }
-      }
-    },
-    update: async (id: string, data: any) => {
-      try {
-        const { data: result, error } = await supabase
-          .from('withdrawal_requests')
-          .update(data)
-          .eq('id', id)
-          .select()
-          .single()
-        
-        if (error) {
-          return { success: false, message: error.message }
-        }
-        
-        return { success: true, data: result }
-      } catch (error) {
-        return { success: false, message: '출금 요청 수정에 실패했습니다' }
-      }
-    },
-    delete: async (id: string) => {
-      try {
-        const { error } = await supabase
-          .from('withdrawal_requests')
-          .delete()
-          .eq('id', id)
-        
-        if (error) {
-          return { success: false, message: error.message }
-        }
-        
-        return { success: true }
-      } catch (error) {
-        return { success: false, message: '출금 요청 삭제에 실패했습니다' }
-      }
-    }
-  },
-
-  // 포인트 히스토리
-  points_history: {
-    list: async (options?: { filter?: any, sort?: any }) => {
-      try {
-        console.log('🔥 Supabase points_history.list 호출됨', options)
-        
-        let query = supabase.from('points_history').select('*')
-        
-        // 필터 옵션이 있으면 적용
-        if (options?.filter) {
-          Object.entries(options.filter).forEach(([key, value]) => {
-            query = query.eq(key, value)
-          })
-        }
-        
-        // 정렬 옵션이 있으면 적용
-        if (options?.sort) {
-          Object.entries(options.sort).forEach(([key, value]) => {
-            query = query.order(key, { ascending: value === 1 })
-          })
-        } else {
-          query = query.order('created_at', { ascending: false })
-        }
-        
-        const { data, error } = await query
-        
-        if (error) {
-          console.error('❌ points_history 조회 실패:', error)
+          console.error('❌ user_codes 조회 실패:', error)
           return []
         }
-        
-        console.log('✅ Supabase points_history.list 결과:', data)
-        return data || []
-      } catch (error) {
-        console.error('❌ 포인트 히스토리 목록 조회 실패:', error)
-        return []
-      }
-    },
-    get: async (id: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('points_history')
-          .select('*')
-          .eq('id', id)
-          .single()
-        
-        if (error) {
-          console.error('points_history 조회 실패:', error)
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('user_codes')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ user_codes 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ user_codes 조회 실패:', error)
           return null
         }
-        
-        return data
-      } catch (error) {
-        console.error('포인트 히스토리 조회 실패:', error)
-        return null
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('user_codes')
+            .insert(data)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ user_codes 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ user_codes 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('user_codes')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ user_codes 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ user_codes 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('user_codes')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ user_codes 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ user_codes 삭제 실패:', error)
+          return false
+        }
       }
     },
-    create: async (data: any) => {
-      try {
-        const { data: result, error } = await supabase
-          .from('points_history')
-          .insert([data])
-          .select()
-          .single()
-        
-        if (error) {
-          return { success: false, message: error.message }
-        }
-        
-        return { success: true, data: result }
-      } catch (error) {
-        return { success: false, message: '포인트 히스토리 생성에 실패했습니다' }
-      }
-    },
-    update: async (id: string, data: any) => {
-      try {
-        const { data: result, error } = await supabase
-          .from('points_history')
-          .update(data)
-          .eq('id', id)
-          .select()
-          .single()
-        
-        if (error) {
-          return { success: false, message: error.message }
-        }
-        
-        return { success: true, data: result }
-      } catch (error) {
-        return { success: false, message: '포인트 히스토리 수정에 실패했습니다' }
-      }
-    },
-    delete: async (id: string) => {
-      try {
-        const { error } = await supabase
-          .from('points_history')
-          .delete()
-          .eq('id', id)
-        
-        if (error) {
-          return { success: false, message: error.message }
-        }
-        
-        return { success: true }
-      } catch (error) {
-        return { success: false, message: '포인트 히스토리 삭제에 실패했습니다' }
-      }
-    }
-  },
-
-  // 사용자 포인트
-  user_points: {
-    list: async (options?: { filter?: any }) => {
-      try {
-        console.log('🔥 Supabase user_points.list 호출됨', options)
-        
-        let query = supabase.from('user_points').select('*')
-        
-        // 필터 옵션이 있으면 적용
-        if (options?.filter) {
-          Object.entries(options.filter).forEach(([key, value]) => {
-            query = query.eq(key, value)
-          })
-        }
-        
-        const { data, error } = await query.order('created_at', { ascending: false })
-        
-        if (error) {
-          console.error('❌ user_points 조회 실패:', error)
+    
+    // 인플루언서 프로필
+    influencer_profiles: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase influencer_profiles.list 호출됨', options)
+          
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+          
+          let query = supabase.from('influencer_profiles').select('*')
+          
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+          
+          const { data, error } = await query.order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ influencer_profiles 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase influencer_profiles.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ influencer_profiles 조회 실패:', error)
           return []
         }
-        
-        console.log('✅ Supabase user_points.list 결과:', data)
-        
-        // 🔍 테이블 구조 확인을 위한 상세 로깅
-        if (data && data.length > 0) {
-          console.log('🔍 user_points 테이블 첫 번째 레코드:', data[0])
-          console.log('🔍 user_points 테이블 컬럼명들:', Object.keys(data[0]))
-        } else {
-          console.log('🔍 user_points 테이블이 비어있음')
-        }
-        
-        return data || []
-      } catch (error) {
-        console.error('❌ 사용자 포인트 목록 조회 실패:', error)
-        return []
-      }
-    },
-    get: async (id: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('user_points')
-          .select('*')
-          .eq('id', id)
-          .single()
-        
-        if (error) {
-          console.error('user_points 조회 실패:', error)
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('influencer_profiles')
+            .select('*')
+            .eq('id', id)
+            .single()
+          
+          if (error) {
+            console.error('❌ influencer_profiles 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ influencer_profiles 조회 실패:', error)
           return null
         }
-        
-        return data
-      } catch (error) {
-        console.error('사용자 포인트 조회 실패:', error)
-        return null
-      }
-    },
-    getByUserId: async (userId: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('user_points')
-          .select('*')
-          .eq('user_id', userId)
-          .single()
-        
-        if (error) {
-          console.error('user_points 조회 실패:', error)
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('influencer_profiles')
+            .insert(data)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ influencer_profiles 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ influencer_profiles 생성 실패:', error)
           return null
         }
-        
-        return data
-      } catch (error) {
-        console.error('사용자 포인트 조회 실패:', error)
-        return null
-      }
-    },
-    create: async (data: any) => {
-      try {
-        console.log('🔥 Supabase user_points.create 호출됨:', data)
-        const { data: result, error } = await supabase
-          .from('user_points')
-          .insert([data])
-          .select()
-          .single()
-        
-        if (error) {
-          console.error('❌ user_points 생성 실패:', error)
-          return { success: false, message: error.message }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('influencer_profiles')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('❌ influencer_profiles 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ influencer_profiles 업데이트 실패:', error)
+          return null
         }
-        
-        console.log('✅ Supabase user_points.create 성공:', result)
-        return { success: true, data: result }
-      } catch (error) {
-        console.error('❌ user_points 생성 예외:', error)
-        return { success: false, message: '사용자 포인트 생성에 실패했습니다' }
-      }
-    },
-    update: async (id: string, data: any) => {
-      try {
-        const { data: result, error } = await supabase
-          .from('user_points')
-          .update(data)
-          .eq('id', id)
-          .select()
-          .single()
-        
-        if (error) {
-          return { success: false, message: error.message }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('influencer_profiles')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ influencer_profiles 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ influencer_profiles 삭제 실패:', error)
+          return false
         }
-        
-        return { success: true, data: result }
-      } catch (error) {
-        return { success: false, message: '사용자 포인트 수정에 실패했습니다' }
-      }
-    },
-    delete: async (id: string) => {
-      try {
-        const { error } = await supabase
-          .from('user_points')
-          .delete()
-          .eq('id', id)
-        
-        if (error) {
-          return { success: false, message: error.message }
-        }
-        
-        return { success: true }
-      } catch (error) {
-        return { success: false, message: '사용자 포인트 삭제에 실패했습니다' }
       }
     }
   }

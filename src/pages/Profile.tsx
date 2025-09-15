@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../lib/dataService'
+
 // Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
 import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield} from 'lucide-react'
@@ -64,8 +65,15 @@ const Profile: React.FC = () => {
     try {
       setLoading(true)
       
+      // 🔍 dataService 확인
+      if (!dataService?.entities?.user_codes) {
+        console.error('❌ user_codes 서비스가 없습니다')
+        toast.error('user_codes 서비스에 문제가 있습니다')
+        return
+      }
+      
       // 🏷️ 사용자 회원코드 조회 (수정 불가) - Supabase API 사용
-      const codes = await (dataService.entities as any).user_codes.list()
+      const codes = await dataService.entities.user_codes.list()
       const userCodeData = codes.find((code: any) => code && code.user_id === user.user_id)
       
       if (userCodeData && userCodeData.user_code) {
@@ -80,7 +88,9 @@ const Profile: React.FC = () => {
         : null
       
       // influencer_profiles에서 상세 정보 확인 - Supabase API 사용
-      const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+      const influencerProfiles = dataService.entities.influencer_profiles 
+        ? await dataService.entities.influencer_profiles.list()
+        : []
       const influencerProfile = influencerProfiles.find((p: any) => p && p.user_id === user.user_id)
       
       if (influencerProfile) {

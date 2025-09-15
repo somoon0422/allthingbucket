@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { usePoints } from '../hooks/usePoints'
 import { useWithdrawal } from '../hooks/useWithdrawal'
 import { DollarSign, TrendingUp, CreditCard, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 
 const Points: React.FC = () => {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { fetchUserPoints, fetchPointsHistory, userPoints, refreshPointsData, setUserPoints } = usePoints()
   const { requestWithdrawal, getUserWithdrawals, calculateTax } = useWithdrawal()
@@ -98,12 +100,8 @@ const Points: React.FC = () => {
 
     const amount = Number(withdrawalData.requested_amount)
     
-    // 출금 가능 여부 확인
-    const success = await requestWithdrawal(user.user_id, amount, {
-      bankName: withdrawalData.bank_name,
-      accountNumber: withdrawalData.account_number,
-      accountHolder: withdrawalData.account_holder
-    })
+    // 출금 가능 여부 확인 (임시로 빈 문자열 사용 - 실제로는 bank_account_id가 필요)
+    const success = await requestWithdrawal(user.user_id, '', amount, '포인트 출금 요청')
 
     if (success) {
       setShowWithdrawalModal(false)
@@ -233,7 +231,7 @@ const Points: React.FC = () => {
       </div>
 
       {/* 출금 내역 */}
-      {withdrawalHistory.length > 0 && (
+      {withdrawalHistory.length > 0 ? (
         <div className="bg-white rounded-xl shadow-sm border mb-8">
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold text-gray-900">출금 내역</h2>
@@ -280,7 +278,7 @@ const Points: React.FC = () => {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* 포인트 거래 내역 */}
       <div className="bg-white rounded-xl shadow-sm border">
@@ -303,21 +301,32 @@ const Points: React.FC = () => {
                         {point.description}
                       </h3>
                       {point.campaign_name && (
-                        <p className="text-sm text-gray-600">
+                        <p 
+                          className={`text-sm text-gray-600 ${point.campaign_id ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''}`}
+                          onClick={() => {
+                            if (point.campaign_id) {
+                              navigate(`/campaigns/${point.campaign_id}`)
+                            }
+                          }}
+                        >
                           캠페인: {point.campaign_name}
                         </p>
                       )}
                       <div className="flex items-center space-x-2 mt-1">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          point.payment_status === '지급완료' ? 'bg-green-100 text-green-800' :
-                          point.payment_status === '지급대기중' ? 'bg-yellow-100 text-yellow-800' :
+                          point.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
+                          point.payment_status === 'approved' ? 'bg-purple-100 text-purple-800' :
+                          point.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          point.payment_status === 'failed' ? 'bg-red-100 text-red-800' :
                           point.status === 'success' ? 'bg-green-100 text-green-800' :
                           point.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           point.status === 'failed' ? 'bg-red-100 text-red-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {point.payment_status === '지급완료' ? '포인트 지급 완료' :
-                           point.payment_status === '지급대기중' ? '대기중' :
+                          {point.payment_status === 'completed' ? '포인트 지급 완료' :
+                           point.payment_status === 'approved' ? '포인트 지급 승인' :
+                           point.payment_status === 'pending' ? '대기중' :
+                           point.payment_status === 'failed' ? '실패' :
                            point.payment_status || 
                            (point.status === 'success' ? '완료' :
                             point.status === 'pending' ? '대기중' :

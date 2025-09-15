@@ -59,7 +59,7 @@ export const useWishlist = () => {
         const wishlistItem = wishlist.find(item => item.campaign_id === campaignId)
         if (wishlistItem) {
           const result = await dataService.entities.wishlist.delete(wishlistItem.id)
-          if (result.success) {
+          if (result) {
             setWishlist(prev => prev.filter(item => item.campaign_id !== campaignId))
             setWishlistIds(prev => {
               const newSet = new Set(prev)
@@ -67,7 +67,7 @@ export const useWishlist = () => {
               return newSet
             })
           } else {
-            throw new Error(result.message || '찜하기 제거 실패')
+            throw new Error('찜하기 제거 실패')
           }
         }
       } else {
@@ -80,11 +80,11 @@ export const useWishlist = () => {
         }
         
         const result = await dataService.entities.wishlist.create(newWishlistItem)
-        if (result.success && result.data) {
-          setWishlist(prev => [...prev, result.data])
+        if (result) {
+          setWishlist(prev => [...prev, result])
           setWishlistIds(prev => new Set([...prev, campaignId]))
         } else {
-          throw new Error(result.message || '찜하기 추가 실패')
+          throw new Error('찜하기 추가 실패')
         }
       }
       
