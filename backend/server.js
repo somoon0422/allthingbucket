@@ -12,6 +12,8 @@ const emailRoutes = require('./routes/email');
 const accountVerificationRoutes = require('./routes/accountVerification');
 const withdrawalRoutes = require('./routes/withdrawal');
 const phoneVerificationRoutes = require('./routes/phoneVerification');
+const verificationRoutes = require('./routes/verification');
+const notificationRoutes = require('./routes/notification');
 const supabaseService = require('./services/supabaseService');
 const { errorHandler } = require('./middleware/errorHandler');
 
@@ -42,6 +44,8 @@ app.use('/api', emailRoutes);
 app.use('/api/account', accountVerificationRoutes);
 app.use('/api/account', phoneVerificationRoutes);
 app.use('/api/withdrawal', withdrawalRoutes);
+app.use('/api/verification', verificationRoutes);
+app.use('/api/notification', notificationRoutes);
 
 // 🔥 헬스 체크 엔드포인트
 app.get('/health', (req, res) => {

@@ -5,9 +5,10 @@ import { dataService } from '../lib/dataService'
 
 // Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
-import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield} from 'lucide-react'
+import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Mail} from 'lucide-react'
 import { AddressInput } from '../components/AddressInput'
 import { PhoneInput } from '../components/PhoneInput'
+import EmailVerification from '../components/EmailVerification'
 
 const Profile: React.FC = () => {
   const { user } = useAuth()
@@ -16,12 +17,7 @@ const Profile: React.FC = () => {
   const [editMode, setEditMode] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [showAccountVerification, setShowAccountVerification] = useState(false)
-  const [verificationData, setVerificationData] = useState({
-    bankAccountId: '',
-    depositName: ''
-  })
-  const [isVerifying, setIsVerifying] = useState(false)
+  const [showEmailVerification, setShowEmailVerification] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -52,9 +48,6 @@ const Profile: React.FC = () => {
     },
     categories: [] as string[],
     experience_level: 'beginner',
-    bank_name: '',
-    account_number: '',
-    account_holder: '',
     tax_info: {
       resident_number_encrypted: '',
       tax_type: 'individual'
@@ -131,9 +124,6 @@ const Profile: React.FC = () => {
           },
           categories: influencerProfile.categories || [],
           experience_level: influencerProfile.experience_level || 'beginner',
-          bank_name: influencerProfile.bank_name || userProfile?.bank_name || '',
-          account_number: influencerProfile.account_number || userProfile?.account_number || '',
-          account_holder: influencerProfile.account_holder || userProfile?.account_holder || '',
           tax_info: influencerProfile.tax_info || {
             resident_number_encrypted: '',
             tax_type: 'individual'
@@ -147,9 +137,6 @@ const Profile: React.FC = () => {
           full_name: userProfile.name || user.name || '',
           phone: userProfile.phone || '',
           email: user.email || '',
-          bank_name: userProfile.bank_name || '',
-          account_number: userProfile.account_number || '',
-          account_holder: userProfile.account_holder || ''
         }))
       } else {
         // 신규 사용자
@@ -174,8 +161,8 @@ const Profile: React.FC = () => {
     }
 
     // 필수 정보 확인
-    if (!formData.full_name || !formData.phone || !formData.bank_name || !formData.account_number) {
-      toast.error('필수 정보를 모두 입력해주세요')
+    if (!formData.full_name || !formData.phone) {
+      toast.error('실명과 전화번호는 필수 입력 항목입니다')
       return
     }
 
@@ -203,9 +190,10 @@ const Profile: React.FC = () => {
       } else {
         // 새 influencer_profile 생성 - Supabase API 사용
         const result = await (dataService.entities as any).influencer_profiles.create(profileData)
-        if (result.success) {
+        if (result && result.success) {
           toast.success('프로필이 생성되었습니다')
         } else {
+          console.error('프로필 생성 실패:', result)
           toast.error('프로필 생성에 실패했습니다')
         }
       }
@@ -220,110 +208,6 @@ const Profile: React.FC = () => {
     }
   }
 
-  // 휴대폰 인증 함수
-  const handlePhoneVerification = async () => {
-    if (!user || !formData.phone) {
-      toast.error('휴대폰 번호를 입력해주세요')
-      return
-    }
-
-    setIsVerifying(true)
-    try {
-      // 1. 계좌 정보를 bank_accounts 테이블에 저장
-      const bankAccountData = {
-        user_id: user.user_id,
-        bank_name: formData.bank_name,
-        account_number: formData.account_number,
-        account_holder: formData.account_holder,
-        is_verified: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-      
-      const bankAccount = await dataService.entities.bank_accounts.create(bankAccountData)
-      
-      if (!bankAccount) {
-        toast.error('계좌 정보 저장에 실패했습니다')
-        return
-      }
-
-      // 2. 휴대폰 인증 요청 (시뮬레이션)
-      const response = await fetch('http://localhost:3001/api/account/verify-phone', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.user_id,
-          phone: formData.phone,
-          bank_account_id: bankAccount.id
-        })
-      })
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        setVerificationData({
-          bankAccountId: bankAccount.id,
-          depositName: result.verification_code
-        })
-        setShowAccountVerification(true)
-        toast.success('인증번호가 발송되었습니다. 휴대폰을 확인해주세요.')
-      } else {
-        toast.error(result.error || '휴대폰 인증 요청에 실패했습니다')
-      }
-    } catch (error) {
-      console.error('휴대폰 인증 실패:', error)
-      toast.error('휴대폰 인증 중 오류가 발생했습니다')
-    } finally {
-      setIsVerifying(false)
-    }
-  }
-
-  // 휴대폰 인증번호 확인 함수
-  const handleVerifyCode = async () => {
-    if (!verificationData.bankAccountId) {
-      toast.error('계좌 정보가 없습니다')
-      return
-    }
-
-    setIsVerifying(true)
-    try {
-      const response = await fetch('http://localhost:3001/api/account/verify-phone-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user?.user_id,
-          bank_account_id: verificationData.bankAccountId,
-          verification_code: verificationData.depositName
-        })
-      })
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        // 계좌 인증 완료 처리
-        await dataService.entities.bank_accounts.update(verificationData.bankAccountId, {
-          is_verified: true,
-          verified_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        
-        toast.success('휴대폰 인증이 완료되었습니다!')
-        setShowAccountVerification(false)
-        loadProfile() // 프로필 새로고침
-      } else {
-        toast.error(result.error || '인증번호가 올바르지 않습니다. 다시 확인해주세요.')
-      }
-    } catch (error) {
-      console.error('인증번호 확인 실패:', error)
-      toast.error('인증번호 확인 중 오류가 발생했습니다')
-    } finally {
-      setIsVerifying(false)
-    }
-  }
 
   const handleCancel = () => {
     loadProfile() // 원래 데이터로 복원
@@ -417,12 +301,11 @@ const Profile: React.FC = () => {
               <div className="mt-2 text-sm text-blue-700">
                 <p className="mb-2">
                   체험단 신청 시 자동으로 입력되는 정보입니다. 
-                  <strong>실명, 전화번호, 계좌정보</strong>를 모두 입력해주세요.
+                  <strong>실명, 전화번호</strong>를 모두 입력해주세요.
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-xs">
                   {!profile?.full_name && <li>실명을 입력해주세요</li>}
                   {!profile?.phone && <li>전화번호를 입력해주세요</li>}
-                  {!profile?.bank_name && <li>계좌정보를 입력해주세요</li>}
                 </ul>
               </div>
               <div className="mt-3">
@@ -496,16 +379,6 @@ const Profile: React.FC = () => {
                   required
                   placeholder="010-1234-5678"
                 />
-                {formData.phone && (
-                  <button
-                    onClick={handlePhoneVerification}
-                    disabled={isVerifying}
-                    className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Shield className="w-4 h-4" />
-                    <span>{isVerifying ? '인증번호 발송 중...' : '휴대폰 인증'}</span>
-                  </button>
-                )}
               </div>
             ) : (
               <div className="space-y-2">
@@ -536,9 +409,20 @@ const Profile: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             ) : (
-              <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                {profile?.email || '미입력'}
-              </p>
+                <div className="space-y-2">
+                  <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                    {profile?.email || '미입력'}
+                  </p>
+                  {profile?.email && (
+                    <button
+                      onClick={() => setShowEmailVerification(true)}
+                      className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      <Mail className="w-4 h-4" />
+                      <span>이메일 인증</span>
+                    </button>
+                  )}
+                </div>
             )}
           </div>
 
@@ -973,118 +857,6 @@ const Profile: React.FC = () => {
         </div>
       </div>
 
-      {/* 🔹 계좌 정보 */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">계좌 정보</h2>
-        
-        {/* 본인명의 계좌 사용 안내 */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h4 className="text-sm font-medium text-yellow-800">본인명의 계좌 사용 필수</h4>
-              <p className="mt-1 text-sm text-yellow-700">
-                출금 시 회원명과 계좌번호의 계좌주 이름이 동일해야만 입금이 가능합니다. 
-                본인명의 계좌를 정확히 입력해주세요.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              은행명 <span className="text-red-500">*</span>
-            </label>
-            {editMode ? (
-              <select
-                required
-                value={formData.bank_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, bank_name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">은행을 선택하세요</option>
-                <option value="국민은행">국민은행</option>
-                <option value="신한은행">신한은행</option>
-                <option value="하나은행">하나은행</option>
-                <option value="우리은행">우리은행</option>
-                <option value="농협은행">농협은행</option>
-                <option value="기업은행">기업은행</option>
-                <option value="카카오뱅크">카카오뱅크</option>
-                <option value="토스뱅크">토스뱅크</option>
-              </select>
-            ) : (
-              <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                {profile?.bank_name || '미입력'}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              계좌번호 <span className="text-red-500">*</span>
-            </label>
-            {editMode ? (
-              <input
-                type="text"
-                required
-                value={formData.account_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, account_number: e.target.value }))}
-                placeholder="123456-78-901234"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            ) : (
-              <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                {profile?.account_number || '미입력'}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              예금주명 <span className="text-red-500">*</span>
-            </label>
-            {editMode ? (
-              <input
-                type="text"
-                required
-                value={formData.account_holder}
-                onChange={(e) => setFormData(prev => ({ ...prev, account_holder: e.target.value }))}
-                placeholder="홍길동"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            ) : (
-              <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                {profile?.account_holder || '미입력'}
-              </p>
-            )}
-          </div>
-        </div>
-        
-        {/* 계좌 인증 안내 */}
-        {editMode && formData.bank_name && formData.account_number && formData.account_holder && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <Shield className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="ml-3">
-                  <h4 className="text-sm font-medium text-blue-800">계좌 인증 안내</h4>
-                  <p className="mt-1 text-sm text-blue-700">
-                    위의 휴대폰 인증을 완료하면 계좌 인증도 함께 완료됩니다. 
-                    휴대폰 번호를 입력하고 인증 버튼을 눌러주세요.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* 🔹 활동 통계 */}
       {profile && (
@@ -1140,81 +912,18 @@ const Profile: React.FC = () => {
         </div>
       )}
 
-      {/* 휴대폰 인증 모달 */}
-      {showAccountVerification && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">휴대폰 인증</h2>
-                <button
-                  onClick={() => setShowAccountVerification(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Shield className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800 mb-1">
-                        인증번호 발송 완료
-                      </h3>
-                      <p className="text-sm text-blue-700">
-                        입력하신 휴대폰 번호로 인증번호가 발송되었습니다.
-                      </p>
-                      <ul className="text-xs text-blue-600 mt-2 space-y-1">
-                        <li>• 발송 번호: <strong>{formData.phone}</strong></li>
-                        <li>• 인증번호: <strong>{verificationData.depositName}</strong></li>
-                        <li>• 아래 입력란에 인증번호를 입력해주세요</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Shield className="w-5 h-5 text-yellow-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-yellow-800 mb-1">
-                        주의사항
-                      </h3>
-                      <ul className="text-xs text-yellow-700 space-y-1">
-                        <li>• 인증번호는 5분간 유효합니다</li>
-                        <li>• 인증번호가 오지 않으면 스팸함을 확인해주세요</li>
-                        <li>• 인증 완료 시 계좌 인증도 함께 완료됩니다</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <button
-                    onClick={() => setShowAccountVerification(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                  >
-                    나중에 하기
-                  </button>
-                  <button
-                    onClick={handleVerifyCode}
-                    disabled={isVerifying}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isVerifying ? '인증 중...' : '인증 완료'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* 이메일 인증 모달 */}
+      {showEmailVerification && (
+        <EmailVerification
+          userId={user?.user_id || ''}
+          onVerificationComplete={() => {
+            setShowEmailVerification(false)
+            toast.success('이메일 인증이 완료되었습니다!')
+          }}
+          onClose={() => setShowEmailVerification(false)}
+        />
       )}
+
     </div>
   )
 }

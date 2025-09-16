@@ -22,7 +22,7 @@ interface KakaoConfig {
 export const useMessaging = () => {
   const [loading, setLoading] = useState(false)
 
-  // 이메일 발송 (실제 API 호출)
+  // 이메일 발송 (백엔드 API 호출)
   const sendEmail = async (options: {
     to: string
     subject: string
@@ -32,18 +32,24 @@ export const useMessaging = () => {
     try {
       console.log('📧 이메일 발송 시작:', options.to)
       
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           to: options.to,
           subject: options.subject,
           message: options.message,
-          from: 'support@allthingbucket.com'
-        }
+          userInfo: options.userInfo
+        })
       })
 
-      if (error) {
-        console.error('❌ Supabase 함수 호출 실패:', error)
-        throw new Error(`이메일 발송 실패: ${error.message}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('❌ 백엔드 API 호출 실패:', data)
+        throw new Error(`이메일 발송 실패: ${data.error || 'Unknown error'}`)
       }
 
       if (!data.success) {

@@ -111,9 +111,25 @@ export const useWithdrawal = () => {
       setLoading(true)
       console.log('💰 MCP 서버 출금 요청:', { userId, bankAccountId, pointsAmount, requestReason })
 
-      // 최소 출금 금액 확인 (1,000P)
-      if (pointsAmount < 1000) {
-        toast.error('최소 출금 금액은 1,000P입니다')
+      // 최소 출금 금액 확인 (5,000P)
+      if (pointsAmount < 5000) {
+        toast.error('최소 출금 금액은 5,000P입니다')
+        return null
+      }
+
+      // 실명인증 상태 확인
+      const verificationResponse = await fetch('/api/verification/check-withdrawal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId })
+      })
+
+      const verificationResult = await verificationResponse.json()
+      
+      if (!verificationResult.success || !verificationResult.canWithdraw) {
+        toast.error('출금을 위해서는 실명인증이 필요합니다. 본인인증을 먼저 진행해주세요.')
         return null
       }
 

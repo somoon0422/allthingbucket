@@ -2,22 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useWithdrawal } from '../hooks/useWithdrawal'
 import { usePoints } from '../hooks/usePoints'
-import { CreditCard, DollarSign, AlertCircle, CheckCircle, Clock, X, Banknote, Shield, Plus } from 'lucide-react'
-
-interface BankAccount {
-  id: string
-  bank_name: string
-  account_number: string
-  account_holder: string
-  is_verified: boolean
-  verified_at?: string
-  created_at: string
-}
+import IdentityVerification from '../components/IdentityVerification'
+import { DollarSign, AlertCircle, CheckCircle, Clock, X, Banknote, Shield } from 'lucide-react'
 
 interface WithdrawalRequest {
   id: string
   user_id: string
-  bank_account_id: string
   points_amount: number
   withdrawal_amount: number
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'failed'
@@ -25,28 +15,19 @@ interface WithdrawalRequest {
   admin_notes?: string
   created_at: string
   processed_at?: string
-  bank_account?: BankAccount
 }
 
 const WithdrawalRequest: React.FC = () => {
   const { user } = useAuth()
   const { userPoints } = usePoints()
-  const { requestWithdrawal, getUserWithdrawals, getBankAccounts, addBankAccount } = useWithdrawal()
+  const { requestWithdrawal, getUserWithdrawals } = useWithdrawal()
   
   // 상태 관리
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([])
   const [loading, setLoading] = useState(false)
-  const [showAddAccount, setShowAddAccount] = useState(false)
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false)
-  const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(null)
-  
-  // 계좌 추가 폼
-  const [accountForm, setAccountForm] = useState({
-    bank_name: '',
-    account_number: '',
-    account_holder: ''
-  })
+  const [showIdentityVerification, setShowIdentityVerification] = useState(false)
+  const [isVerified, setIsVerified] = useState(false)
   
   // 출금 요청 폼
   const [withdrawalForm, setWithdrawalForm] = useState({
@@ -54,30 +35,26 @@ const WithdrawalRequest: React.FC = () => {
     request_reason: ''
   })
 
-  // 은행 목록
-  const bankList = [
-    '국민은행', '신한은행', '우리은행', '하나은행', '농협은행', 
-    '기업은행', '새마을금고', '신협', '우체국', '카카오뱅크', 
-    '토스뱅크', '케이뱅크', '부산은행', '대구은행', '경남은행'
-  ]
 
   // 데이터 로드
   useEffect(() => {
     if (user?.user_id) {
-      loadBankAccounts()
       loadWithdrawalRequests()
+      checkVerificationStatus()
     }
   }, [user?.user_id])
 
-  const loadBankAccounts = async () => {
+  // 실명인증 상태 확인
+  const checkVerificationStatus = async () => {
     try {
-      setLoading(true)
-      const accounts = await getBankAccounts(user?.user_id || '')
-      setBankAccounts(accounts || [])
+      const response = await fetch(`/api/verification/status/${user?.user_id}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setIsVerified(result.verified)
+      }
     } catch (error) {
-      console.error('계좌 정보 로드 실패:', error)
-    } finally {
-      setLoading(false)
+      console.error('인증 상태 확인 실패:', error)
     }
   }
 
@@ -90,38 +67,12 @@ const WithdrawalRequest: React.FC = () => {
     }
   }
 
-  // 계좌 추가
-  const handleAddAccount = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!accountForm.bank_name || !accountForm.account_number || !accountForm.account_holder) {
-      alert('모든 필드를 입력해주세요.')
-      return
-    }
-
-    try {
-      setLoading(true)
-      const newAccount = await addBankAccount(user?.user_id || '', accountForm)
-      
-      if (newAccount) {
-        setAccountForm({ bank_name: '', account_number: '', account_holder: '' })
-        setShowAddAccount(false)
-        loadBankAccounts()
-      }
-    } catch (error) {
-      console.error('계좌 등록 실패:', error)
-      alert('계좌 등록 중 오류가 발생했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   // 출금 요청
   const handleWithdrawalRequest = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!selectedAccount) {
-      alert('출금 계좌를 선택해주세요.')
+    if (!isVerified) {
+      alert('실명인증이 필요합니다.')
       return
     }
 
@@ -135,8 +86,8 @@ const WithdrawalRequest: React.FC = () => {
       return
     }
 
-    if (withdrawalForm.points_amount < 1000) {
-      alert('최소 출금 금액은 1,000P입니다.')
+    if (withdrawalForm.points_amount < 5000) {
+      alert('최소 출금 금액은 5,000P입니다.')
       return
     }
 
@@ -144,7 +95,7 @@ const WithdrawalRequest: React.FC = () => {
       setLoading(true)
       const newRequest = await requestWithdrawal(
         user?.user_id || '',
-        selectedAccount.id,
+        '', // bankAccountId는 더 이상 필요하지 않음
         withdrawalForm.points_amount,
         withdrawalForm.request_reason
       )
@@ -152,7 +103,6 @@ const WithdrawalRequest: React.FC = () => {
       if (newRequest) {
         setWithdrawalForm({ points_amount: 0, request_reason: '' })
         setShowWithdrawalForm(false)
-        setSelectedAccount(null)
         loadWithdrawalRequests()
       }
     } catch (error) {
@@ -215,76 +165,62 @@ const WithdrawalRequest: React.FC = () => {
           </div>
         </div>
 
+        {/* 출금 안내 정보 */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            출금 안내사항
+          </h2>
+          <div className="space-y-3 text-sm text-blue-800">
+            <p>• 포인트가 5,000원 이상 모이면 출금 신청을 할 수 있으며, 출금 시 금융 수수료 및 세금을 차감하고 지급됩니다.</p>
+            <p>• <strong>신청 기간 및 지급일 안내:</strong></p>
+            <ul className="ml-4 space-y-1">
+              <li>• 1일 ~ 10일 신청: 당월 15일 지급</li>
+              <li>• 11일 ~ 20일 신청: 당월 25일 지급</li>
+              <li>• 21일 ~ 말일 신청: 익월 5일 지급</li>
+            </ul>
+            <p>• 출금 금액은 지정이 불가하며, 신청 정보와 금액 수정을 원하실 경우, 앞선 신청을 취소하시고 다시 신청해 주세요.</p>
+            <p>• <strong>세금 공제 안내:</strong></p>
+            <ul className="ml-4 space-y-1">
+              <li>• 레뷰 포인트(캠페인, 저금통 활동으로 적립된 포인트): 사업소득에 따른 세금 3.3% 공제</li>
+              <li>• 이벤트로 적립된 포인트: 기타소득으로 50,000원 초과 시 해당 금액에 한하여 세금 22% 공제</li>
+            </ul>
+            <p>• 출금 신청한 금액은 입금된 월의 소득 발생으로 신고되며, 관련 세금신고는 실명인증된 명의로 진행됩니다.</p>
+            <p>• 출금을 위해서는 나이스평가정보를 통한 실명인증이 필요합니다.</p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 계좌 관리 */}
+          {/* 실명인증 관리 */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <CreditCard className="w-5 h-5 mr-2" />
-                등록된 계좌
+                <Shield className="w-5 h-5 mr-2" />
+                실명인증 상태
               </h2>
-              <button
-                onClick={() => setShowAddAccount(true)}
-                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                계좌 추가
-              </button>
             </div>
 
-            {bankAccounts.length === 0 ? (
+            {!isVerified ? (
               <div className="text-center py-8">
-                <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500">등록된 계좌가 없습니다</p>
-                <p className="text-sm text-gray-400">출금을 위해 계좌를 등록해주세요</p>
+                <Shield className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500 mb-2">실명인증이 필요합니다</p>
+                <p className="text-sm text-gray-400 mb-4">출금을 위해 나이스평가정보를 통한 실명인증을 진행해주세요</p>
+                <button
+                  onClick={() => setShowIdentityVerification(true)}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  실명인증하기
+                </button>
               </div>
             ) : (
-              <div className="space-y-3">
-                {bankAccounts.map((account) => (
-                  <div
-                    key={account.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedAccount?.id === account.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setSelectedAccount(account)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center">
-                          <span className="font-medium text-gray-900">{account.bank_name}</span>
-                          {account.is_verified && (
-                            <Shield className="w-4 h-4 text-green-500 ml-2" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600">{account.account_number}</p>
-                        <p className="text-sm text-gray-500">{account.account_holder}</p>
-                      </div>
-                      <div className="text-right">
-                        {account.is_verified ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            인증됨
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            <Clock className="w-3 h-3 mr-1" />
-                            대기중
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {selectedAccount && selectedAccount.is_verified && (
-              <div className="mt-4">
+              <div className="text-center py-8">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <p className="text-green-600 font-medium mb-2">실명인증 완료</p>
+                <p className="text-sm text-gray-500 mb-4">출금 요청이 가능합니다</p>
                 <button
                   onClick={() => setShowWithdrawalForm(true)}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700"
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700"
                 >
                   <DollarSign className="w-4 h-4 mr-2" />
                   출금 요청하기
@@ -329,11 +265,6 @@ const WithdrawalRequest: React.FC = () => {
                         <p className="font-medium text-gray-900">
                           {request.points_amount.toLocaleString()}P → {request.withdrawal_amount.toLocaleString()}원
                         </p>
-                        {request.bank_account && (
-                          <p className="text-sm text-gray-600">
-                            {request.bank_account.bank_name} {request.bank_account.account_number}
-                          </p>
-                        )}
                         {request.request_reason && (
                           <p className="text-sm text-gray-500">{request.request_reason}</p>
                         )}
@@ -351,89 +282,9 @@ const WithdrawalRequest: React.FC = () => {
           </div>
         </div>
 
-        {/* 계좌 추가 모달 */}
-        {showAddAccount && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">계좌 정보 등록</h3>
-                <button
-                  onClick={() => setShowAddAccount(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleAddAccount} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    은행명
-                  </label>
-                  <select
-                    value={accountForm.bank_name}
-                    onChange={(e) => setAccountForm({ ...accountForm, bank_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">은행을 선택하세요</option>
-                    {bankList.map((bank) => (
-                      <option key={bank} value={bank}>{bank}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    계좌번호
-                  </label>
-                  <input
-                    type="text"
-                    value={accountForm.account_number}
-                    onChange={(e) => setAccountForm({ ...accountForm, account_number: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="계좌번호를 입력하세요"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    예금주명
-                  </label>
-                  <input
-                    type="text"
-                    value={accountForm.account_holder}
-                    onChange={(e) => setAccountForm({ ...accountForm, account_holder: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="예금주명을 입력하세요"
-                    required
-                  />
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddAccount(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {loading ? '등록중...' : '등록'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
 
         {/* 출금 요청 모달 */}
-        {showWithdrawalForm && selectedAccount && (
+        {showWithdrawalForm && isVerified && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
               <div className="flex items-center justify-between mb-4">
@@ -446,10 +297,12 @@ const WithdrawalRequest: React.FC = () => {
                 </button>
               </div>
 
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">출금 계좌</p>
-                <p className="font-medium">{selectedAccount.bank_name} {selectedAccount.account_number}</p>
-                <p className="text-sm text-gray-500">{selectedAccount.account_holder}</p>
+              <div className="mb-4 p-3 bg-green-50 rounded-lg">
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                  <p className="text-sm text-green-700">실명인증 완료</p>
+                </div>
+                <p className="text-xs text-green-600 mt-1">출금 요청이 가능합니다</p>
               </div>
 
               <form onSubmit={handleWithdrawalRequest} className="space-y-4">
@@ -463,12 +316,12 @@ const WithdrawalRequest: React.FC = () => {
                     onChange={(e) => setWithdrawalForm({ ...withdrawalForm, points_amount: parseInt(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="출금할 포인트를 입력하세요"
-                    min="1000"
+                    min="5000"
                     max={userPoints?.available_points || 0}
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    최소 1,000P, 최대 {(userPoints?.available_points || 0).toLocaleString()}P
+                    최소 5,000P, 최대 {(userPoints?.available_points || 0).toLocaleString()}P
                   </p>
                 </div>
 
@@ -513,6 +366,19 @@ const WithdrawalRequest: React.FC = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* 실명인증 모달 */}
+        {showIdentityVerification && (
+          <IdentityVerification
+            userId={user?.user_id || ''}
+            onVerificationComplete={() => {
+              setIsVerified(true)
+              setShowIdentityVerification(false)
+              checkVerificationStatus()
+            }}
+            onClose={() => setShowIdentityVerification(false)}
+          />
         )}
       </div>
     </div>
