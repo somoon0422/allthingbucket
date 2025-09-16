@@ -1560,6 +1560,353 @@ export const dataService = {
           return false
         }
       }
+    },
+
+    // 채팅방
+    chat_rooms: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          const { data, error } = await supabase
+            .from('chat_rooms')
+            .select('*')
+            .order('last_message_at', { ascending: false })
+
+          if (error) throw error
+          return data || []
+        } catch (error) {
+          console.error('채팅방 목록 조회 오류:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('chat_rooms')
+            .select('*')
+            .eq('id', id)
+            .single()
+
+          if (error) throw error
+          return data
+        } catch (error) {
+          console.error('채팅방 조회 오류:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('chat_rooms')
+            .insert(data)
+            .select()
+            .single()
+
+          if (error) throw error
+          return result
+        } catch (error) {
+          console.error('채팅방 생성 오류:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('chat_rooms')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+
+          if (error) throw error
+          return result
+        } catch (error) {
+          console.error('채팅방 업데이트 오류:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('chat_rooms')
+            .delete()
+            .eq('id', id)
+
+          if (error) throw error
+          return true
+        } catch (error) {
+          console.error('채팅방 삭제 오류:', error)
+          return false
+        }
+      }
+    },
+
+    // 채팅 대화 (JSON 형태로 메시지 저장)
+    chat_conversations: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          const { data, error } = await supabase
+            .from('chat_conversations')
+            .select('*')
+            .order('last_message_at', { ascending: false })
+
+          if (error) throw error
+          return data || []
+        } catch (error) {
+          console.error('채팅 대화 목록 조회 오류:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('chat_conversations')
+            .select('*')
+            .eq('id', id)
+            .single()
+
+          if (error) throw error
+          return data
+        } catch (error) {
+          console.error('채팅 대화 조회 오류:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('chat_conversations')
+            .insert(data)
+            .select()
+            .single()
+
+          if (error) throw error
+          return result
+        } catch (error) {
+          console.error('채팅 대화 생성 오류:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('chat_conversations')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+
+          if (error) throw error
+          return result
+        } catch (error) {
+          console.error('채팅 대화 업데이트 오류:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('chat_conversations')
+            .delete()
+            .eq('id', id)
+
+          if (error) throw error
+          return true
+        } catch (error) {
+          console.error('채팅 대화 삭제 오류:', error)
+          return false
+        }
+      }
+    },
+
+    // 관리자 채팅 알림
+    admin_chat_notifications: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          const { data, error } = await supabase
+            .from('admin_chat_notifications')
+            .select('*')
+            .order('created_at', { ascending: false })
+
+          if (error) throw error
+          return data || []
+        } catch (error) {
+          console.error('관리자 채팅 알림 목록 조회 오류:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('admin_chat_notifications')
+            .select('*')
+            .eq('id', id)
+            .single()
+
+          if (error) throw error
+          return data
+        } catch (error) {
+          console.error('관리자 채팅 알림 조회 오류:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('admin_chat_notifications')
+            .insert(data)
+            .select()
+            .single()
+
+          if (error) throw error
+          return result
+        } catch (error) {
+          console.error('관리자 채팅 알림 생성 오류:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('admin_chat_notifications')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
+
+          if (error) throw error
+          return result
+        } catch (error) {
+          console.error('관리자 채팅 알림 업데이트 오류:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('admin_chat_notifications')
+            .delete()
+            .eq('id', id)
+
+          if (error) throw error
+          return true
+        } catch (error) {
+          console.error('관리자 채팅 알림 삭제 오류:', error)
+          return false
+        }
+      }
+    },
+
+    // 온라인 상태 관리
+    user_online_status: {
+      async list(filters?: any) {
+        try {
+          const { data, error } = await supabase
+            .from('user_online_status')
+            .select('*')
+            .order('last_seen', { ascending: false })
+          if (error) throw error
+          return data || []
+        } catch (error) {
+          console.error('온라인 상태 목록 조회 오류:', error)
+          return []
+        }
+      },
+
+      async getByUserId(userId: string) {
+        try {
+          const { data, error } = await supabase
+            .from('user_online_status')
+            .select('*')
+            .eq('user_id', userId)
+            .single()
+          if (error) throw error
+          return data
+        } catch (error) {
+          console.error('사용자 온라인 상태 조회 오류:', error)
+          return null
+        }
+      },
+
+      async setOnline(userId: string, connectionId?: string) {
+        try {
+          const { data, error } = await supabase
+            .from('user_online_status')
+            .upsert({
+              user_id: userId,
+              is_online: true,
+              last_seen: new Date().toISOString(),
+              connection_id: connectionId,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
+            })
+            .select()
+            .single()
+          if (error) throw error
+          return data
+        } catch (error) {
+          console.error('온라인 상태 설정 오류:', error)
+          return null
+        }
+      },
+
+      async setOffline(userId: string) {
+        try {
+          const { data, error } = await supabase
+            .from('user_online_status')
+            .upsert({
+              user_id: userId,
+              is_online: false,
+              last_seen: new Date().toISOString(),
+              connection_id: null,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
+            })
+            .select()
+            .single()
+          if (error) throw error
+          return data
+        } catch (error) {
+          console.error('오프라인 상태 설정 오류:', error)
+          return null
+        }
+      },
+
+      async updateLastSeen(userId: string) {
+        try {
+          const { data, error } = await supabase
+            .from('user_online_status')
+            .update({
+              last_seen: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .select()
+            .single()
+          if (error) throw error
+          return data
+        } catch (error) {
+          console.error('마지막 접속 시간 업데이트 오류:', error)
+          return null
+        }
+      },
+
+      async getOnlineUsers() {
+        try {
+          const { data, error } = await supabase
+            .from('user_online_status')
+            .select('*')
+            .eq('is_online', true)
+            .order('last_seen', { ascending: false })
+          if (error) throw error
+          return data || []
+        } catch (error) {
+          console.error('온라인 사용자 목록 조회 오류:', error)
+          return []
+        }
+      }
     }
+
   }
 }

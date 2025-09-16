@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import ReviewSubmissionManager from '../components/ReviewSubmissionManager'
-import {Calendar, Gift, Clock, AlertCircle, CheckCircle, XCircle, Eye, FileText, Coins, User, Instagram, MessageSquare, ExternalLink, Trash2, Filter, Edit3, CalendarDays, RefreshCw} from 'lucide-react'
+import {Calendar, Gift, Clock, AlertCircle, CheckCircle, XCircle, Eye, FileText, Coins, User, Instagram, MessageSquare, ExternalLink, Trash2, Edit3, CalendarDays, RefreshCw, Shield} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dataService } from '../lib/dataService'
 
@@ -121,6 +121,7 @@ const MyApplications: React.FC = () => {
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [statusFilter, setStatusFilter] = useState('all')
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  
 
   // 🔥 신청내역 로드 함수 - undefined.length 완전 차단
   const loadApplications = useCallback(async () => {
@@ -208,6 +209,17 @@ const MyApplications: React.FC = () => {
       return safeApplicationsArray.filter(app => {
         try {
           const status = safeString(app, 'status', 'pending')
+          
+          // 포인트 지급이 완료된 경우 "종료" 상태로 분류
+          if (status === 'point_completed' || status === 'point_approved') {
+            return statusFilter === 'completed'
+          }
+          
+          // 기존 상태 매핑
+          if (statusFilter === 'completed') {
+            return status === 'completed' || status === 'point_completed' || status === 'point_approved'
+          }
+          
           return status === statusFilter
         } catch {
           return false
@@ -219,6 +231,7 @@ const MyApplications: React.FC = () => {
     }
   }, [applications, statusFilter])
 
+
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'pending':
@@ -229,8 +242,20 @@ const MyApplications: React.FC = () => {
         }
       case 'approved':
         return {
-          label: '승인됨',
+          label: '선정',
           color: 'bg-green-100 text-green-800',
+          icon: CheckCircle
+        }
+      case 'registered':
+        return {
+          label: '등록',
+          color: 'bg-blue-100 text-blue-800',
+          icon: User
+        }
+      case 'completed':
+        return {
+          label: '종료',
+          color: 'bg-purple-100 text-purple-800',
           icon: CheckCircle
         }
       case 'in_progress':
@@ -271,8 +296,14 @@ const MyApplications: React.FC = () => {
         }
       case 'point_completed':
         return {
-          label: '포인트 지급 완료됨',
-          color: 'bg-emerald-100 text-emerald-800',
+          label: '종료',
+          color: 'bg-purple-100 text-purple-800',
+          icon: CheckCircle
+        }
+      case 'point_approved':
+        return {
+          label: '종료',
+          color: 'bg-purple-100 text-purple-800',
           icon: CheckCircle
         }
       case 'cancelled':
@@ -597,12 +628,12 @@ const MyApplications: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* 헤더 */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">내 신청 내역</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">내 신청 내역</h1>
               <p className="mt-2 text-sm sm:text-base text-gray-600">
                 체험단 신청 현황을 확인하고 관리하세요
               </p>
@@ -610,72 +641,101 @@ const MyApplications: React.FC = () => {
                 마지막 업데이트: {lastRefresh.toLocaleTimeString('ko-KR')}
               </p>
             </div>
-            <button
-              onClick={async () => {
-                try {
-                  setLoading(true)
-                  const userApplications = await getUserApplications(user?.user_id, user, true) // forceRefresh = true
-                  const finalApplications = ultraSafeArray(userApplications)
-                  setApplications(finalApplications)
-                  setLastRefresh(new Date())
-                  toast.success('신청 내역을 새로고침했습니다')
-                } catch (error) {
-                  console.error('새로고침 실패:', error)
-                  toast.error('새로고침에 실패했습니다')
-                } finally {
-                  setLoading(false)
-                }
-              }}
-              disabled={loading}
-              className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">새로고침</span>
-              <span className="sm:hidden">새로고침</span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => navigate('/profile')}
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+              >
+                <User className="w-4 h-4" />
+                <span>프로필 관리</span>
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    setLoading(true)
+                    const userApplications = await getUserApplications(user?.user_id, user, true) // forceRefresh = true
+                    const finalApplications = ultraSafeArray(userApplications)
+                    setApplications(finalApplications)
+                    setLastRefresh(new Date())
+                    toast.success('신청 내역을 새로고침했습니다')
+                  } catch (error) {
+                    console.error('새로고침 실패:', error)
+                    toast.error('새로고침에 실패했습니다')
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                disabled={loading}
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>새로고침</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* 필터 */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-          <div className="flex items-center">
-            <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mr-2" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            >
-              <option value="all">전체 상태</option>
-              <option value="pending">검토중</option>
-              <option value="approved">승인됨</option>
-              <option value="rejected">반려됨</option>
-            </select>
+        {/* 상태 탭 */}
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2 mb-4">
+            {[
+              { value: 'all', label: '전체', count: applications.length },
+              { value: 'pending', label: '신청', count: applications.filter(app => app.status === 'pending').length },
+              { value: 'approved', label: '선정', count: applications.filter(app => app.status === 'approved').length },
+              { value: 'registered', label: '등록', count: applications.filter(app => app.status === 'registered').length },
+              { value: 'completed', label: '종료', count: applications.filter(app => 
+                app.status === 'completed' || app.status === 'point_completed' || app.status === 'point_approved'
+              ).length }
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={`px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all duration-200 ${
+                  statusFilter === tab.value
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {tab.label}
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                  statusFilter === tab.value
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-300 text-gray-600'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
           </div>
           
-          <div className="text-xs sm:text-sm text-gray-600">
-            총 {filteredApplications.length}개 신청
+          <div className="text-sm sm:text-base text-gray-600">
+            {statusFilter === 'all' ? (
+              <>총 <span className="font-semibold text-blue-600">{filteredApplications.length}</span>개 신청</>
+            ) : (
+              <>{getStatusInfo(statusFilter).label} <span className="font-semibold text-blue-600">{filteredApplications.length}</span>개</>
+            )}
           </div>
         </div>
 
         {/* 🔥 안전한 배열 길이 체크 */}
         {!Array.isArray(filteredApplications) || filteredApplications.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-gray-400" />
+          <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">
+            <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2">
               {statusFilter === 'all' ? '신청 내역이 없습니다' : `${getStatusInfo(statusFilter).label} 신청이 없습니다`}
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 mb-6">
               {statusFilter === 'all' ? '아직 체험단에 신청하지 않으셨습니다.' : '다른 상태의 신청을 확인해보세요.'}
             </p>
             {statusFilter === 'all' && (
               <a
                 href="/experiences"
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
               >
                 체험단 둘러보기
-                <ExternalLink className="ml-2 w-5 h-5" />
+                <ExternalLink className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
               </a>
             )}
           </div>
@@ -715,31 +775,33 @@ const MyApplications: React.FC = () => {
                     key={applicationId}
                     className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                   >
-                    <div className="p-6">
-                      <div className="flex items-start justify-between">
+                    <div className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div className="flex-1">
                           {/* 체험단 정보 */}
-                          <div className="flex items-center space-x-3 mb-3">
-                            <Gift className="w-5 h-5 text-blue-600" />
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {experienceName}
-                            </h3>
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}>
-                              <StatusIcon className="w-4 h-4 mr-1" />
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                              <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                              <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2">
+                                {experienceName}
+                              </h3>
+                            </div>
+                            <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${statusInfo.color} self-start`}>
+                              <StatusIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                               {statusInfo.label}
                             </span>
                           </div>
                           
                           {brandName && (
-                            <p className="text-gray-600 mb-2">
+                            <p className="text-sm sm:text-base text-gray-600 mb-2">
                               브랜드: {brandName}
                             </p>
                           )}
                           
-                          <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-4">
                             {appliedAt && (
                               <div className="flex items-center space-x-1">
-                                <Calendar className="w-4 h-4" />
+                                <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                                 <span>
                                   신청일: {new Date(appliedAt).toLocaleDateString('ko-KR')}
                                 </span>
@@ -748,7 +810,7 @@ const MyApplications: React.FC = () => {
                             
                             {rewardPoints > 0 && (
                               <div className="flex items-center space-x-1">
-                                <Coins className="w-4 h-4" />
+                                <Coins className="w-3 h-3 sm:w-4 sm:h-4" />
                                 <span>리워드: {rewardPoints}P</span>
                               </div>
                             )}
@@ -769,8 +831,8 @@ const MyApplications: React.FC = () => {
                           
                           {/* 신청 사유 미리보기 */}
                           {applicationReason && (
-                            <div className="bg-gray-50 rounded-lg p-4 mb-4 min-h-[80px]">
-                              <p className="text-sm text-gray-700 line-clamp-4 leading-relaxed">
+                            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 min-h-[60px] sm:min-h-[80px]">
+                              <p className="text-xs sm:text-sm text-gray-700 line-clamp-3 sm:line-clamp-4 leading-relaxed">
                                 {applicationReason}
                               </p>
                             </div>
@@ -779,7 +841,7 @@ const MyApplications: React.FC = () => {
                         
                         {/* 이미지 */}
                         {imageUrl && (
-                          <div className="ml-4 w-20 h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 self-start">
                             <img
                               src={imageUrl}
                               alt={experienceName}
@@ -794,7 +856,7 @@ const MyApplications: React.FC = () => {
                       </div>
                       
                       {/* 액션 버튼들 */}
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-100 gap-3">
+                      <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => handleViewDetail(application)}
@@ -830,7 +892,7 @@ const MyApplications: React.FC = () => {
                           {status === 'approved' && (
                             <button
                               onClick={() => handleWriteReview(application)}
-                              className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                              className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                             >
                               <FileText className="w-4 h-4 mr-1 sm:mr-2" />
                               <span className="hidden sm:inline">리뷰 작성하기</span>
@@ -849,15 +911,13 @@ const MyApplications: React.FC = () => {
                               <span className="sm:hidden">수정</span>
                             </button>
                           )}
-
-
                         </div>
                         
                         {/* 취소 버튼 (승인 대기중인 경우만) */}
                         {status === 'pending' && (
                           <button
                             onClick={() => handleCancelClick(application)}
-                            className="inline-flex items-center px-3 py-2 bg-red-100 text-red-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-red-200 transition-colors"
+                            className="inline-flex items-center px-3 py-2 bg-red-100 text-red-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-red-200 transition-colors self-start"
                           >
                             <Trash2 className="w-4 h-4 mr-1 sm:mr-2" />
                             <span className="hidden sm:inline">신청 취소</span>
@@ -881,27 +941,27 @@ const MyApplications: React.FC = () => {
       {showDetailModal && selectedApplication && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
+            <div className="p-4 sm:p-6 border-b">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold">신청 상세 정보</h3>
+                <h3 className="text-lg sm:text-xl font-bold">신청 상세 정보</h3>
                 <button
                   onClick={() => setShowDetailModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 p-1"
                 >
-                  <XCircle className="w-6 h-6" />
+                  <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* 체험단 정보 */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-bold mb-3 flex items-center">
-                  <Gift className="w-5 h-5 mr-2" />
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base">
+                  <Gift className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   체험단 정보
                 </h4>
                 <div className="space-y-2">
-                  <div>
+                  <div className="text-sm sm:text-base">
                     <span className="font-medium">체험단명:</span>{' '}
                     {safeObject(selectedApplication, 'experience') ? 
                       (safeString(safeObject(selectedApplication, 'experience'), 'campaign_name') || 
@@ -910,7 +970,7 @@ const MyApplications: React.FC = () => {
                       safeString(selectedApplication, 'experience_name', '정보 없음')}
                   </div>
                   {safeObject(selectedApplication, 'experience') && safeString(safeObject(selectedApplication, 'experience'), 'brand_name') && (
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <span className="font-medium">브랜드:</span>{' '}
                       {safeString(safeObject(selectedApplication, 'experience'), 'brand_name')}
                     </div>
@@ -919,7 +979,7 @@ const MyApplications: React.FC = () => {
                     const exp = safeObject(selectedApplication, 'experience')
                     const points = exp?.rewards || exp?.reward_points || 0
                     return points > 0 ? (
-                      <div>
+                      <div className="text-sm sm:text-base">
                         <span className="font-medium">리워드:</span>{' '}
                         {points}P
                       </div>
@@ -929,55 +989,55 @@ const MyApplications: React.FC = () => {
               </div>
 
               {/* 신청자 정보 */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-bold mb-3 flex items-center">
-                  <User className="w-5 h-5 mr-2" />
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   신청자 정보
                 </h4>
                 <div className="space-y-2">
-                  <div><span className="font-medium">이름:</span> {safeString(selectedApplication, 'name', user?.name || '정보 없음')}</div>
-                  <div><span className="font-medium">이메일:</span> {safeString(selectedApplication, 'email', user?.email || '정보 없음')}</div>
+                  <div className="text-sm sm:text-base"><span className="font-medium">이름:</span> {safeString(selectedApplication, 'name', user?.name || '정보 없음')}</div>
+                  <div className="text-sm sm:text-base"><span className="font-medium">이메일:</span> {safeString(selectedApplication, 'email', user?.email || '정보 없음')}</div>
                   {safeString(selectedApplication, 'phone') && (
-                    <div><span className="font-medium">연락처:</span> {safeString(selectedApplication, 'phone')}</div>
+                    <div className="text-sm sm:text-base"><span className="font-medium">연락처:</span> {safeString(selectedApplication, 'phone')}</div>
                   )}
                   {safeString(selectedApplication, 'address') && (
-                    <div><span className="font-medium">주소:</span> {safeString(selectedApplication, 'address')}</div>
+                    <div className="text-sm sm:text-base"><span className="font-medium">주소:</span> {safeString(selectedApplication, 'address')}</div>
                   )}
                 </div>
               </div>
 
               {/* SNS 정보 */}
               {(safeString(selectedApplication, 'instagram_handle') || safeString(selectedApplication, 'blog_url') || safeString(selectedApplication, 'youtube_channel')) && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-bold mb-3">SNS 정보</h4>
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <h4 className="font-bold mb-3 text-sm sm:text-base">SNS 정보</h4>
                   <div className="space-y-2">
                     {safeString(selectedApplication, 'instagram_handle') && (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 text-sm sm:text-base">
                         <Instagram className="w-4 h-4" />
                         <span>@{safeString(selectedApplication, 'instagram_handle')}</span>
                       </div>
                     )}
                     {safeString(selectedApplication, 'blog_url') && (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 text-sm sm:text-base">
                         <MessageSquare className="w-4 h-4" />
                         <a 
                           href={safeString(selectedApplication, 'blog_url')} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-blue-600 hover:text-blue-800 break-all"
                         >
                           {safeString(selectedApplication, 'blog_url')}
                         </a>
                       </div>
                     )}
                     {safeString(selectedApplication, 'youtube_channel') && (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 text-sm sm:text-base">
                         <ExternalLink className="w-4 h-4" />
                         <a 
                           href={safeString(selectedApplication, 'youtube_channel')} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-blue-600 hover:text-blue-800 break-all"
                         >
                           {safeString(selectedApplication, 'youtube_channel')}
                         </a>
@@ -989,9 +1049,9 @@ const MyApplications: React.FC = () => {
 
               {/* 신청 사유 */}
               {safeString(selectedApplication, 'application_reason') && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-bold mb-3">신청 사유</h4>
-                  <p className="text-gray-700 leading-relaxed">
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <h4 className="font-bold mb-3 text-sm sm:text-base">신청 사유</h4>
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'application_reason')}
                   </p>
                 </div>
@@ -999,9 +1059,9 @@ const MyApplications: React.FC = () => {
 
               {/* 체험 계획 */}
               {safeString(selectedApplication, 'experience_plan') && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-bold mb-3">체험 계획</h4>
-                  <p className="text-gray-700 leading-relaxed">
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <h4 className="font-bold mb-3 text-sm sm:text-base">체험 계획</h4>
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'experience_plan')}
                   </p>
                 </div>
@@ -1009,46 +1069,46 @@ const MyApplications: React.FC = () => {
 
               {/* 추가 정보 */}
               {safeString(selectedApplication, 'additional_info') && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-bold mb-3">추가 정보</h4>
-                  <p className="text-gray-700 leading-relaxed">
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <h4 className="font-bold mb-3 text-sm sm:text-base">추가 정보</h4>
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'additional_info')}
                   </p>
                 </div>
               )}
 
               {/* 신청 상태 */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-bold mb-3">신청 상태</h4>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <h4 className="font-bold mb-3 text-sm sm:text-base">신청 상태</h4>
                 <div className="space-y-2">
-                  <div>
+                  <div className="text-sm sm:text-base">
                     <span className="font-medium">현재 상태:</span>{' '}
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-sm font-medium ${getStatusInfo(safeString(selectedApplication, 'status', 'pending')).color}`}>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusInfo(safeString(selectedApplication, 'status', 'pending')).color}`}>
                       {getStatusInfo(safeString(selectedApplication, 'status', 'pending')).label}
                     </span>
                   </div>
-                  <div>
+                  <div className="text-sm sm:text-base">
                     <span className="font-medium">신청일:</span>{' '}
                     {new Date(safeString(selectedApplication, 'applied_at') || safeString(selectedApplication, 'created_at') || Date.now()).toLocaleString('ko-KR')}
                   </div>
                   {safeString(selectedApplication, 'processed_at') && (
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <span className="font-medium">처리일:</span>{' '}
                       {new Date(safeString(selectedApplication, 'processed_at')).toLocaleString('ko-KR')}
                     </div>
                   )}
                   {safeString(selectedApplication, 'admin_message') && (
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <span className="font-medium">관리자 메시지:</span>
-                      <p className="text-gray-700 bg-blue-50 p-3 rounded mt-1">
+                      <p className="text-gray-700 bg-blue-50 p-3 rounded mt-1 text-sm sm:text-base">
                         {safeString(selectedApplication, 'admin_message')}
                       </p>
                     </div>
                   )}
                   {safeString(selectedApplication, 'rejection_reason') && (
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <span className="font-medium">반려 사유:</span>
-                      <p className="text-red-700 bg-red-50 p-3 rounded mt-1">
+                      <p className="text-red-700 bg-red-50 p-3 rounded mt-1 text-sm sm:text-base">
                         {safeString(selectedApplication, 'rejection_reason')}
                       </p>
                     </div>
@@ -1064,26 +1124,26 @@ const MyApplications: React.FC = () => {
       {showCancelModal && selectedApplication && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center mb-4">
-                <AlertCircle className="w-6 h-6 text-red-500 mr-3" />
-                <h3 className="text-lg font-bold">신청 취소</h3>
+                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 mr-3" />
+                <h3 className="text-base sm:text-lg font-bold">신청 취소</h3>
               </div>
               
-              <p className="text-gray-600 mb-6">
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
                 정말로 이 신청을 취소하시겠습니까? 취소된 신청은 복구할 수 없습니다.
               </p>
               
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setShowCancelModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleConfirmCancel}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
                 >
                   신청 취소
                 </button>
@@ -1116,17 +1176,17 @@ const MyApplications: React.FC = () => {
       {showPointRequestModal && selectedPointApplication && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center mb-4">
-                <Coins className="w-6 h-6 text-orange-500 mr-3" />
-                <h3 className="text-lg font-semibold text-gray-900">포인트 지급 요청</h3>
+                <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500 mr-3" />
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">포인트 지급 요청</h3>
               </div>
               
               <div className="mb-6">
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm sm:text-base text-gray-600 mb-4">
                   <strong>캠페인:</strong> {selectedPointApplication.experience_name || '캠페인명 없음'}
                 </p>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm sm:text-base text-gray-600 mb-4">
                   <strong>예상 포인트:</strong> {
                     selectedPointApplication.experience?.rewards || 
                     selectedPointApplication.experience?.reward_points || 
@@ -1136,17 +1196,17 @@ const MyApplications: React.FC = () => {
                     0
                   }P
                 </p>
-                <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-sm text-orange-800">
+                <div className="bg-orange-50 p-3 sm:p-4 rounded-lg">
+                  <p className="text-sm sm:text-base text-orange-800">
                     리뷰가 승인되었습니다. 포인트 지급을 요청하시겠습니까?
                   </p>
                 </div>
               </div>
               
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleConfirmPointRequest}
-                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm sm:text-base"
                 >
                   요청하기
                 </button>
@@ -1155,7 +1215,7 @@ const MyApplications: React.FC = () => {
                     setShowPointRequestModal(false)
                     setSelectedPointApplication(null)
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm sm:text-base"
                 >
                   취소
                 </button>
@@ -1164,6 +1224,7 @@ const MyApplications: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   )
 }

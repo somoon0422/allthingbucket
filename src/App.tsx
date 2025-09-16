@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './hooks/useAuth'
 import Layout from './components/Layout'
+import ChatBot from './components/ChatBot'
 
 // 사용자 페이지
 import Home from './pages/Home'
@@ -73,6 +74,9 @@ function App() {
               </Layout>
             } />
           </Routes>
+          
+          {/* 전역 채팅봇 */}
+          <ChatBot />
         </div>
       </Router>
     </AuthProvider>

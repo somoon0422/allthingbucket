@@ -100,7 +100,7 @@ export const useWithdrawal = () => {
     }
   }
 
-  // 출금 요청
+  // MCP 서버를 통한 출금 요청
   const requestWithdrawal = async (
     userId: string,
     bankAccountId: string,
@@ -109,18 +109,7 @@ export const useWithdrawal = () => {
   ): Promise<WithdrawalRequest | null> => {
     try {
       setLoading(true)
-
-      // 사용자 포인트 확인
-      const userPoints = await (dataService.entities as any).user_points.list({
-        filter: { user_id: userId }
-      })
-      
-      const currentPoints = userPoints?.[0]?.points || 0
-      
-      if (currentPoints < pointsAmount) {
-        toast.error('보유 포인트가 부족합니다')
-        return null
-      }
+      console.log('💰 MCP 서버 출금 요청:', { userId, bankAccountId, pointsAmount, requestReason })
 
       // 최소 출금 금액 확인 (1,000P)
       if (pointsAmount < 1000) {
@@ -128,24 +117,40 @@ export const useWithdrawal = () => {
         return null
       }
 
-      // 환율 적용 (1P = 1원, 추후 동적으로 변경 가능)
-      const exchangeRate = 1.0
-      const withdrawalAmount = pointsAmount * exchangeRate
+      // MCP 서버를 통한 출금 요청
+      const response = await fetch('/api/withdrawal/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          amount: pointsAmount,
+          bank_account_id: bankAccountId,
+          description: requestReason || '포인트 출금 요청'
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (!result.success) {
+        toast.error(result.error || '출금 요청에 실패했습니다.')
+        return null
+      }
 
-      // 출금 요청 데이터 생성
-      const withdrawalData = {
+      // 성공 시 출금 요청 객체 반환
+      const newRequest = {
+        id: result.withdrawalId,
         user_id: userId,
         bank_account_id: bankAccountId,
         points_amount: pointsAmount,
-        withdrawal_amount: withdrawalAmount,
-        exchange_rate: exchangeRate,
-        status: 'pending',
+        withdrawal_amount: result.breakdown?.finalAmount || pointsAmount,
+        exchange_rate: 1.0,
+        status: 'pending' as const,
         request_reason: requestReason,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
-
-      const newRequest = await (dataService.entities as any).withdrawal_requests.create(withdrawalData)
       
       if (newRequest) {
         toast.success('출금 요청이 접수되었습니다. 관리자 승인 후 처리됩니다.')

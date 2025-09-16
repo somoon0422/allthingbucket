@@ -186,31 +186,31 @@ const Home: React.FC = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 opacity-90"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24">
           <div className="text-center">
-            <div className="flex justify-center mb-8">
-              <div className="bg-white/20 backdrop-blur-sm rounded-full p-4">
-                <Sparkles className="w-16 h-16 text-white" />
+            <div className="flex justify-center mb-6 sm:mb-8">
+              <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 sm:p-4">
+                <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
               </div>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
               올띵버킷
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
               최고의 체험단 플랫폼에서 특별한 경험을 시작하세요
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
               <Link
                 to="/experiences"
-                className="bg-white text-purple-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="bg-white text-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 체험단 둘러보기
-                <ArrowRight className="w-5 h-5 ml-2 inline" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 inline" />
               </Link>
               {!isAuthenticated && (
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('openLoginModal'))}
-                  className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-purple-600 transition-all duration-300"
+                  className="border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:text-purple-600 transition-all duration-300"
                 >
                   지금 시작하기
                 </button>
@@ -221,55 +221,55 @@ const Home: React.FC = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-white">
+      <section className="py-12 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
             <div className="text-center">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Gift className="w-8 h-8 text-white" />
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">{stats.totalExperiences}</h3>
-              <p className="text-gray-600">진행 중인 체험단</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{stats.totalExperiences}</h3>
+              <p className="text-sm sm:text-base text-gray-600">진행 중인 체험단</p>
             </div>
             <div className="text-center">
-              <div className="bg-gradient-to-r from-pink-500 to-orange-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-white" />
+              <div className="bg-gradient-to-r from-pink-500 to-orange-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">{stats.totalUsers}</h3>
-              <p className="text-gray-600">활성 사용자</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{stats.totalUsers}</h3>
+              <p className="text-sm sm:text-base text-gray-600">활성 사용자</p>
             </div>
             <div className="text-center">
-              <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Star className="w-8 h-8 text-white" />
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">{stats.totalReviews}</h3>
-              <p className="text-gray-600">완료된 리뷰</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{stats.totalReviews}</h3>
+              <p className="text-sm sm:text-base text-gray-600">완료된 리뷰</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Featured Experiences */}
-      <section className="py-16">
+      <section className="py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
               🔥 인기 체험단
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 px-4">
               지금 가장 인기 있는 체험단들을 만나보세요
             </p>
           </div>
 
           {featuredExperiences.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               {featuredExperiences.map((experience, index) => (
                 <div
                   key={experience.id || index}
                   className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
                 >
                   {experience.image_url && (
-                    <div className="h-48 bg-gradient-to-r from-purple-400 to-pink-400 relative overflow-hidden">
+                    <div className="h-40 sm:h-48 bg-gradient-to-r from-purple-400 to-pink-400 relative overflow-hidden">
                       <img
                         src={experience.image_url}
                         alt={experience.title || experience.experience_name}
@@ -278,8 +278,8 @@ const Home: React.FC = () => {
                           e.currentTarget.style.display = 'none'
                         }}
                       />
-                      <div className="absolute top-4 right-4 flex items-center space-x-2">
-                        <span className="bg-white/90 text-purple-600 px-3 py-1 rounded-full text-sm font-semibold">
+                      <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center space-x-2">
+                        <span className="bg-white/90 text-purple-600 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
                           {getDeadlineDisplay(experience)}
                         </span>
                         {isAuthenticated && (
@@ -289,10 +289,10 @@ const Home: React.FC = () => {
                               e.stopPropagation()
                               toggleWishlist(experience.id)
                             }}
-                            className="bg-white/90 hover:bg-white p-2 rounded-full transition-colors"
+                            className="bg-white/90 hover:bg-white p-1.5 sm:p-2 rounded-full transition-colors"
                           >
                             <Heart 
-                              className={`w-5 h-5 ${
+                              className={`w-4 h-4 sm:w-5 sm:h-5 ${
                                 wishlist.some(item => item.campaign_id === experience.id) 
                                   ? 'text-red-500 fill-current' 
                                   : 'text-gray-400'
@@ -303,31 +303,31 @@ const Home: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
+                  <div className="p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 line-clamp-2">
                       {experience.title || experience.experience_name || '제목 없음'}
                     </h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">
+                    <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 line-clamp-3">
                       {experience.description || '설명이 없습니다.'}
                     </p>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <MapPin className="w-4 h-4 mr-1" />
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+                      <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                         {experience.experience_location || '전국'}
                       </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="w-4 h-4 mr-1" />
+                      <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                         {experience.experience_period || '2주'}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-purple-600 font-semibold">
-                        <Coins className="w-5 h-5 mr-1" />
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                      <div className="flex items-center text-purple-600 font-semibold text-sm sm:text-base">
+                        <Coins className="w-4 h-4 sm:w-5 sm:h-5 mr-1" />
                         {experience.rewards || 0} P
                       </div>
                       <Link
                         to={`/campaign/${experience.id}`}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 text-center"
                       >
                         자세히 보기
                       </Link>

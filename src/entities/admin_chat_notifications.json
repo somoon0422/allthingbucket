@@ -1,0 +1,44 @@
+{
+  "name": "admin_chat_notifications",
+  "description": "관리자 채팅 알림 테이블 (간소화)",
+  "fields": {
+    "id": {
+      "type": "string",
+      "description": "알림 고유 ID (UUID)"
+    },
+    "chat_room_id": {
+      "type": "string",
+      "description": "채팅방 ID"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "사용자 ID"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "사용자 이름"
+    },
+    "last_message_preview": {
+      "type": "string",
+      "description": "마지막 메시지 미리보기"
+    },
+    "unread_count": {
+      "type": "number",
+      "description": "읽지 않은 메시지 수",
+      "default": 1
+    },
+    "is_read": {
+      "type": "boolean",
+      "description": "읽음 여부",
+      "default": false
+    },
+    "last_notification_at": {
+      "type": "string",
+      "description": "마지막 알림 시간"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "생성 시간"
+    }
+  }
+}

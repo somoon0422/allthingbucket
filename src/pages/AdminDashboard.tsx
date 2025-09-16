@@ -6,7 +6,7 @@ import ApprovalModal from '../components/ApprovalModal'
 import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
-import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote} from 'lucide-react'
+import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, Send, User, Calculator} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const AdminDashboard: React.FC = () => {
@@ -49,6 +49,7 @@ const AdminDashboard: React.FC = () => {
   const [unreadNotifications, setUnreadNotifications] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   
+  
   // 포인트 지급 요청 모달 상태
   const [showPointRequestModal, setShowPointRequestModal] = useState(false)
   const [selectedPointApplication, setSelectedPointApplication] = useState<any>(null)
@@ -59,6 +60,15 @@ const AdminDashboard: React.FC = () => {
   // 회원 관리 상태
   const [users, setUsers] = useState<any[]>([])
   const [userSearch, setUserSearch] = useState('')
+
+  // 채팅 관리 상태
+  const [chatRooms, setChatRooms] = useState<any[]>([])
+  const [selectedChatRoom, setSelectedChatRoom] = useState<any>(null)
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatNotifications, setChatNotifications] = useState<any[]>([])
+  const [unreadChatCount, setUnreadChatCount] = useState(0)
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([])
   
   // 회원 상세보기 모달 상태
   const [showUserDetailModal, setShowUserDetailModal] = useState(false)
@@ -890,19 +900,32 @@ const AdminDashboard: React.FC = () => {
       
       // 계좌 정보와 사용자 정보와 함께 조회
       const requestsWithDetails = await Promise.all(
-        (requests || []).map(async (request: any) => {
+        (requests || []).map(async (request: any, index: number) => {
           try {
-            const [account, userProfile] = await Promise.all([
+            const [account, userProfile, userData, userApplications] = await Promise.all([
               (dataService.entities as any).bank_accounts.get(request.bank_account_id),
               (dataService.entities as any).user_profiles.list({
+                filter: { user_id: request.user_id }
+              }),
+              (dataService.entities as any).users.list({
+                filter: { user_id: request.user_id }
+              }),
+              (dataService.entities as any).user_applications.list({
                 filter: { user_id: request.user_id }
               })
             ])
             
+            // 사용자별 환급 요청 누적 횟수 계산
+            const userWithdrawalCount = (requests || []).filter((r: any) => r.user_id === request.user_id).length
+            
             return {
               ...request,
               bank_account: account,
-              user_profile: userProfile?.[0]
+              user_profile: userProfile?.[0],
+              user_data: userData?.[0], // users 테이블에서 가져온 데이터
+              user_applications: userApplications || [],
+              withdrawal_count: userWithdrawalCount,
+              index: index + 1
             }
           } catch (error) {
             console.error('상세 정보 조회 실패:', error)
@@ -920,92 +943,135 @@ const AdminDashboard: React.FC = () => {
   }
 
 
-  // 출금 요청 승인
-  const handleApproveWithdrawal = async (requestId: string, adminNotes?: string) => {
-    try {
-      const request = withdrawalRequests.find(r => r.id === requestId)
-      if (!request) {
-        toast.error('출금 요청을 찾을 수 없습니다')
-        return
-      }
-
-      // 사용자 포인트 재확인
-      const userPoints = await (dataService.entities as any).user_points.list({
-        filter: { user_id: request.user_id }
-      })
-      
-      const currentPoints = userPoints?.[0]?.points || 0
-      
-      if (currentPoints < request.points_amount) {
-        toast.error('사용자 포인트가 부족합니다')
-        return
-      }
-
-      // 출금 요청 상태 업데이트
-      const updateData = {
-        status: 'approved',
-        processed_by: 'admin', // 실제로는 현재 관리자 ID
-        processed_at: new Date().toISOString(),
-        admin_notes: adminNotes,
-        updated_at: new Date().toISOString()
-      }
-
-      await (dataService.entities as any).withdrawal_requests.update(requestId, updateData)
-      
-      toast.success('출금 요청이 승인되었습니다')
-      await loadWithdrawalRequests()
-      setShowWithdrawalApprovalModal(false)
-      setSelectedWithdrawalRequest(null)
-    } catch (error) {
-      console.error('출금 승인 실패:', error)
-      toast.error('출금 승인 중 오류가 발생했습니다.')
-    }
-  }
-
-  // 출금 요청 거절
-  const handleRejectWithdrawal = async (requestId: string, adminNotes: string) => {
-    try {
-      const updateData = {
-        status: 'rejected',
-        processed_by: 'admin', // 실제로는 현재 관리자 ID
-        processed_at: new Date().toISOString(),
-        admin_notes: adminNotes,
-        updated_at: new Date().toISOString()
-      }
-
-      await (dataService.entities as any).withdrawal_requests.update(requestId, updateData)
-      
-      toast.success('출금 요청이 거절되었습니다')
-      await loadWithdrawalRequests()
-      setShowWithdrawalRejectionModal(false)
-      setSelectedWithdrawalRequest(null)
-    } catch (error) {
-      console.error('출금 거절 실패:', error)
-      toast.error('출금 거절 중 오류가 발생했습니다.')
-    }
-  }
-
-  // 출금 완료 처리
-  const handleCompleteWithdrawal = async (requestId: string, adminNotes?: string) => {
-    try {
-      const updateData = {
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        admin_notes: adminNotes,
-        updated_at: new Date().toISOString()
-      }
-
-      await (dataService.entities as any).withdrawal_requests.update(requestId, updateData)
-      
-      toast.success('출금 처리가 완료되었습니다')
-      await loadWithdrawalRequests()
-    } catch (error) {
-      console.error('출금 완료 처리 실패:', error)
-      toast.error('출금 완료 처리 중 오류가 발생했습니다.')
-    }
-  }
 
   // 전체 데이터 로드
+  // 채팅방 목록 로드
+  const loadChatRooms = async () => {
+    try {
+      const rooms = await dataService.entities.chat_rooms.list()
+      setChatRooms(rooms || [])
+    } catch (error) {
+      console.error('채팅방 목록 로드 실패:', error)
+    }
+  }
+
+  // 채팅 알림 로드
+  const loadChatNotifications = async () => {
+    try {
+      const notifications = await dataService.entities.admin_chat_notifications.list()
+      const unreadNotifications = notifications.filter(n => !n.is_read)
+      setChatNotifications(notifications || [])
+      setUnreadChatCount(unreadNotifications.length)
+    } catch (error) {
+      console.error('채팅 알림 로드 실패:', error)
+    }
+  }
+
+  // 온라인 사용자 로드
+  const loadOnlineUsers = async () => {
+    try {
+      const onlineUsers = await dataService.entities.user_online_status.getOnlineUsers()
+      setOnlineUsers(onlineUsers)
+    } catch (error) {
+      console.error('온라인 사용자 로드 실패:', error)
+    }
+  }
+
+  // 특정 채팅방의 메시지 로드 (새로운 JSON 구조)
+  const loadChatMessages = async (chatRoomId: string) => {
+    try {
+      const conversations = await dataService.entities.chat_conversations.list({
+        filter: { chat_room_id: chatRoomId }
+      })
+      
+      // 모든 대화의 메시지를 하나의 배열로 합치기
+      const allMessages: any[] = []
+      
+      conversations.forEach(conversation => {
+        if (conversation.conversation_data && Array.isArray(conversation.conversation_data)) {
+          conversation.conversation_data.forEach((msg: any) => {
+            allMessages.push({
+              id: msg.id,
+              chat_room_id: chatRoomId,
+              sender_type: msg.sender_type,
+              sender_id: msg.sender_name,
+              sender_name: msg.sender_name,
+              message: msg.message_text,
+              message_type: 'text',
+              is_read: true,
+              created_at: msg.timestamp
+            })
+          })
+        }
+      })
+
+      // 시간순으로 정렬
+      allMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      setChatMessages(allMessages)
+    } catch (error) {
+      console.error('채팅 메시지 로드 실패:', error)
+    }
+  }
+
+  // 관리자 메시지 전송 (새로운 JSON 구조)
+  const sendAdminMessage = async () => {
+    if (!chatInput.trim() || !selectedChatRoom) return
+
+    try {
+      const now = new Date().toISOString()
+      const adminMessageId = `admin_${Date.now()}`
+      
+      // 관리자 메시지만 포함된 새로운 대화 생성
+      const conversationData = [
+        {
+          id: adminMessageId,
+          sender_type: 'admin',
+          sender_name: '관리자',
+          message_text: chatInput,
+          timestamp: now
+        }
+      ]
+
+      const newConversation = await dataService.entities.chat_conversations.create({
+        chat_room_id: selectedChatRoom.id,
+        conversation_data: conversationData,
+        message_count: 1,
+        first_message_at: now,
+        last_message_at: now,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+      if (newConversation) {
+        setChatInput('')
+        await loadChatMessages(selectedChatRoom.id)
+        toast.success('메시지가 전송되었습니다')
+      }
+    } catch (error) {
+      console.error('관리자 메시지 전송 실패:', error)
+      toast.error('메시지 전송에 실패했습니다')
+    }
+  }
+
+  // 채팅방 선택
+  const selectChatRoom = async (room: any) => {
+    setSelectedChatRoom(room)
+    await loadChatMessages(room.id)
+    
+    // 해당 채팅방의 알림을 읽음으로 표시
+    try {
+      const roomNotifications = chatNotifications.filter(n => n.chat_room_id === room.id)
+      await Promise.all(
+        roomNotifications.map(notification =>
+          dataService.entities.admin_chat_notifications.update(notification.id, { is_read: true })
+        )
+      )
+      await loadChatNotifications()
+    } catch (error) {
+      console.error('알림 읽음 처리 실패:', error)
+    }
+  }
+
   const loadAllData = async () => {
     try {
       setLoading(true)
@@ -1014,7 +1080,10 @@ const AdminDashboard: React.FC = () => {
         loadExperiences(),
         loadNotifications(),
         loadUsers(),
-        loadWithdrawalRequests()
+        loadWithdrawalRequests(),
+        loadChatRooms(),
+        loadChatNotifications(),
+        loadOnlineUsers()
       ])
     } catch (error) {
       console.error('데이터 로드 실패:', error)
@@ -1030,6 +1099,209 @@ const AdminDashboard: React.FC = () => {
     await loadAllData()
     setRefreshing(false)
     toast.success('데이터가 새로고침되었습니다')
+  }
+
+  // 실시간 온라인 상태 업데이트
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadOnlineUsers()
+    }, 5000) // 5초마다 업데이트
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // 환급 요청 엑셀 다운로드
+  const exportWithdrawalRequestsToExcel = () => {
+    try {
+      // 필터링된 환급 요청 데이터 가져오기
+      const filteredRequests = getFilteredWithdrawalRequests()
+      
+      // CSV 헤더
+      const headers = [
+        '번호',
+        '이름',
+        'USER_ID',
+        '전화번호',
+        '계좌번호',
+        '주소',
+        '해당 캠페인',
+        '포인트',
+        '입금금액 (3.3% 공제)',
+        '환급 요청 횟수',
+        '요청일',
+        '상태'
+      ]
+      
+      // CSV 데이터 생성
+      const csvData = filteredRequests.map((request, index) => {
+        const taxRate = 0.033 // 3.3%
+        const taxAmount = Math.floor(request.points_amount * taxRate)
+        const finalAmount = request.points_amount - taxAmount
+        
+        return [
+          index + 1,
+          request.user_data?.name || request.user_profile?.name || '정보 없음',
+          request.user_id,
+          request.user_data?.phone || request.user_profile?.phone || '정보 없음',
+          `${request.bank_account?.bank_name || ''} ${request.bank_account?.account_number || ''}`,
+          request.user_data?.address || request.user_profile?.address || '정보 없음',
+          request.user_applications?.[0]?.campaign_name || '정보 없음',
+          request.points_amount.toLocaleString() + 'P',
+          finalAmount.toLocaleString() + '원',
+          request.withdrawal_count,
+          new Date(request.created_at).toLocaleDateString('ko-KR'),
+          request.status === 'pending' ? '대기' : 
+          request.status === 'approved' ? '승인' :
+          request.status === 'completed' ? '완료' :
+          request.status === 'rejected' ? '거부' : request.status
+        ]
+      })
+      
+      // CSV 문자열 생성
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n')
+      
+      // BOM 추가 (한글 깨짐 방지)
+      const BOM = '\uFEFF'
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+      
+      // 다운로드
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `환급요청_${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      toast.success('환급 요청 데이터가 다운로드되었습니다.')
+    } catch (error) {
+      console.error('엑셀 다운로드 실패:', error)
+      toast.error('다운로드 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 환급 요청 필터링
+  const getFilteredWithdrawalRequests = () => {
+    let filtered = withdrawalRequests
+
+    // 상태 필터
+    if (withdrawalFilter !== 'all') {
+      filtered = filtered.filter(request => request.status === withdrawalFilter)
+    }
+
+    // 검색 필터
+    if (withdrawalSearch) {
+      const searchLower = withdrawalSearch.toLowerCase()
+      filtered = filtered.filter(request => 
+        request.user_data?.name?.toLowerCase().includes(searchLower) ||
+        request.user_profile?.name?.toLowerCase().includes(searchLower) ||
+        request.user_id.toLowerCase().includes(searchLower) ||
+        request.user_data?.phone?.includes(searchLower) ||
+        request.user_profile?.phone?.includes(searchLower) ||
+        request.bank_account?.account_number?.includes(searchLower)
+      )
+    }
+
+    return filtered
+  }
+
+  // 환급 요청 승인
+  const handleApproveWithdrawal = async (requestId: string, adminNotes?: string) => {
+    try {
+      const result = await dataService.entities.withdrawal_requests.update(requestId, {
+        status: 'approved',
+        processed_by: 'admin',
+        processed_at: new Date().toISOString(),
+        admin_notes: adminNotes || '출금 요청 승인'
+      })
+
+      if (result) {
+        toast.success('출금 요청이 승인되었습니다.')
+        await loadWithdrawalRequests()
+        
+        // 관리자 알림 생성
+        await dataService.entities.admin_notifications.create({
+          type: 'withdrawal_approved',
+          title: '출금 요청 승인',
+          message: `출금 요청이 승인되었습니다. (ID: ${requestId})`,
+          priority: 'medium',
+          read: false,
+          created_at: new Date().toISOString()
+        })
+      } else {
+        toast.error('출금 요청 승인에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('출금 요청 승인 실패:', error)
+      toast.error('출금 요청 승인 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 출금 요청 거부
+  const handleRejectWithdrawal = async (requestId: string, adminNotes?: string) => {
+    try {
+      const result = await dataService.entities.withdrawal_requests.update(requestId, {
+        status: 'rejected',
+        processed_by: 'admin',
+        processed_at: new Date().toISOString(),
+        admin_notes: adminNotes || '출금 요청 거부'
+      })
+
+      if (result) {
+        toast.success('출금 요청이 거부되었습니다.')
+        await loadWithdrawalRequests()
+        
+        // 관리자 알림 생성
+        await dataService.entities.admin_notifications.create({
+          type: 'withdrawal_rejected',
+          title: '출금 요청 거부',
+          message: `출금 요청이 거부되었습니다. (ID: ${requestId})`,
+          priority: 'medium',
+          read: false,
+          created_at: new Date().toISOString()
+        })
+      } else {
+        toast.error('출금 요청 거부에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('출금 요청 거부 실패:', error)
+      toast.error('출금 요청 거부 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 출금 요청 완료 처리
+  const handleCompleteWithdrawal = async (requestId: string, adminNotes?: string) => {
+    try {
+      const result = await dataService.entities.withdrawal_requests.update(requestId, {
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        admin_notes: adminNotes || '출금 완료 처리'
+      })
+
+      if (result) {
+        toast.success('출금이 완료되었습니다.')
+        await loadWithdrawalRequests()
+        
+        // 관리자 알림 생성
+        await dataService.entities.admin_notifications.create({
+          type: 'withdrawal_completed',
+          title: '출금 완료',
+          message: `출금이 완료되었습니다. (ID: ${requestId})`,
+          priority: 'high',
+          read: false,
+          created_at: new Date().toISOString()
+        })
+      } else {
+        toast.error('출금 완료 처리에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('출금 완료 처리 실패:', error)
+      toast.error('출금 완료 처리 중 오류가 발생했습니다.')
+    }
   }
 
   // 일괄 처리 함수들
@@ -1377,6 +1649,21 @@ const AdminDashboard: React.FC = () => {
                 )}
               </button>
               <button
+                onClick={() => setActiveTab('withdrawal-requests')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'withdrawal-requests'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                출금 요청 관리
+                {withdrawalRequests.filter(req => req.status === 'pending').length > 0 && (
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    {withdrawalRequests.filter(req => req.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+              <button
                 onClick={() => setActiveTab('reviews')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'reviews'
@@ -1407,14 +1694,19 @@ const AdminDashboard: React.FC = () => {
                 회원 관리
               </button>
               <button
-                onClick={() => setActiveTab('withdrawals')}
+                onClick={() => setActiveTab('chat')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'withdrawals'
-                    ? 'border-orange-500 text-orange-600'
+                  activeTab === 'chat'
+                    ? 'border-green-500 text-green-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                출금 요청 관리
+                실시간 채팅
+                {unreadChatCount > 0 && (
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {unreadChatCount}
+                  </span>
+                )}
               </button>
             </nav>
           </div>
@@ -1972,6 +2264,370 @@ const AdminDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+        )}
+
+        {/* 실시간 채팅 관리 Section */}
+        {activeTab === 'chat' && (
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-900">실시간 채팅 관리</h2>
+              <div className="text-sm text-gray-600">
+                총 {chatRooms.length}개의 채팅방 | 미읽음 {unreadChatCount}개
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex h-96">
+            {/* 채팅방 목록 */}
+            <div className="w-1/3 border-r border-gray-200">
+              <div className="p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">채팅방 목록</h3>
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {chatRooms.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500">
+                      <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p>채팅방이 없습니다</p>
+                    </div>
+                  ) : (
+                    chatRooms.map((room) => {
+                      const hasUnread = chatNotifications.some(n => 
+                        n.chat_room_id === room.id && !n.is_read
+                      )
+                      return (
+                        <div
+                          key={room.id}
+                          onClick={() => selectChatRoom(room)}
+                          className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                            selectedChatRoom?.id === room.id
+                              ? 'bg-green-100 border border-green-300'
+                              : 'bg-gray-50 hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className="font-medium text-sm text-gray-900">
+                                  {room.user_name || '사용자'}
+                                </div>
+                                {(() => {
+                                  const userStatus = onlineUsers.find(u => u.user_id === room.user_id)
+                                  return userStatus?.is_online ? (
+                                    <div className="w-2 h-2 bg-green-500 rounded-full" title="온라인"></div>
+                                  ) : (
+                                    <div className="w-2 h-2 bg-gray-300 rounded-full" title="오프라인"></div>
+                                  )
+                                })()}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {room.user_email}
+                              </div>
+                              {room.last_message_at && (
+                                <div className="text-xs text-gray-400">
+                                  {new Date(room.last_message_at).toLocaleString('ko-KR', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                            {hasUnread && (
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 채팅 메시지 영역 */}
+            <div className="flex-1 flex flex-col">
+              {selectedChatRoom ? (
+                <>
+                  {/* 채팅방 헤더 */}
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-gray-900">
+                            {selectedChatRoom.user_name || '사용자'}
+                          </h3>
+                          {(() => {
+                            const userStatus = onlineUsers.find(u => u.user_id === selectedChatRoom.user_id)
+                            return userStatus?.is_online ? (
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-xs text-green-600">온라인</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                                <span className="text-xs text-gray-500">오프라인</span>
+                              </div>
+                            )
+                          })()}
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          {selectedChatRoom.user_email}
+                        </p>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {selectedChatRoom.status === 'active' ? (
+                          <span className="text-green-600">● 온라인</span>
+                        ) : (
+                          <span className="text-gray-400">● 오프라인</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 메시지 영역 */}
+                  <div className="flex-1 p-4 overflow-y-auto space-y-3">
+                    {chatMessages.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                        <p>아직 메시지가 없습니다</p>
+                      </div>
+                    ) : (
+                      chatMessages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${message.sender_type === 'user' ? 'justify-start' : 'justify-end'}`}
+                        >
+                          <div
+                            className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
+                              message.sender_type === 'user'
+                                ? 'bg-gray-100 text-gray-800'
+                                : 'bg-green-500 text-white'
+                            }`}
+                          >
+                            <div className="whitespace-pre-line">{message.message}</div>
+                            <div className={`text-xs mt-1 ${
+                              message.sender_type === 'user' ? 'text-gray-500' : 'text-green-100'
+                            }`}>
+                              {new Date(message.created_at).toLocaleTimeString('ko-KR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* 메시지 입력 영역 */}
+                  <div className="p-4 border-t border-gray-200">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            sendAdminMessage()
+                          }
+                        }}
+                        placeholder="메시지를 입력하세요..."
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                      />
+                      <button
+                        onClick={sendAdminMessage}
+                        disabled={!chatInput.trim()}
+                        className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
+                      >
+                        전송
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p>채팅방을 선택해주세요</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* 환급 요청 관리 Section */}
+        {activeTab === 'withdrawal-requests' && (
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-900">출금 요청 관리</h2>
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-600">
+                  총 {withdrawalRequests.length}개의 요청
+                </div>
+                <button
+                  onClick={exportWithdrawalRequestsToExcel}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  엑셀 다운로드
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <div className="flex gap-4 mb-4">
+              <select
+                value={withdrawalFilter}
+                onChange={(e) => setWithdrawalFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="all">전체</option>
+                <option value="pending">대기</option>
+                <option value="approved">승인</option>
+                <option value="completed">완료</option>
+                <option value="rejected">거부</option>
+              </select>
+              <input
+                type="text"
+                placeholder="이름, USER_ID, 계좌번호로 검색..."
+                value={withdrawalSearch}
+                onChange={(e) => setWithdrawalSearch(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            
+            {(() => {
+              const filteredRequests = getFilteredWithdrawalRequests()
+              
+              return filteredRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <Banknote className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">출금 요청이 없습니다.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">번호</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">USER_ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">전화번호</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">계좌번호</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">포인트</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">입금금액</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">횟수</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">요청일</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredRequests.map((request, index) => {
+                        const taxRate = 0.033 // 3.3%
+                        const taxAmount = Math.floor(request.points_amount * taxRate)
+                        const finalAmount = request.points_amount - taxAmount
+                        
+                        return (
+                          <tr key={request.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {index + 1}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {request.user_data?.name || request.user_profile?.name || '정보 없음'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {request.user_id}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {request.user_data?.phone || request.user_profile?.phone || '정보 없음'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {request.bank_account?.bank_name} {request.bank_account?.account_number}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {request.points_amount.toLocaleString()}P
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <div>
+                                <div className="font-medium">{finalAmount.toLocaleString()}원</div>
+                                <div className="text-xs text-gray-500">(세금 {taxAmount.toLocaleString()}원 공제)</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {request.withdrawal_count}회
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                request.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                                request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {request.status === 'pending' ? '대기' : 
+                                 request.status === 'approved' ? '승인' :
+                                 request.status === 'completed' ? '완료' :
+                                 request.status === 'rejected' ? '거부' : request.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(request.created_at).toLocaleDateString('ko-KR')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedWithdrawalRequest(request)
+                                    setShowWithdrawalDetailModal(true)
+                                  }}
+                                  className="text-indigo-600 hover:text-indigo-900"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                {request.status === 'pending' && (
+                                  <>
+                                    <button
+                                      onClick={() => handleApproveWithdrawal(request.id)}
+                                      className="text-green-600 hover:text-green-900"
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectWithdrawal(request.id)}
+                                      className="text-red-600 hover:text-red-900"
+                                    >
+                                      <XCircle className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
+                                {request.status === 'approved' && (
+                                  <button
+                                    onClick={() => handleCompleteWithdrawal(request.id)}
+                                    className="text-blue-600 hover:text-blue-900"
+                                  >
+                                    완료처리
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            })()}
           </div>
         </div>
         )}
@@ -2715,8 +3371,8 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-        {/* 출금 요청 관리 Section */}
-        {activeTab === 'withdrawals' && (
+        {/* 중복 제거: 출금 요청 관리는 withdrawal-requests 탭으로 통합됨 */}
+        {false && activeTab === 'withdrawals' && (
           <div className="bg-white rounded-lg shadow mb-8">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
@@ -3029,9 +3685,9 @@ const AdminDashboard: React.FC = () => {
         {/* 출금 승인 모달 */}
         {showWithdrawalApprovalModal && selectedWithdrawalRequest && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">출금 요청 승인</h3>
+            <div className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">출금 요청 승인 확인</h3>
                 <button
                   onClick={() => {
                     setShowWithdrawalApprovalModal(false)
@@ -3039,19 +3695,120 @@ const AdminDashboard: React.FC = () => {
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>{selectedWithdrawalRequest.user_profile?.name || '사용자'}</strong>님의 
-                  <strong> {selectedWithdrawalRequest.points_amount.toLocaleString()}P</strong> 
-                  출금 요청을 승인하시겠습니까?
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  출금 금액: {selectedWithdrawalRequest.withdrawal_amount.toLocaleString()}원
-                </p>
+              {/* 승인 대상 요약 */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                <div className="flex items-center mb-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                    <User className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-green-800">
+                      {selectedWithdrawalRequest.user_data?.name || selectedWithdrawalRequest.user_profile?.name || '사용자'}
+                    </h4>
+                    <p className="text-sm text-green-600">
+                      ID: {selectedWithdrawalRequest.user_id}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-center py-3 bg-white rounded-lg border border-green-200">
+                  <p className="text-2xl font-bold text-green-700">
+                    {selectedWithdrawalRequest.points_amount.toLocaleString()}P
+                  </p>
+                  <p className="text-sm text-green-600">출금 요청 포인트</p>
+                </div>
+              </div>
+
+              {/* 상세 정보 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* 회원 정보 */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <User className="w-4 h-4 mr-2" />
+                    회원 정보
+                  </h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">전화번호:</span>
+                      <span className="font-medium">{selectedWithdrawalRequest.user_data?.phone || selectedWithdrawalRequest.user_profile?.phone || '정보 없음'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">주소:</span>
+                      <span className="font-medium text-right text-xs">
+                        {selectedWithdrawalRequest.user_data?.address || selectedWithdrawalRequest.user_profile?.address || '정보 없음'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">요청 횟수:</span>
+                      <span className="font-medium text-blue-600">
+                        {selectedWithdrawalRequest.withdrawal_count || 1}번째
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 계좌 정보 */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Banknote className="w-4 h-4 mr-2" />
+                    입금 계좌
+                  </h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">은행:</span>
+                      <span className="font-medium">{selectedWithdrawalRequest.bank_account?.bank_name || '정보 없음'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">계좌번호:</span>
+                      <span className="font-medium">{selectedWithdrawalRequest.bank_account?.account_number || '정보 없음'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">예금주:</span>
+                      <span className="font-medium">{selectedWithdrawalRequest.bank_account?.account_holder || '정보 없음'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">인증상태:</span>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        selectedWithdrawalRequest.bank_account?.is_verified 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedWithdrawalRequest.bank_account?.is_verified ? '인증완료' : '미인증'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 금액 정보 */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <h5 className="font-semibold text-yellow-800 mb-3 flex items-center">
+                  <Calculator className="w-4 h-4 mr-2" />
+                  정확한 입금 금액 (세금 3.3% 공제)
+                </h5>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="bg-white p-3 rounded border">
+                    <p className="text-lg font-bold text-gray-900">
+                      {selectedWithdrawalRequest.points_amount.toLocaleString()}P
+                    </p>
+                    <p className="text-xs text-gray-600">요청 포인트</p>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <p className="text-lg font-bold text-red-600">
+                      -{Math.floor(selectedWithdrawalRequest.points_amount * 0.033).toLocaleString()}원
+                    </p>
+                    <p className="text-xs text-gray-600">세금 (3.3%)</p>
+                  </div>
+                  <div className="bg-green-100 p-3 rounded border border-green-300">
+                    <p className="text-xl font-bold text-green-700">
+                      {(selectedWithdrawalRequest.points_amount - Math.floor(selectedWithdrawalRequest.points_amount * 0.033)).toLocaleString()}원
+                    </p>
+                    <p className="text-xs text-green-600">실제 입금액</p>
+                  </div>
+                </div>
               </div>
 
               <div className="mb-4">
@@ -3151,6 +3908,230 @@ const AdminDashboard: React.FC = () => {
                 >
                   거절
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 출금 요청 상세 모달 */}
+        {showWithdrawalDetailModal && selectedWithdrawalRequest && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">출금 요청 상세 정보</h2>
+                  <button
+                    onClick={() => {
+                      setShowWithdrawalDetailModal(false)
+                      setSelectedWithdrawalRequest(null)
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 사용자 정보 */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">사용자 정보</h3>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">이름:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {selectedWithdrawalRequest.user_data?.name || selectedWithdrawalRequest.user_profile?.name || '정보 없음'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">USER_ID:</span>
+                        <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.user_id}</span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">전화번호:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {selectedWithdrawalRequest.user_data?.phone || selectedWithdrawalRequest.user_profile?.phone || '정보 없음'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">주소:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {selectedWithdrawalRequest.user_data?.address || selectedWithdrawalRequest.user_profile?.address || '정보 없음'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 계좌 정보 */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">계좌 정보</h3>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">은행:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {selectedWithdrawalRequest.bank_account?.bank_name || '정보 없음'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">계좌번호:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {selectedWithdrawalRequest.bank_account?.account_number || '정보 없음'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">예금주:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {selectedWithdrawalRequest.bank_account?.account_holder || '정보 없음'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">인증 상태:</span>
+                        <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedWithdrawalRequest.bank_account?.is_verified 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {selectedWithdrawalRequest.bank_account?.is_verified ? '인증됨' : '미인증'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 환급 정보 */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">환급 정보</h3>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">포인트:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {selectedWithdrawalRequest.points_amount.toLocaleString()}P
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">세금 (3.3%):</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {Math.floor(selectedWithdrawalRequest.points_amount * 0.033).toLocaleString()}원
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">실지급액:</span>
+                        <span className="ml-2 text-sm font-bold text-green-600">
+                          {(selectedWithdrawalRequest.points_amount - Math.floor(selectedWithdrawalRequest.points_amount * 0.033)).toLocaleString()}원
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">환급 횟수:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {selectedWithdrawalRequest.withdrawal_count}회
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 요청 정보 */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">요청 정보</h3>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">상태:</span>
+                        <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedWithdrawalRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                          selectedWithdrawalRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          selectedWithdrawalRequest.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {selectedWithdrawalRequest.status === 'pending' ? '대기' : 
+                           selectedWithdrawalRequest.status === 'approved' ? '승인' :
+                           selectedWithdrawalRequest.status === 'completed' ? '완료' :
+                           selectedWithdrawalRequest.status === 'rejected' ? '거부' : selectedWithdrawalRequest.status}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">요청일:</span>
+                        <span className="ml-2 text-sm text-gray-900">
+                          {new Date(selectedWithdrawalRequest.created_at).toLocaleString('ko-KR')}
+                        </span>
+                      </div>
+                      {selectedWithdrawalRequest.processed_at && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">처리일:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {new Date(selectedWithdrawalRequest.processed_at).toLocaleString('ko-KR')}
+                          </span>
+                        </div>
+                      )}
+                      {selectedWithdrawalRequest.completed_at && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">완료일:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {new Date(selectedWithdrawalRequest.completed_at).toLocaleString('ko-KR')}
+                          </span>
+                        </div>
+                      )}
+                      {selectedWithdrawalRequest.request_reason && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">요청 사유:</span>
+                          <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.request_reason}</span>
+                        </div>
+                      )}
+                      {selectedWithdrawalRequest.admin_notes && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">관리자 메모:</span>
+                          <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.admin_notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 관리 버튼 */}
+                <div className="flex justify-end space-x-3 mt-6 pt-6 border-t">
+                  {selectedWithdrawalRequest.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          handleApproveWithdrawal(selectedWithdrawalRequest.id)
+                          setShowWithdrawalDetailModal(false)
+                          setSelectedWithdrawalRequest(null)
+                        }}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        승인
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleRejectWithdrawal(selectedWithdrawalRequest.id)
+                          setShowWithdrawalDetailModal(false)
+                          setSelectedWithdrawalRequest(null)
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        거부
+                      </button>
+                    </>
+                  )}
+                  {selectedWithdrawalRequest.status === 'approved' && (
+                    <button
+                      onClick={() => {
+                        handleCompleteWithdrawal(selectedWithdrawalRequest.id)
+                        setShowWithdrawalDetailModal(false)
+                        setSelectedWithdrawalRequest(null)
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      완료 처리
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowWithdrawalDetailModal(false)
+                      setSelectedWithdrawalRequest(null)
+                    }}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    닫기
+                  </button>
+                </div>
               </div>
             </div>
           </div>

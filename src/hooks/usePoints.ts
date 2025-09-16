@@ -13,6 +13,8 @@ interface PointsHistory {
   payment_status?: string
   description: string
   created_at: string
+  campaign_id?: string
+  campaign_name?: string
 }
 
 interface UserPoints {
@@ -52,7 +54,9 @@ function convertToPointsHistory(entity: any): PointsHistory {
     status: entity.status || 'pending',
     payment_status: entity.payment_status,
     description: entity.description || '',
-    created_at: entity.created_at || new Date().toISOString()
+    created_at: entity.created_at || new Date().toISOString(),
+    campaign_id: entity.campaign_id,
+    campaign_name: entity.campaign_name
   }
 }
 

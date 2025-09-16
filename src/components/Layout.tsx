@@ -21,7 +21,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: '체험단', href: '/experiences', icon: Gift },
     ...(isAuthenticated ? [
       { name: '찜목록', href: '/wishlist', icon: Heart },
-      { name: '내 신청', href: '/my-applications', icon: FileText },
+      { name: '내신청', href: '/my-applications', icon: FileText },
       { name: '포인트', href: '/points', icon: Coins },
       { name: '프로필', href: '/profile', icon: User },
     ] : [])
@@ -77,9 +77,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* 로고 */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
-                <img src="/logo.png" alt="올띵버킷 로고" className="w-8 h-8" />
-                <span className="text-xl font-bold text-gray-900">올띵버킷</span>
-                <span className="text-sm text-gray-500">체험단</span>
+                <img src="/logo.png" alt="올띵버킷 로고" className="w-6 h-6 sm:w-8 sm:h-8" />
+                <span className="text-lg sm:text-xl font-bold text-gray-900">올띵버킷</span>
+                <span className="hidden sm:inline text-sm text-gray-500">체험단</span>
               </Link>
             </div>
 
@@ -168,8 +168,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* 모바일 메뉴 */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t bg-white">
-            <div className="px-2 pt-2 pb-3 space-y-1">
+          <div className="md:hidden border-t bg-white shadow-lg">
+            <div className="px-4 pt-4 pb-6 space-y-2">
               {navigationItems.map((item) => {
                 const isActive = location.pathname === item.href
                 return (
@@ -177,9 +177,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     key={item.name}
                     to={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium ${
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
                       isActive
-                        ? 'text-blue-600 bg-blue-50'
+                        ? 'text-blue-600 bg-blue-50 border-l-4 border-blue-600'
                         : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                     }`}
                   >
@@ -191,21 +191,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               
               {isAuthenticated ? (
                 <>
-                  <div className="border-t pt-2 mt-2">
-                    <div className="px-3 py-2 text-sm text-gray-500 flex items-center space-x-2">
-                      <span>{user?.name || '사용자'}님으로 로그인됨</span>
-                      {isAdminUser() && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                          <Shield className="w-3 h-3 mr-1" />
-                          관리자
-                        </span>
-                      )}
+                  <div className="border-t pt-4 mt-4">
+                    <div className="px-4 py-3 bg-gray-50 rounded-lg mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
+                          {(user?.name || 'U').charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{user?.name || '사용자'}님</p>
+                          {isAdminUser() && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 mt-1">
+                              <Shield className="w-3 h-3 mr-1" />
+                              관리자
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     
                     {isAdminUser() && (
                       <button
                         onClick={handleAdminAccess}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-left text-base font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-md"
+                        className="flex items-center space-x-3 w-full px-4 py-3 text-left text-base font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
                       >
                         <Shield className="w-5 h-5" />
                         <span>관리자 페이지</span>
@@ -214,7 +221,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     
                     <button
                       onClick={handleLogout}
-                      className="flex items-center space-x-2 w-full px-3 py-2 text-left text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md"
+                      className="flex items-center space-x-3 w-full px-4 py-3 text-left text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <LogOut className="w-5 h-5" />
                       <span>로그아웃</span>
@@ -222,13 +229,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </div>
                 </>
               ) : (
-                <div className="border-t pt-2 mt-2">
+                <div className="border-t pt-4 mt-4">
                   <button
                     onClick={() => {
                       window.dispatchEvent(new CustomEvent('openLoginModal'))
                       setIsMobileMenuOpen(false)
                     }}
-                    className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                    className="w-full px-4 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
                   >
                     로그인
                   </button>
@@ -246,30 +253,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* 푸터 */}
       <footer className="bg-white border-t">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <img src="/logo.png" alt="올띵버킷 로고" className="w-8 h-8" />
-                <span className="text-lg font-bold text-gray-900">올띵버킷 체험단</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <div className="sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center space-x-2 mb-3 sm:mb-4">
+                <img src="/logo.png" alt="올띵버킷 로고" className="w-6 h-6 sm:w-8 sm:h-8" />
+                <span className="text-base sm:text-lg font-bold text-gray-900">올띵버킷 체험단</span>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 text-sm leading-relaxed">
                 다양한 제품과 서비스를 체험하고 리뷰를 작성하여 포인트를 받아보세요.
               </p>
             </div>
             
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">서비스</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 sm:mb-4">서비스</h3>
               <ul className="space-y-2">
-                <li><Link to="/experiences" className="text-sm text-gray-600 hover:text-blue-600">체험단 목록</Link></li>
-                <li><Link to="/wishlist" className="text-sm text-gray-600 hover:text-blue-600">찜 목록</Link></li>
-                <li><Link to="/my-applications" className="text-sm text-gray-600 hover:text-blue-600">내 신청내역</Link></li>
-                <li><Link to="/points" className="text-sm text-gray-600 hover:text-blue-600">포인트 관리</Link></li>
+                <li><Link to="/experiences" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">체험단 목록</Link></li>
+                <li><Link to="/wishlist" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">찜 목록</Link></li>
+                <li><Link to="/my-applications" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">내 신청내역</Link></li>
+                <li><Link to="/points" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">포인트 관리</Link></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">고객지원</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 sm:mb-4">고객지원</h3>
               <ul className="space-y-2">
                 <li><span className="text-sm text-gray-600">이메일: support@allthingbucket.com</span></li>
                 <li><span className="text-sm text-gray-600">운영시간: 평일 09:00-18:00</span></li>
@@ -277,8 +284,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
           
-          <div className="border-t mt-8 pt-8 text-center">
-            <p className="text-sm text-gray-500">
+          <div className="border-t mt-6 sm:mt-8 pt-6 sm:pt-8 text-center">
+            <p className="text-xs sm:text-sm text-gray-500">
               © 2024 올띵버킷 체험단. All rights reserved.
             </p>
           </div>

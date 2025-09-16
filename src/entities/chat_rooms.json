@@ -1,0 +1,43 @@
+{
+  "name": "chat_rooms",
+  "description": "사용자-관리자 채팅방 테이블 (최적화)",
+  "fields": {
+    "id": {
+      "type": "string",
+      "description": "채팅방 고유 ID (UUID)"
+    },
+    "user_id": {
+      "type": "string", 
+      "description": "사용자 ID"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "사용자 이름"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "사용자 이메일"
+    },
+    "user_phone": {
+      "type": "string",
+      "description": "사용자 전화번호"
+    },
+    "status": {
+      "type": "string",
+      "description": "채팅방 상태 (active, closed, archived)",
+      "default": "active"
+    },
+    "last_message_at": {
+      "type": "string",
+      "description": "마지막 메시지 시간"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "생성 시간"
+    },
+    "updated_at": {
+      "type": "string", 
+      "description": "수정 시간"
+    }
+  }
+}

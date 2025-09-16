@@ -1,78 +1,56 @@
-
-{
-  "name": "withdrawal_requests",
-  "options": {
-    "validator": {
-      "$jsonSchema": {
-        "bsonType": "object",
-        "required": ["user_id", "requested_amount", "bank_name", "account_number", "account_holder", "status", "created_at"],
-        "properties": {
-          "user_id": {
-            "bsonType": "string",
-            "description": "출금 요청자 ID"
-          },
-          "requested_amount": {
-            "bsonType": "number",
-            "minimum": 1000,
-            "description": "출금 요청 금액"
-          },
-          "bank_name": {
-            "bsonType": "string",
-            "description": "은행명"
-          },
-          "account_number": {
-            "bsonType": "string",
-            "description": "계좌번호"
-          },
-          "account_holder": {
-            "bsonType": "string",
-            "description": "예금주명"
-          },
-          "tax_rate": {
-            "bsonType": "number",
-            "description": "세율 (기본 3.3%)"
-          },
-          "tax_amount": {
-            "bsonType": "number",
-            "description": "세금 금액"
-          },
-          "final_amount": {
-            "bsonType": "number",
-            "description": "실지급 금액 (세금 제외)"
-          },
-          "status": {
-            "bsonType": "string",
-            "enum": ["pending", "approved", "processing", "completed", "rejected"],
-            "description": "처리 상태"
-          },
-          "admin_note": {
-            "bsonType": "string",
-            "description": "관리자 메모"
-          },
-          "processed_by": {
-            "bsonType": "string",
-            "description": "처리한 관리자 ID"
-          },
-          "processed_at": {
-            "bsonType": "string",
-            "title": "datetime",
-            "description": "처리 완료 일시"
-          },
-          "created_at": {
-            "bsonType": "string",
-            "title": "datetime",
-            "description": "요청 일시"
-          },
-          "updated_at": {
-            "bsonType": "string",
-            "title": "datetime",
-            "description": "수정 일시"
-          }
-        },
-        "additionalProperties": true
-      }
-    },
-    "validationLevel": "moderate",
-    "validationAction": "warn"
+[
+  {
+    "id": "withdrawal_001",
+    "user_id": "sample_user_1",
+    "bank_account_id": "bank_001",
+    "points_amount": 10000,
+    "withdrawal_amount": 10000,
+    "exchange_rate": 1.0,
+    "tax_amount": 330,
+    "final_amount": 9670,
+    "status": "pending",
+    "request_reason": "포인트 출금 요청",
+    "admin_notes": null,
+    "processed_by": null,
+    "processed_at": null,
+    "completed_at": null,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": "withdrawal_002",
+    "user_id": "sample_user_2",
+    "bank_account_id": "bank_002",
+    "points_amount": 5000,
+    "withdrawal_amount": 5000,
+    "exchange_rate": 1.0,
+    "tax_amount": 165,
+    "final_amount": 4835,
+    "status": "approved",
+    "request_reason": "포인트 출금 요청",
+    "admin_notes": "승인 완료",
+    "processed_by": "admin_001",
+    "processed_at": "2024-01-15T11:00:00Z",
+    "completed_at": null,
+    "created_at": "2024-01-15T10:45:00Z",
+    "updated_at": "2024-01-15T11:00:00Z"
+  },
+  {
+    "id": "withdrawal_003",
+    "user_id": "sample_user_3",
+    "bank_account_id": "bank_003",
+    "points_amount": 15000,
+    "withdrawal_amount": 15000,
+    "exchange_rate": 1.0,
+    "tax_amount": 495,
+    "final_amount": 14505,
+    "status": "completed",
+    "request_reason": "포인트 출금 요청",
+    "admin_notes": "출금 완료 처리",
+    "processed_by": "admin_001",
+    "processed_at": "2024-01-15T12:00:00Z",
+    "completed_at": "2024-01-15T12:30:00Z",
+    "created_at": "2024-01-15T11:15:00Z",
+    "updated_at": "2024-01-15T12:30:00Z"
   }
-}
+]

@@ -6,8 +6,13 @@ class SupabaseService {
     this.supabaseUrl = process.env.SUPABASE_URL || 'https://nwwwesxzlpotabtcvkgj.supabase.co';
     this.supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53d3dlc3h6bHBvdGFidGN2a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1NzQ4NzQsImV4cCI6MjA1MjE1MDg3NH0.8K8v8K8v8K8v8K8v8K8v8K8v8K8v8K8v8K8v8K8v8';
     
-    // Supabase 클라이언트 초기화
-    this.supabase = createClient(this.supabaseUrl, this.supabaseKey);
+    // Supabase 클라이언트 초기화 (임시로 비활성화)
+    try {
+      this.supabase = createClient(this.supabaseUrl, this.supabaseKey);
+    } catch (error) {
+      console.log('⚠️ Supabase 연결 실패, 임시로 비활성화:', error.message);
+      this.supabase = null;
+    }
     
     console.log('🔗 Supabase 클라이언트 초기화:');
     console.log('  - SUPABASE_URL:', this.supabaseUrl ? '설정됨' : '설정되지 않음');

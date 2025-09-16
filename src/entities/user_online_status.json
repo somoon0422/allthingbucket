@@ -1,0 +1,54 @@
+{
+  "name": "user_online_status",
+  "table": "user_online_status",
+  "fields": {
+    "id": {
+      "type": "uuid",
+      "primary": true,
+      "default": "gen_random_uuid()"
+    },
+    "user_id": {
+      "type": "text",
+      "required": true,
+      "unique": true
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_seen": {
+      "type": "timestamp",
+      "default": "now()"
+    },
+    "connection_id": {
+      "type": "text",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "timestamp",
+      "default": "now()"
+    },
+    "updated_at": {
+      "type": "timestamp",
+      "default": "now()"
+    }
+  },
+  "indexes": [
+    {
+      "name": "idx_user_online_status_user_id",
+      "fields": ["user_id"]
+    },
+    {
+      "name": "idx_user_online_status_is_online",
+      "fields": ["is_online"]
+    }
+  ],
+  "relationships": {
+    "user": {
+      "type": "belongs_to",
+      "entity": "user_profiles",
+      "foreign_key": "user_id",
+      "local_key": "user_id"
+    }
+  }
+}

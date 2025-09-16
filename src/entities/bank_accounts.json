@@ -1,0 +1,57 @@
+[
+  {
+    "id": "bank_001",
+    "user_id": "sample_user_1",
+    "bank_name": "국민은행",
+    "account_number": "123456-78-901234",
+    "account_holder": "홍길동",
+    "is_verified": true,
+    "verified_at": "2024-01-10T09:00:00Z",
+    "created_at": "2024-01-10T08:30:00Z",
+    "updated_at": "2024-01-10T09:00:00Z"
+  },
+  {
+    "id": "bank_002",
+    "user_id": "sample_user_2",
+    "bank_name": "신한은행",
+    "account_number": "987654-32-109876",
+    "account_holder": "김철수",
+    "is_verified": true,
+    "verified_at": "2024-01-12T14:30:00Z",
+    "created_at": "2024-01-12T14:00:00Z",
+    "updated_at": "2024-01-12T14:30:00Z"
+  },
+  {
+    "id": "bank_003",
+    "user_id": "sample_user_3",
+    "bank_name": "우리은행",
+    "account_number": "555555-55-555555",
+    "account_holder": "이영희",
+    "is_verified": false,
+    "verified_at": null,
+    "created_at": "2024-01-14T16:00:00Z",
+    "updated_at": "2024-01-14T16:00:00Z"
+  },
+  {
+    "id": "bank_004",
+    "user_id": "sample_user_4",
+    "bank_name": "하나은행",
+    "account_number": "777777-77-777777",
+    "account_holder": "박민수",
+    "is_verified": true,
+    "verified_at": "2024-01-15T10:15:00Z",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:15:00Z"
+  },
+  {
+    "id": "bank_005",
+    "user_id": "sample_user_5",
+    "bank_name": "카카오뱅크",
+    "account_number": "333333-33-333333",
+    "account_holder": "정수진",
+    "is_verified": true,
+    "verified_at": "2024-01-16T11:20:00Z",
+    "created_at": "2024-01-16T11:00:00Z",
+    "updated_at": "2024-01-16T11:20:00Z"
+  }
+]
