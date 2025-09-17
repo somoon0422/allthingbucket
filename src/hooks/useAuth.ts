@@ -221,10 +221,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // Supabase에서 관리자 정보 조회
-      const admins = await dataService.entities.admin_users.list()
-      const admin = admins.find((a: any) => a.username === adminName)
+      const users = await dataService.entities.users.list()
+      const admin = users.find((a: any) => a.name === adminName && a.role === 'admin')
       
-      console.log('🔍 관리자 조회 결과:', { adminName, admins, foundAdmin: admin })
+      console.log('🔍 관리자 조회 결과:', { adminName, users, foundAdmin: admin })
       
       if (!admin) {
         throw new Error('관리자를 찾을 수 없습니다')
@@ -266,15 +266,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setUser(null)
       
-      // Supabase Auth 로그아웃
-      await dataService.auth.signOut()
+      // Supabase Auth 로그아웃 (안전하게 처리)
+      try {
+        if (dataService.auth && typeof dataService.auth.signOut === 'function') {
+          await dataService.auth.signOut()
+        } else {
+          console.warn('dataService.auth.signOut이 사용할 수 없습니다. 직접 Supabase 로그아웃을 시도합니다.')
+          // 직접 Supabase 로그아웃 시도
+          const { supabase } = await import('../lib/dataService')
+          if (supabase && supabase.auth) {
+            await supabase.auth.signOut()
+          }
+        }
+      } catch (authError) {
+        console.warn('Supabase 로그아웃 실패, 로컬 세션만 정리합니다:', authError)
+      }
       
       // 로컬 세션 정리
       localStorage.removeItem('admin_session')
       localStorage.removeItem('auth_token')
       localStorage.removeItem('admin_token')
+      localStorage.removeItem('oauth_logs')
+      sessionStorage.removeItem('oauth_session_logs')
+      
+      console.log('✅ 로그아웃 완료')
     } catch (error) {
       console.error('로그아웃 실패:', error)
+      // 오류가 발생해도 로컬 세션은 정리
+      localStorage.removeItem('admin_session')
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('oauth_logs')
+      sessionStorage.removeItem('oauth_session_logs')
     }
   }
 
@@ -348,7 +371,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // Supabase Auth 세션 체크
-        const { data: { session } } = await dataService.auth.getSession()
+        const sessionData = await dataService.auth.getSession()
+        const session = sessionData?.data?.session
         if (session?.user) {
           console.log('🔍 Supabase 세션에서 사용자 확인:', session.user)
           
@@ -516,6 +540,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       clearTimeout(timer)
+    }
+  }, [])
+
+  // 🔥 Google 로그인 이벤트 처리
+  useEffect(() => {
+    const handleGoogleLoginSuccess = (event: CustomEvent) => {
+      try {
+        console.log('🎉 Google 로그인 성공 이벤트 수신:', event.detail)
+        
+        const { user: googleUser, token } = event.detail
+        
+        if (googleUser && token) {
+          // 사용자 정보 처리
+          const processedUser = processUserData(googleUser)
+          if (processedUser) {
+            setUser(processedUser)
+            console.log('✅ Google 로그인 사용자 설정 완료:', processedUser)
+            toast.success(`${processedUser.name}님, 환영합니다!`)
+          }
+        }
+      } catch (error) {
+        console.error('❌ Google 로그인 성공 이벤트 처리 실패:', error)
+        toast.error('로그인 처리 중 오류가 발생했습니다.')
+      }
+    }
+
+    const handleGoogleLoginError = (event: CustomEvent) => {
+      try {
+        console.log('❌ Google 로그인 오류 이벤트 수신:', event.detail)
+        
+        const { error: errorMessage } = event.detail
+        toast.error(errorMessage || 'Google 로그인에 실패했습니다.')
+      } catch (error) {
+        console.error('❌ Google 로그인 오류 이벤트 처리 실패:', error)
+        toast.error('로그인 처리 중 오류가 발생했습니다.')
+      }
+    }
+
+    // 이벤트 리스너 등록
+    window.addEventListener('googleLoginSuccess', handleGoogleLoginSuccess as EventListener)
+    window.addEventListener('googleLoginError', handleGoogleLoginError as EventListener)
+
+    // 클린업
+    return () => {
+      window.removeEventListener('googleLoginSuccess', handleGoogleLoginSuccess as EventListener)
+      window.removeEventListener('googleLoginError', handleGoogleLoginError as EventListener)
     }
   }, [])
 

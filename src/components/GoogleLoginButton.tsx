@@ -1,5 +1,6 @@
 import React from 'react'
 import { SupabaseOAuthService } from '../services/supabaseOAuthService'
+import { GoogleAuthService } from '../services/googleAuthService'
 import toast from 'react-hot-toast'
 
 interface GoogleLoginButtonProps {
@@ -15,13 +16,23 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
 }) => {
   const handleGoogleLogin = async () => {
     try {
-      console.log('🔥 Supabase Google OAuth 로그인 시작...')
+      // 🔥 개발 환경에서는 직접 Google OAuth 사용, 프로덕션에서는 Supabase OAuth 사용
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      
+      console.log('🔥 Google OAuth 로그인 시작...', { isDevelopment })
       
       // 모달 닫기 이벤트 발생
       window.dispatchEvent(new CustomEvent('closeLoginModal'))
       
-      // 직접 리다이렉트 방식이므로 Promise는 resolve되지 않음
-      await SupabaseOAuthService.signInWithGoogle()
+      if (isDevelopment) {
+        // 개발 환경: 직접 Google OAuth 사용
+        console.log('🔄 개발 환경: 직접 Google OAuth 사용')
+        await GoogleAuthService.handleGoogleLogin()
+      } else {
+        // 프로덕션 환경: Supabase OAuth 사용
+        console.log('🔄 프로덕션 환경: Supabase OAuth 사용')
+        await SupabaseOAuthService.signInWithGoogle()
+      }
       
     } catch (error: any) {
       console.error('❌ Google OAuth 로그인 실패:', error)

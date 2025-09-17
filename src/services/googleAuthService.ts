@@ -10,21 +10,32 @@ export interface GoogleUserInfo {
 }
 
 export class GoogleAuthService {
-  private static readonly GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '355223292883-jvr1fs5a9ra8bcbg0q6hnhamjqcd58k1.apps.googleusercontent.com'
+  // 🔥 개발용과 프로덕션용 클라이언트 ID 분리
+  private static readonly GOOGLE_CLIENT_ID_DEV = import.meta.env.VITE_GOOGLE_CLIENT_ID_DEV || '355223292883-jvr1fs5a9ra8bcbg0q6hnhamjqcd58k1.apps.googleusercontent.com'
+  private static readonly GOOGLE_CLIENT_ID_PROD = import.meta.env.VITE_GOOGLE_CLIENT_ID_PROD || '355223292883-jvr1fs5a9ra8bcbg0q6hnhamjqcd58k1.apps.googleusercontent.com'
+  
+  private static getGoogleClientId(): string {
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    return isDevelopment ? this.GOOGLE_CLIENT_ID_DEV : this.GOOGLE_CLIENT_ID_PROD
+  }
   
   // Google OAuth URL 생성
   static getGoogleAuthUrl(): string {
-    const redirectUri = `${window.location.origin}/auth/google/callback`
+    // 🔥 모든 환경에서 allthingbucket.com 사용 (Google Cloud Console 설정과 일치)
+    const redirectUri = 'https://allthingbucket.com/auth/google/callback'
+    
     const scope = 'openid email profile'
     
+    const clientId = this.getGoogleClientId()
+    
     console.log('Google OAuth 설정:', {
-      client_id: this.GOOGLE_CLIENT_ID,
+      client_id: clientId,
       redirect_uri: redirectUri,
       current_origin: window.location.origin
     })
     
     const params = new URLSearchParams({
-      client_id: this.GOOGLE_CLIENT_ID,
+      client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: scope,
@@ -151,60 +162,23 @@ export class GoogleAuthService {
     }
   }
   
-  // Google 로그인 버튼 클릭 처리 (실제 Google OAuth 사용)
+  // Google 로그인 버튼 클릭 처리 (전체 페이지 리다이렉트 방식)
   static async handleGoogleLogin(): Promise<void> {
     try {
       console.log('🔥 Google OAuth 로그인 시작...')
       
-      // Google OAuth URL로 리다이렉트
+      // 🔥 전체 페이지 리다이렉트 방식 사용 (Cross-Origin-Opener-Policy 문제 해결)
       const authUrl = this.getGoogleAuthUrl()
       console.log('Google OAuth URL:', authUrl)
       
-      // 팝업 창으로 Google OAuth 열기
-      const popup = window.open(
-        authUrl,
-        'googleAuth',
-        'width=500,height=600,scrollbars=yes,resizable=yes'
-      )
-      
-      if (!popup) {
-        throw new Error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.')
-      }
-      
-      // 팝업에서 결과를 기다림
-      return new Promise((resolve, reject) => {
-        const checkClosed = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(checkClosed)
-            reject(new Error('로그인이 취소되었습니다'))
-          }
-        }, 1000)
-        
-        // 메시지 리스너로 결과 받기
-        const messageListener = (event: MessageEvent) => {
-          if (event.origin !== window.location.origin) return
-          
-          if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
-            clearInterval(checkClosed)
-            window.removeEventListener('message', messageListener)
-            popup.close()
-            resolve()
-          } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
-            clearInterval(checkClosed)
-            window.removeEventListener('message', messageListener)
-            popup.close()
-            reject(new Error(event.data.error || 'Google 로그인에 실패했습니다'))
-          }
-        }
-        
-        window.addEventListener('message', messageListener)
-      })
+      // 전체 페이지 리다이렉트
+      window.location.href = authUrl
       
     } catch (error) {
       console.error('❌ Google OAuth 로그인 실패:', error)
       
       // Google OAuth 실패시 시뮬레이션으로 대체
-      console.log('🔄 시뮬레이션 로그인으로 대체...')
+      console.log('🔄 Google OAuth 실패, 시뮬레이션 로그인으로 대체...')
       await this.simulateGoogleLogin()
     }
   }
@@ -266,50 +240,6 @@ export class GoogleAuthService {
     }
   }
   
-  // 사용자 프로필 자동 생성 (시뮬레이션용)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private static async ensureUserProfile(user: any): Promise<void> {
-    try {
-      console.log('🔍 사용자 프로필 확인 중...', user)
-      
-      // 기존 프로필 확인
-      const existingProfiles = await dataService.entities.user_profiles.list()
-      
-      const profiles = Array.isArray(existingProfiles) ? existingProfiles : []
-      const existingProfile = profiles.find((p: any) => p.user_id === (user.id || user.user_id))
-      
-      if (!existingProfile) {
-        console.log('📝 새 사용자 프로필 생성 중...')
-        
-        // 새 프로필 생성
-        await (dataService.entities as any).user_profiles.create({
-          user_id: user.id || user.user_id,
-          name: user.name || user.email?.split('@')[0] || '사용자',
-          email: user.email || '',
-          profile_image: user.picture || user.avatar || '',
-          is_verified: user.verified_email || false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        
-        // 사용자 포인트 초기화
-        await dataService.entities.user_points.create({
-          user_id: user.id || user.user_id,
-          total_points: 0,
-          available_points: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        
-        console.log('✅ 사용자 프로필 생성 완료')
-      } else {
-        console.log('✅ 기존 사용자 프로필 확인됨')
-      }
-    } catch (error) {
-      console.error('❌ 사용자 프로필 생성 실패:', error)
-      // 프로필 생성 실패해도 로그인은 계속 진행
-    }
-  }
 
 
   // 시뮬레이션된 Google 로그인 (개발용)
@@ -338,56 +268,17 @@ export class GoogleAuthService {
       
       console.log('📝 Google 사용자 정보:', mockGoogleUser)
       
-      // 기존 사용자 확인
-      const existingUsersResponse = await dataService.entities.users.list()
-      
-      let user
-      const existingUsers = Array.isArray(existingUsersResponse) ? existingUsersResponse : []
-      const existingUser = existingUsers.find((u: any) => u.email === mockGoogleUser.email)
-      console.log('🔍 기존 사용자 확인:', existingUsers.length, '명')
-      
-      if (existingUser) {
-        // 기존 사용자 업데이트
-        user = existingUser
-        console.log('✅ 기존 사용자 업데이트:', user)
-        
-        await dataService.entities.users.update(user.id || user._id, {
-          google_id: mockGoogleUser.id,
-          profile_image: mockGoogleUser.picture,
-          updated_at: new Date().toISOString()
-        })
-      } else {
-        // 새 사용자 생성
-        const newUser = {
-          user_id: `user_${Date.now()}`,
-          email: mockGoogleUser.email,
-          name: mockGoogleUser.name,
-          google_id: mockGoogleUser.id,
-          profile_image: mockGoogleUser.picture,
-          is_verified: mockGoogleUser.verified_email,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        
-        console.log('📝 새 사용자 생성:', newUser)
-        
-        const createdUser = await dataService.entities.users.create(newUser)
-        user = createdUser
-        console.log('✅ 사용자 생성 완료:', createdUser)
-        
-        // 사용자 프로필 자동 생성
-        await this.ensureUserProfile(createdUser)
-        
-        // 사용자 포인트 초기화
-        await dataService.entities.user_points.create({
-          user_id: newUser.user_id,
-          total_points: 0,
-          available_points: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        console.log('✅ 사용자 포인트 초기화 완료')
+      // 🔥 간단한 사용자 객체 생성 (데이터베이스 저장 없이)
+      const user = {
+        user_id: `user_${Date.now()}`,
+        email: mockGoogleUser.email,
+        name: mockGoogleUser.name,
+        google_id: mockGoogleUser.id,
+        profile_image: mockGoogleUser.picture,
+        is_verified: mockGoogleUser.verified_email
       }
+      
+      console.log('✅ 시뮬레이션 사용자 생성:', user)
       
       // 토큰 생성
       const token = this.generateToken({

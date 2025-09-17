@@ -16,6 +16,7 @@ import Points from './pages/Points'
 import Profile from './pages/Profile'
 import WithdrawalRequest from './pages/WithdrawalRequest'
 import AuthCallback from './pages/AuthCallback'
+import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
 
 // 관리자 페이지
 import AdminDashboard from './pages/AdminDashboard'
@@ -54,6 +55,7 @@ function App() {
             
             {/* OAuth 콜백 */}
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
             
             {/* 사용자 라우트 */}
             <Route path="/*" element={

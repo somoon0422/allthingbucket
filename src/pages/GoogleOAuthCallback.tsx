@@ -26,20 +26,24 @@ const GoogleOAuthCallback = () => {
         // Google OAuth 콜백 처리
         const userInfo = await GoogleAuthService.handleGoogleCallback(code)
         
-        // 부모 창에 성공 메시지 전송
-        if (window.opener) {
-          window.opener.postMessage({
-            type: 'GOOGLE_AUTH_SUCCESS',
-            user: userInfo
-          }, window.location.origin)
+        console.log('✅ Google OAuth 콜백 처리 성공:', userInfo)
+        
+        // 토큰을 localStorage에 저장
+        if (userInfo.token) {
+          localStorage.setItem('auth_token', userInfo.token)
         }
+        
+        // 성공 이벤트 발생
+        window.dispatchEvent(new CustomEvent('googleLoginSuccess', { 
+          detail: { user: userInfo.user, token: userInfo.token } 
+        }))
 
         setStatus('success')
         
-        // 잠시 후 창 닫기
+        // 잠시 후 홈페이지로 리다이렉트
         setTimeout(() => {
-          window.close()
-        }, 1000)
+          window.location.href = '/'
+        }, 2000)
 
       } catch (error) {
         console.error('❌ Google OAuth 콜백 처리 실패:', error)
@@ -48,17 +52,14 @@ const GoogleOAuthCallback = () => {
         setError(errorMessage)
         setStatus('error')
 
-        // 부모 창에 오류 메시지 전송
-        if (window.opener) {
-          window.opener.postMessage({
-            type: 'GOOGLE_AUTH_ERROR',
-            error: errorMessage
-          }, window.location.origin)
-        }
+        // 오류 이벤트 발생
+        window.dispatchEvent(new CustomEvent('googleLoginError', { 
+          detail: { error: errorMessage } 
+        }))
 
-        // 잠시 후 창 닫기
+        // 잠시 후 홈페이지로 리다이렉트
         setTimeout(() => {
-          window.close()
+          window.location.href = '/'
         }, 3000)
       }
     }

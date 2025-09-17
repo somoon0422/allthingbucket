@@ -26,6 +26,48 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
   const { user, isAuthenticated } = useAuth()
   const { applyForCampaign, loading } = useExperiences()
 
+  // 🔥 마감 상태 체크 함수
+  const isCampaignClosed = () => {
+    const target = campaign || experience
+    if (!target) return false
+
+    const status = target.status || target.campaign_status
+    const maxParticipants = target.max_participants
+    const currentParticipants = target.current_participants || 0
+    
+    // 상태 체크
+    if (status === 'closed' || status === 'inactive') {
+      return true
+    }
+    
+    // 참가자 수 체크
+    if (maxParticipants && currentParticipants >= maxParticipants) {
+      return true
+    }
+    
+    // 신청 마감일 체크
+    const applicationEndDate = target.application_end_date || target.application_end || target.end_date
+    if (applicationEndDate) {
+      const endDate = new Date(applicationEndDate)
+      const today = new Date()
+      today.setHours(23, 59, 59, 999)
+      
+      if (endDate < today) {
+        return true
+      }
+    }
+    
+    return false
+  }
+
+  // 🔥 모달이 열릴 때 마감 상태 체크
+  useEffect(() => {
+    if (isOpen && isCampaignClosed()) {
+      toast.error('이 캠페인은 마감되었습니다.')
+      onClose()
+    }
+  }, [isOpen, onClose])
+
 
   const [formData, setFormData] = useState({
     name: '',
@@ -146,6 +188,38 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     if (!targetCampaign?.id) {
       toast.error('캠페인 정보가 없습니다')
       return
+    }
+
+    // 마감 상태 체크
+    const status = targetCampaign.status || targetCampaign.campaign_status
+    const maxParticipants = targetCampaign.max_participants
+    const currentParticipants = targetCampaign.current_participants || 0
+    
+    // 상태 체크
+    if (status === 'closed' || status === 'inactive') {
+      toast.error('이 캠페인은 마감되었습니다.')
+      return
+    }
+    
+    // 모집 인원 체크
+    if (maxParticipants && currentParticipants >= maxParticipants) {
+      toast.error('모집 인원이 마감되었습니다.')
+      return
+    }
+    
+    // 신청 마감일 체크
+    const applicationEndDate = targetCampaign.application_end_date || 
+                             targetCampaign.application_end ||
+                             targetCampaign.end_date
+    if (applicationEndDate) {
+      const endDate = new Date(applicationEndDate)
+      const today = new Date()
+      today.setHours(23, 59, 59, 999)
+      
+      if (endDate < today) {
+        toast.error('신청 기간이 마감되었습니다.')
+        return
+      }
     }
 
     // 🔥 신청 전 사용자 ID 최종 확인 및 로깅

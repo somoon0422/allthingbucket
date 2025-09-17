@@ -50,10 +50,20 @@ export class SupabaseOAuthService {
     try {
       console.log('🔥 Supabase Google OAuth 로그인 시작...')
       
+      // 🔥 개발 환경에서는 로컬 URL 사용, 프로덕션에서는 현재 도메인 사용
+      // 🔥 Supabase OAuth 콜백 URL 사용
+      const redirectTo = 'https://nwwwesxzlpotabtcvkgj.supabase.co/auth/v1/callback'
+
+      console.log('🔍 Supabase OAuth 설정:', {
+        currentOrigin: window.location.origin,
+        redirectTo,
+        hostname: window.location.hostname
+      })
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -67,6 +77,12 @@ export class SupabaseOAuthService {
       }
 
       console.log('✅ Google OAuth 리다이렉트 URL:', data.url)
+      console.log('🔍 리다이렉트 URL 분석:', {
+        url: data.url,
+        containsLocalhost: data.url.includes('localhost'),
+        contains5173: data.url.includes('5173'),
+        containsAllthingbucket: data.url.includes('allthingbucket.com')
+      })
       
       // 직접 리다이렉트 방식으로 OAuth 진행 (팝업 제거)
       window.location.href = data.url
@@ -85,10 +101,14 @@ export class SupabaseOAuthService {
     try {
       console.log('🔥 Supabase Kakao OAuth 로그인 시작...')
       
+      // 🔥 개발 환경에서는 로컬 URL 사용, 프로덕션에서는 현재 도메인 사용
+      // 🔥 Supabase OAuth 콜백 URL 사용
+      const redirectTo = 'https://nwwwesxzlpotabtcvkgj.supabase.co/auth/v1/callback'
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

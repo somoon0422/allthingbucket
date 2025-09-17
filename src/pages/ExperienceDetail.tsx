@@ -95,40 +95,74 @@ function ExperienceDetail() {
           status: campaignStatus,
           application_end_date: (experienceData as any)?.application_end_date,
           application_end: (experienceData as any)?.application_end,
+          end_date: (experienceData as any)?.end_date,
           max_participants: (experienceData as any)?.max_participants,
-          current_participants: (experienceData as any)?.current_participants
+          current_participants: (experienceData as any)?.current_participants,
+          allFields: Object.keys(experienceData || {})
         })
         
-        // 캠페인 상태가 'closed'이거나 'inactive'인 경우에만 마감 처리
+        // 종합적인 마감 상태 체크
+        let isClosed = false
+        let closeReason = ''
+        
+        // 1. 캠페인 상태 체크
         if (campaignStatus === 'closed' || campaignStatus === 'inactive') {
-          setIsApplicationClosed(true)
+          isClosed = true
+          closeReason = '캠페인 상태: ' + campaignStatus
           console.log('🚫 캠페인 상태로 인한 신청 마감:', campaignStatus)
-        } else if (campaignStatus === 'active' || campaignStatus === 'recruiting') {
-          // 활성 상태인 경우 신청 가능
-          setIsApplicationClosed(false)
-          console.log('✅ 캠페인 활성 상태 - 신청 가능:', campaignStatus)
-        } else {
-          // 신청 마감일 체크
-          const applicationEndDate = (experienceData as any)?.application_end_date || (experienceData as any)?.application_end
+        }
+        
+        // 2. 신청 마감일 체크
+        if (!isClosed) {
+          const applicationEndDate = (experienceData as any)?.application_end_date || 
+                                   (experienceData as any)?.application_end ||
+                                   (experienceData as any)?.end_date
           if (applicationEndDate) {
             const endDate = new Date(applicationEndDate)
             const today = new Date()
-            today.setHours(23, 59, 59, 999) // 오늘 마지막 시간으로 설정
+            today.setHours(0, 0, 0, 0) // 오늘 시작 시간으로 설정
+            endDate.setHours(0, 0, 0, 0) // 마감일 시작 시간으로 설정
+            
+            console.log('📅 날짜 비교:', {
+              endDate: endDate.toISOString(),
+              today: today.toISOString(),
+              isExpired: endDate < today
+            })
             
             if (endDate < today) {
-              setIsApplicationClosed(true)
+              isClosed = true
+              closeReason = '신청 마감일 초과: ' + applicationEndDate
               console.log('🚫 신청 마감일 초과로 인한 신청 마감:', applicationEndDate)
             }
           }
-          
-          // 최대 참가자 수 체크 (현재 참가자 수 기준)
+        }
+        
+        // 3. 최대 참가자 수 체크
+        if (!isClosed) {
           const maxParticipants = (experienceData as any)?.max_participants
           const currentParticipants = (experienceData as any)?.current_participants || 0
           
           if (maxParticipants && currentParticipants >= maxParticipants) {
-            setIsApplicationClosed(true)
+            isClosed = true
+            closeReason = `모집 인원 마감: ${currentParticipants}/${maxParticipants}`
             console.log('🚫 최대 참가자 수 도달로 인한 신청 마감:', { currentParticipants, maxParticipants })
           }
+        }
+        
+        // 4. 마감 상태 설정
+        setIsApplicationClosed(isClosed)
+        
+        console.log('🎯 최종 마감 상태 결정:', {
+          isClosed,
+          closeReason,
+          campaignStatus,
+          willShowClosedButton: isClosed
+        })
+        
+        if (isClosed) {
+          console.log('🚫 최종 마감 결정:', closeReason)
+        } else {
+          console.log('✅ 캠페인 활성 상태 - 신청 가능:', campaignStatus)
         }
         
         console.log('✅ 체험단 상세 정보 로드 완료:', experienceData)
@@ -179,12 +213,62 @@ function ExperienceDetail() {
   }, [user, experience, getUserApplications])
 
   const handleApplyClick = () => {
+    console.log('🔥 handleApplyClick 호출됨', { isApplicationClosed, experience })
+    
     if (!isAuthenticated) {
       toast.error('로그인이 필요합니다.')
       navigate('/login')
       return
     }
-    setShowApplicationModal(true)
+    
+    // 마감 상태 재확인
+    if (isApplicationClosed) {
+      console.log('🚫 마감된 캠페인 - 모달 열기 차단')
+      toast.error('이 캠페인은 마감되었습니다.')
+      return
+    }
+    
+    // 추가 마감 상태 체크
+    if (experience) {
+      const status = experience.status || experience.campaign_status
+      const maxParticipants = experience.max_participants
+      const currentParticipants = experience.current_participants || 0
+      
+      // 상태 체크
+      if (status === 'closed' || status === 'inactive') {
+        toast.error('이 캠페인은 마감되었습니다.')
+        return
+      }
+      
+      // 모집 인원 체크
+      if (maxParticipants && currentParticipants >= maxParticipants) {
+        toast.error('모집 인원이 마감되었습니다.')
+        return
+      }
+      
+      // 신청 마감일 체크
+      const applicationEndDate = experience.application_end_date || 
+                               experience.application_end ||
+                               experience.end_date
+      if (applicationEndDate) {
+        const endDate = new Date(applicationEndDate)
+        const today = new Date()
+        today.setHours(23, 59, 59, 999)
+        
+        if (endDate < today) {
+          toast.error('신청 기간이 마감되었습니다.')
+          return
+        }
+      }
+    }
+    
+    // 마감 상태가 아닐 때만 모달 열기
+    if (!isApplicationClosed) {
+      console.log('✅ 캠페인 활성 상태 - 모달 열기')
+      setShowApplicationModal(true)
+    } else {
+      console.log('🚫 마감된 캠페인 - 모달 열기 차단')
+    }
   }
 
 
@@ -523,20 +607,35 @@ function ExperienceDetail() {
 
                 {/* 액션 버튼 영역 */}
                 <div className="border-t border-gray-200 pt-8">
+                  {/* 마감 상태 안내 */}
+                  {isApplicationClosed && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                        <div>
+                          <p className="text-red-800 font-medium">캠페인이 마감되었습니다</p>
+                          <p className="text-red-600 text-sm mt-1">
+                            신청 기간이 종료되었거나 모집 인원이 마감되었습니다.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex flex-col sm:flex-row gap-4">
                     {isApplicationClosed ? (
                       <button
                         disabled
-                        className="flex-1 px-8 py-4 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium text-lg"
+                        className="flex-1 px-8 py-4 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium text-lg opacity-60"
                       >
-                        신청 마감
+                        리뷰 신청하기 (마감)
                       </button>
                     ) : (
                       <button
                         onClick={handleApplyClick}
                         className="flex-1 px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
                       >
-                        체험단 신청하기
+                        리뷰 신청하기
                       </button>
                     )}
                   </div>

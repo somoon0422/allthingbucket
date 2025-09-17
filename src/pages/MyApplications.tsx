@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import ReviewSubmissionManager from '../components/ReviewSubmissionManager'
-import {Calendar, Gift, Clock, AlertCircle, CheckCircle, XCircle, Eye, FileText, Coins, User, Instagram, MessageSquare, ExternalLink, Trash2, Edit3, CalendarDays, RefreshCw, Shield} from 'lucide-react'
+import {Calendar, Gift, Clock, AlertCircle, CheckCircle, XCircle, Eye, FileText, Coins, User, Instagram, MessageSquare, ExternalLink, Trash2, Edit3, CalendarDays, RefreshCw, Package} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dataService } from '../lib/dataService'
 
@@ -242,9 +242,39 @@ const MyApplications: React.FC = () => {
         }
       case 'approved':
         return {
-          label: '선정',
+          label: '선정완료',
           color: 'bg-green-100 text-green-800',
           icon: CheckCircle
+        }
+      case 'product_purchase_required':
+        return {
+          label: '제품구매 필요',
+          color: 'bg-orange-100 text-orange-800',
+          icon: Gift
+        }
+      case 'product_purchased':
+        return {
+          label: '제품구매완료',
+          color: 'bg-blue-100 text-blue-800',
+          icon: CheckCircle
+        }
+      case 'shipping':
+        return {
+          label: '제품배송중',
+          color: 'bg-purple-100 text-purple-800',
+          icon: Calendar
+        }
+      case 'delivered':
+        return {
+          label: '제품수령완료',
+          color: 'bg-indigo-100 text-indigo-800',
+          icon: CheckCircle
+        }
+      case 'review_verification':
+        return {
+          label: '리뷰인증 필요',
+          color: 'bg-pink-100 text-pink-800',
+          icon: FileText
         }
       case 'registered':
         return {
@@ -300,12 +330,6 @@ const MyApplications: React.FC = () => {
           color: 'bg-purple-100 text-purple-800',
           icon: CheckCircle
         }
-      case 'point_approved':
-        return {
-          label: '종료',
-          color: 'bg-purple-100 text-purple-800',
-          icon: CheckCircle
-        }
       case 'cancelled':
         return {
           label: '취소됨',
@@ -316,12 +340,6 @@ const MyApplications: React.FC = () => {
         return {
           label: '반려됨',
           color: 'bg-red-100 text-red-800',
-          icon: XCircle
-        }
-      case 'cancelled':
-        return {
-          label: '신청 취소',
-          color: 'bg-gray-100 text-gray-800',
           icon: XCircle
         }
       default:
@@ -356,6 +374,74 @@ const MyApplications: React.FC = () => {
       }
     } catch (error) {
       return { days: 0, status: 'error', text: '계산 오류' }
+    }
+  }
+
+  // 🔥 제품 구매 완료 처리
+  const handleProductPurchaseComplete = async (application: any) => {
+    try {
+      if (!user?.user_id) {
+        toast.error('로그인이 필요합니다')
+        return
+      }
+
+      const applicationId = application._id || application.id
+      if (!applicationId) {
+        toast.error('신청 정보를 찾을 수 없습니다')
+        return
+      }
+
+      // 상태를 'product_purchased'로 업데이트
+      const result = await dataService.entities.user_applications.update(applicationId, {
+        status: 'product_purchased',
+        product_purchased_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+      if (result) {
+        toast.success('제품 구매 완료가 등록되었습니다!')
+        // 신청 목록 새로고침
+        loadApplications()
+      } else {
+        toast.error('제품 구매 완료 등록에 실패했습니다')
+      }
+    } catch (error) {
+      console.error('❌ 제품 구매 완료 처리 실패:', error)
+      toast.error('제품 구매 완료 등록에 실패했습니다')
+    }
+  }
+
+  // 🔥 제품 수령 완료 처리
+  const handleProductDelivered = async (application: any) => {
+    try {
+      if (!user?.user_id) {
+        toast.error('로그인이 필요합니다')
+        return
+      }
+
+      const applicationId = application._id || application.id
+      if (!applicationId) {
+        toast.error('신청 정보를 찾을 수 없습니다')
+        return
+      }
+
+      // 상태를 'delivered'로 업데이트
+      const result = await dataService.entities.user_applications.update(applicationId, {
+        status: 'delivered',
+        delivered_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+      if (result) {
+        toast.success('제품 수령 완료가 등록되었습니다!')
+        // 신청 목록 새로고침
+        loadApplications()
+      } else {
+        toast.error('제품 수령 완료 등록에 실패했습니다')
+      }
+    } catch (error) {
+      console.error('❌ 제품 수령 완료 처리 실패:', error)
+      toast.error('제품 수령 완료 등록에 실패했습니다')
     }
   }
 
@@ -681,8 +767,12 @@ const MyApplications: React.FC = () => {
             {[
               { value: 'all', label: '전체', count: applications.length },
               { value: 'pending', label: '신청', count: applications.filter(app => app.status === 'pending').length },
-              { value: 'approved', label: '선정', count: applications.filter(app => app.status === 'approved').length },
-              { value: 'registered', label: '등록', count: applications.filter(app => app.status === 'registered').length },
+              { value: 'approved', label: '선정완료', count: applications.filter(app => app.status === 'approved').length },
+              { value: 'product_purchase_required', label: '제품구매', count: applications.filter(app => app.status === 'product_purchase_required').length },
+              { value: 'product_purchased', label: '구매완료', count: applications.filter(app => app.status === 'product_purchased').length },
+              { value: 'shipping', label: '배송중', count: applications.filter(app => app.status === 'shipping').length },
+              { value: 'delivered', label: '수령완료', count: applications.filter(app => app.status === 'delivered').length },
+              { value: 'review_verification', label: '리뷰인증', count: applications.filter(app => app.status === 'review_verification').length },
               { value: 'completed', label: '종료', count: applications.filter(app => 
                 app.status === 'completed' || app.status === 'point_completed' || app.status === 'point_approved'
               ).length }
@@ -888,8 +978,20 @@ const MyApplications: React.FC = () => {
                             </button>
                           )}
 
-                          {/* 🔥 리뷰 제출 버튼 (승인된 경우만) */}
+                          {/* 🔥 제품 구매 완료 버튼 (선정완료된 경우) */}
                           {status === 'approved' && (
+                            <button
+                              onClick={() => handleProductPurchaseComplete(application)}
+                              className="inline-flex items-center px-3 py-2 bg-orange-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
+                            >
+                              <Gift className="w-4 h-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">제품 구매 완료</span>
+                              <span className="sm:hidden">구매완료</span>
+                            </button>
+                          )}
+
+                          {/* 🔥 리뷰 제출 버튼 (제품 구매 완료된 경우) */}
+                          {status === 'product_purchased' && (
                             <button
                               onClick={() => handleWriteReview(application)}
                               className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
@@ -909,6 +1011,48 @@ const MyApplications: React.FC = () => {
                               <Edit3 className="w-4 h-4 mr-1 sm:mr-2" />
                               <span className="hidden sm:inline">리뷰 수정하기</span>
                               <span className="sm:hidden">수정</span>
+                            </button>
+                          )}
+
+                          {/* 🔥 배송 추적 정보 (배송중인 경우) */}
+                          {status === 'shipping' && (application as any).tracking_number && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <div className="flex items-center space-x-2">
+                                <Package className="w-4 h-4 text-blue-600" />
+                                <div>
+                                  <p className="text-sm font-medium text-blue-800">배송 추적 정보</p>
+                                  <p className="text-xs text-blue-600">
+                                    {(application as any).courier && (application as any).courier !== 'other' ? 
+                                      `${(application as any).courier}: ${(application as any).tracking_number}` : 
+                                      `송장번호: ${(application as any).tracking_number}`
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 🔥 제품 수령 완료 버튼 (배송중인 경우) */}
+                          {status === 'shipping' && (
+                            <button
+                              onClick={() => handleProductDelivered(application)}
+                              className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">제품 수령 완료</span>
+                              <span className="sm:hidden">수령완료</span>
+                            </button>
+                          )}
+
+                          {/* 🔥 리뷰 인증 버튼 (제품 수령 완료된 경우) */}
+                          {status === 'delivered' && (
+                            <button
+                              onClick={() => handleWriteReview(application)}
+                              className="inline-flex items-center px-3 py-2 bg-pink-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-pink-700 transition-colors"
+                            >
+                              <FileText className="w-4 h-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">리뷰 인증하기</span>
+                              <span className="sm:hidden">리뷰인증</span>
                             </button>
                           )}
                         </div>

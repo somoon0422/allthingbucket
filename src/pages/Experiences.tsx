@@ -388,13 +388,29 @@ const Experiences: React.FC = () => {
                       <Coins className="w-5 h-5 sm:w-6 sm:h-6 mr-1 sm:mr-2" />
                       {experience.rewards || 0} P
                     </div>
-                    <Link
-                      to={`/campaign/${experience.id}`}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center justify-center text-sm sm:text-base"
-                    >
-                      자세히 보기
-                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
-                    </Link>
+                    
+                    {/* 마감된 캠페인인지 확인 */}
+                    {(() => {
+                      const status = experience.status || experience.campaign_status
+                      const maxParticipants = experience.max_participants
+                      const currentParticipants = experience.current_participants || 0
+                      const isClosed = status === 'closed' || status === 'inactive' || 
+                                     (maxParticipants && currentParticipants >= maxParticipants)
+                      
+                      return isClosed ? (
+                        <div className="bg-gray-400 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold text-sm sm:text-base opacity-60 cursor-not-allowed flex items-center justify-center">
+                          마감된 캠페인
+                        </div>
+                      ) : (
+                        <Link
+                          to={`/campaign/${experience.id}`}
+                          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center justify-center text-sm sm:text-base"
+                        >
+                          자세히 보기
+                          <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
+                        </Link>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>

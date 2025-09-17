@@ -13,7 +13,7 @@ export class GoogleOAuthAPI {
       const result = await dataService.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth/callback'
+          redirectTo: 'https://nwwwesxzlpotabtcvkgj.supabase.co/auth/v1/callback'
         }
       })
       
@@ -68,7 +68,7 @@ export class GoogleOAuthAPI {
       const result = await dataService.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth/callback'
+          redirectTo: 'https://nwwwesxzlpotabtcvkgj.supabase.co/auth/v1/callback'
         }
       })
       

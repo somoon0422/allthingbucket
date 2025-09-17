@@ -18,8 +18,26 @@ const AuthCallback: React.FC = () => {
         // 토큰을 localStorage에 저장
         localStorage.setItem('auth_token', result.token)
         
-        // 직접 리다이렉트 방식이므로 홈으로 이동
-        window.location.href = '/'
+        // 🔥 개발 환경에서는 팝업 방식, 프로덕션에서는 리다이렉트 방식
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        
+        if (isDevelopment) {
+          // 개발 환경: 팝업 창인 경우 부모 창에 메시지 전송 후 창 닫기
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'GOOGLE_AUTH_SUCCESS',
+              user: result.user,
+              token: result.token
+            }, window.location.origin)
+            window.close()
+          } else {
+            // 팝업이 아닌 경우 홈으로 리다이렉트
+            window.location.href = '/'
+          }
+        } else {
+          // 프로덕션 환경: 홈으로 리다이렉트
+          window.location.href = '/'
+        }
         
       } catch (error: any) {
         console.error('❌ OAuth 콜백 처리 실패:', error)

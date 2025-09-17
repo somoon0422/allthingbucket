@@ -6,7 +6,8 @@ import ApprovalModal from '../components/ApprovalModal'
 import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
-import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, Send, User, Calculator} from 'lucide-react'
+import ShippingModal from '../components/ShippingModal'
+import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, Send, User, Calculator, Truck, Package} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const AdminDashboard: React.FC = () => {
@@ -26,6 +27,7 @@ const AdminDashboard: React.FC = () => {
   const [showCampaignModal, setShowCampaignModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showApplicationDetailModal, setShowApplicationDetailModal] = useState(false)
+  const [showShippingModal, setShowShippingModal] = useState(false)
   
   // 선택 상태들
   const [selectedApplications, setSelectedApplications] = useState<Set<string>>(new Set())
@@ -398,6 +400,12 @@ const AdminDashboard: React.FC = () => {
       console.error('상태 동기화 실패:', error)
       throw error
     }
+  }
+
+  // 배송 정보 등록 모달 열기
+  const handleShippingModal = (application: any) => {
+    setSelectedApplication(application)
+    setShowShippingModal(true)
   }
 
   // 리뷰 승인 처리
@@ -1558,6 +1566,30 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
 
+          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('product_purchased')}>
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Package className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">제품구매완료</p>
+                <p className="text-lg font-bold text-gray-900">{applications.filter(app => app.status === 'product_purchased').length}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('shipping')}>
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Truck className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">배송중</p>
+                <p className="text-lg font-bold text-gray-900">{applications.filter(app => app.status === 'shipping').length}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('review_in_progress')}>
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -1868,24 +1900,54 @@ const AdminDashboard: React.FC = () => {
                             </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
-                                  <button
-                                    onClick={() => {
-                                      setSelectedApplication(application)
-                                      setShowApprovalModal(true)
-                                    }}
-                                    className="text-green-600 hover:text-green-900"
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedApplication(application)
-                                      setShowRejectionModal(true)
-                                    }}
-                                    className="text-red-600 hover:text-red-900"
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                  </button>
+                          {/* 승인/거절 버튼 (대기중인 경우만) */}
+                          {application.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setSelectedApplication(application)
+                                  setShowApprovalModal(true)
+                                }}
+                                className="text-green-600 hover:text-green-900"
+                                title="승인"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedApplication(application)
+                                  setShowRejectionModal(true)
+                                }}
+                                className="text-red-600 hover:text-red-900"
+                                title="거절"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          
+                          {/* 배송 정보 등록 버튼 (제품 구매 완료된 경우) */}
+                          {application.status === 'product_purchased' && (
+                            <button
+                              onClick={() => handleShippingModal(application)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="배송 정보 등록"
+                            >
+                              <Truck className="w-4 h-4" />
+                            </button>
+                          )}
+                          
+                          {/* 배송 추적 정보 (배송중인 경우) */}
+                          {application.status === 'shipping' && (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-500">
+                                {application.courier && application.tracking_number ? 
+                                  `${application.courier}: ${application.tracking_number}` : 
+                                  '배송중'
+                                }
+                              </span>
+                            </div>
+                          )}
                         </div>
                             </td>
                           </tr>
@@ -4136,6 +4198,17 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* 배송 정보 등록 모달 */}
+        <ShippingModal
+          isOpen={showShippingModal}
+          onClose={() => setShowShippingModal(false)}
+          application={selectedApplication}
+          onSuccess={() => {
+            loadApplications()
+            setShowShippingModal(false)
+          }}
+        />
     </div>
   )
 }

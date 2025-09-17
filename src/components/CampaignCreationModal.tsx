@@ -75,7 +75,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     experience_name: '',
     brand_name: '',
     description: '',
-    experience_type: 'purchase_review', // 새로 추가: 체험단 타입
+    experience_type: ['purchase_review'], // 새로 추가: 체험단 타입 (배열로 변경)
     reward_points: '',
     max_participants: '30',
     requirements: '',
@@ -142,13 +142,18 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         return
       }
 
+      if (formData.experience_type.length === 0) {
+        toast.error('최소 하나의 체험단 타입을 선택해주세요')
+        return
+      }
+
       // 캠페인 데이터 생성 (실제 campaigns 테이블 구조에 맞게)
       const campaignData = {
         campaign_name: formData.experience_name.trim(),
         product_name: formData.brand_name.trim(),
         brand_name: formData.brand_name.trim(),
         description: formData.description.trim(),
-        type: formData.experience_type,
+        type: formData.experience_type.join(', '), // 배열을 쉼표로 구분된 문자열로 변환
         status: 'active',
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : 0,
         current_participants: 0,
@@ -314,21 +319,58 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
           {/* 체험단 타입 선택 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              체험단 타입 *
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              체험단 타입 * (여러 개 선택 가능)
             </label>
-            <select
-              name="experience_type"
-              value={formData.experience_type}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            >
-              <option value="purchase_review">구매평</option>
-              <option value="product">제품 체험</option>
-              <option value="press">기자단</option>
-              <option value="local">지역 체험</option>
-            </select>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[
+                { value: 'purchase_review', label: '구매평', icon: '🛒' },
+                { value: 'blog_review', label: '블로그 리뷰', icon: '📝' },
+                { value: 'instagram', label: '인스타그램', icon: '📸' },
+                { value: 'youtube', label: '유튜브', icon: '🎥' },
+                { value: 'product', label: '제품 체험', icon: '🧪' },
+                { value: 'press', label: '기자단', icon: '📰' },
+                { value: 'local', label: '지역 체험', icon: '🏘️' },
+                { value: 'other', label: '기타', icon: '🔧' }
+              ].map((type) => (
+                <label
+                  key={type.value}
+                  className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                    formData.experience_type.includes(type.value)
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    value={type.value}
+                    checked={formData.experience_type.includes(type.value)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (e.target.checked) {
+                        setFormData(prev => ({
+                          ...prev,
+                          experience_type: [...prev.experience_type, value]
+                        }))
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          experience_type: prev.experience_type.filter(t => t !== value)
+                        }))
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium">
+                    <span className="mr-1">{type.icon}</span>
+                    {type.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {formData.experience_type.length === 0 && (
+              <p className="text-red-500 text-sm mt-2">최소 하나의 타입을 선택해주세요.</p>
+            )}
           </div>
 
           {/* 설명 */}

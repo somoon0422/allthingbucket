@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, Phone, Mail } from 'lucide-react'
+import { MessageCircle, X, Send, Phone, Mail, Minimize2, Maximize2, RotateCcw } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../lib/dataService'
 
@@ -14,11 +14,21 @@ interface ChatMessage {
 const ChatBot: React.FC = () => {
   const { user } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [currentChatRoom, setCurrentChatRoom] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  
+  // 빠른 응답 버튼들
+  const quickReplies = [
+    { text: '체험단 신청 방법', emoji: '🎯' },
+    { text: '포인트 적립 방법', emoji: '💰' },
+    { text: '출금 문의', emoji: '💳' },
+    { text: '계좌 인증', emoji: '🔐' }
+  ]
 
   // 채팅방 초기화 또는 조회
   useEffect(() => {
@@ -169,11 +179,13 @@ const ChatBot: React.FC = () => {
     }
   }
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !currentChatRoom || !user) return
+  const handleSendMessage = async (messageText?: string) => {
+    const messageToSend = messageText || inputMessage
+    if (!messageToSend.trim() || !currentChatRoom || !user) return
 
     try {
       setIsLoading(true)
+      setIsTyping(true)
       
       // 마지막 접속 시간 업데이트
       await updateLastSeen()
@@ -183,7 +195,7 @@ const ChatBot: React.FC = () => {
       const botMessageId = `bot_${Date.now() + 1}`
       
       // 자동 응답 생성
-      const botResponse = getBotResponse(inputMessage)
+      const botResponse = getBotResponse(messageToSend)
       
       // 새로운 대화 생성 (사용자 메시지 + 봇 응답을 하나의 JSON으로)
       const conversationData = [
@@ -191,7 +203,7 @@ const ChatBot: React.FC = () => {
           id: userMessageId,
           sender_type: 'user',
           sender_name: user.name || user.email || '사용자',
-          message_text: inputMessage,
+          message_text: messageToSend,
           timestamp: now
         },
         {
@@ -217,28 +229,79 @@ const ChatBot: React.FC = () => {
         // UI에 메시지 추가
         const userMessage: ChatMessage = {
           id: userMessageId,
-          text: inputMessage,
+          text: messageToSend,
           sender: 'user',
           timestamp: new Date(now),
           isRead: true
         }
 
-        const adminMessage: ChatMessage = {
-          id: botMessageId,
-          text: botResponse,
-          sender: 'admin',
-          timestamp: new Date(Date.now() + 1000),
-          isRead: false
-        }
-
-        setMessages(prev => [...prev, userMessage, adminMessage])
+        setMessages(prev => [...prev, userMessage])
         setInputMessage('')
+        
+        // 타이핑 효과를 위한 지연
+        setTimeout(() => {
+          setIsTyping(false)
+          const adminMessage: ChatMessage = {
+            id: botMessageId,
+            text: botResponse,
+            sender: 'admin',
+            timestamp: new Date(Date.now() + 1000),
+            isRead: false
+          }
+          setMessages(prev => [...prev, adminMessage])
+        }, 1500)
       }
     } catch (error) {
       console.error('메시지 전송 오류:', error)
       alert('메시지 전송에 실패했습니다. 다시 시도해주세요.')
+      setIsTyping(false)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // 채팅 종료 함수
+  const handleCloseChat = async () => {
+    if (currentChatRoom && user) {
+      try {
+        // 채팅방 상태를 종료로 변경
+        await dataService.entities.chat_rooms.update(currentChatRoom.id, {
+          status: 'closed',
+          updated_at: new Date().toISOString()
+        })
+        
+        // 오프라인 상태 설정
+        await setUserOffline()
+        
+        // 상태 초기화
+        setMessages([])
+        setCurrentChatRoom(null)
+        setIsOpen(false)
+        setIsMinimized(false)
+      } catch (error) {
+        console.error('채팅 종료 오류:', error)
+      }
+    } else {
+      setIsOpen(false)
+      setIsMinimized(false)
+    }
+  }
+
+  // 채팅 초기화 함수
+  const handleResetChat = async () => {
+    if (currentChatRoom && user) {
+      try {
+        // 기존 채팅방을 종료 상태로 변경
+        await dataService.entities.chat_rooms.update(currentChatRoom.id, {
+          status: 'closed',
+          updated_at: new Date().toISOString()
+        })
+        
+        // 새로운 채팅방 생성
+        await initializeChatRoom()
+      } catch (error) {
+        console.error('채팅 초기화 오류:', error)
+      }
     }
   }
 
@@ -277,122 +340,185 @@ const ChatBot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-all duration-200 z-40"
+          className="fixed bottom-6 right-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 z-40 hover:scale-110 group"
         >
-          <MessageCircle className="w-6 h-6" />
+          <MessageCircle className="w-6 h-6 group-hover:animate-pulse" />
+          {/* 알림 점 */}
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
         </button>
       )}
 
       {/* 채팅봇 모달 */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-80 h-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 flex flex-col">
+        <div className={`fixed bottom-6 right-6 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col transition-all duration-300 ${
+          isMinimized ? 'w-80 h-16' : 'w-80 h-96'
+        }`}>
           {/* 헤더 */}
-          <div className="bg-green-500 text-white p-4 rounded-t-lg flex items-center justify-between">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-300 rounded-full animate-pulse"></div>
               <MessageCircle className="w-5 h-5" />
               <span className="font-medium">올띵버킷 고객센터</span>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-white hover:text-gray-200"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setIsMinimized(!isMinimized)}
+                className="text-white hover:text-gray-200 transition-colors"
+                title={isMinimized ? '최대화' : '최소화'}
+              >
+                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={handleResetChat}
+                className="text-white hover:text-gray-200 transition-colors"
+                title="새 채팅 시작"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCloseChat}
+                className="text-white hover:text-gray-200 transition-colors"
+                title="채팅 종료"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* 메시지 영역 */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3">
-            {isLoading && messages.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
-                <p>채팅방을 불러오는 중...</p>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
-                      message.sender === 'user'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    <div className="whitespace-pre-line">{message.text}</div>
-                    <div className={`text-xs mt-1 ${
-                      message.sender === 'user' ? 'text-green-100' : 'text-gray-500'
-                    }`}>
-                      {message.timestamp.toLocaleTimeString('ko-KR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                      {message.sender === 'admin' && !message.isRead && (
-                        <span className="ml-2 text-blue-500">●</span>
-                      )}
-                    </div>
-                  </div>
+          {!isMinimized && (
+            <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50">
+              {isLoading && messages.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
+                  <p>채팅방을 불러오는 중...</p>
                 </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+              ) : (
+                <>
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
+                    >
+                      <div
+                        className={`max-w-xs px-4 py-3 rounded-2xl text-sm shadow-sm ${
+                          message.sender === 'user'
+                            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white rounded-br-md'
+                            : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md'
+                        }`}
+                      >
+                        <div className="whitespace-pre-line leading-relaxed">{message.text}</div>
+                        <div className={`text-xs mt-2 ${
+                          message.sender === 'user' ? 'text-green-100' : 'text-gray-500'
+                        }`}>
+                          {message.timestamp.toLocaleTimeString('ko-KR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                          {message.sender === 'admin' && !message.isRead && (
+                            <span className="ml-2 text-blue-500">●</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* 타이핑 인디케이터 */}
+                  {isTyping && (
+                    <div className="flex justify-start animate-fadeIn">
+                      <div className="bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                        <div className="flex items-center space-x-1">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
+                          <span className="text-xs text-gray-500 ml-2">상담원이 입력 중...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+
+          {/* 빠른 응답 버튼들 */}
+          {!isMinimized && messages.length <= 1 && (
+            <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
+              <p className="text-xs text-gray-600 mb-2">빠른 문의:</p>
+              <div className="flex flex-wrap gap-2">
+                {quickReplies.map((reply, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSendMessage(reply.text)}
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs text-gray-700 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200"
+                  >
+                    <span>{reply.emoji}</span>
+                    <span>{reply.text}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 입력 영역 */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="메시지를 입력하세요..."
-                disabled={isLoading}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-3 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-            
-            {/* 빠른 연락처 */}
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex space-x-4 text-xs text-gray-600">
-                <a 
-                  href="tel:1588-0000" 
-                  className="flex items-center space-x-1 hover:text-green-600"
+          {!isMinimized && (
+            <div className="p-4 border-t border-gray-200 bg-white">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="메시지를 입력하세요..."
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200"
+                />
+                <button
+                  onClick={() => handleSendMessage()}
+                  disabled={!inputMessage.trim() || isLoading}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 text-white px-4 py-3 rounded-full transition-all duration-200 disabled:cursor-not-allowed hover:scale-105"
                 >
-                  <Phone className="w-3 h-3" />
-                  <span>1588-0000</span>
-                </a>
-                <a 
-                  href="mailto:support@allthingbucket.com" 
-                  className="flex items-center space-x-1 hover:text-green-600"
-                >
-                  <Mail className="w-3 h-3" />
-                  <span>이메일</span>
-                </a>
-                <a 
-                  href="https://pf.kakao.com/_올띵버킷" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-1 hover:text-green-600"
-                >
-                  <MessageCircle className="w-3 h-3" />
-                  <span>카카오톡</span>
-                </a>
+                  {isLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              
+              {/* 빠른 연락처 */}
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex justify-center space-x-6 text-xs text-gray-600">
+                  <a 
+                    href="tel:1588-0000" 
+                    className="flex items-center space-x-1 hover:text-green-600 transition-colors"
+                  >
+                    <Phone className="w-3 h-3" />
+                    <span>1588-0000</span>
+                  </a>
+                  <a 
+                    href="mailto:support@allthingbucket.com" 
+                    className="flex items-center space-x-1 hover:text-green-600 transition-colors"
+                  >
+                    <Mail className="w-3 h-3" />
+                    <span>이메일</span>
+                  </a>
+                  <a 
+                    href="https://pf.kakao.com/_올띵버킷" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-1 hover:text-green-600 transition-colors"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    <span>카카오톡</span>
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </>

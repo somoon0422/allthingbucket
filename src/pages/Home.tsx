@@ -32,10 +32,23 @@ const Home: React.FC = () => {
                     experience.신청_마감일 ||
                     experience.application_end
     
+    // 캠페인 상태 확인
+    const status = experience.status || experience.campaign_status
+    
+    // 상태가 'closed'이거나 'inactive'인 경우
+    if (status === 'closed' || status === 'inactive') {
+      return '마감됨'
+    }
+    
+    // 최대 참가자 수 체크
+    const maxParticipants = experience.max_participants
+    const currentParticipants = experience.current_participants || 0
+    if (maxParticipants && currentParticipants >= maxParticipants) {
+      return '마감됨'
+    }
+    
     if (!deadline) {
-      // 날짜가 없으면 기본값 대신 상태 기반으로 표시
-      const status = experience.status || experience.campaign_status
-      if (status === 'closed' || status === 'completed') return '마감됨'
+      // 날짜가 없으면 상태 기반으로 표시
       if (status === 'active' || status === 'recruiting') return '모집중'
       return '진행중'
     }
@@ -59,6 +72,47 @@ const Home: React.FC = () => {
     }
   }
 
+  // 캠페인이 마감되었는지 확인하는 함수
+  const isCampaignClosed = (experience: any) => {
+    const status = experience.status || experience.campaign_status
+    const maxParticipants = experience.max_participants
+    const currentParticipants = experience.current_participants || 0
+    
+    // 상태가 'closed'이거나 'inactive'인 경우
+    if (status === 'closed' || status === 'inactive') {
+      return true
+    }
+    
+    // 최대 참가자 수 도달
+    if (maxParticipants && currentParticipants >= maxParticipants) {
+      return true
+    }
+    
+    // 신청 마감일 체크
+    const deadline = experience.application_end_date || 
+                    experience.application_deadline ||
+                    experience.end_date ||
+                    experience.deadline ||
+                    experience.신청_마감일 ||
+                    experience.application_end
+    
+    if (deadline) {
+      try {
+        const deadlineDate = new Date(deadline)
+        const today = new Date()
+        today.setHours(23, 59, 59, 999)
+        
+        if (deadlineDate < today) {
+          return true
+        }
+      } catch (error) {
+        console.error('날짜 계산 오류:', error)
+      }
+    }
+    
+    return false
+  }
+
   // 추천 체험단 로드
   const loadFeaturedExperiences = async () => {
     try {
@@ -79,6 +133,32 @@ const Home: React.FC = () => {
       const featured = safeCampaigns
         .filter(campaign => campaign && (campaign.status === 'recruiting' || campaign.status === 'active'))
         .slice(0, 6)
+      
+      // 🔥 데이터 구조 디버깅
+      if (featured.length > 0) {
+        console.log('🔍 첫 번째 체험단 데이터 구조:', featured[0])
+        console.log('🔍 사용 가능한 제목 필드들:', {
+          campaign_name: featured[0].campaign_name,
+          title: featured[0].title,
+          experience_name: featured[0].experience_name,
+          product_name: featured[0].product_name,
+          name: featured[0].name,
+          campaign_title: featured[0].campaign_title,
+          product_title: featured[0].product_title
+        })
+        console.log('🔍 모든 필드명:', Object.keys(featured[0]))
+        
+        // 🔥 제목 표시 테스트
+        const displayTitle = featured[0].campaign_name || 
+                           featured[0].title || 
+                           featured[0].experience_name || 
+                           featured[0].product_name ||
+                           featured[0].name ||
+                           featured[0].campaign_title ||
+                           featured[0].product_title ||
+                           '제목 없음'
+        console.log('🔍 최종 표시될 제목:', displayTitle)
+      }
       
       setFeaturedExperiences(featured)
     } catch (error) {
@@ -158,7 +238,7 @@ const Home: React.FC = () => {
     }
 
     loadData()
-  }, [])
+  }, [isAuthenticated]) // 🔥 로그인 상태 변경 시 데이터 다시 로드
 
   // 리뷰 자동 슬라이드
   useEffect(() => {
@@ -266,46 +346,82 @@ const Home: React.FC = () => {
               {featuredExperiences.map((experience, index) => (
                 <div
                   key={experience.id || index}
-                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
+                  className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden ${
+                    isCampaignClosed(experience) ? 'opacity-75' : ''
+                  }`}
                 >
-                  {experience.image_url && (
-                    <div className="h-40 sm:h-48 bg-gradient-to-r from-purple-400 to-pink-400 relative overflow-hidden">
+                  <div className="h-48 sm:h-56 bg-gradient-to-r from-purple-400 to-pink-400 relative overflow-hidden">
+                    {experience.image_url ? (
                       <img
                         src={experience.image_url}
-                        alt={experience.title || experience.experience_name}
-                        className="w-full h-full object-cover"
+                        alt={experience.campaign_name || experience.title || experience.experience_name || experience.product_name || experience.name || experience.campaign_title || experience.product_title}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none'
                         }}
                       />
-                      <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center space-x-2">
-                        <span className="bg-white/90 text-purple-600 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
-                          {getDeadlineDisplay(experience)}
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <Gift className="w-12 h-12 mx-auto mb-2 opacity-80" />
+                          <p className="text-sm font-medium opacity-80">이미지 준비중</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* 그라데이션 오버레이 */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                    
+                    <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center space-x-2">
+                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold shadow-lg ${
+                        isCampaignClosed(experience) 
+                          ? 'bg-red-500/95 text-white' 
+                          : 'bg-white/95 text-purple-600'
+                      }`}>
+                        {getDeadlineDisplay(experience)}
+                      </span>
+                      {isAuthenticated && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            toggleWishlist(experience.id)
+                          }}
+                          className="bg-white/95 hover:bg-white p-1.5 sm:p-2 rounded-full transition-colors shadow-lg"
+                        >
+                          <Heart 
+                            className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                              wishlist.some(item => item.campaign_id === experience.id) 
+                                ? 'text-red-500 fill-current' 
+                                : 'text-gray-400'
+                            }`} 
+                          />
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* 브랜드 정보 오버레이 */}
+                    <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white/95 rounded-full flex items-center justify-center text-purple-600 font-bold text-xs sm:text-sm shadow-lg">
+                          {(experience.brand || experience.brand_name || 'B').charAt(0)}
+                        </div>
+                        <span className="bg-white/95 text-gray-800 px-2 py-1 rounded-full text-xs sm:text-sm font-semibold shadow-lg">
+                          {experience.brand || experience.brand_name || '브랜드'}
                         </span>
-                        {isAuthenticated && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              toggleWishlist(experience.id)
-                            }}
-                            className="bg-white/90 hover:bg-white p-1.5 sm:p-2 rounded-full transition-colors"
-                          >
-                            <Heart 
-                              className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                                wishlist.some(item => item.campaign_id === experience.id) 
-                                  ? 'text-red-500 fill-current' 
-                                  : 'text-gray-400'
-                              }`} 
-                            />
-                          </button>
-                        )}
                       </div>
                     </div>
-                  )}
+                  </div>
                   <div className="p-4 sm:p-6">
                     <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                      {experience.title || experience.experience_name || '제목 없음'}
+                      {experience.campaign_name || 
+                       experience.title || 
+                       experience.experience_name || 
+                       experience.product_name ||
+                       experience.name ||
+                       experience.campaign_title ||
+                       experience.product_title ||
+                       '제목 없음'}
                     </h3>
                     <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 line-clamp-3">
                       {experience.description || '설명이 없습니다.'}
