@@ -222,10 +222,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // Supabase에서 관리자 정보 조회
-      const admins = await dataService.entities.admin_users.list()
-      const admin = admins.find((a: any) => a.username === adminName)
+      const { data: admins, error: adminsError } = await supabase
+        .from('admin_users')
+        .select('*')
       
-      console.log('🔍 관리자 조회 결과:', { adminName, users, foundAdmin: admin })
+      if (adminsError) {
+        throw new Error('관리자 정보 조회에 실패했습니다')
+      }
+      
+      const admin = admins?.find((a: any) => a.username === adminName)
+      
+      console.log('🔍 관리자 조회 결과:', { adminName, admins, foundAdmin: admin })
       
       if (!admin) {
         throw new Error('관리자를 찾을 수 없습니다')
@@ -270,15 +277,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 1. 사용자 상태 즉시 초기화
       setUser(null)
       
-      // Supabase Auth 로그아웃
-      await dataService.auth.signOut()
+      // 2. 모든 로컬 스토리지 완전 삭제
+      localStorage.clear()
+      sessionStorage.clear()
       
-      // 로컬 세션 정리
-      localStorage.removeItem('admin_session')
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('admin_token')
+      // 3. 모든 쿠키 삭제 (도메인 내)
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      })
+      
+      // 4. Supabase 세션 정리 (안전하게)
+      try {
+        await supabase.auth.signOut()
+      } catch (supabaseError) {
+        console.warn('⚠️ Supabase 로그아웃 실패 (무시):', supabaseError)
+      }
+      
+      console.log('✅ 모든 세션 데이터 완전 삭제 완료')
+      
+      // 5. 강제 페이지 새로고침 (캐시 무시 + 랜덤 파라미터)
+      const randomParam = Math.random().toString(36).substring(2, 11)
+      window.location.href = window.location.origin + '?logout=' + randomParam + '&t=' + Date.now()
+      
     } catch (error) {
-      console.error('로그아웃 실패:', error)
+      console.error('❌ 로그아웃 실패:', error)
+      // 오류가 발생해도 강제 새로고침
+      const randomParam = Math.random().toString(36).substring(2, 11)
+      window.location.href = window.location.origin + '?logout=' + randomParam + '&t=' + Date.now()
     }
   }
 
@@ -352,7 +377,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // Supabase Auth 세션 체크
-        const { data: { session } } = await dataService.auth.getSession()
+        const sessionData = await dataService.auth.getSession()
+        const session = sessionData?.data?.session
         if (session?.user) {
           // Supabase 세션이 있으면 어드민 세션을 완전히 무시하고 일반 사용자로 처리
           console.log('🔍 Supabase 세션 발견 - 어드민 세션 무시하고 일반 사용자로 처리:', session.user)

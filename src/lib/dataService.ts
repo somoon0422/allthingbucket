@@ -1915,22 +1915,19 @@ export const dataService = {
               onConflict: 'user_id'
             })
             .select()
-            .maybeSingle()
-          
+            .single()
+
           if (error) {
-            // RLS 정책 오류나 인증 오류는 무시 (사용자 경험에 영향 없음)
-            if (error.message.includes('row-level security') || error.message.includes('RLS') || error.message.includes('401') || error.message.includes('Unauthorized')) {
-              console.log('RLS 정책으로 인한 온라인 상태 설정 건너뜀 (정상)')
-            } else {
-              console.warn('온라인 상태 설정 실패:', error.message)
+            // RLS 정책 오류는 무시
+            if (error.code === '42501' || error.message?.includes('row-level security policy')) {
+              console.warn('⚠️ 온라인 상태 설정 오류 (RLS 정책으로 인한 무시):', error.message)
+              return null
             }
-            return null
+            throw error
           }
-          
           return data
         } catch (error) {
-          // 모든 오류를 무시 (사용자 경험에 영향 없음)
-          console.log('온라인 상태 설정 건너뜀 (정상):', error instanceof Error ? error.message : '알 수 없는 오류')
+          console.warn('⚠️ 온라인 상태 설정 오류:', error)
           return null
         }
       },
@@ -1938,7 +1935,7 @@ export const dataService = {
       async setOffline(userId: string) {
         try {
           if (!userId) {
-            console.warn('setOffline: userId가 제공되지 않았습니다.')
+            console.warn('⚠️ userId가 없어서 오프라인 상태 설정을 건너뜀')
             return null
           }
 
@@ -1954,22 +1951,19 @@ export const dataService = {
               onConflict: 'user_id'
             })
             .select()
-            .maybeSingle()
-          
+            .single()
+
           if (error) {
-            // RLS 정책 오류나 인증 오류는 무시 (사용자 경험에 영향 없음)
-            if (error.message.includes('row-level security') || error.message.includes('RLS') || error.message.includes('401') || error.message.includes('Unauthorized')) {
-              console.log('RLS 정책으로 인한 오프라인 상태 설정 건너뜀 (정상)')
-            } else {
-              console.warn('오프라인 상태 설정 실패:', error.message)
+            // RLS 정책 오류는 무시
+            if (error.code === '42501' || error.message?.includes('row-level security policy')) {
+              console.warn('⚠️ 오프라인 상태 설정 오류 (RLS 정책으로 인한 무시):', error.message)
+              return null
             }
-            return null
+            throw error
           }
-          
           return data
         } catch (error) {
-          // 모든 오류를 무시 (사용자 경험에 영향 없음)
-          console.log('오프라인 상태 설정 건너뜀 (정상):', error instanceof Error ? error.message : '알 수 없는 오류')
+          console.warn('⚠️ 오프라인 상태 설정 오류:', error)
           return null
         }
       },
