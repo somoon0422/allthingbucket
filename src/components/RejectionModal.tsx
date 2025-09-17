@@ -114,7 +114,7 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
 
 📞 문의사항이 있으시면 고객센터로 연락주세요:
 - 이메일: support@allthingbucket.com
-- 전화: 02-1234-5678
+- 전화: 01022129245
 
 감사합니다.
 올띵버킷 체험단 팀`
@@ -129,7 +129,7 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
 
 다른 체험단에 참여해주시면 감사하겠습니다.
 
-📞 문의사항: support@allthingbucket.com / 02-1234-5678
+📞 문의사항: support@allthingbucket.com / 01022129245
 
 감사합니다.
 올띵버킷 체험단 팀`

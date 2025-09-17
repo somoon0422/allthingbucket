@@ -67,7 +67,7 @@ const ChatBot: React.FC = () => {
     try {
       await dataService.entities.user_online_status.setOnline(user.user_id)
     } catch (error) {
-      console.error('온라인 상태 설정 오류:', error)
+      console.warn('⚠️ 온라인 상태 설정 오류 (RLS 정책으로 인한 무시):', error)
     }
   }
 
@@ -76,7 +76,7 @@ const ChatBot: React.FC = () => {
     try {
       await dataService.entities.user_online_status.setOffline(user.user_id)
     } catch (error) {
-      console.error('오프라인 상태 설정 오류:', error)
+      console.warn('⚠️ 오프라인 상태 설정 오류 (RLS 정책으로 인한 무시):', error)
     }
   }
 
@@ -309,7 +309,7 @@ const ChatBot: React.FC = () => {
     const message = userMessage.toLowerCase()
     
     if (message.includes('출금') || message.includes('환급')) {
-      return "출금 관련 문의는 고객센터로 연락주세요!\n\n📞 전화: 1588-0000\n💬 카카오톡: @올띵버킷\n📧 이메일: support@allthingbucket.com\n\n영업일 기준 3~5일 내 처리됩니다."
+      return "출금 관련 문의는 고객센터로 연락주세요!\n\n📞 전화: 01022129245\n💬 카카오톡: @올띵버킷\n📧 이메일: support@allthingbucket.com\n\n영업일 기준 3~5일 내 처리됩니다."
     }
     
     if (message.includes('포인트') || message.includes('적립')) {
@@ -324,7 +324,7 @@ const ChatBot: React.FC = () => {
       return "계좌 인증은 출금 요청 시 1원 입금을 통해 진행됩니다.\n\n입금자명을 정확히 확인해주시고, 문제가 있으시면 고객센터로 연락주세요."
     }
     
-    return "죄송합니다. 더 자세한 문의는 고객센터로 연락주세요!\n\n📞 전화: 1588-0000\n💬 카카오톡: @올띵버킷\n📧 이메일: support@allthingbucket.com"
+    return "죄송합니다. 더 자세한 문의는 고객센터로 연락주세요!\n\n📞 전화: 01022129245\n💬 카카오톡: @올띵버킷\n📧 이메일: support@allthingbucket.com"
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

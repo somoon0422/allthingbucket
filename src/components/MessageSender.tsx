@@ -53,7 +53,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
 
 체험 진행에 대한 자세한 안내는 추후 별도로 연락드리겠습니다.
 
-📞 문의사항: support@allthingbucket.com / 02-1234-5678
+📞 문의사항: support@allthingbucket.com / 01022129245
 
 감사합니다.`
     },
@@ -68,7 +68,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
 
 앞으로 더 좋은 기회로 찾아뵙겠습니다.
 
-📞 문의사항: support@allthingbucket.com / 02-1234-5678
+📞 문의사항: support@allthingbucket.com / 01022129245
 
 감사합니다.`
     },
@@ -83,7 +83,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
 
 후기 제출을 잊지 마시고, 마감일 전에 제출해주시기 바랍니다.
 
-📞 문의사항: support@allthingbucket.com / 02-1234-5678
+📞 문의사항: support@allthingbucket.com / 01022129245
 
 감사합니다.`
     },

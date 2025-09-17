@@ -21,6 +21,10 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       
       console.log('🔥 Google OAuth 로그인 시작...', { isDevelopment })
       
+      // 기존 관리자 세션 정리 (구글 로그인 시 일반 사용자로 로그인)
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_session')
+      
       // 모달 닫기 이벤트 발생
       window.dispatchEvent(new CustomEvent('closeLoginModal'))
       

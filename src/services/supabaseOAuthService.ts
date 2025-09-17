@@ -67,7 +67,8 @@ export class SupabaseOAuthService {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-          }
+          },
+          scopes: 'openid email profile'
         }
       })
 
@@ -170,6 +171,13 @@ export class SupabaseOAuthService {
         provider: supabaseUser.app_metadata?.provider as 'google' | 'kakao' || 'google'
       }
       
+      this.saveLog('🔄 OAuth 사용자 이름 처리:', {
+        full_name: supabaseUser.user_metadata?.full_name,
+        name: supabaseUser.user_metadata?.name,
+        email: supabaseUser.email,
+        final_name: oauthUser.name
+      })
+      
       this.saveLog('🔄 변환된 OAuth 사용자 정보:', oauthUser)
 
       // 로컬 데이터베이스에 사용자 정보 저장/업데이트
@@ -198,6 +206,7 @@ export class SupabaseOAuthService {
         user_id: oauthUser.id,
         email: oauthUser.email,
         name: oauthUser.name,
+        role: 'user',
         provider: oauthUser.provider
       })
 
@@ -247,10 +256,32 @@ export class SupabaseOAuthService {
         // 이름 업데이트 (기존 이름이 없거나 비어있는 경우)
         if (!existingUser.name && oauthUser.name) {
           updateData.name = oauthUser.name
+          this.saveLog('🔄 기존 사용자 이름 업데이트:', {
+            existingName: existingUser.name,
+            newName: oauthUser.name,
+            email: oauthUser.email
+          })
         }
 
         await (dataService.entities as any).users.update(existingUser.id, updateData)
         console.log('✅ 기존 사용자 업데이트 완료')
+        
+        // 기존 사용자 프로필도 업데이트
+        try {
+          const existingProfiles = await (dataService.entities as any).user_profiles.list()
+          const profiles = Array.isArray(existingProfiles) ? existingProfiles : []
+          const existingProfile = profiles.find((p: any) => p.user_id === oauthUser.id)
+          
+          if (existingProfile && (!existingProfile.name && oauthUser.name)) {
+            await (dataService.entities as any).user_profiles.update(existingProfile.id, {
+              name: oauthUser.name,
+              updated_at: new Date().toISOString()
+            })
+            this.saveLog('✅ 기존 사용자 프로필 이름 업데이트 완료:', oauthUser.name)
+          }
+        } catch (profileUpdateError) {
+          this.saveLog('⚠️ 기존 사용자 프로필 업데이트 실패 (무시):', profileUpdateError)
+        }
       } else {
         // 새 사용자 생성 (Supabase users 테이블 스키마에 맞게)
         const newUser = {
@@ -263,6 +294,12 @@ export class SupabaseOAuthService {
           is_active: true
           // created_at, updated_at은 Supabase에서 자동으로 처리됨
         }
+        
+        this.saveLog('📝 새 사용자 생성 데이터 (이름 확인):', {
+          oauthUserName: oauthUser.name,
+          newUserName: newUser.name,
+          email: oauthUser.email
+        })
 
         this.saveLog('📝 새 사용자 생성 데이터:', newUser)
         this.saveLog('🚀 users.create 호출 시작...')
@@ -322,6 +359,8 @@ export class SupabaseOAuthService {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
+        
+        this.saveLog('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
 
         // 사용자 포인트 초기화
         await (dataService.entities as any).user_points.create({
@@ -373,8 +412,19 @@ export class SupabaseOAuthService {
       this.saveLog('📊 전체 사용자 수:', users.length)
       this.saveLog('📋 전체 사용자 목록:', users)
       
-      const dbUser = users.find((u: any) => u.user_id === oauthUser.id || u.email === oauthUser.email)
-      this.saveLog('🔍 검색된 사용자:', dbUser)
+      // 이메일로 우선 검색 (구글 로그인 시 정확한 매칭)
+      let dbUser = users.find((u: any) => u.email === oauthUser.email)
+      
+      // 이메일로 찾지 못한 경우 user_id로 검색
+      if (!dbUser) {
+        dbUser = users.find((u: any) => u.user_id === oauthUser.id)
+      }
+      
+      this.saveLog('🔍 검색된 사용자 (이메일 우선):', {
+        foundByEmail: users.find((u: any) => u.email === oauthUser.email),
+        foundByUserId: users.find((u: any) => u.user_id === oauthUser.id),
+        finalDbUser: dbUser
+      })
 
       if (!dbUser) {
         this.saveLog('❌ users 테이블에서 사용자를 찾을 수 없음:', { 
@@ -434,10 +484,26 @@ export class SupabaseOAuthService {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
+        
+        console.log('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
 
         console.log('✅ 사용자 프로필 생성 완료')
       } else {
         console.log('✅ 기존 사용자 프로필 확인됨')
+        
+        // 기존 프로필의 이름이 없거나 비어있는 경우 업데이트
+        if (!existingProfile.name && oauthUser.name) {
+          console.log('🔄 기존 프로필 이름 업데이트 중...')
+          try {
+            await (dataService.entities as any).user_profiles.update(existingProfile.id, {
+              name: oauthUser.name,
+              updated_at: new Date().toISOString()
+            })
+            console.log('✅ 기존 프로필 이름 업데이트 완료:', oauthUser.name)
+          } catch (updateError) {
+            console.warn('⚠️ 기존 프로필 이름 업데이트 실패 (무시):', updateError)
+          }
+        }
       }
     } catch (error) {
       console.error('❌ 사용자 프로필 생성 실패:', error)

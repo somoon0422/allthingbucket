@@ -1078,7 +1078,7 @@ const Points: React.FC = () => {
                     <div>
                       <h4 className="text-sm font-medium text-green-900 mb-1">고객센터</h4>
                       <div className="text-xs text-green-800 space-y-1">
-                        <div>📞 전화: 1588-0000 (평일 09:00-18:00)</div>
+                        <div>📞 전화: 01022129245 (평일 09:00-18:00)</div>
                         <div>💬 카카오톡: @올띵버킷</div>
                         <div>📧 이메일: support@allthingbucket.com</div>
                       </div>

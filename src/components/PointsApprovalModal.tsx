@@ -60,7 +60,7 @@ const PointsApprovalModal: React.FC<PointsApprovalModalProps> = ({
 
 📞 문의사항이 있으시면 고객센터로 연락주세요:
 - 이메일: support@allthingbucket.com
-- 전화: 02-1234-5678
+- 전화: 01022129245
 
 앞으로도 올띵버킷 체험단에 많은 관심 부탁드립니다.
 
@@ -75,7 +75,7 @@ const PointsApprovalModal: React.FC<PointsApprovalModalProps> = ({
 
 마이페이지에서 확인하실 수 있습니다.
 
-📞 문의사항: support@allthingbucket.com / 02-1234-5678
+📞 문의사항: support@allthingbucket.com / 01022129245
 
 감사합니다.
 올띵버킷 체험단 팀`
@@ -99,28 +99,6 @@ const PointsApprovalModal: React.FC<PointsApprovalModalProps> = ({
     }))
   }
 
-  // 변수 치환 함수
-  const replaceVariables = (text: string) => {
-    const today = new Date()
-    const todayStr = today.toLocaleDateString('ko-KR')
-    
-    const variables = {
-      '{name}': editableRecipient.name || '고객',
-      '{email}': editableRecipient.email || '',
-      '{phone}': editableRecipient.phone || '',
-      '{campaign_name}': campaignName,
-      '{reward_points}': rewardPoints.toString(),
-      '{approval_date}': todayStr,
-      '{today}': todayStr
-    }
-    
-    let result = text
-    Object.entries(variables).forEach(([variable, value]) => {
-      result = result.replace(new RegExp(variable.replace(/[{}]/g, '\\$&'), 'g'), value)
-    })
-    
-    return result
-  }
 
   const handlePointsApproval = async () => {
     try {
