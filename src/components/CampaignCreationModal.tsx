@@ -165,7 +165,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         requirements: formData.requirements.trim() || null,
         rewards: formData.reward_points ? parseInt(formData.reward_points) : 0,
         contact_email: 'support@allthingbucket.com',
-        contact_phone: '010-7290-7620',
+        contact_phone: '01022129245',
         main_images: mainImages,
         detail_images: detailImages
       }

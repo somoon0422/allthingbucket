@@ -214,7 +214,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
 📞 문의사항이 있으시면 고객센터로 연락주세요:
 - 이메일: support@allthingbucket.com
-- 전화: 010-7290-7620
+- 전화: 01022129245
 
 감사합니다.
 올띵버킷 체험단 팀`
@@ -229,7 +229,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
 리뷰 작성 완료 후 포인트 지급 요청을 해주세요.
 
-📞 문의사항: support@allthingbucket.com / 010-7290-7620
+📞 문의사항: support@allthingbucket.com / 01022129245
 
 감사합니다.
 올띵버킷 체험단 팀`
@@ -262,7 +262,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
 📞 문의사항이 있으시면 고객센터로 연락주세요:
 - 이메일: support@allthingbucket.com
-- 전화: 010-7290-7620
+- 전화: 01022129245
 
 감사합니다.
 올띵버킷 팀`
@@ -298,7 +298,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
 📞 문의사항이 있으시면 고객센터로 연락주세요:
 - 이메일: support@allthingbucket.com
-- 전화: 010-7290-7620
+- 전화: 01022129245
 
 감사합니다.
 올띵버킷 팀`

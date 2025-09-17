@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-import { dataService } from '../lib/dataService'
+import { dataService, supabase } from '../lib/dataService'
 import { getUserFromToken } from '../utils/auth'
 import toast from 'react-hot-toast'
 
@@ -92,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // Supabase Auth를 사용한 로그인
-      const result = await dataService.auth.signInWithPassword({
+      const result = await supabase.auth.signInWithPassword({
         email,
         password
       })
@@ -105,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const processedUser = processUserData({
             id: result.data.user.id,
             email: result.data.user.email || '',
-            name: profile?.name || result.data.user.email?.split('@')[0] || '사용자',
+            name: result.data.user.user_metadata?.full_name || result.data.user.user_metadata?.name || profile?.name || result.data.user.email?.split('@')[0] || '사용자',
             role: 'user',
             profile: profile
           })
@@ -121,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const processedUser = processUserData({
             id: result.data.user.id,
             email: result.data.user.email || '',
-            name: result.data.user.email?.split('@')[0] || '사용자',
+            name: result.data.user.user_metadata?.full_name || result.data.user.user_metadata?.name || result.data.user.email?.split('@')[0] || '사용자',
             role: 'user',
             profile: null
           })
@@ -147,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // Supabase Auth를 사용한 회원가입
-      const result = await dataService.auth.signUp({
+      const result = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password
       })
@@ -221,8 +222,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // Supabase에서 관리자 정보 조회
-      const admins = await dataService.entities.admin_users.list()
-      const admin = admins.find((a: any) => a.username === adminName)
+      const { data: admins, error: adminsError } = await supabase
+        .from('admin_users')
+        .select('*')
+      
+      if (adminsError) {
+        throw new Error('관리자 정보 조회에 실패했습니다')
+      }
+      
+      const admin = admins?.find((a: any) => a.username === adminName)
       
       console.log('🔍 관리자 조회 결과:', { adminName, admins, foundAdmin: admin })
       
@@ -264,17 +272,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
+      console.log('🚀 로그아웃 시작 - 강력한 방식 v3 (캐시 무시)')
+      
+      // 1. 사용자 상태 즉시 초기화
       setUser(null)
       
-      // Supabase Auth 로그아웃
-      await dataService.auth.signOut()
+      // 2. 모든 로컬 스토리지 완전 삭제
+      localStorage.clear()
+      sessionStorage.clear()
       
-      // 로컬 세션 정리
-      localStorage.removeItem('admin_session')
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('admin_token')
+      // 3. 모든 쿠키 삭제 (도메인 내)
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      })
+      
+      // 4. Supabase 세션 정리 (안전하게)
+      try {
+        await supabase.auth.signOut()
+      } catch (supabaseError) {
+        console.warn('⚠️ Supabase 로그아웃 실패 (무시):', supabaseError)
+      }
+      
+      console.log('✅ 모든 세션 데이터 완전 삭제 완료')
+      
+      // 5. 강제 페이지 새로고침 (캐시 무시 + 랜덤 파라미터)
+      const randomParam = Math.random().toString(36).substr(2, 9)
+      window.location.href = window.location.origin + '?logout=' + randomParam + '&t=' + Date.now()
+      
     } catch (error) {
-      console.error('로그아웃 실패:', error)
+      console.error('❌ 로그아웃 실패:', error)
+      // 오류가 발생해도 강제 새로고침
+      const randomParam = Math.random().toString(36).substr(2, 9)
+      window.location.href = window.location.origin + '?logout=' + randomParam + '&t=' + Date.now()
     }
   }
 
@@ -314,67 +343,103 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         setLoading(true)
         
-        // 관리자 토큰 체크
-        const adminToken = localStorage.getItem('admin_token')
-        if (adminToken) {
-          try {
-            const adminData = getUserFromToken(adminToken)
-            if (adminData && adminData.type === 'admin') {
-              const processedAdmin = processUserData(adminData)
-              if (processedAdmin) {
-                setUser(processedAdmin)
-                return
-              }
-            }
-          } catch {
-            localStorage.removeItem('admin_token')
-            localStorage.removeItem('admin_session')
-          }
-        }
+        // 고유 식별자로 새로운 코드임을 표시
+        console.log('🚀 checkAutoLogin v4 시작 - 캐시 무시 버전')
         
-        // 관리자 세션 체크 (기존 방식)
-        const adminSession = localStorage.getItem('admin_session')
-        if (adminSession) {
-          try {
-            const adminData = JSON.parse(adminSession)
-            const processedAdmin = processUserData(adminData)
-            if (processedAdmin) {
-              setUser(processedAdmin)
-              return
-            }
-          } catch {
-            localStorage.removeItem('admin_session')
-          }
-        }
+        // Supabase Auth 세션 확인
+        const { data: { session } } = await supabase.auth.getSession()
         
-        // Supabase Auth 세션 체크
-        const { data: { session } } = await dataService.auth.getSession()
         if (session?.user) {
-          console.log('🔍 Supabase 세션에서 사용자 확인:', session.user)
+          // Supabase 세션이 있으면 어드민 세션을 완전히 무시하고 일반 사용자로 처리
+          console.log('🔍 Supabase 세션 발견 - 어드민 세션 무시하고 일반 사용자로 처리:', session.user)
+          console.log('🔍 Supabase 세션 이메일:', session.user.email)
+          console.log('🔍 Supabase 세션 이름:', session.user.user_metadata?.full_name || session.user.user_metadata?.name)
+          
+          // 어드민 세션 정리 (구글 로그인 시 어드민 세션 완전 삭제)
+          localStorage.removeItem('admin_token')
+          localStorage.removeItem('admin_session')
+          sessionStorage.removeItem('admin_token')
+          sessionStorage.removeItem('admin_session')
+          
+          console.log('✅ 어드민 세션 완전 정리 완료')
+          
+          // Supabase Auth 세션 처리
           
           try {
-            // users 테이블에서 사용자 정보 검증
+            // users 테이블에서 사용자 정보 검증 (이메일로 우선 검색)
             const usersResponse = await (dataService.entities as any).users.list()
             const users = Array.isArray(usersResponse) ? usersResponse : []
-            const dbUser = users.find((u: any) => u.user_id === session.user.id || u.email === session.user.email)
+            
+            console.log('🔍 users 테이블 검색:', {
+              sessionUserEmail: session.user.email,
+              sessionUserId: session.user.id,
+              totalUsers: users.length
+            })
+            
+            // 이메일로 우선 검색 (구글 로그인 시 정확한 매칭)
+            let dbUser = users.find((u: any) => u.email === session.user.email)
+            
+            // 이메일로 찾지 못한 경우 user_id로 검색
+            if (!dbUser) {
+              dbUser = users.find((u: any) => u.user_id === session.user.id)
+            }
+            
+            console.log('🔍 users 테이블 검색 결과:', {
+              foundByEmail: users.find((u: any) => u.email === session.user.email),
+              foundByUserId: users.find((u: any) => u.user_id === session.user.id),
+              finalDbUser: dbUser
+            })
             
             if (dbUser) {
               console.log('✅ users 테이블에서 사용자 확인됨:', dbUser)
+              console.log('✅ 사용자 이메일:', dbUser.email)
+              console.log('✅ 사용자 이름:', dbUser.name)
+              
+              // users 테이블의 이름이 없거나 비어있는 경우 업데이트
+              if (!dbUser.name && (session.user.user_metadata?.full_name || session.user.user_metadata?.name)) {
+                const newName = session.user.user_metadata?.full_name || session.user.user_metadata?.name
+                try {
+                  await (dataService.entities as any).users.update(dbUser.id, {
+                    name: newName,
+                    updated_at: new Date().toISOString()
+                  })
+                  console.log('✅ users 테이블 이름 업데이트 완료:', newName)
+                  dbUser.name = newName // 업데이트된 이름으로 dbUser 객체 수정
+                } catch (updateError) {
+                  console.warn('⚠️ users 테이블 이름 업데이트 실패 (무시):', updateError)
+                }
+              }
               
               // 사용자 프로필 정보 가져오기
               try {
                 const profile = await (dataService.entities as any).user_profiles.get(session.user.id)
                 
+                // 프로필이 있지만 이름이 없는 경우 업데이트
+                if (profile && !profile.name && (session.user.user_metadata?.full_name || session.user.user_metadata?.name)) {
+                  const newName = session.user.user_metadata?.full_name || session.user.user_metadata?.name
+                  try {
+                    await (dataService.entities as any).user_profiles.update(profile.id, {
+                      name: newName,
+                      updated_at: new Date().toISOString()
+                    })
+                    console.log('✅ 프로필 이름 업데이트 완료:', newName)
+                    profile.name = newName // 업데이트된 이름으로 프로필 객체 수정
+                  } catch (updateError) {
+                    console.warn('⚠️ 프로필 이름 업데이트 실패 (무시):', updateError)
+                  }
+                }
+                
                 const processedUser = processUserData({
                   id: session.user.id,
                   user_id: session.user.id,
                   email: session.user.email,
-                  name: dbUser.name || profile?.name || session.user.email?.split('@')[0] || '사용자',
+                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || profile?.name || session.user.email?.split('@')[0] || '사용자',
                   role: 'user',
                   profile: profile
                 })
                 
                 if (processedUser) {
+                  console.log('✅ 최종 사용자 로그인 성공 (프로필 있음):', processedUser)
                   setUser(processedUser)
                   return
                 }
@@ -386,7 +451,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   id: session.user.id,
                   user_id: session.user.id,
                   email: session.user.email,
-                  name: dbUser.name || session.user.email?.split('@')[0] || '사용자',
+                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || session.user.email?.split('@')[0] || '사용자',
                   role: 'user',
                   profile: null
                 })
@@ -404,7 +469,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const newUser = {
                   user_id: session.user.id,
                   email: session.user.email,
-                  name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자',
+                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자',
                   phone: null,
                   google_id: session.user.app_metadata?.provider === 'google' ? session.user.id : null,
                   profile_image_url: session.user.user_metadata?.avatar_url || null,
@@ -432,7 +497,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                       login_count: 0,
                       is_active: true
                     })
-                    console.log('✅ 사용자 프로필 생성 완료')
+                    console.log('✅ 사용자 프로필 생성 완료 - 이름:', newUser.name)
                   } catch (profileError) {
                     console.warn('⚠️ 사용자 프로필 생성 실패 (무시):', profileError)
                   }
@@ -453,26 +518,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   }
                 } else {
                   console.error('❌ users 테이블 사용자 생성 실패:', createResult)
-                  await dataService.auth.signOut()
+                  await supabase.auth.signOut()
                   toast.error('사용자 정보 생성에 실패했습니다. 다시 로그인해주세요.')
                 }
               } catch (createError) {
                 console.error('❌ users 테이블 사용자 생성 중 오류:', createError)
-                await dataService.auth.signOut()
+                await supabase.auth.signOut()
                 toast.error('사용자 정보 생성 중 오류가 발생했습니다. 다시 로그인해주세요.')
               }
             }
           } catch (usersError) {
             console.error('users 테이블 조회 실패:', usersError)
             // users 테이블 조회 실패 시 기존 방식으로 진행
+            console.log('🔄 users 테이블 조회 실패 - user_profiles로 직접 진행')
             try {
               const profile = await (dataService.entities as any).user_profiles.get(session.user.id)
+              
+              // 프로필이 있지만 이름이 없는 경우 업데이트
+              if (profile && !profile.name && (session.user.user_metadata?.full_name || session.user.user_metadata?.name)) {
+                const newName = session.user.user_metadata?.full_name || session.user.user_metadata?.name
+                try {
+                  await (dataService.entities as any).user_profiles.update(profile.id, {
+                    name: newName,
+                    updated_at: new Date().toISOString()
+                  })
+                  console.log('✅ 프로필 이름 업데이트 완료 (users 테이블 조회 실패 시):', newName)
+                  profile.name = newName // 업데이트된 이름으로 프로필 객체 수정
+                } catch (updateError) {
+                  console.warn('⚠️ 프로필 이름 업데이트 실패 (무시):', updateError)
+                }
+              }
               
               const processedUser = processUserData({
                 id: session.user.id,
                 user_id: session.user.id,
                 email: session.user.email,
-                name: profile?.name || session.user.email?.split('@')[0] || '사용자',
+                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || profile?.name || session.user.email?.split('@')[0] || '사용자',
                 role: 'user',
                 profile: profile
               })
@@ -489,7 +570,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 id: session.user.id,
                 user_id: session.user.id,
                 email: session.user.email,
-                name: session.user.email?.split('@')[0] || '사용자',
+                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자',
                 role: 'user',
                 profile: null
               })
@@ -498,6 +579,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setUser(processedUser)
                 return
               }
+            }
+          }
+        } else {
+          // Supabase 세션이 없는 경우에만 관리자 세션 체크
+          console.log('🔍 Supabase 세션 없음 - 어드민 세션 체크')
+          
+          // 관리자 토큰 체크
+          const adminToken = localStorage.getItem('admin_token')
+          if (adminToken) {
+            console.log('🔍 어드민 토큰 발견:', adminToken)
+            try {
+              const adminData = getUserFromToken(adminToken)
+              if (adminData && adminData.type === 'admin') {
+                console.log('🔍 어드민 데이터 처리:', adminData)
+                const processedAdmin = processUserData(adminData)
+                if (processedAdmin) {
+                  console.log('✅ 어드민 로그인 성공:', processedAdmin)
+                  setUser(processedAdmin)
+                  return
+                }
+              }
+            } catch {
+              console.log('⚠️ 어드민 토큰 무효 - 삭제')
+              localStorage.removeItem('admin_token')
+              localStorage.removeItem('admin_session')
+            }
+          }
+          
+          // 관리자 세션 체크 (기존 방식)
+          const adminSession = localStorage.getItem('admin_session')
+          if (adminSession) {
+            console.log('🔍 어드민 세션 발견:', adminSession)
+            try {
+              const adminData = JSON.parse(adminSession)
+              console.log('🔍 어드민 세션 데이터:', adminData)
+              const processedAdmin = processUserData(adminData)
+              if (processedAdmin) {
+                console.log('✅ 어드민 세션 로그인 성공:', processedAdmin)
+                setUser(processedAdmin)
+                return
+              }
+            } catch {
+              console.log('⚠️ 어드민 세션 무효 - 삭제')
+              localStorage.removeItem('admin_session')
             }
           }
         }

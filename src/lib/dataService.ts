@@ -1829,6 +1829,11 @@ export const dataService = {
 
       async setOnline(userId: string, connectionId?: string) {
         try {
+          if (!userId) {
+            console.warn('⚠️ userId가 없어서 온라인 상태 설정을 건너뜀')
+            return null
+          }
+
           const { data, error } = await supabase
             .from('user_online_status')
             .upsert({
@@ -1842,16 +1847,29 @@ export const dataService = {
             })
             .select()
             .single()
-          if (error) throw error
+
+          if (error) {
+            // RLS 정책 오류는 무시
+            if (error.code === '42501' || error.message?.includes('row-level security policy')) {
+              console.warn('⚠️ 온라인 상태 설정 오류 (RLS 정책으로 인한 무시):', error.message)
+              return null
+            }
+            throw error
+          }
           return data
         } catch (error) {
-          console.error('온라인 상태 설정 오류:', error)
+          console.warn('⚠️ 온라인 상태 설정 오류:', error)
           return null
         }
       },
 
       async setOffline(userId: string) {
         try {
+          if (!userId) {
+            console.warn('⚠️ userId가 없어서 오프라인 상태 설정을 건너뜀')
+            return null
+          }
+
           const { data, error } = await supabase
             .from('user_online_status')
             .upsert({
@@ -1865,10 +1883,18 @@ export const dataService = {
             })
             .select()
             .single()
-          if (error) throw error
+
+          if (error) {
+            // RLS 정책 오류는 무시
+            if (error.code === '42501' || error.message?.includes('row-level security policy')) {
+              console.warn('⚠️ 오프라인 상태 설정 오류 (RLS 정책으로 인한 무시):', error.message)
+              return null
+            }
+            throw error
+          }
           return data
         } catch (error) {
-          console.error('오프라인 상태 설정 오류:', error)
+          console.warn('⚠️ 오프라인 상태 설정 오류:', error)
           return null
         }
       },

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { SupabaseOAuthService } from '../services/supabaseOAuthService'
+import { useAuth } from '../hooks/useAuth'
 
 const AuthCallback: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { login } = useAuth()
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
@@ -15,8 +17,30 @@ const AuthCallback: React.FC = () => {
         
         console.log('✅ OAuth 로그인 성공:', result)
         
+        // 기존 관리자 세션 완전 정리 (구글 로그인 시 일반 사용자로 로그인)
+        localStorage.removeItem('admin_token')
+        localStorage.removeItem('admin_session')
+        sessionStorage.removeItem('admin_token')
+        sessionStorage.removeItem('admin_session')
+        
+        console.log('✅ 어드민 세션 완전 정리 완료')
+        
         // 토큰을 localStorage에 저장
         localStorage.setItem('auth_token', result.token)
+        
+        // 사용자 정보를 AuthContext에 설정 (role을 명시적으로 'user'로 설정)
+        const authUser = {
+          id: result.user.id,
+          user_id: result.user.id,
+          name: result.user.name || result.user.email?.split('@')[0] || '사용자',
+          email: result.user.email,
+          role: 'user', // 명시적으로 user role 설정
+          profile: null
+        }
+        
+        console.log('✅ AuthCallback에서 설정할 사용자 정보:', authUser)
+        
+        await login(authUser)
         
         // 직접 리다이렉트 방식이므로 홈으로 이동
         window.location.href = '/'
