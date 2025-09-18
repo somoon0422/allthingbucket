@@ -848,6 +848,29 @@ const MyApplications: React.FC = () => {
                   (safeString(experienceData, 'campaign_name') || safeString(experienceData, 'product_name') || safeString(experienceData, 'experience_name', '체험단 정보 없음')) :
                   safeString(application, 'experience_name', '체험단 정보 없음')
                 
+                // 🔥 캠페인 마감 상태 체크
+                const isExpiredCampaign = experienceData ? (() => {
+                  // 1. 캠페인 상태 체크
+                  const campaignStatus = experienceData.status || 'active'
+                  if (campaignStatus === 'closed' || campaignStatus === 'inactive') {
+                    return true
+                  }
+                  
+                  // 2. 신청 마감일 체크
+                  const applicationEndDate = experienceData.application_end_date || 
+                                           experienceData.application_end ||
+                                           experienceData.end_date
+                  if (applicationEndDate) {
+                    const endDate = new Date(applicationEndDate)
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+                    endDate.setHours(0, 0, 0, 0)
+                    return today > endDate
+                  }
+                  
+                  return false
+                })() : false
+                
                 const brandName = experienceData ? safeString(experienceData, 'brand_name') : ''
                 const rewardPoints = experienceData ? (experienceData.rewards || experienceData.reward_points || experienceData.point_reward || 0) : 0
                 const imageUrl = experienceData ? safeString(experienceData, 'main_image_url') || safeString(experienceData, 'image_url') : ''
@@ -872,8 +895,13 @@ const MyApplications: React.FC = () => {
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
                             <div className="flex items-center space-x-2 sm:space-x-3">
                               <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
-                              <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2">
+                              <h3 className={`text-base sm:text-lg font-semibold line-clamp-2 ${isExpiredCampaign ? 'text-gray-500' : 'text-gray-900'}`}>
                                 {experienceName}
+                                {isExpiredCampaign && (
+                                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    마감
+                                  </span>
+                                )}
                               </h3>
                             </div>
                             <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${statusInfo.color} self-start`}>

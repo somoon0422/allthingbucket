@@ -185,7 +185,40 @@ const Wishlist: React.FC = () => {
               const fallbackImage = safeString(campaign, 'main_image_url') || safeString(campaign, 'image_url')
               const mainImage = mainImages.length > 0 ? mainImages[0] : fallbackImage
               
-              const status = safeString(campaign, 'status', 'active')
+              // 🔥 종합적인 마감 상태 체크 (실제 DB 스키마 기준)
+              const isExpiredCampaign = (() => {
+                // 1. 캠페인 상태 체크 (실제 필드명)
+                const campaignStatus = campaign.campaign_status || campaign.status || 'recruiting'
+                if (campaignStatus === 'completed' || campaignStatus === 'cancelled' || campaignStatus === 'closed' || campaignStatus === 'inactive') {
+                  return true
+                }
+                
+                // 2. 신청 마감일 체크 (실제 필드명)
+                const applicationEndDate = campaign.end_date || 
+                                         campaign.review_deadline ||
+                                         campaign.application_end_date || 
+                                         campaign.application_end
+                if (applicationEndDate) {
+                  const endDate = new Date(applicationEndDate)
+                  const today = new Date()
+                  today.setHours(0, 0, 0, 0)
+                  endDate.setHours(0, 0, 0, 0)
+                  if (today > endDate) {
+                    return true
+                  }
+                }
+                
+                // 3. 모집인원 체크 (실제 필드명)
+                const maxParticipants = campaign.recruitment_count || campaign.max_participants
+                const currentParticipants = campaign.current_applicants || campaign.current_participants || 0
+                if (maxParticipants && currentParticipants >= maxParticipants) {
+                  return true
+                }
+                
+                return false
+              })()
+              
+              const finalStatus = isExpiredCampaign ? 'closed' : (campaign.status || 'active')
               
               const getStatusColor = (status: string) => {
                 switch (status) {
@@ -194,6 +227,8 @@ const Wishlist: React.FC = () => {
                     return 'bg-green-100 text-green-800'
                   case 'closed':
                   case 'completed':
+                  case 'ended':
+                  case 'expired':
                     return 'bg-red-100 text-red-800'
                   case 'pending':
                     return 'bg-yellow-100 text-yellow-800'
@@ -209,6 +244,8 @@ const Wishlist: React.FC = () => {
                     return '모집중'
                   case 'closed':
                   case 'completed':
+                  case 'ended':
+                  case 'expired':
                     return '마감'
                   case 'pending':
                     return '준비중'
@@ -232,8 +269,8 @@ const Wishlist: React.FC = () => {
                     
                     {/* 상태 배지 */}
                     <div className="absolute top-3 left-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(status)}`}>
-                        {getStatusLabel(status)}
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(finalStatus)}`}>
+                        {getStatusLabel(finalStatus)}
                       </span>
                     </div>
                     

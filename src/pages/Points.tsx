@@ -18,6 +18,7 @@ const Points: React.FC = () => {
   }
   const [pointHistory, setPointHistory] = useState<any[]>([])
   const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([])
+  const [userPointsData, setUserPointsData] = useState<any>(null) // 실제 DB 데이터 저장
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false)
   const [withdrawalData, setWithdrawalData] = useState({
     requested_amount: '',
@@ -66,30 +67,53 @@ const Points: React.FC = () => {
         filter: { user_id: user.user_id }
       })
       
-      const [userPointsData, pointsHistory] = await Promise.all([
+      const [fetchedUserPointsData, pointsHistory] = await Promise.all([
         fetchUserPoints(user.user_id),
         fetchPointsHistory(user.user_id)
       ])
       
       setPointHistory(pointsHistory)
       setWithdrawalHistory(userWithdrawals)
+      setUserPointsData(fetchedUserPointsData) // 로컬 상태에 저장
       
       console.log('✅ 포인트 페이지 데이터 로딩 완료:', {
-        userPointsData,
+        fetchedUserPointsData,
         pointsHistory: pointsHistory.length,
         userWithdrawals: userWithdrawals.length,
         userPoints: userPoints
       })
       
-      // 🔍 디버깅: 현재 userPoints 상태 확인
+      // 🔍 디버깅: 현재 상태 확인
       console.log('🔍 현재 userPoints 상태:', userPoints)
-      console.log('🔍 userPointsData 반환값:', userPointsData)
+      console.log('🔍 로컬 userPointsData 상태:', fetchedUserPointsData)
+      
+      // 🔥 usePoints 훅의 상태도 업데이트
+      if (fetchedUserPointsData) {
+        setUserPoints(fetchedUserPointsData)
+        console.log('🔧 usePoints 상태 업데이트:', fetchedUserPointsData)
+      }
       
       // 🔍 포인트 히스토리에서 실제 포인트 금액 확인
       const completedPoints = pointsHistory.filter(p => p.payment_status === 'completed' || p.payment_status === '지급완료')
       const totalCompletedPoints = completedPoints.reduce((sum, p) => sum + (p.points_amount || 0), 0)
       console.log('🔍 완료된 포인트 히스토리:', completedPoints)
       console.log('🔍 완료된 포인트 총합:', totalCompletedPoints)
+      
+      // 🔥 출금 내역에서 총 출금 포인트 계산
+      const totalWithdrawnPoints = userWithdrawals
+        .filter((w: any) => w.status === 'completed' || w.status === 'approved')
+        .reduce((sum: any, w: any) => sum + (w.points_amount || 0), 0)
+      
+      // 🔥 실제 사용 가능한 포인트 계산
+      const actualAvailablePoints = Math.max(0, totalCompletedPoints - totalWithdrawnPoints)
+      
+      console.log('🔍 포인트 계산:', {
+        totalCompletedPoints,
+        totalWithdrawnPoints,
+        availablePoints: actualAvailablePoints,
+        userPointsAvailable: fetchedUserPointsData?.available_points,
+        userPointsTotal: fetchedUserPointsData?.total_points
+      })
       
     } catch (error) {
       console.error('❌ 데이터 로딩 실패:', error)
@@ -388,13 +412,26 @@ const Points: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">현재 잔액</p>
               <p className="text-2xl font-bold text-gray-900">
                 {(() => {
-                  // 포인트 히스토리에서 실제 지급 완료된 포인트 계산
+                  // 🔥 로컬 상태에서 직접 가져오기 (React 상태 문제 우회)
+                  const directAvailablePoints = userPointsData?.available_points || 0
+                  
+                  console.log('🔍 UI 렌더링 - 직접 데이터 사용:', {
+                    userPointsData,
+                    directAvailablePoints,
+                    userPointsState: userPoints
+                  })
+                  
+                  if (directAvailablePoints > 0) {
+                    console.log('✅ 직접 데이터에서 포인트 사용:', directAvailablePoints)
+                    return directAvailablePoints.toLocaleString()
+                  }
+                  
+                  // 백업: 포인트 히스토리에서 계산
                   const completedPoints = pointHistory.filter(p => 
                     p.payment_status === 'completed' || p.payment_status === '지급완료'
                   )
                   const totalCompletedPoints = completedPoints.reduce((sum, p) => sum + (p.points_amount || 0), 0)
                   
-                  // 출금된 포인트 계산
                   const withdrawnPoints = pointHistory.filter(p => 
                     p.points_type === 'withdrawn' || p.payment_status === '출금완료'
                   )
@@ -402,12 +439,10 @@ const Points: React.FC = () => {
                   
                   const availablePoints = Math.max(0, totalCompletedPoints - totalWithdrawnPoints)
                   
-                  console.log('🔍 포인트 계산:', {
+                  console.log('🔍 히스토리에서 포인트 계산:', {
                     totalCompletedPoints,
                     totalWithdrawnPoints,
-                    availablePoints,
-                    userPointsAvailable: userPoints?.available_points,
-                    userPointsTotal: userPoints?.total_points
+                    availablePoints
                   })
                   
                   return availablePoints.toLocaleString()
@@ -427,7 +462,15 @@ const Points: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">총 적립</p>
               <p className="text-2xl font-bold text-gray-900">
                 {(() => {
-                  // 포인트 히스토리에서 실제 지급 완료된 포인트 계산
+                  // 🔥 로컬 상태에서 직접 가져오기
+                  const directTotalPoints = userPointsData?.total_points || 0
+                  
+                  if (directTotalPoints > 0) {
+                    console.log('✅ 직접 데이터에서 총 적립 포인트 사용:', directTotalPoints)
+                    return directTotalPoints.toLocaleString()
+                  }
+                  
+                  // 백업: 포인트 히스토리에서 계산
                   const completedPoints = pointHistory.filter(p => 
                     p.payment_status === 'completed' || p.payment_status === '지급완료'
                   )
@@ -499,6 +542,15 @@ const Points: React.FC = () => {
             }
           }}
           disabled={(() => {
+            // 🔥 실제 DB 데이터 우선 사용
+            const directAvailablePoints = userPointsData?.available_points || 0
+            
+            if (directAvailablePoints > 0) {
+              console.log('🔍 출금 버튼 - 직접 데이터 사용:', directAvailablePoints)
+              return directAvailablePoints < 1000
+            }
+            
+            // 백업: 히스토리에서 계산
             const completedPoints = pointHistory.filter(p => 
               p.payment_status === 'completed' || p.payment_status === '지급완료'
             )
@@ -510,6 +562,7 @@ const Points: React.FC = () => {
             const totalWithdrawnPoints = withdrawnPoints.reduce((sum, p) => sum + Math.abs(p.points_amount || 0), 0)
             
             const availablePoints = Math.max(0, totalCompletedPoints - totalWithdrawnPoints)
+            console.log('🔍 출금 버튼 - 히스토리에서 계산:', availablePoints)
             return availablePoints < 1000
           })()}
           className="bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
@@ -517,6 +570,14 @@ const Points: React.FC = () => {
           <span>포인트 출금</span>
         </button>
         {(() => {
+          // 🔥 실제 DB 데이터 우선 사용
+          const directAvailablePoints = userPointsData?.available_points || 0
+          
+          if (directAvailablePoints > 0) {
+            return directAvailablePoints < 1000
+          }
+          
+          // 백업: 히스토리에서 계산
           const completedPoints = pointHistory.filter(p => 
             p.payment_status === 'completed' || p.payment_status === '지급완료'
           )
@@ -755,6 +816,15 @@ const Points: React.FC = () => {
                       required
                       min="1000"
                       max={(() => {
+                        // 🔥 실제 DB 데이터 우선 사용
+                        const directAvailablePoints = userPointsData?.available_points || 0
+                        
+                        if (directAvailablePoints > 0) {
+                          console.log('🔍 출금 모달 최대값 - 직접 데이터 사용:', directAvailablePoints)
+                          return directAvailablePoints
+                        }
+                        
+                        // 백업: 히스토리에서 계산
                         const completedPoints = pointHistory.filter(p => 
                           p.payment_status === 'completed' || p.payment_status === '지급완료'
                         )
@@ -776,6 +846,14 @@ const Points: React.FC = () => {
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     출금 가능: {(() => {
+                      // 🔥 실제 DB 데이터 우선 사용
+                      const directAvailablePoints = userPointsData?.available_points || 0
+                      
+                      if (directAvailablePoints > 0) {
+                        return directAvailablePoints.toLocaleString()
+                      }
+                      
+                      // 백업: 히스토리에서 계산
                       const completedPoints = pointHistory.filter(p => 
                         p.payment_status === 'completed' || p.payment_status === '지급완료'
                       )

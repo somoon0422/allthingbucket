@@ -10,7 +10,8 @@ export const useExperiences = () => {
     try {
       setLoading(true)
       
-      const campaigns = await (dataService.entities as any).campaigns.list()
+      // 🔥 성능 최적화: 제한된 수량만 가져오기
+      const campaigns = await (dataService.entities as any).campaigns.list({ limit: 20 })
       return campaigns || []
     } catch (error) {
       console.error('체험단 목록 조회 실패:', error)
@@ -76,23 +77,49 @@ export const useExperiences = () => {
         return { success: false, reason: 'duplicate', existingApplication: duplicateCheck.existingApplication }
       }
 
-      // 모집인원 체크
+      // 캠페인 상태 및 마감일 체크
       try {
         const experience = await (dataService.entities as any).campaigns.get(experienceId)
         
-        if (experience && experience.max_participants) {
-          const applications = await (dataService.entities as any).user_applications.list()
-          const approvedApplications = applications.filter((app: any) => 
-            app.campaign_id === experienceId && app.status === 'approved'
-          )
+        if (experience) {
+          // 1. 캠페인 상태 체크
+          const campaignStatus = experience.status || 'active'
+          if (campaignStatus === 'closed' || campaignStatus === 'inactive') {
+            toast.error('마감된 캠페인입니다')
+            return { success: false, reason: 'closed_status' }
+          }
           
-          if (approvedApplications.length >= experience.max_participants) {
-            toast.error('모집인원이 마감되었습니다')
-            return { success: false, reason: 'full' }
+          // 2. 신청 마감일 체크
+          const applicationEndDate = experience.application_end_date || 
+                                   experience.application_end ||
+                                   experience.end_date
+          if (applicationEndDate) {
+            const endDate = new Date(applicationEndDate)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            endDate.setHours(0, 0, 0, 0)
+            
+            if (today > endDate) {
+              toast.error('신청 마감일이 지났습니다')
+              return { success: false, reason: 'deadline_passed' }
+            }
+          }
+          
+          // 3. 모집인원 체크
+          if (experience.max_participants) {
+            const applications = await (dataService.entities as any).user_applications.list()
+            const approvedApplications = applications.filter((app: any) => 
+              app.campaign_id === experienceId && app.status === 'approved'
+            )
+            
+            if (approvedApplications.length >= experience.max_participants) {
+              toast.error('모집인원이 마감되었습니다')
+              return { success: false, reason: 'full' }
+            }
           }
         }
       } catch (error) {
-        console.warn('모집인원 체크 실패:', error)
+        console.warn('캠페인 상태 체크 실패:', error)
       }
 
       // 신청 데이터 생성

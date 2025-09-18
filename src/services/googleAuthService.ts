@@ -21,17 +21,24 @@ export class GoogleAuthService {
   
   // Google OAuth URL 생성
   static getGoogleAuthUrl(): string {
-    // 🔥 모든 환경에서 allthingbucket.com 사용 (Google Cloud Console 설정과 일치)
-    const redirectUri = 'https://allthingbucket.com/auth/google/callback'
+    // 환경에 따른 리다이렉트 URI 설정
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    const redirectUri = isDevelopment 
+      ? `${window.location.origin}/auth/google/callback`
+      : 'https://allthingbucket.com/auth/google/callback'
     
     const scope = 'openid email profile'
     
     const clientId = this.getGoogleClientId()
     
-    console.log('Google OAuth 설정:', {
+    console.log('🔍 Google OAuth 설정 상세:', {
       client_id: clientId,
       redirect_uri: redirectUri,
-      current_origin: window.location.origin
+      current_origin: window.location.origin,
+      current_hostname: window.location.hostname,
+      current_port: window.location.port,
+      current_href: window.location.href,
+      isDevelopment: isDevelopment
     })
     
     const params = new URLSearchParams({

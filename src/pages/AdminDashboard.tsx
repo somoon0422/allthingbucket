@@ -7,7 +7,7 @@ import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
 import ShippingModal from '../components/ShippingModal'
-import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, Send, User, Calculator, Truck, Package} from 'lucide-react'
+import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, User, Calculator, Truck, Package} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const AdminDashboard: React.FC = () => {
@@ -792,10 +792,71 @@ const AdminDashboard: React.FC = () => {
       )
       setNotifications(sortedNotifications)
       
-      const unreadCount = sortedNotifications.filter((n: any) => !n.read).length
+      const unreadCount = sortedNotifications.filter((n: any) => !n.is_read).length
       setUnreadNotifications(unreadCount)
     } catch (error) {
       console.error('알림 로드 실패:', error)
+    }
+  }
+
+  // 알림 읽음 처리 (클릭 이벤트에서 사용됨)
+  const markNotificationAsRead = async (notificationId: string) => {
+    try {
+      await (dataService.entities as any).admin_notifications.update(notificationId, {
+        is_read: true
+      })
+      
+      // 로컬 상태 업데이트
+      setNotifications(prev => prev.map(notification => 
+        notification.id === notificationId 
+          ? { ...notification, is_read: true, read: true }
+          : notification
+      ))
+      
+      // 미읽음 개수 업데이트
+      setUnreadNotifications(prev => Math.max(0, prev - 1))
+      
+      console.log('✅ 알림 읽음 처리 완료:', notificationId)
+    } catch (error) {
+      console.error('❌ 알림 읽음 처리 실패:', error)
+      toast.error('알림 처리에 실패했습니다')
+    }
+  }
+
+  // 모든 알림 읽음 처리
+  const markAllNotificationsAsRead = async () => {
+    try {
+      const unreadNotificationIds = notifications
+        .filter(n => !n.is_read)
+        .map(n => n.id)
+      
+      if (unreadNotificationIds.length === 0) {
+        toast('읽지 않은 알림이 없습니다', { icon: 'ℹ️' })
+        return
+      }
+      
+      // 모든 미읽음 알림을 읽음으로 처리
+      await Promise.all(
+        unreadNotificationIds.map(id => 
+          (dataService.entities as any).admin_notifications.update(id, {
+            is_read: true
+          })
+        )
+      )
+      
+      // 로컬 상태 업데이트
+      setNotifications(prev => prev.map(notification => ({
+        ...notification,
+        is_read: true,
+        read: true
+      })))
+      
+      setUnreadNotifications(0)
+      toast.success(`${unreadNotificationIds.length}개의 알림을 모두 읽음 처리했습니다`)
+      
+    } catch (error) {
+      console.error('❌ 모든 알림 읽음 처리 실패:', error)
+      toast.error('알림 처리에 실패했습니다')
     }
   }
 
@@ -1471,12 +1532,22 @@ const AdminDashboard: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900">관리자 알림</h2>
-              <button
-                onClick={() => setShowNotifications(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {unreadNotifications > 0 && (
+                  <button
+                    onClick={markAllNotificationsAsRead}
+                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors"
+                  >
+                    모두 읽음
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             
             {notifications.length === 0 ? (
@@ -1486,18 +1557,27 @@ const AdminDashboard: React.FC = () => {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-4 rounded-lg border ${
-                      notification.read ? 'bg-gray-50' : 
-                      notification.type === 'point_request' ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'
+                    onClick={() => !notification.is_read && markNotificationAsRead(notification.id)}
+                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                      notification.is_read ? 'bg-gray-50' : 
+                      notification.type === 'point_request' ? 'bg-orange-50 border-orange-200 hover:bg-orange-100' : 'bg-blue-50 border-blue-200 hover:bg-blue-100'
                     }`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
+                          {!notification.is_read && (
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          )}
                           <h3 className="font-medium text-gray-900">{notification.title}</h3>
                           {notification.type === 'point_request' && (
                             <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
                               포인트 요청
+                            </span>
+                          )}
+                          {notification.type === 'email_sent' && (
+                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                              이메일 발송
                             </span>
                           )}
                         </div>

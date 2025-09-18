@@ -295,13 +295,50 @@ const Experiences: React.FC = () => {
 
                   {/* 상태 배지와 찜하기 */}
                   <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center space-x-2">
-                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
-                      (experience.status === 'active' || experience.status === 'recruiting')
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-500 text-white'
-                    }`}>
-                      {(experience.status === 'active' || experience.status === 'recruiting') ? '모집중' : '마감'}
-                    </span>
+                    {(() => {
+                      // 🔥 종합적인 마감 상태 체크 (실제 DB 스키마 기준)
+                      const isExpiredCampaign = (() => {
+                        // 1. 캠페인 상태 체크 (실제 필드명)
+                        const campaignStatus = experience.campaign_status || experience.status || 'recruiting'
+                        if (campaignStatus === 'completed' || campaignStatus === 'cancelled' || campaignStatus === 'closed' || campaignStatus === 'inactive') {
+                          return true
+                        }
+                        
+                        // 2. 신청 마감일 체크 (실제 필드명)
+                        const applicationEndDate = experience.end_date || 
+                                                 experience.review_deadline ||
+                                                 experience.application_end_date || 
+                                                 experience.application_end
+                        if (applicationEndDate) {
+                          const endDate = new Date(applicationEndDate)
+                          const today = new Date()
+                          today.setHours(0, 0, 0, 0)
+                          endDate.setHours(0, 0, 0, 0)
+                          if (today > endDate) {
+                            return true
+                          }
+                        }
+                        
+                        // 3. 모집인원 체크 (실제 필드명)
+                        const maxParticipants = experience.recruitment_count || experience.max_participants
+                        const currentParticipants = experience.current_applicants || experience.current_participants || 0
+                        if (maxParticipants && currentParticipants >= maxParticipants) {
+                          return true
+                        }
+                        
+                        return false
+                      })()
+                      
+                      return (
+                        <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
+                          isExpiredCampaign
+                            ? 'bg-gray-500 text-white'
+                            : 'bg-green-500 text-white'
+                        }`}>
+                          {isExpiredCampaign ? '마감' : '모집중'}
+                        </span>
+                      )
+                    })()}
                     {isAuthenticated && (
                       <button
                         onClick={(e) => {

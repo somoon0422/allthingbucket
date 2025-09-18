@@ -478,7 +478,7 @@ export const dataService = {
 
     // 캠페인
     campaigns: {
-      list: async (options?: { select?: string }) => {
+      list: async (options?: { select?: string; limit?: number }) => {
         try {
           console.log('🔥 Supabase campaigns.list 호출됨', options)
           
@@ -487,16 +487,41 @@ export const dataService = {
             return []
           }
           
-          let query = supabase.from('campaigns').select(options?.select || '*')
+          // 🔥 성능 최적화: 기본 필드만 조회 (존재하지 않는 필드 제외)
+          const selectFields = options?.select || 'id, campaign_name, product_name, brand_name, description, created_at'
+          let query = supabase.from('campaigns').select(selectFields)
+          
+          // 제한된 수량만 가져오기 (기본 50개)
+          const limit = options?.limit || 50
+          query = query.limit(limit)
           
           const { data, error } = await query.order('created_at', { ascending: false })
           
           if (error) {
             console.error('❌ campaigns 조회 실패:', error)
+            
+            // 🔍 실제 테이블 구조 확인을 위해 전체 필드 조회 시도
+            try {
+              console.log('🔍 실제 campaigns 테이블 구조 확인 중...')
+              const { data: sampleData, error: sampleError } = await supabase
+                .from('campaigns')
+                .select('*')
+                .limit(1)
+              
+              if (sampleData && sampleData.length > 0) {
+                console.log('🔍 실제 campaigns 테이블 구조:', Object.keys(sampleData[0]))
+                console.log('🔍 첫 번째 레코드 샘플:', sampleData[0])
+              } else {
+                console.log('🔍 campaigns 테이블이 비어있거나 접근할 수 없음')
+              }
+            } catch (structureError) {
+              console.error('❌ 테이블 구조 확인 실패:', structureError)
+            }
+            
             return []
           }
           
-          console.log('✅ Supabase campaigns.list 결과:', data)
+          console.log('✅ Supabase campaigns.list 결과:', data?.length, '개')
           return data || []
         } catch (error) {
           console.error('❌ campaigns 조회 실패:', error)
@@ -876,6 +901,106 @@ export const dataService = {
           return true
         } catch (error) {
           console.error('❌ user_reviews 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
+    // 관리자
+    admins: {
+      list: async () => {
+        try {
+          console.log('🔥 Supabase admins.list 호출됨')
+          const { data, error } = await supabase
+            .from('admins')
+            .select('*')
+            .order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ admins 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase admins.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ admins 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('admins')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle()
+          
+          if (error) {
+            console.error('❌ admins 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ admins 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('admins')
+            .insert([data])
+            .select()
+            .maybeSingle()
+          
+          if (error) {
+            console.error('❌ admins 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ admins 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('admins')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .maybeSingle()
+          
+          if (error) {
+            console.error('❌ admins 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ admins 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('admins')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ admins 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ admins 삭제 실패:', error)
           return false
         }
       }

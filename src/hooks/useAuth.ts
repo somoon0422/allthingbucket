@@ -222,15 +222,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       
       // Supabase에서 관리자 정보 조회
-      const { data: admins, error: adminsError } = await supabase
-        .from('admin_users')
-        .select('*')
-      
-      if (adminsError) {
-        throw new Error('관리자 정보 조회에 실패했습니다')
-      }
-      
-      const admin = admins?.find((a: any) => a.username === adminName)
+      const admins = await dataService.entities.admins.list()
+      const admin = admins.find((a: any) => a.username === adminName)
       
       console.log('🔍 관리자 조회 결과:', { adminName, admins, foundAdmin: admin })
       
@@ -243,7 +236,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('비활성화된 관리자 계정입니다')
       }
       
-      // 비밀번호 확인
+      // 비밀번호 확인 (password 필드 사용)
       if (admin.password !== password) {
         throw new Error('비밀번호가 일치하지 않습니다')
       }
