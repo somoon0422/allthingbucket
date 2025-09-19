@@ -7,6 +7,7 @@ import ReviewSubmissionManager from '../components/ReviewSubmissionManager'
 import {Calendar, Gift, Clock, AlertCircle, CheckCircle, XCircle, Eye, FileText, Coins, User, Instagram, MessageSquare, ExternalLink, Trash2, Edit3, CalendarDays, RefreshCw, Package} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dataService } from '../lib/dataService'
+import ChatBot from '../components/ChatBot'
 
 // 🔥 ULTRA SAFE 배열 변환 - undefined.length 완전 차단
 function ultraSafeArray<T>(value: any): T[] {
@@ -1397,6 +1398,8 @@ const MyApplications: React.FC = () => {
         </div>
       )}
 
+      {/* 채팅봇 */}
+      <ChatBot />
     </div>
   )
 }

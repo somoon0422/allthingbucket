@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, Phone, Mail, Minimize2, Maximize2, RotateCcw } from 'lucide-react'
+import { MessageCircle, X, Send, Phone, Mail, Minimize2, Maximize2, RotateCcw, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../lib/dataService'
 
@@ -20,6 +20,10 @@ const ChatBot: React.FC = () => {
   const [currentChatRoom, setCurrentChatRoom] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
+  const [showBackButton, setShowBackButton] = useState(false)
+  const [chatRooms, setChatRooms] = useState<any[]>([])
+  const [showChatList, setShowChatList] = useState(false) // 채팅 리스트 표시 여부
+  const [showMainMenu, setShowMainMenu] = useState(true) // 메인 메뉴 표시 여부
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
   // 빠른 응답 버튼들
@@ -33,7 +37,7 @@ const ChatBot: React.FC = () => {
   // 채팅방 초기화 또는 조회
   useEffect(() => {
     if (user && isOpen) {
-      initializeChatRoom()
+      loadChatRooms()
       // 온라인 상태 설정
       setUserOnline()
     }
@@ -61,119 +65,103 @@ const ChatBot: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // 온라인 상태 관리 함수들
+  // 온라인 상태 관리 함수들 (RLS 정책 오류 해결)
   const setUserOnline = async () => {
     if (!user) return
-    try {
-      await dataService.entities.user_online_status.setOnline(user.user_id)
-    } catch (error) {
-      console.warn('⚠️ 온라인 상태 설정 오류 (RLS 정책으로 인한 무시):', error)
-    }
+    // RLS 정책 오류로 인해 온라인 상태 관리 비활성화
   }
 
   const setUserOffline = async () => {
     if (!user) return
-    try {
-      await dataService.entities.user_online_status.setOffline(user.user_id)
-    } catch (error) {
-      console.warn('⚠️ 오프라인 상태 설정 오류 (RLS 정책으로 인한 무시):', error)
-    }
+    // RLS 정책 오류로 인해 온라인 상태 관리 비활성화
   }
 
   const updateLastSeen = async () => {
     if (!user) return
-    try {
-      await dataService.entities.user_online_status.updateLastSeen(user.user_id)
-    } catch (error) {
-      console.error('마지막 접속 시간 업데이트 오류:', error)
-    }
+    // RLS 정책 오류로 인해 마지막 접속 시간 업데이트 비활성화
   }
 
-  const initializeChatRoom = async () => {
+  // 채팅방 목록 로드
+  const loadChatRooms = async () => {
     if (!user) return
 
     try {
       setIsLoading(true)
       
-      // 기존 채팅방 조회
-      const existingRooms = await dataService.entities.chat_rooms.list({
+      console.log('🔍 채팅방 로드 시작 - 사용자 ID:', user.user_id)
+      
+      // 사용자의 모든 채팅방 조회 (최신순)
+      const allRooms = await dataService.entities.chat_rooms.list({
         filter: { user_id: user.user_id }
       })
+      
+      console.log('🔍 로드된 전체 채팅방:', allRooms)
+      console.log('🔍 채팅방 개수:', allRooms?.length || 0)
+      
+      // 실제 해당 사용자의 채팅방만 필터링 (추가 안전장치)
+      const userChatRooms = (allRooms || []).filter((room: any) => 
+        room.user_id === user.user_id
+      )
+      
+      console.log('🔍 사용자 필터링 후 채팅방:', userChatRooms)
+      console.log('🔍 필터링 후 개수:', userChatRooms.length)
 
-      let chatRoom = existingRooms.find(room => room.status === 'active')
-
-      // 기존 채팅방이 없으면 새로 생성
-      if (!chatRoom) {
-        chatRoom = await dataService.entities.chat_rooms.create({
-          user_id: user.user_id,
-          user_name: user.name || user.email || '사용자',
-          user_email: user.email,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-      }
-
-      setCurrentChatRoom(chatRoom)
-
-      // 기존 대화 조회
-      if (chatRoom) {
-        const existingConversations = await dataService.entities.chat_conversations.list({
-          filter: { chat_room_id: chatRoom.id }
-        })
-
-        // 모든 대화의 메시지를 하나의 배열로 합치기
-        const allMessages: ChatMessage[] = []
-        
-        existingConversations.forEach(conversation => {
-          if (conversation.conversation_data && Array.isArray(conversation.conversation_data)) {
-            conversation.conversation_data.forEach((msg: any) => {
-              allMessages.push({
-                id: msg.id,
-                text: msg.message_text,
-                sender: msg.sender_type as 'user' | 'admin',
-                timestamp: new Date(msg.timestamp),
-                isRead: true // 기존 메시지는 읽음 처리
-              })
+      // 각 채팅방의 마지막 메시지 정보 추가
+      const roomsWithLastMessage = await Promise.all(
+        userChatRooms.map(async (room: any) => {
+          try {
+            const conversations = await dataService.entities.chat_conversations.list({
+              filter: { chat_room_id: room.id }
             })
+            
+            let lastMessage = ''
+            let lastMessageTime = room.created_at
+            
+            if (conversations.length > 0) {
+              // 가장 최근 대화 찾기
+              const latestConversation = conversations.sort((a: any, b: any) => 
+                new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+              )[0]
+              
+              if (latestConversation.conversation_data && latestConversation.conversation_data.length > 0) {
+                const lastMsg = latestConversation.conversation_data[latestConversation.conversation_data.length - 1]
+                lastMessage = lastMsg.message_text
+                lastMessageTime = lastMsg.timestamp
+              }
+            }
+            
+            return {
+              ...room,
+              lastMessage: lastMessage || '새 채팅',
+              lastMessageTime
+            }
+          } catch (error) {
+            console.error('채팅방 정보 로드 오류:', error)
+            return {
+              ...room,
+              lastMessage: '새 채팅',
+              lastMessageTime: room.created_at
+            }
           }
         })
+      )
 
-        // 시간순으로 정렬
-        allMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-        setMessages(allMessages)
+      // 중복 제거 (ID 기준)
+      const uniqueRooms = roomsWithLastMessage.filter((room, index, self) => 
+        index === self.findIndex(r => r.id === room.id || r._id === room._id)
+      )
+      
+      // 최신 메시지 순으로 정렬
+      uniqueRooms.sort((a, b) => 
+        new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+      )
 
-        // 첫 메시지가 없으면 환영 메시지가 포함된 대화 생성
-        if (allMessages.length === 0) {
-          const welcomeConversation = await dataService.entities.chat_conversations.create({
-            chat_room_id: chatRoom.id,
-            conversation_data: [{
-              id: 'welcome_msg',
-              sender_type: 'admin',
-              sender_name: '올띵버킷 고객센터',
-              message_text: '안녕하세요! 올띵버킷 고객센터입니다. 무엇을 도와드릴까요? 😊',
-              timestamp: new Date().toISOString()
-            }],
-            message_count: 1,
-            first_message_at: new Date().toISOString(),
-            last_message_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
+      console.log('🔍 중복 제거 후 채팅방:', uniqueRooms)
+      console.log('🔍 최종 채팅방 개수:', uniqueRooms.length)
 
-          if (welcomeConversation) {
-            setMessages([{
-              id: 'welcome_msg',
-              text: '안녕하세요! 올띵버킷 고객센터입니다. 무엇을 도와드릴까요? 😊',
-              sender: 'admin',
-              timestamp: new Date(),
-              isRead: true
-            }])
-          }
-        }
-      }
+      setChatRooms(uniqueRooms)
     } catch (error) {
-      console.error('채팅방 초기화 오류:', error)
+      console.error('채팅방 목록 로드 오류:', error)
     } finally {
       setIsLoading(false)
     }
@@ -237,6 +225,8 @@ const ChatBot: React.FC = () => {
 
         setMessages(prev => [...prev, userMessage])
         setInputMessage('')
+        setShowBackButton(true) // 메시지 전송 후 뒤로가기 버튼 표시
+        setShowMainMenu(false) // 메인 메뉴 숨기기
         
         // 타이핑 효과를 위한 지연
         setTimeout(() => {
@@ -262,46 +252,151 @@ const ChatBot: React.FC = () => {
 
   // 채팅 종료 함수
   const handleCloseChat = async () => {
-    if (currentChatRoom && user) {
-      try {
-        // 채팅방 상태를 종료로 변경
-        await dataService.entities.chat_rooms.update(currentChatRoom.id, {
-          status: 'closed',
-          updated_at: new Date().toISOString()
-        })
-        
-        // 오프라인 상태 설정
-        await setUserOffline()
-        
-        // 상태 초기화
-        setMessages([])
-        setCurrentChatRoom(null)
-        setIsOpen(false)
-        setIsMinimized(false)
-      } catch (error) {
-        console.error('채팅 종료 오류:', error)
+    // 오프라인 상태 설정
+    await setUserOffline()
+    
+    // 상태 초기화
+    setMessages([])
+    setCurrentChatRoom(null)
+    setIsOpen(false)
+    setIsMinimized(false)
+    setShowBackButton(false)
+    setShowChatList(false)
+    setShowMainMenu(true)
+    setChatRooms([])
+  }
+
+  // 채팅 초기화 함수 (새 채팅 시작)
+  const handleResetChat = async () => {
+    await startNewChat()
+  }
+
+  // 뒤로가기 함수 (메인 메뉴로 돌아가기)
+  const handleGoBack = () => {
+    setMessages([])
+    setCurrentChatRoom(null)
+    setShowBackButton(false)
+    setShowChatList(false)
+    setShowMainMenu(true) // 메인 메뉴 표시
+    setInputMessage('')
+  }
+
+  // 이전 채팅 보기
+  const showPreviousChats = () => {
+    setShowMainMenu(false)
+    setShowChatList(true)
+    setShowBackButton(true)
+  }
+
+  // 채팅방 선택 함수
+  const selectChatRoom = async (room: any) => {
+    setCurrentChatRoom(room)
+    setShowChatList(false)
+    setShowMainMenu(false)
+    setShowBackButton(true)
+    
+    // 선택된 채팅방의 메시지 로드
+    await loadChatRoomMessages(room.id)
+  }
+
+  // 새 채팅 시작 함수
+  const startNewChat = async () => {
+    setShowMainMenu(false)
+    setShowChatList(false)
+    setShowBackButton(true)
+    await createNewChatRoom()
+  }
+
+  // 새 채팅방 생성
+  const createNewChatRoom = async () => {
+    if (!user) return
+
+    try {
+      setIsLoading(true)
+      
+      console.log('🔄 새 채팅방 생성 시작')
+      
+      // 새 채팅방 생성 (기존 채팅방은 그대로 두기)
+      const newChatRoom = await dataService.entities.chat_rooms.create({
+        user_id: user.user_id,
+        user_name: user.name || user.email || '사용자',
+        user_email: user.email,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      
+      console.log('✅ 새 채팅방 생성 완료:', newChatRoom)
+
+      setCurrentChatRoom(newChatRoom)
+
+      // 환영 메시지 생성 (고유 ID 사용)
+      const welcomeMessageId = `welcome_${newChatRoom.id}_${Date.now()}`
+      const welcomeConversation = await dataService.entities.chat_conversations.create({
+        chat_room_id: newChatRoom.id,
+        conversation_data: [{
+          id: welcomeMessageId,
+          sender_type: 'admin',
+          sender_name: '올띵버킷 고객센터',
+          message_text: '안녕하세요! 올띵버킷 고객센터입니다. 무엇을 도와드릴까요? 😊',
+          timestamp: new Date().toISOString()
+        }],
+        message_count: 1,
+        first_message_at: new Date().toISOString(),
+        last_message_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+      if (welcomeConversation) {
+        setMessages([{
+          id: welcomeMessageId,
+          text: '안녕하세요! 올띵버킷 고객센터입니다. 무엇을 도와드릴까요? 😊',
+          sender: 'admin',
+          timestamp: new Date(),
+          isRead: true
+        }])
       }
-    } else {
-      setIsOpen(false)
-      setIsMinimized(false)
+    } catch (error) {
+      console.error('새 채팅방 생성 오류:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  // 채팅 초기화 함수
-  const handleResetChat = async () => {
-    if (currentChatRoom && user) {
-      try {
-        // 기존 채팅방을 종료 상태로 변경
-        await dataService.entities.chat_rooms.update(currentChatRoom.id, {
-          status: 'closed',
-          updated_at: new Date().toISOString()
-        })
-        
-        // 새로운 채팅방 생성
-        await initializeChatRoom()
-      } catch (error) {
-        console.error('채팅 초기화 오류:', error)
-      }
+  // 채팅방 메시지 로드
+  const loadChatRoomMessages = async (chatRoomId: string) => {
+    try {
+      setIsLoading(true)
+      
+      const existingConversations = await dataService.entities.chat_conversations.list({
+        filter: { chat_room_id: chatRoomId }
+      })
+
+      // 모든 대화의 메시지를 하나의 배열로 합치기
+      const allMessages: ChatMessage[] = []
+      
+      existingConversations.forEach(conversation => {
+        if (conversation.conversation_data && Array.isArray(conversation.conversation_data)) {
+          conversation.conversation_data.forEach((msg: any) => {
+            allMessages.push({
+              id: msg.id,
+              text: msg.message_text,
+              sender: msg.sender_type as 'user' | 'admin',
+              timestamp: new Date(msg.timestamp),
+              isRead: true
+            })
+          })
+        }
+      })
+
+      // 시간순으로 정렬
+      allMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+      setMessages(allMessages)
+    } catch (error) {
+      console.error('채팅방 메시지 로드 오류:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -321,7 +416,7 @@ const ChatBot: React.FC = () => {
     }
     
     if (message.includes('계좌') || message.includes('인증')) {
-      return "계좌 인증은 출금 요청 시 1원 입금을 통해 진행됩니다.\n\n입금자명을 정확히 확인해주시고, 문제가 있으시면 고객센터로 연락주세요."
+      return "계좌 인증은 출금 요청 시 NICE API를 통해 진행됩니다.\n\n실명인증과 계좌인증이 동시에 처리되며, 문제가 있으시면 고객센터로 연락주세요."
     }
     
     return "죄송합니다. 더 자세한 문의는 고객센터로 연락주세요!\n\n📞 전화: 01022129245\n💬 카카오톡: @올띵버킷\n📧 이메일: support@allthingbucket.com"
@@ -351,11 +446,20 @@ const ChatBot: React.FC = () => {
       {/* 채팅봇 모달 */}
       {isOpen && (
         <div className={`fixed bottom-6 right-6 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col transition-all duration-300 ${
-          isMinimized ? 'w-80 h-16' : 'w-80 h-96'
+          isMinimized ? 'w-96 h-16' : 'w-96 h-[500px]'
         }`}>
           {/* 헤더 */}
           <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center space-x-2">
+              {showBackButton && (
+                <button
+                  onClick={handleGoBack}
+                  className="text-white hover:text-gray-200 transition-colors mr-2"
+                  title="채팅 목록으로"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
               <div className="w-3 h-3 bg-green-300 rounded-full animate-pulse"></div>
               <MessageCircle className="w-5 h-5" />
               <span className="font-medium">올띵버킷 고객센터</span>
@@ -385,86 +489,175 @@ const ChatBot: React.FC = () => {
             </div>
           </div>
 
-          {/* 메시지 영역 */}
+          {/* 메인 메뉴, 채팅 리스트 또는 메시지 영역 */}
           {!isMinimized && (
-            <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50">
-              {isLoading && messages.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
-                  <p>채팅방을 불러오는 중...</p>
+            <div className="flex-1 overflow-y-auto bg-gray-50">
+              {showMainMenu ? (
+                // 메인 메뉴 표시
+                <div className="p-6">
+                  <div className="space-y-4">
+                    {/* 환영 메시지 */}
+                    <div className="text-center mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">무엇을 도와드릴까요?</h3>
+                      <p className="text-sm text-gray-600">아래 주제를 선택하거나 직접 채팅을 시작하세요</p>
+                    </div>
+                    
+                    {/* 빠른 문의 버튼들 */}
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-600 font-medium">빠른 문의</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {quickReplies.map((reply, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              startNewChat()
+                              setTimeout(() => {
+                                handleSendMessage(reply.text)
+                              }, 500)
+                            }}
+                            className="flex items-center space-x-2 p-3 bg-transparent border-2 border-green-600 rounded-lg text-sm text-green-900 font-semibold hover:bg-green-100 hover:border-green-700 hover:text-green-950 transition-all duration-200 shadow-sm"
+                          >
+                            <span className="text-lg">{reply.emoji}</span>
+                            <span>{reply.text}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* 채팅 시작하기 */}
+                    <div className="space-y-2">
+                      <button
+                        onClick={startNewChat}
+                        className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center space-x-2 font-medium"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        <span>새 채팅 시작하기</span>
+                      </button>
+                      
+                      {/* 이전 채팅 버튼 */}
+                      {chatRooms.length > 0 && (
+                        <button
+                          onClick={showPreviousChats}
+                          className="w-full p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        >
+                          이전 채팅 보기 ({chatRooms.length}개)
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : showChatList ? (
+                // 채팅 리스트 표시
+                <div className="p-4">
+                  <div className="space-y-2">
+                    {/* 채팅방 목록 */}
+                    {isLoading ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
+                        <p>채팅 목록을 불러오는 중...</p>
+                      </div>
+                    ) : chatRooms.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-900 mb-3">이전 채팅</p>
+                        {chatRooms.map((room) => (
+                          <button
+                            key={room.id}
+                            onClick={() => selectChatRoom(room)}
+                            className="w-full p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">올띵버킷 고객센터</p>
+                                <p className="text-xs text-gray-600 truncate mt-1">
+                                  {room.lastMessage.length > 40 
+                                    ? room.lastMessage.substring(0, 40) + '...' 
+                                    : room.lastMessage
+                                  }
+                                </p>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(room.lastMessageTime).toLocaleDateString('ko-KR', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <MessageCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm">이전 채팅이 없습니다</p>
+                        <p className="text-xs">새 채팅을 시작해보세요!</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
-                <>
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
-                    >
-                      <div
-                        className={`max-w-xs px-4 py-3 rounded-2xl text-sm shadow-sm ${
-                          message.sender === 'user'
-                            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white rounded-br-md'
-                            : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md'
-                        }`}
-                      >
-                        <div className="whitespace-pre-line leading-relaxed">{message.text}</div>
-                        <div className={`text-xs mt-2 ${
-                          message.sender === 'user' ? 'text-green-100' : 'text-gray-500'
-                        }`}>
-                          {message.timestamp.toLocaleTimeString('ko-KR', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                          {message.sender === 'admin' && !message.isRead && (
-                            <span className="ml-2 text-blue-500">●</span>
-                          )}
-                        </div>
-                      </div>
+                // 메시지 영역 표시
+                <div className="p-4 space-y-3">
+                  {isLoading && messages.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
+                      <p>채팅방을 불러오는 중...</p>
                     </div>
-                  ))}
-                  
-                  {/* 타이핑 인디케이터 */}
-                  {isTyping && (
-                    <div className="flex justify-start animate-fadeIn">
-                      <div className="bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-                        <div className="flex items-center space-x-1">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  ) : (
+                    <>
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
+                        >
+                          <div
+                            className={`max-w-xs px-4 py-3 rounded-2xl text-sm shadow-sm ${
+                              message.sender === 'user'
+                                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white rounded-br-md'
+                                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md'
+                            }`}
+                          >
+                            <div className="whitespace-pre-line leading-relaxed">{message.text}</div>
+                            <div className={`text-xs mt-2 ${
+                              message.sender === 'user' ? 'text-green-100' : 'text-gray-500'
+                            }`}>
+                              {message.timestamp.toLocaleTimeString('ko-KR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                              {message.sender === 'admin' && !message.isRead && (
+                                <span className="ml-2 text-blue-500">●</span>
+                              )}
+                            </div>
                           </div>
-                          <span className="text-xs text-gray-500 ml-2">상담원이 입력 중...</span>
                         </div>
-                      </div>
-                    </div>
+                      ))}
+                      
+                      {/* 타이핑 인디케이터 */}
+                      {isTyping && (
+                        <div className="flex justify-start animate-fadeIn">
+                          <div className="bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                            <div className="flex items-center space-x-1">
+                              <div className="flex space-x-1">
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                              </div>
+                              <span className="text-xs text-gray-500 ml-2">상담원이 입력 중...</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
-                </>
+                  <div ref={messagesEndRef} />
+                </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
           )}
 
-          {/* 빠른 응답 버튼들 */}
-          {!isMinimized && messages.length <= 1 && (
-            <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
-              <p className="text-xs text-gray-600 mb-2">빠른 문의:</p>
-              <div className="flex flex-wrap gap-2">
-                {quickReplies.map((reply, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSendMessage(reply.text)}
-                    className="flex items-center space-x-1 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs text-gray-700 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200"
-                  >
-                    <span>{reply.emoji}</span>
-                    <span>{reply.text}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* 입력 영역 */}
-          {!isMinimized && (
+          {!isMinimized && !showChatList && !showMainMenu && (
             <div className="p-4 border-t border-gray-200 bg-white">
               <div className="flex space-x-2">
                 <input
@@ -493,11 +686,11 @@ const ChatBot: React.FC = () => {
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <div className="flex justify-center space-x-6 text-xs text-gray-600">
                   <a 
-                    href="tel:1588-0000" 
+                    href="tel:01022129245" 
                     className="flex items-center space-x-1 hover:text-green-600 transition-colors"
                   >
                     <Phone className="w-3 h-3" />
-                    <span>1588-0000</span>
+                    <span>전화</span>
                   </a>
                   <a 
                     href="mailto:support@allthingbucket.com" 

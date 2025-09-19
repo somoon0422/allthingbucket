@@ -35,14 +35,34 @@ function safeNumber(obj: any, field: string, fallback = 0): number {
   }
 }
 
-// 🔥 안전한 배열 추출
-function safeArray(obj: any, field: string): string[] {
+// 🔥 안전한 배열 추출 (이미지 전용)
+function safeImageArray(obj: any, field: string): string[] {
   try {
     if (!obj || typeof obj !== 'object') return []
     const value = obj[field]
+    
+    // 배열인 경우
     if (Array.isArray(value)) {
-      return value.filter(item => typeof item === 'string')
+      return value.filter(item => typeof item === 'string' && item.trim())
     }
+    
+    // 문자열인 경우 (단일 이미지)
+    if (typeof value === 'string' && value.trim()) {
+      return [value.trim()]
+    }
+    
+    // JSON 문자열인 경우
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        if (Array.isArray(parsed)) {
+          return parsed.filter(item => typeof item === 'string' && item.trim())
+        }
+      } catch {
+        // JSON 파싱 실패 시 빈 배열 반환
+      }
+    }
+    
     return []
   } catch {
     return []
@@ -59,6 +79,19 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
   const [mainImages, setMainImages] = useState<string[]>([])
   const [detailImages, setDetailImages] = useState<string[]>([])
   const [htmlContent, setHtmlContent] = useState('')
+  
+  // 🔥 캠페인 데이터 디버깅
+  useEffect(() => {
+    console.log('🔧 CampaignEditModal - 캠페인 prop 변경:', {
+      isOpen,
+      campaign,
+      campaignId: campaign?.id || campaign?._id,
+      campaignName: campaign?.campaign_name || campaign?.title,
+      hasCampaign: !!campaign,
+      campaignKeys: campaign ? Object.keys(campaign) : [],
+      campaignData: campaign
+    })
+  }, [campaign, isOpen])
   
   // 🔥 D-Day 계산 함수
   const getDeadlineDisplay = (deadline: string) => {
@@ -125,6 +158,10 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         description: campaign.description,
         brand_name: campaign.brand_name,
         product_name: campaign.product_name,
+        rewards: campaign.rewards,
+        status: campaign.status,
+        main_images: campaign.main_images,
+        detail_images: campaign.detail_images,
         allFields: Object.keys(campaign)
       })
       
@@ -139,7 +176,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         }
       }
 
-      setFormData({
+      const newFormData = {
         experience_name: safeString(campaign, 'campaign_name', ''),
         product_name: safeString(campaign, 'product_name', ''),
         brand_name: safeString(campaign, 'brand_name', ''),
@@ -165,39 +202,76 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         experience_announcement_date: formatDateForInput(safeString(campaign, 'experience_announcement')),
         result_announcement_date: formatDateForInput(safeString(campaign, 'result_announcement')),
         current_applicants: safeNumber(campaign, 'current_participants', 0)
-      })
+      }
+      
+      console.log('📝 폼 데이터 생성:', newFormData)
+      setFormData(newFormData)
       
       console.log('📝 폼 데이터 설정 완료:', {
         experience_name: safeString(campaign, 'campaign_name', ''),
         brand_name: safeString(campaign, 'brand_name', ''),
         description: safeString(campaign, 'description', ''),
         product_name: safeString(campaign, 'product_name', ''),
-        campaign_name: safeString(campaign, 'campaign_name', '')
+        campaign_name: safeString(campaign, 'campaign_name', ''),
+        rewards: safeNumber(campaign, 'rewards', 0),
+        status: safeString(campaign, 'status', 'active'),
+        max_participants: safeNumber(campaign, 'max_participants', 30)
       })
 
       // 이미지 데이터 로드 - 호환성 개선
-      const mainImagesData = safeArray(campaign, 'main_images')
-      const detailImagesData = safeArray(campaign, 'detail_images')
+      const mainImagesData = safeImageArray(campaign, 'main_images')
+      const detailImagesData = safeImageArray(campaign, 'detail_images')
       
       // 🔥 모든 가능한 이미지 필드 확인
       const allImageFields = Object.keys(campaign || {}).filter(key => 
-        key.includes('image') || key.includes('photo') || key.includes('picture') || key.includes('img')
+        key.includes('image') || key.includes('photo') || key.includes('picture') || key.includes('img') ||
+        key.includes('Image') || key.includes('Photo') || key.includes('Picture') || key.includes('Img')
       )
+      
+      console.log('🖼️ 캠페인에서 발견된 모든 이미지 관련 필드:', allImageFields)
+      console.log('🖼️ 각 이미지 필드의 값:', allImageFields.reduce((acc, field) => {
+        acc[field] = campaign[field]
+        return acc
+      }, {} as any))
       
       // 🔥 호환성을 위한 추가 이미지 필드 확인
       const fallbackMainImage = safeString(campaign, 'main_image_url') || 
                                safeString(campaign, 'image_url') || 
                                safeString(campaign, 'main_image') ||
                                safeString(campaign, 'thumbnail') ||
-                               safeString(campaign, 'banner_image')
+                               safeString(campaign, 'banner_image') ||
+                               safeString(campaign, 'cover_image') ||
+                               safeString(campaign, 'featured_image')
       
-      const displayMainImages = mainImagesData.length > 0 ? mainImagesData : (fallbackMainImage ? [fallbackMainImage] : [])
+      // 🔥 더 많은 이미지 필드에서 데이터 수집
+      const additionalMainImages = safeImageArray(campaign, 'images') || 
+                                  safeImageArray(campaign, 'photos') ||
+                                  safeImageArray(campaign, 'pictures') ||
+                                  safeImageArray(campaign, 'gallery') ||
+                                  safeImageArray(campaign, 'media')
+      
+      // 🔥 상세 이미지를 위한 추가 필드들
+      const additionalDetailImages = safeImageArray(campaign, 'detail_images') ||
+                                    safeImageArray(campaign, 'gallery_images') ||
+                                    safeImageArray(campaign, 'content_images') ||
+                                    safeImageArray(campaign, 'additional_images')
+      
+      const displayMainImages = mainImagesData.length > 0 ? mainImagesData : 
+                               additionalMainImages.length > 0 ? additionalMainImages :
+                               (fallbackMainImage ? [fallbackMainImage] : [])
+      
+      const displayDetailImages = detailImagesData.length > 0 ? detailImagesData :
+                                 additionalDetailImages.length > 0 ? additionalDetailImages :
+                                 []
       
       console.log('🖼️ 캠페인 이미지 데이터 상세:', {
         mainImagesData,
         detailImagesData,
         fallbackMainImage,
+        additionalMainImages,
+        additionalDetailImages,
         displayMainImages,
+        displayDetailImages,
         allImageFields,
         campaignAllFields: Object.keys(campaign || {}),
         campaignData: campaign,
@@ -206,19 +280,22 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         mainImagesIsArray: Array.isArray(mainImagesData),
         detailImagesIsArray: Array.isArray(detailImagesData),
         rawMainImages: campaign?.main_images,
-        rawDetailImages: campaign?.detail_images
+        rawDetailImages: campaign?.detail_images,
+        rawImages: campaign?.images,
+        rawPhotos: campaign?.photos,
+        rawPictures: campaign?.pictures
       })
       
       // 🔥 이미지 데이터 강제 설정 (빈 배열이어도 명시적으로 설정)
       console.log('🖼️ 이미지 상태 설정:', {
         displayMainImages,
-        detailImagesData,
+        displayDetailImages,
         mainImagesLength: displayMainImages?.length || 0,
-        detailImagesLength: detailImagesData?.length || 0
+        detailImagesLength: displayDetailImages?.length || 0
       })
       
       setMainImages(displayMainImages || [])
-      setDetailImages(detailImagesData || [])
+      setDetailImages(displayDetailImages || [])
       setHtmlContent(safeString(campaign, 'html_content', ''))
     }
   }, [campaign, isOpen])

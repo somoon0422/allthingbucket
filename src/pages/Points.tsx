@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { usePoints } from '../hooks/usePoints'
 import { DollarSign, TrendingUp, CreditCard, ArrowUpRight, ArrowDownLeft, ExternalLink, Calendar, FileText, Star, CheckCircle, AlertCircle } from 'lucide-react'
+import ChatBot from '../components/ChatBot'
 
 const Points: React.FC = () => {
   const navigate = useNavigate()
@@ -15,6 +16,26 @@ const Points: React.FC = () => {
     const taxAmount = Math.floor(amount * 0.033) // 3.3% 세금
     const finalAmount = amount - taxAmount
     return { taxAmount, finalAmount }
+  }
+
+  // NICE API 실명인증 및 계좌인증 함수 (향후 연결 예정)
+  const _handleNiceVerification = async (amount: number) => {
+    // TODO: NICE API 연결 시 구현
+    console.log('NICE API 인증 시작:', { amount })
+    
+    try {
+      // NICE API 호출 로직이 여기에 들어갈 예정
+      // 1. 실명인증 모달 표시
+      // 2. 계좌인증 모달 표시  
+      // 3. 인증 성공 시 출금 요청 자동 생성
+      
+      alert('NICE API 연결 예정\n\n현재는 임시로 출금 요청만 생성됩니다.')
+      return true
+    } catch (error) {
+      console.error('NICE API 인증 실패:', error)
+      alert('실명인증에 실패했습니다. 다시 시도해주세요.')
+      return false
+    }
   }
   const [pointHistory, setPointHistory] = useState<any[]>([])
   const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([])
@@ -163,13 +184,12 @@ const Points: React.FC = () => {
       
       const verifiedAccount = existingAccounts.find(account => account.is_verified)
       
+      // NICE API 실명인증 및 계좌인증을 위한 준비
       if (!verifiedAccount) {
-        // 인증된 계좌가 없으면 프로필로 이동
-        const shouldGoToProfile = confirm('출금 요청을 위해서는 먼저 계좌인증이 필요합니다.\n\n프로필에서 계좌정보를 등록하고 1원 인증을 완료해주세요.\n\n프로필로 이동하시겠습니까?')
-        if (shouldGoToProfile) {
-          navigate('/profile')
-        }
-        return
+        // TODO: NICE API 연결 시 여기서 NICE 인증 모달 호출
+        alert('출금 요청을 위해 실명인증이 필요합니다.\n\nNICE API를 통한 본인인증 후 출금이 처리됩니다.')
+        // 임시로 출금 요청을 계속 진행 (NICE API 연결 전까지)
+        // return 문을 제거하여 출금 요청이 계속 진행되도록 함
       }
 
       // 2. 계좌 정보 저장 (기존 인증된 계좌 사용 또는 새 계좌)
@@ -177,7 +197,7 @@ const Points: React.FC = () => {
       
       // 새로운 계좌 정보가 입력된 경우에만 새 계좌 생성
       if (withdrawalData.bank_name && withdrawalData.account_number && 
-          (withdrawalData.bank_name !== verifiedAccount.bank_name || 
+          (!verifiedAccount || withdrawalData.bank_name !== verifiedAccount.bank_name || 
            withdrawalData.account_number !== verifiedAccount.account_number)) {
         
         const bankAccountData = {
@@ -197,22 +217,26 @@ const Points: React.FC = () => {
           return
         }
         
-        // 새 계좌는 인증이 필요하므로 알림
-        alert('새로운 계좌 정보가 입력되었습니다. 1원 인증을 먼저 완료해주세요.')
-        return
+        // 새 계좌는 NICE API 인증이 필요하므로 알림
+        alert('새로운 계좌 정보가 입력되었습니다.\n\nNICE API를 통한 실명인증 및 계좌인증 후 출금이 처리됩니다.')
+        // TODO: NICE API 연결 시 여기서 인증 모달 호출
+        // 임시로 출금 요청을 계속 진행
+        // return
       }
 
-      // 3. 출금 요청 생성 (인증된 계좌로 출금 요청)
+      // 3. 출금 요청 생성 (NICE API 연결 전까지는 계좌 정보 없이도 가능)
       const { taxAmount, finalAmount } = calculateTax(amount)
       const withdrawalRequestData = {
         user_id: user.user_id,
-        bank_account_id: bankAccount.id,
+        bank_account_id: bankAccount?.id || null, // 계좌가 없어도 null로 처리
         points_amount: amount,
         withdrawal_amount: amount,
         tax_amount: taxAmount,
         final_amount: finalAmount,
         status: 'pending',
-        request_reason: '포인트 출금 요청 (관리자 승인 대기)',
+        request_reason: bankAccount 
+          ? '포인트 출금 요청 (관리자 승인 대기)' 
+          : '포인트 출금 요청 (NICE API 실명인증 후 처리)',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -225,12 +249,15 @@ const Points: React.FC = () => {
           type: 'withdrawal_requested',
           title: '새로운 출금 요청',
           message: `${user.user_id}님이 ${amount.toLocaleString()}P 출금을 요청했습니다.`,
-          priority: 'high',
-          read: false,
+          is_read: false,
           created_at: new Date().toISOString()
         })
         
-        alert(`출금 요청이 접수되었습니다!\n\n💬 카카오톡: @올띵버킷\n\n인증된 계좌로 출금 요청이 완료되었습니다.\n관리자 승인 후 영업일 기준 3~5일 내 처리됩니다.`)
+        const successMessage = bankAccount 
+          ? `출금 요청이 접수되었습니다!\n\n💬 카카오톡: @올띵버킷\n\n인증된 계좌로 출금 요청이 완료되었습니다.\n관리자 승인 후 영업일 기준 3~5일 내 처리됩니다.`
+          : `출금 요청이 접수되었습니다!\n\n💬 카카오톡: @올띵버킷\n\n실명인증 및 계좌인증 후 출금이 처리됩니다.\n관리자 승인 후 영업일 기준 3~5일 내 처리됩니다.`
+        
+        alert(successMessage)
         
         setShowWithdrawalModal(false)
         setWithdrawalData({
@@ -779,7 +806,7 @@ const Points: React.FC = () => {
       {/* 출금 요청 모달 */}
       {showWithdrawalModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">포인트 출금</h2>
               
@@ -844,30 +871,44 @@ const Points: React.FC = () => {
                     />
                     <span className="absolute right-3 top-2 text-gray-500">P</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    출금 가능: {(() => {
-                      // 🔥 실제 DB 데이터 우선 사용
-                      const directAvailablePoints = userPointsData?.available_points || 0
-                      
-                      if (directAvailablePoints > 0) {
-                        return directAvailablePoints.toLocaleString()
-                      }
-                      
-                      // 백업: 히스토리에서 계산
-                      const completedPoints = pointHistory.filter(p => 
-                        p.payment_status === 'completed' || p.payment_status === '지급완료'
-                      )
-                      const totalCompletedPoints = completedPoints.reduce((sum, p) => sum + (p.points_amount || 0), 0)
-                      
-                      const withdrawnPoints = pointHistory.filter(p => 
-                        p.points_type === 'withdrawn' || p.payment_status === '출금완료'
-                      )
-                      const totalWithdrawnPoints = withdrawnPoints.reduce((sum, p) => sum + Math.abs(p.points_amount || 0), 0)
-                      
-                      const availablePoints = Math.max(0, totalCompletedPoints - totalWithdrawnPoints)
-                      return availablePoints.toLocaleString()
-                    })()}P (최소 1,000P)
-                  </p>
+                  <div className="mt-1 space-y-1">
+                    <p className="text-xs text-gray-500">
+                      출금 가능: {(() => {
+                        // 🔥 실제 DB 데이터 우선 사용
+                        const directAvailablePoints = userPointsData?.available_points || 0
+                        
+                        if (directAvailablePoints > 0) {
+                          return directAvailablePoints.toLocaleString()
+                        }
+                        
+                        // 백업: 히스토리에서 계산
+                        const completedPoints = pointHistory.filter(p => 
+                          p.payment_status === 'completed' || p.payment_status === '지급완료'
+                        )
+                        const totalCompletedPoints = completedPoints.reduce((sum, p) => sum + (p.points_amount || 0), 0)
+                        
+                        const withdrawnPoints = pointHistory.filter(p => 
+                          p.points_type === 'withdrawn' || p.payment_status === '출금완료'
+                        )
+                        const totalWithdrawnPoints = withdrawnPoints.reduce((sum, p) => sum + Math.abs(p.points_amount || 0), 0)
+                        
+                        const availablePoints = Math.max(0, totalCompletedPoints - totalWithdrawnPoints)
+                        return availablePoints.toLocaleString()
+                      })()}P (최소 1,000P)
+                    </p>
+                    {withdrawalData.requested_amount && (
+                      <p className={`text-xs ${
+                        Number(withdrawalData.requested_amount) >= 1000 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {Number(withdrawalData.requested_amount) >= 1000 
+                          ? '✓ 출금 신청 가능' 
+                          : '✗ 최소 1,000P 이상 입력해주세요'
+                        }
+                      </p>
+                    )}
+                  </div>
                 </div>
                 {/* 세금 미리보기 */}
                 {previewTax.finalAmount > 0 && (
@@ -894,13 +935,6 @@ const Points: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium text-gray-900">입금 계좌 정보</h3>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/profile')}
-                      className="text-sm text-blue-600 hover:text-blue-800 underline"
-                    >
-                      계좌 정보 변경
-                    </button>
                   </div>
                   
                   {withdrawalData.bank_name ? (
@@ -925,57 +959,30 @@ const Points: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center mb-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
-                        <span className="text-sm font-medium text-yellow-800">계좌 정보 없음</span>
+                        <AlertCircle className="w-5 h-5 text-gray-600 mr-2" />
+                        <span className="text-sm font-medium text-gray-800">출금 신청 시 본인인증 진행</span>
                       </div>
-                      <p className="text-sm text-yellow-700 mb-3">
-                        출금을 위해서는 먼저 계좌인증이 필요합니다.
+                      <p className="text-sm text-gray-600">
+                        출금 신청 버튼을 누르면 본인인증 후 출금이 처리됩니다.
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowWithdrawalModal(false)
-                          navigate('/profile')
-                        }}
-                        className="w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors"
-                      >
-                        프로필에서 계좌 등록하기
-                      </button>
                     </div>
                   )}
                 </div>
 
-                {/* 계좌인증 안내 */}
-                <div className="bg-blue-50 p-4 rounded-lg">
+                {/* 출금 안내 - 핵심 정보만 */}
+                <div className="bg-yellow-50 p-4 rounded-lg">
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
-                      <CreditCard className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-blue-900 mb-2">계좌인증 안내</h4>
-                      <ul className="text-xs text-blue-800 space-y-1">
-                        <li>• 본인 명의 계좌만 출금 가능합니다</li>
-                        <li>• 출금 요청 후 1원이 입금되어 계좌인증을 진행합니다</li>
-                        <li>• 입금자명을 정확히 확인해주세요</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 출금 안내 */}
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      <Calendar className="w-5 h-5 text-green-600 mt-0.5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-green-900 mb-2">출금 처리 안내</h4>
-                      <ul className="text-xs text-green-800 space-y-1">
-                        <li>• 출금 요청 후 영업일 기준 3~5일 내 처리됩니다</li>
-                        <li>• 승인 후 계좌로 입금됩니다</li>
-                        <li>• 처리 현황은 어드민 페이지에서 확인 가능합니다</li>
+                      <h4 className="text-sm font-medium text-yellow-900 mb-2">출금 안내</h4>
+                      <ul className="text-xs text-yellow-800 space-y-1">
+                        <li>• 최소 출금 금액: 1,000원</li>
+                        <li>• 본인 명의 계좌만 가능</li>
+                        <li>• 세금 3.3% 차감 후 지급</li>
                       </ul>
                     </div>
                   </div>
@@ -1018,7 +1025,7 @@ const Points: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={!withdrawalData.bank_name}
+                    disabled={!withdrawalData.requested_amount || Number(withdrawalData.requested_amount) < 1000}
                     className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     출금 요청
@@ -1187,6 +1194,64 @@ const Points: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 포인트 출금 상세 규정 */}
+      <div className="mt-12 bg-gray-50 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">포인트 출금 규정</h3>
+        
+        <div className="space-y-4 text-sm text-gray-700">
+          {/* 기본 출금 조건 */}
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">🔸 출금 조건</h4>
+            <ul className="space-y-1 text-xs ml-4">
+              <li>• 포인트가 1,000원 이상 모이면 출금 신청이 가능합니다.</li>
+              <li>• 입금계좌의 예금주와 회원 정보의 이름이 동일해야 하며, 실명이어야 포인트가 지급됩니다.</li>
+              <li>• 출금 금액은 지정이 불가하며, 신청 정보와 금액 수정을 원하실 경우 앞선 신청을 취소하시고 다시 신청해 주세요.</li>
+            </ul>
+          </div>
+
+          {/* 지급 일정 */}
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">🔸 지급 일정</h4>
+            <ul className="space-y-1 text-xs ml-4">
+              <li>• 포인트는 한 달에 3번 신청이 가능하며, 신청 마감일 5일 후 지급됩니다.</li>
+              <li>• 지급일이 공휴일인 경우, 다음 영업일에 지급됩니다.</li>
+              <li>• <strong>신청 기간별 지급일:</strong></li>
+              <li className="ml-4">- 1일 ~ 10일 신청 → 당월 15일 지급</li>
+              <li className="ml-4">- 11일 ~ 20일 신청 → 당월 25일 지급</li>
+              <li className="ml-4">- 21일 ~ 말일 신청 → 익월 5일 지급</li>
+            </ul>
+          </div>
+
+          {/* 세금 및 수수료 */}
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">🔸 세금 및 수수료</h4>
+            <ul className="space-y-1 text-xs ml-4">
+              <li>• 출금 시 금융 수수료 및 세금을 차감하고 지급됩니다.</li>
+              <li>• <strong>포인트</strong>: 사업소득에 따른 세금 3.3% 공제</li>
+              <li>• <strong>이벤트 포인트</strong>: 기타소득으로 50,000원 초과 시 해당 금액에 한하여 세금 22% 공제</li>
+              <li>• 출금 신청한 금액은 입금된 월의 소득 발생으로 신고되며, 관련 세금신고는 입금 예금주의 명의로 진행됩니다.</li>
+            </ul>
+          </div>
+
+          {/* 실명인증 안내 */}
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">🔸 실명인증 안내</h4>
+            <ul className="space-y-1 text-xs ml-4">
+              <li>• 명의도용 차단이 되어 있거나 나이스평가 정보에서 사용자 정보를 불러올 수 없는 경우, <a href="https://www.namecheck.co.kr/prod_name.nc" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">온라인 실명 등록 서비스</a>를 이용하세요.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <p className="text-xs text-gray-500 text-center">
+            자세한 문의사항은 고객센터로 연락해 주세요.
+          </p>
+        </div>
+      </div>
+      
+      {/* 채팅봇 */}
+      <ChatBot />
     </div>
   )
 }

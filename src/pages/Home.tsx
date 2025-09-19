@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useWishlist } from '../hooks/useWishlist'
+import ChatBot from '../components/ChatBot'
 
 const Home: React.FC = () => {
   const { isAuthenticated } = useAuth()
@@ -611,7 +612,9 @@ const Home: React.FC = () => {
             )}
           </div>
         </div>
-      </section>
+      </section>      
+      {/* 채팅봇 */}
+      <ChatBot />
     </div>
   )
 }

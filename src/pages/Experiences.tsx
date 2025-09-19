@@ -8,6 +8,7 @@ import {
   Gift, Users, Calendar, MapPin, Coins, Clock,
   Search, Grid, List, Heart, ArrowRight
 } from 'lucide-react'
+import ChatBot from '../components/ChatBot'
 
 const Experiences: React.FC = () => {
   const { isAuthenticated } = useAuth()
@@ -487,6 +488,9 @@ const Experiences: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* 채팅봇 */}
+      <ChatBot />
     </div>
   )
 }

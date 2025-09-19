@@ -86,8 +86,8 @@ const WithdrawalRequest: React.FC = () => {
       return
     }
 
-    if (withdrawalForm.points_amount < 5000) {
-      alert('최소 출금 금액은 5,000P입니다.')
+    if (withdrawalForm.points_amount < 1000) {
+      alert('최소 출금 금액은 1,000P입니다.')
       return
     }
 
@@ -316,12 +316,12 @@ const WithdrawalRequest: React.FC = () => {
                     onChange={(e) => setWithdrawalForm({ ...withdrawalForm, points_amount: parseInt(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="출금할 포인트를 입력하세요"
-                    min="5000"
+                    min="1000"
                     max={userPoints?.available_points || 0}
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    최소 5,000P, 최대 {(userPoints?.available_points || 0).toLocaleString()}P
+                    최소 1,000P, 최대 {(userPoints?.available_points || 0).toLocaleString()}P
                   </p>
                 </div>
 

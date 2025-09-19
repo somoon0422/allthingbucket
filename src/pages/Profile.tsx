@@ -9,6 +9,7 @@ import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, Tr
 import { AddressInput } from '../components/AddressInput'
 import { PhoneInput } from '../components/PhoneInput'
 import EmailVerification from '../components/EmailVerification'
+import ChatBot from '../components/ChatBot'
 
 const Profile: React.FC = () => {
   const { user } = useAuth()
@@ -266,7 +267,7 @@ const Profile: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">프로필 관리</h1>
               <p className="text-gray-600">
-                개인정보, SNS 정보, 계좌 정보를 관리하세요
+                개인정보, SNS 정보를 관리하세요
               </p>
             </div>
           </div>
@@ -286,7 +287,7 @@ const Profile: React.FC = () => {
       </div>
 
       {/* 🔔 프로필 정보 채우기 공지 */}
-      {(!profile || !profile.full_name || !profile.phone || !profile.bank_name) && (
+      {(!profile || !profile.full_name || !profile.phone) && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -924,6 +925,8 @@ const Profile: React.FC = () => {
         />
       )}
 
+      {/* 채팅봇 */}
+      <ChatBot />
     </div>
   )
 }

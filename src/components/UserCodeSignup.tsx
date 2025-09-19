@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
-import { User, Phone, MapPin, Calendar, CreditCard } from 'lucide-react'
+import { User, Phone, MapPin, Calendar } from 'lucide-react'
 
 interface UserCodeSignupProps {
   onSuccess: () => void
@@ -29,9 +29,6 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
     phone: '',
     birth_date: '',
     address: '',
-    bank_name: '',
-    account_number: '',
-    account_holder: ''
   })
 
   // 🔍 회원 코드 검증 및 로그인
@@ -106,9 +103,6 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
         phone: profileData.phone,
         birth_date: profileData.birth_date || null,
         address: profileData.address || null,
-        bank_name: profileData.bank_name || null,
-        account_number: profileData.account_number || null,
-        account_holder: profileData.account_holder || null,
         current_balance: 0,
         total_earned: 0,
         total_withdrawn: 0,
@@ -262,59 +256,6 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
           </div>
         </div>
 
-        {/* 계좌 정보 */}
-        <div className="border-t pt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <CreditCard className="w-5 h-5 mr-2" />
-            출금 계좌 정보 (선택)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                은행명
-              </label>
-              <select
-                value={profileData.bank_name}
-                onChange={(e) => setProfileData(prev => ({ ...prev, bank_name: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="">은행 선택</option>
-                <option value="국민은행">국민은행</option>
-                <option value="신한은행">신한은행</option>
-                <option value="우리은행">우리은행</option>
-                <option value="하나은행">하나은행</option>
-                <option value="기업은행">기업은행</option>
-                <option value="농협은행">농협은행</option>
-                <option value="카카오뱅크">카카오뱅크</option>
-                <option value="토스뱅크">토스뱅크</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                계좌번호
-              </label>
-              <input
-                type="text"
-                value={profileData.account_number}
-                onChange={(e) => setProfileData(prev => ({ ...prev, account_number: e.target.value }))}
-                placeholder="123-456-789012"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                예금주명
-              </label>
-              <input
-                type="text"
-                value={profileData.account_holder}
-                onChange={(e) => setProfileData(prev => ({ ...prev, account_holder: e.target.value }))}
-                placeholder="홍길동"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
-            </div>
-          </div>
-        </div>
 
         <button
           type="submit"

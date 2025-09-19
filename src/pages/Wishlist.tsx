@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useWishlist } from '../hooks/useWishlist'
 import { Heart, ArrowLeft, Calendar, Users, Star, Trash2, Eye } from 'lucide-react'
+import ChatBot from '../components/ChatBot'
 
 // 🔥 안전한 문자열 추출
 function safeString(obj: any, field: string, fallback = ''): string {
@@ -344,6 +345,9 @@ const Wishlist: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* 채팅봇 */}
+      <ChatBot />
     </div>
   )
 }

@@ -7,7 +7,7 @@ import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
 import ShippingModal from '../components/ShippingModal'
-import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, User, Calculator, Truck, Package} from 'lucide-react'
+import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, User, Calculator, Truck, Package, Edit} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const AdminDashboard: React.FC = () => {
@@ -89,6 +89,11 @@ const AdminDashboard: React.FC = () => {
   const [showWithdrawalDetailModal, setShowWithdrawalDetailModal] = useState(false)
   const [selectedWithdrawalRequest, setSelectedWithdrawalRequest] = useState<any>(null)
   const [showWithdrawalApprovalModal, setShowWithdrawalApprovalModal] = useState(false)
+  
+  // 사용자 포인트 내역 모달 상태
+  const [showUserPointsModal, setShowUserPointsModal] = useState(false)
+  const [selectedUserPoints, setSelectedUserPoints] = useState<any>(null)
+  const [userPointsHistory, setUserPointsHistory] = useState<any[]>([])
   const [showWithdrawalRejectionModal, setShowWithdrawalRejectionModal] = useState(false)
 
   // 컬럼명 한글 번역 함수
@@ -283,10 +288,8 @@ const AdminDashboard: React.FC = () => {
 
   const loadExperiences = async () => {
     try {
-      // 필요한 필드만 선택해서 조회 (타임아웃 방지)
-      const experiencesData = await (dataService.entities as any).campaigns.list({
-        select: 'id,campaign_name,product_name,rewards,created_at'
-      })
+      // 캠페인 수정을 위해 모든 필드 조회
+      const experiencesData = await (dataService.entities as any).campaigns.list()
       console.log('🔥 어드민 대시보드 - 체험단 데이터 로드:', experiencesData)
       
       // 🔥 디버깅: 첫 번째 체험단의 필드 확인
@@ -966,13 +969,15 @@ const AdminDashboard: React.FC = () => {
   const loadWithdrawalRequests = async () => {
     try {
       const requests = await (dataService.entities as any).withdrawal_requests.list()
+      console.log('🔍 로드된 출금 요청 원본 데이터:', requests)
       
       // 계좌 정보와 사용자 정보와 함께 조회
       const requestsWithDetails = await Promise.all(
         (requests || []).map(async (request: any, index: number) => {
           try {
             const [account, userProfile, userData, userApplications] = await Promise.all([
-              (dataService.entities as any).bank_accounts.get(request.bank_account_id),
+              // bank_account_id가 null이면 계좌 정보 조회 건너뛰기
+              request.bank_account_id ? (dataService.entities as any).bank_accounts.get(request.bank_account_id) : Promise.resolve(null),
               (dataService.entities as any).user_profiles.list({
                 filter: { user_id: request.user_id }
               }),
@@ -1003,11 +1008,118 @@ const AdminDashboard: React.FC = () => {
         })
       )
       
-      setWithdrawalRequests(requestsWithDetails.sort((a, b) => 
+      // 중복 제거 (ID 기준)
+      const uniqueRequests = requestsWithDetails.filter((request, index, self) => 
+        index === self.findIndex(r => (r.id === request.id || r._id === request._id))
+      )
+      
+      console.log('🔍 중복 제거 후 출금 요청:', uniqueRequests)
+      
+      setWithdrawalRequests(uniqueRequests.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ))
     } catch (error) {
       console.error('출금 요청 조회 실패:', error)
+      setWithdrawalRequests([])
+    }
+  }
+
+  // 사용자 포인트 내역 조회 함수
+  const handleViewUserPoints = async (userId: string) => {
+    try {
+      // 사용자 정보 조회
+      const user = await dataService.entities.users.get(userId)
+      if (!user) {
+        toast.error('사용자 정보를 찾을 수 없습니다.')
+        return
+      }
+
+      // 사용자 포인트 정보 조회
+      const userPoints = await dataService.entities.user_points.list({
+        filter: { user_id: userId }
+      })
+
+      // 포인트 내역 조회
+      const pointsHistory = await dataService.entities.points_history.list({
+        filter: { user_id: userId }
+      })
+
+      setSelectedUserPoints({
+        ...user,
+        ...userPoints[0] // 첫 번째 포인트 정보 사용
+      })
+      setUserPointsHistory(pointsHistory || [])
+      setShowUserPointsModal(true)
+    } catch (error) {
+      console.error('사용자 포인트 내역 조회 실패:', error)
+      toast.error('사용자 포인트 내역을 불러오는데 실패했습니다.')
+    }
+  }
+
+  // 출금 요청 수정 함수
+  const handleEditWithdrawal = async (_requestId: string) => {
+    // 출금 요청 수정 로직 (추후 구현)
+    toast('출금 요청 수정 기능은 추후 구현 예정입니다.', { icon: 'ℹ️' })
+  }
+
+  // 출금 요청 삭제 함수
+  const handleDeleteWithdrawal = async (requestId: string) => {
+    if (window.confirm('정말로 이 출금 요청을 삭제하시겠습니까?')) {
+      try {
+        await dataService.entities.withdrawal_requests.delete(requestId)
+        toast.success('출금 요청이 삭제되었습니다.')
+        loadWithdrawalRequests()
+      } catch (error) {
+        console.error('출금 요청 삭제 실패:', error)
+        toast.error('출금 요청 삭제에 실패했습니다.')
+      }
+    }
+  }
+
+  // 포인트 지급 요청 거절 함수
+  const handleRejectPointRequest = async (applicationId: string) => {
+    if (window.confirm('정말로 이 포인트 지급 요청을 거절하시겠습니까?')) {
+      try {
+        await dataService.entities.user_applications.update(applicationId, {
+          status: 'point_rejected',
+          updated_at: new Date().toISOString()
+        })
+        
+        // 관리자 알림 생성
+        await dataService.entities.admin_notifications.create({
+          type: 'point_rejection',
+          title: '포인트 지급 거절',
+          message: `포인트 지급 요청이 거절되었습니다. (ID: ${applicationId})`,
+          is_read: false,
+          created_at: new Date().toISOString()
+        })
+        
+        toast.success('포인트 지급 요청이 거절되었습니다.')
+        loadApplications()
+      } catch (error) {
+        console.error('포인트 지급 요청 거절 실패:', error)
+        toast.error('포인트 지급 요청 거절에 실패했습니다.')
+      }
+    }
+  }
+
+  // 포인트 지급 요청 수정 함수
+  const handleEditPointRequest = async (_applicationId: string) => {
+    // 포인트 지급 요청 수정 로직 (추후 구현)
+    toast('포인트 지급 요청 수정 기능은 추후 구현 예정입니다.', { icon: 'ℹ️' })
+  }
+
+  // 포인트 지급 요청 삭제 함수
+  const handleDeletePointRequest = async (applicationId: string) => {
+    if (window.confirm('정말로 이 포인트 지급 요청을 삭제하시겠습니까?')) {
+      try {
+        await dataService.entities.user_applications.delete(applicationId)
+        toast.success('포인트 지급 요청이 삭제되었습니다.')
+        loadApplications()
+      } catch (error) {
+        console.error('포인트 지급 요청 삭제 실패:', error)
+        toast.error('포인트 지급 요청 삭제에 실패했습니다.')
+      }
     }
   }
 
@@ -1280,7 +1392,101 @@ const AdminDashboard: React.FC = () => {
 
   // 환급 요청 승인
   const handleApproveWithdrawal = async (requestId: string, adminNotes?: string) => {
+    if (loading) {
+      console.log('⚠️ 이미 처리 중입니다. 중복 실행 방지.')
+      return
+    }
+    
+    setLoading(true)
     try {
+      // 1. 출금 요청 정보 조회
+      const withdrawalRequests = await dataService.entities.withdrawal_requests.list()
+      const withdrawalRequest = withdrawalRequests.find((req: any) => req.id === requestId)
+      
+      if (!withdrawalRequest) {
+        toast.error('출금 요청을 찾을 수 없습니다.')
+        return
+      }
+
+      const userId = withdrawalRequest.user_id
+      const withdrawalAmount = withdrawalRequest.points_amount
+
+      // 2. 사용자 포인트 정보 조회
+      const userPointsList = await dataService.entities.user_points.list()
+      console.log('🔍 전체 user_points 리스트:', userPointsList)
+      console.log('🔍 찾으려는 userId:', userId)
+      
+      const userPoints = userPointsList.find((up: any) => up.user_id === userId)
+      console.log('🔍 찾은 사용자 포인트:', userPoints)
+      
+      if (!userPoints) {
+        toast.error('사용자 포인트 정보를 찾을 수 없습니다.')
+        return
+      }
+
+      // 3. 포인트 차감 계산 (실제 DB 컬럼명 사용)
+      const currentAvailablePoints = userPoints.points || 0        // DB: points = 사용 가능한 포인트
+      const currentWithdrawnPoints = userPoints.used_points || 0   // DB: used_points = 출금된 포인트
+      
+      if (currentAvailablePoints < withdrawalAmount) {
+        toast.error('사용자의 가용 포인트가 부족합니다.')
+        return
+      }
+
+      const newAvailablePoints = currentAvailablePoints - withdrawalAmount
+      const newWithdrawnPoints = currentWithdrawnPoints + withdrawalAmount
+
+      // 4. user_points 테이블 업데이트 (총 적립은 유지, 가용 포인트만 차감, 출금 포인트 증가)
+      console.log('🔄 user_points 업데이트 시작:', {
+        userPointsId: userPoints.id,
+        currentAvailablePoints,
+        currentWithdrawnPoints,
+        withdrawalAmount,
+        newAvailablePoints,
+        newWithdrawnPoints
+      })
+      
+      // userPoints의 실제 ID 필드 확인 (id 또는 _id)
+      const userPointsId = userPoints.id || userPoints._id
+      console.log('🔍 사용할 user_points ID:', userPointsId, '(원본 객체 키:', Object.keys(userPoints), ')')
+      
+      const updateResult = await dataService.entities.user_points.update(userPointsId, {
+        points: newAvailablePoints,        // DB: points = 사용 가능한 포인트
+        used_points: newWithdrawnPoints,   // DB: used_points = 출금된 포인트
+        updated_at: new Date().toISOString()
+      })
+      
+      console.log('🔍 user_points 업데이트 결과:', updateResult)
+      
+      // 업데이트 결과 검증
+      if (updateResult) {
+        console.log(`✅ 포인트 차감 완료: ${withdrawalAmount}P (가용: ${currentAvailablePoints}P → ${newAvailablePoints}P, 출금: ${currentWithdrawnPoints}P → ${newWithdrawnPoints}P)`)
+        
+        // 업데이트 후 실제 데이터 재조회하여 확인
+        const updatedUserPointsList = await dataService.entities.user_points.list()
+        const updatedUserPoints = updatedUserPointsList.find((up: any) => up.user_id === userId)
+        console.log('🔍 업데이트 후 실제 user_points 데이터:', updatedUserPoints)
+      } else {
+        console.error('❌ user_points 업데이트 실패!')
+        toast.error('포인트 차감에 실패했습니다.')
+        return
+      }
+
+      // 5. points_history에 출금 기록 추가
+      await dataService.entities.points_history.create({
+        user_id: userId,
+        points_amount: -withdrawalAmount, // 음수로 기록하여 차감임을 표시
+        type: 'withdrawn',
+        points_type: 'withdrawn',
+        status: 'success',
+        payment_status: '출금승인',
+        description: `포인트 출금 승인 (관리자 처리)`,
+        transaction_date: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      })
+      console.log(`✅ 출금 히스토리 기록 완료: ${withdrawalAmount}P`)
+
+      // 6. 출금 요청 상태 업데이트
       const result = await dataService.entities.withdrawal_requests.update(requestId, {
         status: 'approved',
         processed_by: 'admin',
@@ -1289,16 +1495,15 @@ const AdminDashboard: React.FC = () => {
       })
 
       if (result) {
-        toast.success('출금 요청이 승인되었습니다.')
+        toast.success('출금 요청이 승인되고 포인트가 차감되었습니다.')
         await loadWithdrawalRequests()
         
-        // 관리자 알림 생성
+        // 관리자 알림 생성 (priority 필드 제거)
         await dataService.entities.admin_notifications.create({
           type: 'withdrawal_approved',
           title: '출금 요청 승인',
-          message: `출금 요청이 승인되었습니다. (ID: ${requestId})`,
-          priority: 'medium',
-          read: false,
+          message: `출금 요청이 승인되었습니다. (사용자: ${userId}, 금액: ${withdrawalAmount}P)`,
+          is_read: false,
           created_at: new Date().toISOString()
         })
       } else {
@@ -1307,6 +1512,8 @@ const AdminDashboard: React.FC = () => {
     } catch (error) {
       console.error('출금 요청 승인 실패:', error)
       toast.error('출금 요청 승인 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -1324,13 +1531,12 @@ const AdminDashboard: React.FC = () => {
         toast.success('출금 요청이 거부되었습니다.')
         await loadWithdrawalRequests()
         
-        // 관리자 알림 생성
+        // 관리자 알림 생성 (priority 필드 제거)
         await dataService.entities.admin_notifications.create({
           type: 'withdrawal_rejected',
           title: '출금 요청 거부',
           message: `출금 요청이 거부되었습니다. (ID: ${requestId})`,
-          priority: 'medium',
-          read: false,
+          is_read: false,
           created_at: new Date().toISOString()
         })
       } else {
@@ -1355,13 +1561,12 @@ const AdminDashboard: React.FC = () => {
         toast.success('출금이 완료되었습니다.')
         await loadWithdrawalRequests()
         
-        // 관리자 알림 생성
+        // 관리자 알림 생성 (priority 필드 제거)
         await dataService.entities.admin_notifications.create({
           type: 'withdrawal_completed',
           title: '출금 완료',
           message: `출금이 완료되었습니다. (ID: ${requestId})`,
-          priority: 'high',
-          read: false,
+          is_read: false,
           created_at: new Date().toISOString()
         })
       } else {
@@ -2135,27 +2340,49 @@ const AdminDashboard: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
-                              {application.status === 'point_requested' && (
-                                <>
-                                  <button
-                                    onClick={() => handleCompletePoints(application.id || application._id)}
-                                    className="text-green-600 hover:text-green-900"
-                                    title="포인트 지급 승인"
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      // 포인트 지급 거절 기능 (필요시 구현)
-                                      console.log('포인트 지급 거절:', application.id)
-                                    }}
-                                    className="text-red-600 hover:text-red-900"
-                                    title="포인트 지급 거절"
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                  </button>
-                                </>
-                              )}
+                          <button
+                            onClick={() => handleViewUserPoints(application.user_id)}
+                            className="text-purple-600 hover:text-purple-900"
+                            title="사용자 포인트 내역"
+                          >
+                            <Gift className="w-4 h-4" />
+                          </button>
+                          {application.status === 'point_requested' && (
+                            <>
+                              <button
+                                onClick={() => handleCompletePoints(application.id || application._id)}
+                                className="text-green-600 hover:text-green-900"
+                                title="포인트 지급 승인"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleRejectPointRequest(application.id || application._id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="포인트 지급 거절"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {(application.status === 'point_approved' || application.status === 'point_completed') && (
+                            <>
+                              <button
+                                onClick={() => handleEditPointRequest(application.id || application._id)}
+                                className="text-yellow-600 hover:text-yellow-900"
+                                title="수정"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeletePointRequest(application.id || application._id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="삭제"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                               {application.status === 'point_approved' && (
                                 <span className="text-purple-600" title="지급 승인됨">
                                   <CheckCircle className="w-4 h-4" />
@@ -2259,8 +2486,20 @@ const AdminDashboard: React.FC = () => {
                       </span>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => {
-                            setSelectedCampaign(experience)
+                          onClick={async () => {
+                            console.log('🔧 캠페인 수정 버튼 클릭 - 전달할 데이터:', experience)
+                            console.log('🔧 캠페인 ID:', experience.id || experience._id)
+                            console.log('🔧 캠페인 이름:', experience.campaign_name || experience.title)
+                            
+                            // 🔥 개별 캠페인 데이터를 다시 조회하여 완전한 데이터 전달
+                            try {
+                              const fullCampaignData = await dataService.entities.campaigns.get(experience.id || experience._id)
+                              console.log('🔧 개별 캠페인 조회 결과:', fullCampaignData)
+                              setSelectedCampaign(fullCampaignData)
+                            } catch (error) {
+                              console.error('🔧 개별 캠페인 조회 실패:', error)
+                              setSelectedCampaign(experience)
+                            }
                             setShowEditModal(true)
                           }}
                           className="text-blue-600 hover:text-blue-900"
@@ -2733,20 +2972,31 @@ const AdminDashboard: React.FC = () => {
                                     setShowWithdrawalDetailModal(true)
                                   }}
                                   className="text-indigo-600 hover:text-indigo-900"
+                                  title="상세보기"
                                 >
                                   <Eye className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleViewUserPoints(request.user_id)}
+                                  className="text-purple-600 hover:text-purple-900"
+                                  title="사용자 포인트 내역"
+                                >
+                                  <Gift className="w-4 h-4" />
                                 </button>
                                 {request.status === 'pending' && (
                                   <>
                                     <button
                                       onClick={() => handleApproveWithdrawal(request.id)}
-                                      className="text-green-600 hover:text-green-900"
+                                      disabled={loading}
+                                      className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title="승인"
                                     >
                                       <CheckCircle className="w-4 h-4" />
                                     </button>
                                     <button
                                       onClick={() => handleRejectWithdrawal(request.id)}
                                       className="text-red-600 hover:text-red-900"
+                                      title="거절"
                                     >
                                       <XCircle className="w-4 h-4" />
                                     </button>
@@ -2756,9 +3006,28 @@ const AdminDashboard: React.FC = () => {
                                   <button
                                     onClick={() => handleCompleteWithdrawal(request.id)}
                                     className="text-blue-600 hover:text-blue-900"
+                                    title="완료처리"
                                   >
                                     완료처리
                                   </button>
+                                )}
+                                {(request.status === 'completed' || request.status === 'rejected') && (
+                                  <>
+                                    <button
+                                      onClick={() => handleEditWithdrawal(request.id)}
+                                      className="text-yellow-600 hover:text-yellow-900"
+                                      title="수정"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteWithdrawal(request.id)}
+                                      className="text-red-600 hover:text-red-900"
+                                      title="삭제"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             </td>
@@ -4289,8 +4558,118 @@ const AdminDashboard: React.FC = () => {
             setShowShippingModal(false)
           }}
         />
+
+      {/* 사용자 포인트 내역 모달 */}
+      {showUserPointsModal && selectedUserPoints && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold">사용자 포인트 내역</h3>
+              <button
+                onClick={() => {
+                  setShowUserPointsModal(false)
+                  setSelectedUserPoints(null)
+                  setUserPointsHistory([])
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              {/* 사용자 정보 */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">사용자 정보</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">이름:</span>
+                    <span className="ml-2 font-medium">{selectedUserPoints.name || '이름 없음'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">이메일:</span>
+                    <span className="ml-2 font-medium">{selectedUserPoints.email || '이메일 없음'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 현재 포인트 현황 */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">현재 포인트 현황</h4>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{selectedUserPoints.available_points?.toLocaleString() || 0}P</div>
+                    <div className="text-gray-500">사용 가능</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{selectedUserPoints.total_points?.toLocaleString() || 0}P</div>
+                    <div className="text-gray-500">총 적립</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">{selectedUserPoints.withdrawn_points?.toLocaleString() || 0}P</div>
+                    <div className="text-gray-500">출금 완료</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 포인트 내역 */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">포인트 내역</h4>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유형</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">포인트</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {userPointsHistory.map((history) => (
+                        <tr key={history.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(history.created_at).toLocaleDateString('ko-KR')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {history.points_type === 'earned' ? '적립' : 
+                             history.points_type === 'withdrawal' ? '출금' : 
+                             history.points_type === 'pending' ? '대기' : history.points_type}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span className={history.points_amount > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {history.points_amount > 0 ? '+' : ''}{history.points_amount.toLocaleString()}P
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {history.description || '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              history.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              history.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              history.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {history.status === 'completed' ? '완료' :
+                               history.status === 'pending' ? '대기' :
+                               history.status === 'cancelled' ? '취소' : history.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 
 export default AdminDashboard
