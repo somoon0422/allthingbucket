@@ -29,7 +29,11 @@
     
     <!-- 추가 메타 태그 -->
     <meta name="description" content="다양한 제품을 무료로 체험하고 리뷰를 작성해보세요. 올띵버킷에서 특별한 체험단 기회를 만나보세요!" />
-    <meta name="keywords" content="체험단, 리뷰, 제품체험, 무료체험, 올띵버킷" />
+    <meta name="keywords" content="체험단, 리뷰, 제품체험, 무료체험, 올띵버킷, 올띵버킷체험단, 올띵버킷리뷰, 체험단신청, 무료제품체험" />
+    
+    <!-- 카카오톡 채널 메타 태그 -->
+    <meta name="kakao:channel" content="_NrAxmn" />
+    <meta name="kakao:channel:chat" content="http://pf.kakao.com/_NrAxmn/chat" />
     
     <!-- 한글 폰트 로드 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,8 +43,21 @@
     
     <!-- 다음 주소찾기 API -->
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-    <script type="module" crossorigin src="/assets/index-BsZU8v4J.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-B0_M3T5s.css">
+    
+    <!-- 카카오 SDK -->
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" 
+            integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" 
+            crossorigin="anonymous"></script>
+    <script>
+      // 카카오 SDK 초기화
+      if (typeof Kakao !== 'undefined') {
+        Kakao.init('YOUR_APP_KEY'); // 실제 앱 키로 교체 필요
+        console.log('카카오 SDK 초기화 완료');
+      }
+    </script>
+    
+    <script type="module" crossorigin src="/assets/index-zBpbClzO.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-dxUii3je.css">
   </head>
   <body>
     <div id="root"></div>

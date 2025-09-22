@@ -128,8 +128,9 @@ export const usePoints = () => {
           )
         )
         
+        // 출금 히스토리는 음수로 저장되므로 절댓값으로 변환
         const totalWithdrawnFromHistory = withdrawalHistory.reduce((sum: number, history: any) => 
-          sum + (history.points_amount || 0), 0
+          sum + Math.abs(history.points_amount || 0), 0
         )
         
         console.log('🔍 포인트 히스토리에서 계산된 총 적립 포인트:', totalEarnedFromHistory)
@@ -137,10 +138,21 @@ export const usePoints = () => {
         console.log('🔍 포인트 히스토리 상세:', userPointsHistory)
         console.log('🔍 출금 히스토리 상세:', withdrawalHistory)
         
+        // 🔥 디버깅을 위한 상세 로그
+        withdrawalHistory.forEach((history: any, index: number) => {
+          console.log(`🔍 출금 히스토리 ${index + 1}:`, {
+            points_amount: history.points_amount,
+            points_type: history.points_type,
+            payment_status: history.payment_status,
+            description: history.description,
+            절댓값: Math.abs(history.points_amount || 0)
+          })
+        })
+        
         // user_points 테이블에서 직접 포인트 가져오기 (실제 DB 컬럼명 사용)
-        const currentTotalPoints = (userPointsData as any)?.earned_points || 0  // earned_points = 총 적립
-        const currentAvailablePoints = (userPointsData as any)?.points || 0      // points = 사용 가능
-        const currentWithdrawnPoints = (userPointsData as any)?.used_points || 0 // used_points = 출금됨
+        const currentTotalPoints = (userPointsData as any)?.total_points || (userPointsData as any)?.earned_points || 0  // 총 적립
+        const currentAvailablePoints = (userPointsData as any)?.available_points || (userPointsData as any)?.points || 0  // 사용 가능
+        const currentWithdrawnPoints = (userPointsData as any)?.withdrawn_points || (userPointsData as any)?.used_points || 0 // 출금됨
         
         console.log('🔍 user_points 테이블에서 가져온 포인트 (올바른 필드명):', {
           total_points: currentTotalPoints,
@@ -148,10 +160,22 @@ export const usePoints = () => {
           withdrawn_points: currentWithdrawnPoints
         })
         
-        // 히스토리 기반 계산과 user_points 테이블 값 중 더 큰 값 사용
-        const finalTotalPoints = Math.max(totalEarnedFromHistory, currentTotalPoints)
-        const finalAvailablePoints = Math.max(currentAvailablePoints, Math.max(0, totalEarnedFromHistory - totalWithdrawnFromHistory))
-        const finalWithdrawnPoints = Math.max(totalWithdrawnFromHistory, currentWithdrawnPoints)
+        // 🔥 user_points 테이블에 데이터가 있으면 우선 사용 (더 정확함)
+        let finalTotalPoints, finalAvailablePoints, finalWithdrawnPoints
+        
+        if (currentAvailablePoints > 0 || currentTotalPoints > 0 || currentWithdrawnPoints > 0) {
+          // user_points 테이블 데이터 사용 (더 정확함)
+          finalTotalPoints = currentTotalPoints || totalEarnedFromHistory
+          finalAvailablePoints = currentAvailablePoints
+          finalWithdrawnPoints = currentWithdrawnPoints
+          console.log('✅ user_points 테이블 데이터 사용:', { finalTotalPoints, finalAvailablePoints, finalWithdrawnPoints })
+        } else {
+          // 히스토리 기반 계산 사용
+          finalTotalPoints = totalEarnedFromHistory
+          finalAvailablePoints = Math.max(0, totalEarnedFromHistory - totalWithdrawnFromHistory)
+          finalWithdrawnPoints = totalWithdrawnFromHistory
+          console.log('✅ 히스토리 기반 계산 사용:', { finalTotalPoints, finalAvailablePoints, finalWithdrawnPoints })
+        }
         
         const pointsWithExperience: UserPoints = { 
           ...convertedPoints, 

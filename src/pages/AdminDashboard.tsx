@@ -89,6 +89,8 @@ const AdminDashboard: React.FC = () => {
   const [showWithdrawalDetailModal, setShowWithdrawalDetailModal] = useState(false)
   const [selectedWithdrawalRequest, setSelectedWithdrawalRequest] = useState<any>(null)
   const [showWithdrawalApprovalModal, setShowWithdrawalApprovalModal] = useState(false)
+  const [showCompletedWithdrawals, setShowCompletedWithdrawals] = useState(true) // 완료된 내역 표시 여부
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null) // 특정 사용자 필터
   
   // 사용자 포인트 내역 모달 상태
   const [showUserPointsModal, setShowUserPointsModal] = useState(false)
@@ -1170,9 +1172,11 @@ const AdminDashboard: React.FC = () => {
       
       conversations.forEach(conversation => {
         if (conversation.conversation_data && Array.isArray(conversation.conversation_data)) {
-          conversation.conversation_data.forEach((msg: any) => {
+          conversation.conversation_data.forEach((msg: any, msgIndex: number) => {
+            // 모든 메시지 ID를 강제로 고유하게 생성 (기존 ID 무시)
+            const safeId = `msg_${conversation.id}_${msgIndex}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
             allMessages.push({
-              id: msg.id,
+              id: safeId,
               chat_room_id: chatRoomId,
               sender_type: msg.sender_type,
               sender_id: msg.sender_name,
@@ -1188,7 +1192,27 @@ const AdminDashboard: React.FC = () => {
 
       // 시간순으로 정렬
       allMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      setChatMessages(allMessages)
+      
+      // 중복 ID 제거 및 최종 안전장치
+      const uniqueMessages = allMessages.reduce((acc: any[], current: any, index: number) => {
+        // ID가 여전히 중복되는 경우를 대비해 인덱스 추가
+        const existingIndex = acc.findIndex(msg => msg.id === current.id)
+        if (existingIndex >= 0) {
+          // 중복된 ID가 있으면 새로운 고유 ID로 변경
+          const newId = `${current.id}_dup_${index}_${Math.random().toString(36).substr(2, 9)}`
+          acc.push({ ...current, id: newId })
+        } else {
+          acc.push(current)
+        }
+        return acc
+      }, [])
+      
+      // 최종 안전장치: 메시지 배열에서 중복 ID 제거
+      const finalMessages = uniqueMessages.filter((message, index, array) => {
+        return array.findIndex(msg => msg.id === message.id) === index
+      })
+      
+      setChatMessages(finalMessages)
     } catch (error) {
       console.error('채팅 메시지 로드 실패:', error)
     }
@@ -1369,6 +1393,18 @@ const AdminDashboard: React.FC = () => {
   const getFilteredWithdrawalRequests = () => {
     let filtered = withdrawalRequests
 
+    // 완료된 내역 표시 옵션
+    if (!showCompletedWithdrawals) {
+      filtered = filtered.filter(request => 
+        request.status !== 'completed' && request.status !== 'approved'
+      )
+    }
+
+    // 특정 사용자 필터
+    if (selectedUserId) {
+      filtered = filtered.filter(request => request.user_id === selectedUserId)
+    }
+
     // 상태 필터
     if (withdrawalFilter !== 'all') {
       filtered = filtered.filter(request => request.status === withdrawalFilter)
@@ -1398,7 +1434,11 @@ const AdminDashboard: React.FC = () => {
     }
     
     setLoading(true)
+    let rollbackData: any = null
+    
     try {
+      console.log('🚀 출금 승인 프로세스 시작:', requestId)
+      
       // 1. 출금 요청 정보 조회
       const withdrawalRequests = await dataService.entities.withdrawal_requests.list()
       const withdrawalRequest = withdrawalRequests.find((req: any) => req.id === requestId)
@@ -1410,108 +1450,145 @@ const AdminDashboard: React.FC = () => {
 
       const userId = withdrawalRequest.user_id
       const withdrawalAmount = withdrawalRequest.points_amount
+      const currentStatus = withdrawalRequest.status
+
+      console.log('📋 출금 요청 정보:', {
+        requestId,
+        userId,
+        withdrawalAmount,
+        currentStatus,
+        adminNotes
+      })
+
+      // 이미 처리된 요청인지 확인
+      if (currentStatus !== 'pending') {
+        toast.error(`이미 처리된 출금 요청입니다. (현재 상태: ${currentStatus})`)
+        return
+      }
 
       // 2. 사용자 포인트 정보 조회
       const userPointsList = await dataService.entities.user_points.list()
-      console.log('🔍 전체 user_points 리스트:', userPointsList)
-      console.log('🔍 찾으려는 userId:', userId)
-      
       const userPoints = userPointsList.find((up: any) => up.user_id === userId)
-      console.log('🔍 찾은 사용자 포인트:', userPoints)
       
       if (!userPoints) {
         toast.error('사용자 포인트 정보를 찾을 수 없습니다.')
         return
       }
 
-      // 3. 포인트 차감 계산 (실제 DB 컬럼명 사용)
-      const currentAvailablePoints = userPoints.points || 0        // DB: points = 사용 가능한 포인트
-      const currentWithdrawnPoints = userPoints.used_points || 0   // DB: used_points = 출금된 포인트
-      
-      if (currentAvailablePoints < withdrawalAmount) {
-        toast.error('사용자의 가용 포인트가 부족합니다.')
+      // 롤백을 위한 원본 데이터 저장
+      rollbackData = {
+        userPointsId: userPoints.id || userPoints._id,
+        originalAvailablePoints: userPoints.points || 0,
+        originalWithdrawnPoints: userPoints.used_points || 0
+      }
+
+      console.log('💰 사용자 포인트 정보:', {
+        userId,
+        currentAvailablePoints: rollbackData.originalAvailablePoints,
+        currentWithdrawnPoints: rollbackData.originalWithdrawnPoints,
+        withdrawalAmount
+      })
+
+      // 3. 포인트 차감 계산 및 유효성 검사
+      if (rollbackData.originalAvailablePoints < withdrawalAmount) {
+        toast.error(`사용자의 가용 포인트가 부족합니다. (보유: ${rollbackData.originalAvailablePoints}P, 요청: ${withdrawalAmount}P)`)
         return
       }
 
-      const newAvailablePoints = currentAvailablePoints - withdrawalAmount
-      const newWithdrawnPoints = currentWithdrawnPoints + withdrawalAmount
+      const newAvailablePoints = rollbackData.originalAvailablePoints - withdrawalAmount
+      const newWithdrawnPoints = rollbackData.originalWithdrawnPoints + withdrawalAmount
 
-      // 4. user_points 테이블 업데이트 (총 적립은 유지, 가용 포인트만 차감, 출금 포인트 증가)
-      console.log('🔄 user_points 업데이트 시작:', {
-        userPointsId: userPoints.id,
-        currentAvailablePoints,
-        currentWithdrawnPoints,
-        withdrawalAmount,
-        newAvailablePoints,
-        newWithdrawnPoints
+      console.log('🔄 포인트 차감 계산:', {
+        기존가용포인트: rollbackData.originalAvailablePoints,
+        출금요청금액: withdrawalAmount,
+        신규가용포인트: newAvailablePoints,
+        기존출금포인트: rollbackData.originalWithdrawnPoints,
+        신규출금포인트: newWithdrawnPoints
       })
-      
-      // userPoints의 실제 ID 필드 확인 (id 또는 _id)
-      const userPointsId = userPoints.id || userPoints._id
-      console.log('🔍 사용할 user_points ID:', userPointsId, '(원본 객체 키:', Object.keys(userPoints), ')')
-      
-      const updateResult = await dataService.entities.user_points.update(userPointsId, {
-        points: newAvailablePoints,        // DB: points = 사용 가능한 포인트
-        used_points: newWithdrawnPoints,   // DB: used_points = 출금된 포인트
+
+      // 4. user_points 테이블 업데이트
+      const updateResult = await dataService.entities.user_points.update(rollbackData.userPointsId, {
+        points: newAvailablePoints,
+        used_points: newWithdrawnPoints,
         updated_at: new Date().toISOString()
       })
       
-      console.log('🔍 user_points 업데이트 결과:', updateResult)
-      
-      // 업데이트 결과 검증
-      if (updateResult) {
-        console.log(`✅ 포인트 차감 완료: ${withdrawalAmount}P (가용: ${currentAvailablePoints}P → ${newAvailablePoints}P, 출금: ${currentWithdrawnPoints}P → ${newWithdrawnPoints}P)`)
-        
-        // 업데이트 후 실제 데이터 재조회하여 확인
-        const updatedUserPointsList = await dataService.entities.user_points.list()
-        const updatedUserPoints = updatedUserPointsList.find((up: any) => up.user_id === userId)
-        console.log('🔍 업데이트 후 실제 user_points 데이터:', updatedUserPoints)
-      } else {
-        console.error('❌ user_points 업데이트 실패!')
-        toast.error('포인트 차감에 실패했습니다.')
-        return
+      if (!updateResult) {
+        throw new Error('포인트 차감 업데이트 실패')
       }
 
+      console.log('✅ 포인트 차감 완료:', {
+        차감금액: `${withdrawalAmount}P`,
+        가용포인트변화: `${rollbackData.originalAvailablePoints}P → ${newAvailablePoints}P`,
+        출금포인트변화: `${rollbackData.originalWithdrawnPoints}P → ${newWithdrawnPoints}P`
+      })
+
       // 5. points_history에 출금 기록 추가
-      await dataService.entities.points_history.create({
+      const historyResult = await dataService.entities.points_history.create({
         user_id: userId,
-        points_amount: -withdrawalAmount, // 음수로 기록하여 차감임을 표시
+        points_amount: -withdrawalAmount,
         type: 'withdrawn',
         points_type: 'withdrawn',
         status: 'success',
         payment_status: '출금승인',
-        description: `포인트 출금 승인 (관리자 처리)`,
+        description: `포인트 출금 승인 - 관리자 처리${adminNotes ? ` (${adminNotes})` : ''}`,
         transaction_date: new Date().toISOString(),
         created_at: new Date().toISOString()
       })
-      console.log(`✅ 출금 히스토리 기록 완료: ${withdrawalAmount}P`)
+
+      if (!historyResult) {
+        throw new Error('포인트 히스토리 기록 실패')
+      }
+
+      console.log('📝 출금 히스토리 기록 완료:', withdrawalAmount)
 
       // 6. 출금 요청 상태 업데이트
-      const result = await dataService.entities.withdrawal_requests.update(requestId, {
+      const withdrawalUpdateResult = await dataService.entities.withdrawal_requests.update(requestId, {
         status: 'approved',
         processed_by: 'admin',
         processed_at: new Date().toISOString(),
         admin_notes: adminNotes || '출금 요청 승인'
       })
 
-      if (result) {
-        toast.success('출금 요청이 승인되고 포인트가 차감되었습니다.')
-        await loadWithdrawalRequests()
-        
-        // 관리자 알림 생성 (priority 필드 제거)
-        await dataService.entities.admin_notifications.create({
-          type: 'withdrawal_approved',
-          title: '출금 요청 승인',
-          message: `출금 요청이 승인되었습니다. (사용자: ${userId}, 금액: ${withdrawalAmount}P)`,
-          is_read: false,
-          created_at: new Date().toISOString()
-        })
-      } else {
-        toast.error('출금 요청 승인에 실패했습니다.')
+      if (!withdrawalUpdateResult) {
+        throw new Error('출금 요청 상태 업데이트 실패')
       }
+
+      // 7. 성공 알림 및 데이터 새로고침
+      toast.success(`출금 요청이 승인되었습니다. (${withdrawalAmount}P 차감 완료)`)
+      await loadWithdrawalRequests()
+      
+      // 8. 관리자 알림 생성
+      await dataService.entities.admin_notifications.create({
+        type: 'withdrawal_approved',
+        title: '출금 요청 승인',
+        message: `출금 요청이 승인되었습니다. (사용자: ${userId}, 금액: ${withdrawalAmount}P)`,
+        is_read: false,
+        created_at: new Date().toISOString()
+      })
+
+      console.log('🎉 출금 승인 프로세스 완료!')
+
     } catch (error) {
-      console.error('출금 요청 승인 실패:', error)
-      toast.error('출금 요청 승인 중 오류가 발생했습니다.')
+      console.error('❌ 출금 승인 실패:', error)
+      
+      // 롤백 처리 (포인트 차감이 이미 이루어진 경우)
+      if (rollbackData) {
+        try {
+          console.log('🔄 포인트 차감 롤백 시도...')
+          await dataService.entities.user_points.update(rollbackData.userPointsId, {
+            points: rollbackData.originalAvailablePoints,
+            used_points: rollbackData.originalWithdrawnPoints,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ 포인트 차감 롤백 완료')
+        } catch (rollbackError) {
+          console.error('❌ 롤백 실패:', rollbackError)
+          toast.error('포인트 차감 롤백에 실패했습니다. 관리자에게 문의하세요.')
+        }
+      }
+      
+      toast.error(`출금 승인 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
     } finally {
       setLoading(false)
     }
@@ -2884,7 +2961,38 @@ const AdminDashboard: React.FC = () => {
                 onChange={(e) => setWithdrawalSearch(e.target.value)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
               />
+              <button
+                onClick={() => setShowCompletedWithdrawals(!showCompletedWithdrawals)}
+                className={`px-4 py-2 rounded-lg border transition-colors ${
+                  showCompletedWithdrawals
+                    ? 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200'
+                    : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={showCompletedWithdrawals ? '완료된 내역 숨기기' : '완료된 내역 보기'}
+              >
+                {showCompletedWithdrawals ? '완료내역 숨김' : '완료내역 보기'}
+              </button>
+              {selectedUserId && (
+                <button
+                  onClick={() => {
+                    setSelectedUserId(null)
+                    setWithdrawalSearch('')
+                  }}
+                  className="px-4 py-2 bg-red-100 border border-red-300 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                  title="사용자 필터 해제"
+                >
+                  필터 해제
+                </button>
+              )}
             </div>
+            
+            {selectedUserId && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>사용자 필터 활성화:</strong> {selectedUserId}의 출금 내역만 표시 중
+                </p>
+              </div>
+            )}
             
             {(() => {
               const filteredRequests = getFilteredWithdrawalRequests()
@@ -2926,8 +3034,19 @@ const AdminDashboard: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {request.user_data?.name || request.user_profile?.name || '정보 없음'}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {request.user_id}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <button
+                                onClick={() => {
+                                  setSelectedUserId(request.user_id)
+                                  setWithdrawalSearch('')
+                                  setWithdrawalFilter('all')
+                                  setShowCompletedWithdrawals(true)
+                                }}
+                                className="text-blue-600 hover:text-blue-800 hover:underline font-mono text-xs"
+                                title="이 사용자의 모든 출금 내역 보기"
+                              >
+                                {request.user_id}
+                              </button>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {request.user_data?.phone || request.user_profile?.phone || '정보 없음'}

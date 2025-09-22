@@ -487,12 +487,12 @@ export const dataService = {
             return []
           }
           
-          // 🔥 성능 최적화: 기본 필드만 조회 (존재하지 않는 필드 제외)
-          const selectFields = options?.select || 'id, campaign_name, product_name, brand_name, description, created_at'
+          // 🔥 실제 DB 테이블 구조에 맞는 모든 필드 조회
+          const selectFields = options?.select || '*'
           let query = supabase.from('campaigns').select(selectFields)
           
-          // 제한된 수량만 가져오기 (기본 50개)
-          const limit = options?.limit || 50
+          // 제한된 수량만 가져오기 (기본 20개로 줄임)
+          const limit = options?.limit || 20
           query = query.limit(limit)
           
           const { data, error } = await query.order('created_at', { ascending: false })
@@ -503,7 +503,7 @@ export const dataService = {
             // 🔍 실제 테이블 구조 확인을 위해 전체 필드 조회 시도
             try {
               console.log('🔍 실제 campaigns 테이블 구조 확인 중...')
-              const { data: sampleData, error: sampleError } = await supabase
+              const { data: sampleData } = await supabase
                 .from('campaigns')
                 .select('*')
                 .limit(1)
@@ -522,6 +522,25 @@ export const dataService = {
           }
           
           console.log('✅ Supabase campaigns.list 결과:', data?.length, '개')
+          
+          // 🔥 디버깅: 첫 번째 캠페인의 실제 데이터 구조 확인
+          if (data && data.length > 0) {
+            const firstCampaign = data[0] as any
+            console.log('🔍 campaigns.list 첫 번째 캠페인 실제 데이터:', {
+              id: firstCampaign.id,
+              campaign_name: firstCampaign.campaign_name,
+              status: firstCampaign.status,
+              main_images: firstCampaign.main_images,
+              detail_images: firstCampaign.detail_images,
+              end_date: firstCampaign.end_date,
+              application_end: firstCampaign.application_end,
+              review_deadline: firstCampaign.review_deadline,
+              max_participants: firstCampaign.max_participants,
+              current_participants: firstCampaign.current_participants,
+              allFields: Object.keys(firstCampaign)
+            })
+          }
+          
           return data || []
         } catch (error) {
           console.error('❌ campaigns 조회 실패:', error)
@@ -568,18 +587,51 @@ export const dataService = {
       },
       update: async (id: string, data: any) => {
         try {
+          console.log('🚀 campaigns 업데이트 시작:', { id, dataKeys: Object.keys(data) })
+          
+          // 🔥 이미지 데이터 분리 (큰 데이터는 별도 처리)
+          const { main_images, detail_images, ...otherData } = data
+          
+          // 1단계: 기본 데이터 업데이트 (이미지 제외)
           const { data: result, error } = await supabase
             .from('campaigns')
-            .update(data)
+            .update(otherData)
             .eq('id', id)
             .select()
             .maybeSingle()
           
           if (error) {
-            console.error('❌ campaigns 업데이트 실패:', error)
+            console.error('❌ campaigns 기본 데이터 업데이트 실패:', error)
             return null
           }
           
+          // 2단계: 이미지 데이터가 있는 경우 별도 업데이트
+          if (main_images !== undefined || detail_images !== undefined) {
+            console.log('🖼️ 이미지 데이터 별도 업데이트:', { 
+              hasMainImages: main_images !== undefined,
+              hasDetailImages: detail_images !== undefined,
+              mainImagesLength: main_images?.length || 0,
+              detailImagesLength: detail_images?.length || 0
+            })
+            
+            const imageUpdateData: any = {}
+            if (main_images !== undefined) imageUpdateData.main_images = main_images
+            if (detail_images !== undefined) imageUpdateData.detail_images = detail_images
+            
+            const { error: imageError } = await supabase
+              .from('campaigns')
+              .update(imageUpdateData)
+              .eq('id', id)
+            
+            if (imageError) {
+              console.error('❌ campaigns 이미지 업데이트 실패:', imageError)
+              // 이미지 업데이트 실패해도 기본 데이터는 업데이트되었으므로 계속 진행
+            } else {
+              console.log('✅ campaigns 이미지 업데이트 성공')
+            }
+          }
+          
+          console.log('✅ campaigns 업데이트 완료:', result)
           return result
         } catch (error) {
           console.error('❌ campaigns 업데이트 실패:', error)
@@ -1763,7 +1815,7 @@ export const dataService = {
 
     // 채팅방
     chat_rooms: {
-      list: async (options?: { filter?: any }) => {
+      list: async () => {
         try {
           const { data, error } = await supabase
             .from('chat_rooms')
@@ -1843,10 +1895,18 @@ export const dataService = {
     chat_conversations: {
       list: async (options?: { filter?: any }) => {
         try {
-          const { data, error } = await supabase
+          let query = supabase
             .from('chat_conversations')
             .select('*')
             .order('last_message_at', { ascending: false })
+
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+
+          const { data, error } = await query
 
           if (error) throw error
           return data || []
@@ -1919,7 +1979,7 @@ export const dataService = {
 
     // 관리자 채팅 알림
     admin_chat_notifications: {
-      list: async (options?: { filter?: any }) => {
+      list: async () => {
         try {
           const { data, error } = await supabase
             .from('admin_chat_notifications')
@@ -1997,7 +2057,7 @@ export const dataService = {
 
     // 온라인 상태 관리
     user_online_status: {
-      async list(filters?: any) {
+      async list() {
         try {
           const { data, error } = await supabase
             .from('user_online_status')

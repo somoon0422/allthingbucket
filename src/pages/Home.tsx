@@ -114,109 +114,53 @@ const Home: React.FC = () => {
     return false
   }
 
-  // 추천 체험단 로드
-  const loadFeaturedExperiences = async () => {
+  // 🔥 최적화된 헬퍼 함수들
+  const updateFeaturedExperiences = (campaigns: any[]) => {
     try {
-      console.log('🔥 추천 체험단 로드 시작...')
-      
-      // 타임아웃 방지를 위해 더 효율적인 쿼리 시도
-      let campaigns = []
-      try {
-        campaigns = await (dataService.entities as any).campaigns.list()
-      } catch (timeoutError) {
-        console.warn('⚠️ campaigns 타임아웃, 빈 배열로 처리:', timeoutError)
-        campaigns = []
-      }
-      
-      console.log('✅ 체험단 데이터 로드 성공:', campaigns)
+      console.log('🔥 추천 체험단 업데이트 시작...')
       
       const safeCampaigns = Array.isArray(campaigns) ? campaigns : []
       const featured = safeCampaigns
         .filter(campaign => campaign && (campaign.status === 'recruiting' || campaign.status === 'active'))
         .slice(0, 6)
       
-      // 🔥 데이터 구조 디버깅
-      if (featured.length > 0) {
-        console.log('🔍 첫 번째 체험단 데이터 구조:', featured[0])
-        console.log('🔍 사용 가능한 제목 필드들:', {
-          campaign_name: featured[0].campaign_name,
-          title: featured[0].title,
-          experience_name: featured[0].experience_name,
-          product_name: featured[0].product_name,
-          name: featured[0].name,
-          campaign_title: featured[0].campaign_title,
-          product_title: featured[0].product_title
-        })
-        console.log('🔍 모든 필드명:', Object.keys(featured[0]))
-        
-        // 🔥 제목 표시 테스트
-        const displayTitle = featured[0].campaign_name || 
-                           featured[0].title || 
-                           featured[0].experience_name || 
-                           featured[0].product_name ||
-                           featured[0].name ||
-                           featured[0].campaign_title ||
-                           featured[0].product_title ||
-                           '제목 없음'
-        console.log('🔍 최종 표시될 제목:', displayTitle)
-      }
-      
+      console.log('✅ 추천 체험단 업데이트 완료:', featured.length, '개')
       setFeaturedExperiences(featured)
     } catch (error) {
-      console.error('추천 체험단 로드 실패:', error)
+      console.error('추천 체험단 업데이트 실패:', error)
       setFeaturedExperiences([])
     }
   }
 
-  // 통계 로드
-  const loadStats = async () => {
+  const updateStats = (campaigns: any[], users: any[], reviews: any[]) => {
     try {
-      console.log('📊 통계 로드 시작...')
-      
-      // 타임아웃 방지를 위해 개별적으로 로드
-      let campaigns = [], users = [], reviews = []
-      
-      try {
-        campaigns = await (dataService.entities as any).campaigns.list()
-      } catch (error) {
-        console.warn('⚠️ campaigns 통계 로드 실패:', error)
-      }
-      
-      try {
-        users = await (dataService.entities as any).users.list()
-      } catch (error) {
-        console.warn('⚠️ users 통계 로드 실패:', error)
-      }
-      
-      try {
-        reviews = await (dataService.entities as any).review_submissions.list()
-      } catch (error) {
-        console.warn('⚠️ reviews 통계 로드 실패:', error)
-      }
+      console.log('📊 통계 업데이트 시작...')
       
       setStats({
         totalExperiences: Array.isArray(campaigns) ? campaigns.length : 0,
         totalUsers: Array.isArray(users) ? users.length : 0,
         totalReviews: Array.isArray(reviews) ? reviews.length : 0
       })
+      
+      console.log('✅ 통계 업데이트 완료')
     } catch (error) {
-      console.error('통계 로드 실패:', error)
+      console.error('통계 업데이트 실패:', error)
     }
   }
 
-  // 리뷰 로드
-  const loadReviews = async () => {
+  const updateReviews = (reviews: any[]) => {
     try {
-      console.log('💬 리뷰 로드 시작...')
-      const reviews = await (dataService.entities as any).review_submissions.list()
+      console.log('💬 리뷰 업데이트 시작...')
+      
       const safeReviews = Array.isArray(reviews) ? reviews : []
       const approvedReviews = safeReviews
         .filter(review => review && review.status === 'approved')
         .slice(0, 5)
       
+      console.log('✅ 리뷰 업데이트 완료:', approvedReviews.length, '개')
       setReviews(approvedReviews)
     } catch (error) {
-      console.error('리뷰 로드 실패:', error)
+      console.error('리뷰 업데이트 실패:', error)
       setReviews([])
     }
   }
@@ -228,11 +172,45 @@ const Home: React.FC = () => {
     const loadData = async () => {
       setLoading(true)
       try {
-        await Promise.all([
-          loadFeaturedExperiences(),
-          loadStats(),
-          loadReviews()
+        // 🔥 데이터를 한 번만 로드하고 공유하여 성능 최적화
+        console.log('🚀 홈페이지 데이터 로드 시작...')
+        
+        let campaigns = [], users = [], reviews = []
+        
+        // 🔥 병렬로 모든 데이터 로드 (각각 타임아웃 처리)
+        const [campaignsResult, usersResult, reviewsResult] = await Promise.allSettled([
+          (dataService.entities as any).campaigns.list().catch((err: any) => {
+            console.warn('⚠️ campaigns 로드 실패:', err)
+            return []
+          }),
+          (dataService.entities as any).users.list().catch((err: any) => {
+            console.warn('⚠️ users 로드 실패:', err)
+            return []
+          }),
+          (dataService.entities as any).review_submissions.list().catch((err: any) => {
+            console.warn('⚠️ reviews 로드 실패:', err)
+            return []
+          })
         ])
+        
+        // 결과 추출
+        campaigns = campaignsResult.status === 'fulfilled' ? campaignsResult.value : []
+        users = usersResult.status === 'fulfilled' ? usersResult.value : []
+        reviews = reviewsResult.status === 'fulfilled' ? reviewsResult.value : []
+        
+        console.log('✅ 데이터 로드 완료:', { 
+          campaigns: campaigns?.length || 0, 
+          users: users?.length || 0, 
+          reviews: reviews?.length || 0 
+        })
+        
+        // 🔥 로드된 데이터로 각 섹션 업데이트
+        updateFeaturedExperiences(campaigns)
+        updateStats(campaigns, users, reviews)
+        updateReviews(reviews)
+        
+      } catch (error) {
+        console.error('❌ 홈페이지 데이터 로드 실패:', error)
       } finally {
         setLoading(false)
       }
@@ -352,23 +330,58 @@ const Home: React.FC = () => {
                   }`}
                 >
                   <div className="h-48 sm:h-56 bg-gradient-to-r from-purple-400 to-pink-400 relative overflow-hidden">
-                    {experience.image_url ? (
-                      <img
-                        src={experience.image_url}
-                        alt={experience.campaign_name || experience.title || experience.experience_name || experience.product_name || experience.name || experience.campaign_title || experience.product_title}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <div className="text-center text-white">
-                          <Gift className="w-12 h-12 mx-auto mb-2 opacity-80" />
-                          <p className="text-sm font-medium opacity-80">이미지 준비중</p>
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      // 🔥 실제 DB 필드명 기반 이미지 소스 확인 (main_images, detail_images)
+                      const imageSources = [
+                        // 실제 DB 필드: main_images (jsonb 배열)
+                        (experience.main_images && Array.isArray(experience.main_images) && experience.main_images.length > 0) ? experience.main_images[0] : null,
+                        // 실제 DB 필드: detail_images (jsonb 배열) - 메인 이미지가 없을 때 사용
+                        (experience.detail_images && Array.isArray(experience.detail_images) && experience.detail_images.length > 0) ? experience.detail_images[0] : null,
+                        // 호환성을 위한 추가 필드들 (실제 DB에는 없지만 혹시 있을 경우)
+                        experience.image_url,
+                        experience.main_image,
+                        experience.thumbnail
+                      ].filter(Boolean)
+                      
+                      // 🔥 디버깅: 이미지 소스 확인 (첫 번째 체험단만)
+                      if (index === 0) {
+                        console.log('🔍 홈페이지 첫 번째 체험단 이미지 디버깅 (실제 DB 필드명):', {
+                          campaignName: experience.campaign_name,
+                          mainImages: experience.main_images,
+                          detailImages: experience.detail_images,
+                          mainImagesType: typeof experience.main_images,
+                          mainImagesIsArray: Array.isArray(experience.main_images),
+                          mainImagesLength: Array.isArray(experience.main_images) ? experience.main_images.length : 'N/A',
+                          imageSources,
+                          foundImageSrc: imageSources[0],
+                          allKeys: Object.keys(experience || {})
+                        })
+                      }
+                      
+                      const imageSrc = imageSources[0]
+                      
+                      if (imageSrc) {
+                        return (
+                          <img
+                            src={imageSrc}
+                            alt={experience.campaign_name || experience.title || experience.experience_name || experience.product_name || experience.name || experience.campaign_title || experience.product_title}
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        )
+                      } else {
+                        return (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center text-white">
+                              <Gift className="w-12 h-12 mx-auto mb-2 opacity-80" />
+                              <p className="text-sm font-medium opacity-80">이미지 준비중</p>
+                            </div>
+                          </div>
+                        )
+                      }
+                    })()}
                     
                     {/* 그라데이션 오버레이 */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
@@ -612,7 +625,9 @@ const Home: React.FC = () => {
             )}
           </div>
         </div>
-      </section>      
+      </section>
+
+      
       {/* 채팅봇 */}
       <ChatBot />
     </div>

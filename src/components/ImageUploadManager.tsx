@@ -26,6 +26,21 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
   const [urlInput, setUrlInput] = useState('')
   const [showUrlInput, setShowUrlInput] = useState(false)
 
+  // 🔥 initialImages가 변경될 때마다 images 상태 업데이트
+  React.useEffect(() => {
+    console.log('🖼️ ImageUploadManager initialImages 변경 감지:', {
+      initialImages,
+      currentImages: images,
+      initialImagesLength: initialImages?.length || 0,
+      currentImagesLength: images?.length || 0
+    })
+    
+    if (initialImages && Array.isArray(initialImages)) {
+      setImages(initialImages)
+      console.log('🖼️ ImageUploadManager 이미지 상태 업데이트:', initialImages)
+    }
+  }, [initialImages])
+
   // 🔄 대안 업로드 방식 (Base64 변환)
   const handleAlternativeUpload = useCallback(async (files: File[]) => {
     try {

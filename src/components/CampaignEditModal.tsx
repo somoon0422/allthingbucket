@@ -41,30 +41,58 @@ function safeImageArray(obj: any, field: string): string[] {
     if (!obj || typeof obj !== 'object') return []
     const value = obj[field]
     
+    console.log(`🔍 safeImageArray 처리 중 - 필드: ${field}, 값:`, {
+      value,
+      type: typeof value,
+      isArray: Array.isArray(value),
+      isString: typeof value === 'string',
+      isNull: value === null,
+      isUndefined: value === undefined
+    })
+    
+    // null이나 undefined인 경우
+    if (value === null || value === undefined) {
+      console.log(`🔍 ${field} 값이 null/undefined입니다`)
+      return []
+    }
+    
     // 배열인 경우
     if (Array.isArray(value)) {
-      return value.filter(item => typeof item === 'string' && item.trim())
+      const filtered = value.filter(item => typeof item === 'string' && item.trim())
+      console.log(`🔍 ${field} 배열 처리 결과:`, filtered)
+      return filtered
     }
     
     // 문자열인 경우 (단일 이미지)
-    if (typeof value === 'string' && value.trim()) {
-      return [value.trim()]
+    if (typeof value === 'string') {
+      if (value.trim()) {
+        console.log(`🔍 ${field} 단일 문자열 처리:`, [value.trim()])
+        return [value.trim()]
+      } else {
+        console.log(`🔍 ${field} 빈 문자열입니다`)
+        return []
+      }
     }
     
     // JSON 문자열인 경우
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value)
+        console.log(`🔍 ${field} JSON 파싱 결과:`, parsed)
         if (Array.isArray(parsed)) {
-          return parsed.filter(item => typeof item === 'string' && item.trim())
+          const filtered = parsed.filter(item => typeof item === 'string' && item.trim())
+          console.log(`🔍 ${field} JSON 배열 처리 결과:`, filtered)
+          return filtered
         }
-      } catch {
-        // JSON 파싱 실패 시 빈 배열 반환
+      } catch (parseError) {
+        console.log(`🔍 ${field} JSON 파싱 실패:`, parseError)
       }
     }
     
+    console.log(`🔍 ${field} 처리 완료 - 빈 배열 반환`)
     return []
-  } catch {
+  } catch (error) {
+    console.error(`🔍 ${field} 처리 중 오류:`, error)
     return []
   }
 }
@@ -218,9 +246,25 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         max_participants: safeNumber(campaign, 'max_participants', 30)
       })
 
-      // 이미지 데이터 로드 - 호환성 개선
+      // 🔥 이미지 데이터 로드 - 강화된 디버깅 및 호환성
+      console.log('🖼️ 캠페인 이미지 데이터 원본:', {
+        main_images: campaign.main_images,
+        detail_images: campaign.detail_images,
+        main_images_type: typeof campaign.main_images,
+        detail_images_type: typeof campaign.detail_images,
+        main_images_isArray: Array.isArray(campaign.main_images),
+        detail_images_isArray: Array.isArray(campaign.detail_images)
+      })
+      
       const mainImagesData = safeImageArray(campaign, 'main_images')
       const detailImagesData = safeImageArray(campaign, 'detail_images')
+      
+      console.log('🖼️ safeImageArray 처리 결과:', {
+        mainImagesData,
+        detailImagesData,
+        mainImagesDataLength: mainImagesData?.length || 0,
+        detailImagesDataLength: detailImagesData?.length || 0
+      })
       
       // 🔥 모든 가능한 이미지 필드 확인
       const allImageFields = Object.keys(campaign || {}).filter(key => 
@@ -230,7 +274,34 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       
       console.log('🖼️ 캠페인에서 발견된 모든 이미지 관련 필드:', allImageFields)
       console.log('🖼️ 각 이미지 필드의 값:', allImageFields.reduce((acc, field) => {
-        acc[field] = campaign[field]
+        acc[field] = {
+          value: campaign[field],
+          type: typeof campaign[field],
+          isArray: Array.isArray(campaign[field]),
+          length: Array.isArray(campaign[field]) ? campaign[field].length : undefined
+        }
+        return acc
+      }, {} as any))
+      
+      // 🔥 캠페인 전체 데이터 구조 확인
+      console.log('🔍 캠페인 전체 데이터 구조:', {
+        allKeys: Object.keys(campaign || {}),
+        campaign: campaign
+      })
+      
+      // 🔥 이미지 관련 모든 필드 상세 분석
+      console.log('🖼️ 이미지 필드 상세 분석:', Object.keys(campaign || {}).reduce((acc, key) => {
+        if (key.toLowerCase().includes('image') || key.toLowerCase().includes('photo') || 
+            key.toLowerCase().includes('picture') || key.toLowerCase().includes('img') ||
+            key.toLowerCase().includes('media') || key.toLowerCase().includes('asset') ||
+            key.toLowerCase().includes('file') || key.toLowerCase().includes('url')) {
+          acc[key] = {
+            value: campaign[key],
+            type: typeof campaign[key],
+            isArray: Array.isArray(campaign[key]),
+            length: Array.isArray(campaign[key]) ? campaign[key].length : undefined
+          }
+        }
         return acc
       }, {} as any))
       
@@ -406,17 +477,24 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         additionalInfoInUpdateData: updateData.additional_info
       })
 
-      // 캠페인 업데이트
+      // 캠페인 업데이트 (타임아웃 방지)
       console.log('🚀 캠페인 업데이트 시작:', { campaignId: campaign.id, updateData })
-      const updateResult = await dataService.entities.campaigns.update(campaign.id, updateData)
+      
+      // 🔥 타임아웃 설정 (30초)
+      const updatePromise = dataService.entities.campaigns.update(campaign.id, updateData)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('업데이트 시간 초과')), 30000)
+      })
+      
+      const updateResult = await Promise.race([updatePromise, timeoutPromise])
       console.log('🚀 캠페인 업데이트 결과:', updateResult)
       
-      if (updateResult && updateResult.success) {
+      if (updateResult && updateResult.id) {
         toast.success('캠페인이 성공적으로 수정되었습니다!')
         onSuccess()
         onClose()
       } else {
-        throw new Error(updateResult?.message || '캠페인 업데이트 실패')
+        throw new Error('캠페인 업데이트 실패')
       }
       
     } catch (error) {

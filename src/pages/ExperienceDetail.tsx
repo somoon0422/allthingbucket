@@ -1,12 +1,63 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import ApplicationFormModal from '../components/ApplicationFormModal'
 import ReviewSubmissionManager from '../components/ReviewSubmissionManager'
-import {Calendar, Gift, Clock, ArrowLeft, Target, Hash, Link, Info, Users, Coins, MapPin, ChevronDown, ChevronUp} from 'lucide-react'
+import {Calendar, Gift, Clock, ArrowLeft, Target, Hash, Link, Info, Users, Coins, MapPin, ChevronDown, ChevronUp, ShoppingCart, FileText, Camera, Video, TestTube, Newspaper, Building, Wrench} from 'lucide-react'
 import toast from 'react-hot-toast'
 
+// 🔥 체험단 타입 정보 (여러 타입 지원)
+const EXPERIENCE_TYPES = {
+  purchase_review: {
+    label: '구매평',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    icon: ShoppingCart,
+    description: '제품을 직접 구매하고 솔직한 구매평을 작성하는 캠페인입니다.'
+  },
+  blog_review: {
+    label: '블로그 리뷰',
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    icon: FileText,
+    description: '블로그에 상세한 리뷰를 작성하는 캠페인입니다.'
+  },
+  instagram: {
+    label: '인스타그램',
+    color: 'bg-pink-100 text-pink-800 border-pink-200',
+    icon: Camera,
+    description: '인스타그램에 제품 소개 포스트를 올리는 캠페인입니다.'
+  },
+  youtube: {
+    label: '유튜브',
+    color: 'bg-red-100 text-red-800 border-red-200',
+    icon: Video,
+    description: '유튜브에 제품 리뷰 영상을 올리는 캠페인입니다.'
+  },
+  product: {
+    label: '제품 체험',
+    color: 'bg-green-100 text-green-800 border-green-200',
+    icon: TestTube,
+    description: '제품을 체험하고 솔직한 후기를 작성하는 캠페인입니다.'
+  },
+  press: {
+    label: '기자단',
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
+    icon: Newspaper,
+    description: '언론 매체를 통해 제품을 소개하는 캠페인입니다.'
+  },
+  local: {
+    label: '지역 체험',
+    color: 'bg-teal-100 text-teal-800 border-teal-200',
+    icon: Building,
+    description: '지역 특색을 살린 체험 콘텐츠를 제작하는 캠페인입니다.'
+  },
+  other: {
+    label: '기타',
+    color: 'bg-gray-100 text-gray-800 border-gray-200',
+    icon: Wrench,
+    description: '기타 형태의 체험 캠페인입니다.'
+  }
+}
 
 function ExperienceDetail() {
   const { id } = useParams()
@@ -32,6 +83,42 @@ function ExperienceDetail() {
       })
     }
   }
+
+  // 🔥 체험단 타입 처리 함수
+  const getExperienceTypes = useCallback((typeData: any) => {
+    if (!typeData) return []
+    
+    // 배열인 경우
+    if (Array.isArray(typeData)) {
+      return typeData.filter(type => type && EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES])
+    }
+    
+    // 문자열인 경우 (쉼표로 구분된 경우)
+    if (typeof typeData === 'string') {
+      return typeData.split(',').map(type => type.trim()).filter(type => type && EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES])
+    }
+    
+    // 단일 문자열인 경우
+    if (typeof typeData === 'string' && EXPERIENCE_TYPES[typeData as keyof typeof EXPERIENCE_TYPES]) {
+      return [typeData]
+    }
+    
+    return []
+  }, [])
+
+  // 🔥 체험단 타입 표시 텍스트 생성
+  const getExperienceTypeDisplay = useCallback((types: string[]) => {
+    if (types.length === 0) return '체험단'
+    if (types.length === 1) return types[0]
+    
+    const typeLabels = types.map(type => EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES]?.label || type)
+    
+    if (types.length === 2) {
+      return `${typeLabels[0]} + ${typeLabels[1]}`
+    } else {
+      return `${typeLabels.slice(0, -1).join(' + ')} + ${typeLabels[typeLabels.length - 1]}`
+    }
+  }, [])
 
   // 🔥 D-Day 계산 함수
   const getDeadlineDisplay = (deadline: string) => {
@@ -413,14 +500,73 @@ function ExperienceDetail() {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           {/* 체험단 이미지 */}
           <div className="aspect-video bg-gray-200 relative overflow-hidden">
-            <img
-              src={experience.image_url || experience.main_image || (experience.main_images && experience.main_images.length > 0 ? experience.main_images[0] : null) || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'}
-              alt={experience.title || experience.experience_name || '체험단 이미지'}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
-              }}
-            />
+            {(() => {
+              // 🔥 실제 DB 필드명 기반 이미지 소스 확인 (main_images, detail_images)
+              const imageSources = [
+                // 실제 DB 필드: main_images (jsonb 배열)
+                (experience.main_images && Array.isArray(experience.main_images) && experience.main_images.length > 0) ? experience.main_images[0] : null,
+                // 실제 DB 필드: detail_images (jsonb 배열) - 메인 이미지가 없을 때 사용
+                (experience.detail_images && Array.isArray(experience.detail_images) && experience.detail_images.length > 0) ? experience.detail_images[0] : null,
+                // 호환성을 위한 추가 필드들 (실제 DB에는 없지만 혹시 있을 경우)
+                experience.image_url,
+                experience.main_image,
+                experience.thumbnail
+              ].filter(Boolean)
+              
+              const imageSrc = imageSources[0] || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
+              
+              return (
+                <img
+                  src={imageSrc}
+                  alt={experience.title || experience.experience_name || '체험단 이미지'}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
+                  }}
+                />
+              )
+            })()}
+            
+            {/* 🔥 체험단 타입 태그들 */}
+            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+              {(() => {
+                // 체험단 타입 데이터 추출
+                const typeData = experience.type || experience.experience_type || experience.campaign_type
+                const types = getExperienceTypes(typeData)
+                
+                console.log('🔥 체험단 타입 데이터:', {
+                  typeData,
+                  types,
+                  experienceType: experience.type,
+                  experience_type: experience.experience_type,
+                  campaign_type: experience.campaign_type
+                })
+                
+                if (types.length === 0) {
+                  return (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                      <Gift className="w-4 h-4 mr-1" />
+                      체험단
+                    </span>
+                  )
+                }
+                
+                return types.map((type, index) => {
+                  const typeInfo = EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES]
+                  const Icon = typeInfo?.icon || Gift
+                  
+                  return (
+                    <span 
+                      key={index}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${typeInfo?.color || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                    >
+                      <Icon className="w-4 h-4 mr-1" />
+                      {typeInfo?.label || type}
+                    </span>
+                  )
+                })
+              })()}
+            </div>
             </div>
 
               {/* 체험단 정보 */}
@@ -429,6 +575,54 @@ function ExperienceDetail() {
                   <h1 className="text-3xl font-bold text-gray-900 mb-4">
               {experience.campaign_name || experience.title || experience.experience_name || experience.name || '체험단 제목'}
             </h1>
+                  
+                  {/* 🔥 체험단 타입 표시 */}
+                  {(() => {
+                    const typeData = experience.type || experience.experience_type || experience.campaign_type
+                    const types = getExperienceTypes(typeData)
+                    const typeDisplay = getExperienceTypeDisplay(types)
+                    
+                    if (types.length === 0) return null
+                    
+                    return (
+                      <div className="mb-4">
+                        <div className="inline-flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                          <Target className="w-5 h-5 text-blue-600 mr-2" />
+                          <span className="text-blue-800 font-medium">
+                            {types.length === 1 
+                              ? `${EXPERIENCE_TYPES[types[0] as keyof typeof EXPERIENCE_TYPES]?.label || types[0]} 체험단`
+                              : `${typeDisplay} 체험단 (${types.length}개 타입)`
+                            }
+                          </span>
+                        </div>
+                        
+                        {/* 타입별 설명 */}
+                        {types.length > 1 && (
+                          <div className="mt-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <p className="text-sm text-gray-700 mb-2">
+                              <strong>이 체험단은 다음 {types.length}가지 활동을 모두 진행해야 합니다:</strong>
+                            </p>
+                            <ul className="space-y-2">
+                              {types.map((type, index) => {
+                                const typeInfo = EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES]
+                                return (
+                                  <li key={index} className="flex items-start">
+                                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium mr-3 mt-0.5 ${typeInfo?.color || 'bg-gray-100 text-gray-800'}">
+                                      {typeInfo?.label || type}
+                                    </span>
+                                    <span className="text-sm text-gray-600">
+                                      {typeInfo?.description || '해당 타입의 체험 활동'}
+                                    </span>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                  
                   <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
