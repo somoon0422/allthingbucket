@@ -140,7 +140,7 @@ const MyApplications: React.FC = () => {
 
       console.log('👤 사용자 ID:', user.user_id)
 
-      const userApplications = await getUserApplications(user.user_id, user)
+      const userApplications = await getUserApplications(user.user_id)
       
       console.log('✅ 최종 데이터 처리 완료:', userApplications.length, '개')
 
@@ -186,7 +186,7 @@ const MyApplications: React.FC = () => {
     const interval = setInterval(async () => {
       console.log('🔄 자동 새로고침 실행')
       try {
-        const userApplications = await getUserApplications(user?.user_id, user, true) // forceRefresh = true
+        const userApplications = await getUserApplications(user?.user_id)
         const finalApplications = ultraSafeArray(userApplications)
         setApplications(finalApplications)
         setLastRefresh(new Date())
@@ -539,7 +539,7 @@ const MyApplications: React.FC = () => {
         // 강제 새로고침으로 최신 상태 확인
         setTimeout(async () => {
           try {
-            const userApplications = await getUserApplications(user?.user_id, user, true)
+            const userApplications = await getUserApplications(user?.user_id)
             const finalApplications = ultraSafeArray(userApplications)
             setApplications(finalApplications)
             setLastRefresh(new Date())
@@ -676,7 +676,7 @@ const MyApplications: React.FC = () => {
       // 신청 내역 새로고침
       setTimeout(async () => {
         try {
-          const userApplications = await getUserApplications(user?.user_id, user, true)
+          const userApplications = await getUserApplications(user?.user_id)
           const finalApplications = ultraSafeArray(userApplications)
           setApplications(finalApplications)
           setLastRefresh(new Date())
@@ -740,7 +740,7 @@ const MyApplications: React.FC = () => {
                 onClick={async () => {
                   try {
                     setLoading(true)
-                    const userApplications = await getUserApplications(user?.user_id, user, true) // forceRefresh = true
+                    const userApplications = await getUserApplications(user?.user_id)
                     const finalApplications = ultraSafeArray(userApplications)
                     setApplications(finalApplications)
                     setLastRefresh(new Date())
