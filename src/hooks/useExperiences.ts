@@ -38,6 +38,25 @@ export const useExperiences = () => {
     }
   }, [])
 
+  // 캠페인 코드로 체험단 조회
+  const getCampaignByCode = useCallback(async (code: string) => {
+    try {
+      setLoading(true)
+      
+      const campaigns = await (dataService.entities as any).campaigns.list()
+      const campaign = campaigns.find((c: any) => 
+        c.campaign_code === code || c.code === code
+      )
+      
+      return campaign || null
+    } catch (error) {
+      console.error('캠페인 코드 조회 실패:', error)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   // 중복 신청 체크 함수
   const checkDuplicateApplication = useCallback(async (experienceId: string, userId: string) => {
     try {
@@ -205,7 +224,7 @@ export const useExperiences = () => {
   }, [])
 
   // 사용자 신청 내역 조회
-  const getUserApplications = useCallback(async (userId?: string, user?: any, forceRefresh?: boolean) => {
+  const getUserApplications = useCallback(async (userId?: string) => {
     try {
       setLoading(true)
 
@@ -320,6 +339,7 @@ export const useExperiences = () => {
     loading,
     getExperiences,
     getCampaignById,
+    getCampaignByCode,
     applyForCampaign,
     getUserApplications,
     getStatusLabel,

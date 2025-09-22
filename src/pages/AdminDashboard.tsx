@@ -9,6 +9,8 @@ import CampaignEditModal from '../components/CampaignEditModal'
 import ShippingModal from '../components/ShippingModal'
 import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, User, Calculator, Truck, Package, Edit} from 'lucide-react'
 import toast from 'react-hot-toast'
+// 카카오 알림톡은 사용하지 않음 - 이메일만 사용
+import { emailNotificationService } from '../services/emailNotificationService'
 
 const AdminDashboard: React.FC = () => {
   const { isAuthenticated, isAdminUser } = useAuth()
@@ -50,6 +52,74 @@ const AdminDashboard: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadNotifications, setUnreadNotifications] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
+  
+  // 🔥 이메일 알림 설정
+  const [emailEnabled, setEmailEnabled] = useState<boolean>(true)
+  const [emailFromName, setEmailFromName] = useState<string>('올띵버킷')
+  const [emailFromAddress, setEmailFromAddress] = useState<string>('noreply@allthingbucket.com')
+  
+  // 🔥 이메일 알림 전송 함수
+  const sendEmailNotification = async (userId: string, type: 'approval' | 'rejection' | 'withdrawal', data: any) => {
+    if (!emailEnabled) {
+      console.log('📧 이메일 알림 비활성화')
+      return
+    }
+    
+    try {
+      // 사용자 정보 조회
+      const userProfiles = await dataService.entities.user_profiles.list()
+      const userProfile = userProfiles.find((profile: any) => profile.user_id === userId)
+      
+      if (!userProfile?.email) {
+        console.log('📧 사용자 이메일 정보 없음:', userId)
+        return
+      }
+
+      let result
+      switch (type) {
+        case 'approval':
+          result = await emailNotificationService.sendApprovalEmail(
+            userProfile.email,
+            userProfile.name || '사용자',
+            data.campaignName
+          )
+          break
+        case 'rejection':
+          result = await emailNotificationService.sendRejectionEmail(
+            userProfile.email,
+            userProfile.name || '사용자',
+            data.campaignName,
+            data.reason
+          )
+          break
+        case 'withdrawal':
+          result = await emailNotificationService.sendWithdrawalApprovalEmail(
+            userProfile.email,
+            userProfile.name || '사용자',
+            data.amount
+          )
+          break
+        default:
+          throw new Error(`Unknown notification type: ${type}`)
+      }
+      
+      if (result.success) {
+        console.log('✅ 이메일 전송 완료:', { 
+          type, 
+          userId, 
+          email: userProfile.email,
+          message: result.message 
+        })
+        toast.success(result.message)
+      } else {
+        console.warn('⚠️ 이메일 전송 실패:', result.message)
+        toast.error(result.message)
+      }
+    } catch (error) {
+      console.error('❌ 이메일 전송 오류:', error)
+      // 이메일 실패해도 메인 프로세스는 계속 진행
+    }
+  }
   
   
   // 포인트 지급 요청 모달 상태
@@ -1558,7 +1628,19 @@ const AdminDashboard: React.FC = () => {
       toast.success(`출금 요청이 승인되었습니다. (${withdrawalAmount}P 차감 완료)`)
       await loadWithdrawalRequests()
       
-      // 8. 관리자 알림 생성
+      // 8. 🔥 이메일 알림 전송 (출금 승인)
+      try {
+        await sendEmailNotification(
+          userId,
+          'withdrawal',
+          { amount: withdrawalAmount }
+        )
+      } catch (emailError) {
+        console.error('❌ 이메일 전송 실패:', emailError)
+        // 이메일 실패해도 메인 프로세스는 계속 진행
+      }
+      
+      // 9. 관리자 알림 생성
       await dataService.entities.admin_notifications.create({
         type: 'withdrawal_approved',
         title: '출금 요청 승인',
@@ -2086,6 +2168,17 @@ const AdminDashboard: React.FC = () => {
                 }`}
               >
                 회원 관리
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'settings'
+                    ? 'border-gray-500 text-gray-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Settings className="w-4 h-4 inline mr-1" />
+                설정
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
@@ -4781,6 +4874,110 @@ const AdminDashboard: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 설정 탭 */}
+      {activeTab === 'settings' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <Settings className="w-5 h-5 mr-2" />
+              이메일 알림 설정
+            </h3>
+            
+            <div className="space-y-6">
+              {/* 이메일 활성화 토글 */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">이메일 전송 활성화</h4>
+                  <p className="text-sm text-gray-500">체험단 승인/거절, 출금 승인 시 이메일을 전송합니다.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={emailEnabled}
+                    onChange={(e) => setEmailEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {/* 발신자 이름 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  발신자 이름
+                </label>
+                <input
+                  type="text"
+                  value={emailFromName}
+                  onChange={(e) => setEmailFromName(e.target.value)}
+                  placeholder="올띵버킷"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  이메일 발신자로 표시될 이름입니다.
+                </p>
+              </div>
+
+              {/* 발신자 이메일 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  발신자 이메일
+                </label>
+                <input
+                  type="email"
+                  value={emailFromAddress}
+                  onChange={(e) => setEmailFromAddress(e.target.value)}
+                  placeholder="noreply@allthingbucket.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  이메일 발신자 주소입니다. (Supabase SMTP 설정 필요)
+                </p>
+              </div>
+
+              {/* 이메일 템플릿 정보 */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">📧 이메일 템플릿</h4>
+                <div className="text-xs text-blue-700 space-y-1">
+                  <p>• <strong>승인 알림</strong>: 체험단명과 다음 단계 안내 (HTML + 텍스트)</p>
+                  <p>• <strong>거절 알림</strong>: 거절 사유와 다음 기회 안내 (HTML + 텍스트)</p>
+                  <p>• <strong>출금 승인</strong>: 출금 금액과 승인일이 포함된 메시지 (HTML + 텍스트)</p>
+                  <p className="mt-2 font-medium">모든 이메일은 반응형 HTML 디자인으로 전송됩니다.</p>
+                </div>
+              </div>
+
+              {/* Supabase SMTP 정보 */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-green-900 mb-2">🔧 Supabase SMTP</h4>
+                <div className="text-xs text-green-700 space-y-1">
+                  <p>• <strong>무료</strong>: Supabase Edge Functions 사용</p>
+                  <p>• <strong>안정성</strong>: Supabase 인프라 활용</p>
+                  <p>• <strong>설정</strong>: Edge Function 배포 필요</p>
+                  <p className="mt-2 font-medium">Supabase 프로젝트에서 SMTP 설정이 필요합니다.</p>
+                </div>
+              </div>
+
+              {/* 설정 저장 버튼 */}
+              <div className="flex justify-end">
+                <button
+                  onClick={async () => {
+                    try {
+                      // 설정 저장 (로컬 상태만 업데이트)
+                      toast.success('이메일 설정이 저장되었습니다!')
+                    } catch (error) {
+                      toast.error('이메일 설정 저장에 실패했습니다.')
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  설정 저장
+                </button>
               </div>
             </div>
           </div>

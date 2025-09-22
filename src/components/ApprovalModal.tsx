@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react'
-import {X, Mail, MessageCircleDashed as MessageCircle, CheckCircle, Edit} from 'lucide-react'
-import { useMessaging } from '../hooks/useMessaging'
+import {X, Mail, CheckCircle, Edit} from 'lucide-react'
+import { naverCloudNotificationService } from '../services/naverCloudNotificationService'
 import toast from 'react-hot-toast'
 
 // 🔥 완전히 안전한 데이터 접근
@@ -135,7 +135,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   application,
   onApprovalComplete
 }) => {
-  const { sendMessage, loading } = useMessaging()
+  const [loading, setLoading] = useState(false)
   
   // 🔥 완전히 안전한 데이터 추출
   const userName = SafeData.getString(application)
@@ -165,9 +165,9 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   }
   
   const [emailContent, setEmailContent] = useState('')
-  const [sendMethod, setSendMethod] = useState<'email' | 'sms' | 'kakao' | 'both'>('email')
   const [subject, setSubject] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState(getDefaultTemplate())
+  const [sendMethod, setSendMethod] = useState<'email' | 'sms' | 'alimtalk' | 'all'>('email')
   
   // 🔥 수신자 정보 상태 (직접 수정 가능)
   const [editableRecipient, setEditableRecipient] = useState({
@@ -410,10 +410,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
   const handleSendApproval = async () => {
     try {
-      if (!emailContent.trim()) {
-        toast.error('메일 내용을 입력해주세요')
-        return
-      }
+      setLoading(true)
 
       if (!editableRecipient.email) {
         toast.error('수신자 이메일이 없습니다')
@@ -425,81 +422,56 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         return
       }
 
-      // 발송 방식별 유효성 검사
-      if (sendMethod === 'email' || sendMethod === 'both') {
-        if (!editableRecipient.email.trim() || !editableRecipient.email.includes('@')) {
-          toast.error('올바른 이메일 주소를 입력해주세요')
-          return
-        }
+      if (!editableRecipient.email.trim() || !editableRecipient.email.includes('@')) {
+        toast.error('올바른 이메일 주소를 입력해주세요')
+        return
       }
 
-      if (sendMethod === 'sms' || sendMethod === 'kakao' || sendMethod === 'both') {
-        if (!editableRecipient.phone.trim()) {
-          toast.error('휴대폰번호를 입력해주세요')
-          return
-        }
-      }
-
-      // 변수 치환된 메시지와 제목 준비
-      const finalSubject = replaceVariables(subject)
-      const finalMessage = replaceVariables(emailContent)
-
-      // 메일/카톡 발송
       console.log('🚀 이메일 발송 시작:', {
         to: editableRecipient.email,
-        subject: finalSubject,
-        message: finalMessage,
-        type: sendMethod,
-        userInfo: {
-          name: editableRecipient.name,
-          email: editableRecipient.email,
-          phone: editableRecipient.phone
-        }
+        toName: editableRecipient.name,
+        campaignName: experienceName
       })
       
-      const results = await sendMessage({
-        to: editableRecipient.email,
-        subject: finalSubject,
-        message: finalMessage,
-        type: sendMethod,
-        userInfo: {
-          name: editableRecipient.name,
-          email: editableRecipient.email,
-          phone: editableRecipient.phone
-        }
-      })
-      
-      console.log('📧 이메일 발송 결과:', results)
-      
-      // 결과 확인 및 사용자 피드백
-      if (results && results.length > 0) {
-        const successCount = results.filter((r: any) => r.success).length
-        const totalCount = results.length
-        
-        if (successCount === totalCount) {
-          toast.success(`모든 메시지가 성공적으로 발송되었습니다! (${successCount}/${totalCount})`)
-        } else if (successCount > 0) {
-          toast.success(`일부 메시지가 발송되었습니다. (${successCount}/${totalCount})`)
-        } else {
-          toast.error('메시지 발송에 실패했습니다. 다시 시도해주세요.')
-        }
-      } else {
-        toast.error('메시지 발송 결과를 받을 수 없습니다.')
+      // 🔥 네이버 클라우드 통합 알림 전송
+      const userSettings = {
+        email: sendMethod === 'email' || sendMethod === 'all',
+        sms: sendMethod === 'sms' || sendMethod === 'all',
+        alimtalk: sendMethod === 'alimtalk' || sendMethod === 'all',
+        emailAddress: editableRecipient.email,
+        phoneNumber: editableRecipient.phone
       }
 
-      // 발송 성공 시 상태 변경
-      const hasSuccess = results.some(r => r.success)
-      if (hasSuccess) {
-        toast.success('승인 안내가 발송되었습니다!')
+      const channels = sendMethod === 'all' ? ['email', 'sms', 'alimtalk'] as const : [sendMethod] as const
+
+      const results = await naverCloudNotificationService.sendApprovalNotification(
+        userSettings,
+        editableRecipient.name,
+        experienceName,
+        channels
+      )
+      
+      console.log('📧 알림 발송 결과:', results)
+      
+      const successResults = results.filter(r => r.success)
+      const failedResults = results.filter(r => !r.success)
+      
+      if (successResults.length > 0) {
+        toast.success(`${successResults.length}개 채널로 알림을 전송했습니다.`)
         onApprovalComplete()
-        onClose()
-      } else {
-        toast.error('발송에 실패했습니다. 다시 시도해주세요.')
+      }
+      
+      if (failedResults.length > 0) {
+        failedResults.forEach(result => {
+          toast.error(`${result.channel}: ${result.message}`)
+        })
       }
 
     } catch (error) {
-      console.error('승인 발송 실패:', error)
-      toast.error('승인 처리에 실패했습니다')
+      console.error('❌ 승인 발송 실패:', error)
+      toast.error('승인 발송 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -553,14 +525,14 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <MessageCircle className="w-5 h-5 mx-auto mb-1" />
+                  <div className="text-lg mb-1">📱</div>
                   <div className="text-sm font-medium">SMS</div>
                 </button>
                 
                 <button
-                  onClick={() => setSendMethod('kakao')}
+                  onClick={() => setSendMethod('alimtalk')}
                   className={`p-3 rounded-lg border-2 transition-colors ${
-                    sendMethod === 'kakao'
+                    sendMethod === 'alimtalk'
                       ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
@@ -570,18 +542,19 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 </button>
                 
                 <button
-                  onClick={() => setSendMethod('both')}
+                  onClick={() => setSendMethod('all')}
                   className={`p-3 rounded-lg border-2 transition-colors ${
-                    sendMethod === 'both'
+                    sendMethod === 'all'
                       ? 'border-purple-500 bg-purple-50 text-purple-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
                   <div className="flex justify-center space-x-1 mb-1">
                     <Mail className="w-4 h-4" />
-                    <MessageCircle className="w-4 h-4" />
+                    <div className="text-sm">📱</div>
+                    <div className="text-sm">💬</div>
                   </div>
-                  <div className="text-sm font-medium">둘 다</div>
+                  <div className="text-sm font-medium">모두</div>
                 </button>
               </div>
             </div>
@@ -760,8 +733,9 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 <div><strong>수신자:</strong> {editableRecipient.name} ({editableRecipient.email})</div>
                 <div><strong>발송방식:</strong> {
                   sendMethod === 'email' ? '이메일' : 
-                  sendMethod === 'kakao' ? 'SMS' : 
-                  '이메일 + SMS'
+                  sendMethod === 'sms' ? 'SMS' : 
+                  sendMethod === 'alimtalk' ? '카카오 알림톡' : 
+                  '모든 방식'
                 }</div>
                 <div><strong>이메일 제목:</strong> {replaceVariables(subject)}</div>
                 <div><strong>메시지:</strong></div>

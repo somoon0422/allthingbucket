@@ -14,6 +14,7 @@ const withdrawalRoutes = require('./routes/withdrawal');
 const phoneVerificationRoutes = require('./routes/phoneVerification');
 const verificationRoutes = require('./routes/verification');
 const notificationRoutes = require('./routes/notification');
+const naverCloudNotificationRoutes = require('./routes/naverCloudNotification');
 const supabaseService = require('./services/supabaseService');
 const { errorHandler } = require('./middleware/errorHandler');
 
@@ -46,6 +47,7 @@ app.use('/api/account', phoneVerificationRoutes);
 app.use('/api/withdrawal', withdrawalRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/notification', notificationRoutes);
+app.use('/api/naver-cloud', naverCloudNotificationRoutes);
 
 // 🔥 헬스 체크 엔드포인트
 app.get('/health', (req, res) => {
