@@ -8,7 +8,7 @@ export class NaverCloudEmailService {
   }
 
 
-  // 🔥 이메일 발송 (백엔드 API 호출)
+  // 🔥 이메일 발송 (Gmail SMTP 사용)
   async sendEmail(emailData: {
     to: string
     toName: string
@@ -17,23 +17,31 @@ export class NaverCloudEmailService {
     text: string
   }): Promise<{ success: boolean; message: string; requestId?: string }> {
     try {
-      console.log('📧 네이버 클라우드 이메일 발송 요청:', {
+      console.log('📧 Gmail 이메일 발송 요청:', {
         to: emailData.to,
         toName: emailData.toName,
         subject: emailData.subject
       })
 
-      const response = await fetch('/api/naver-cloud/send-email', {
+      // Gmail SMTP를 사용하는 엔드포인트로 변경
+      const response = await fetch('http://localhost:3001/api/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(emailData)
+        body: JSON.stringify({
+          to: emailData.to,
+          subject: emailData.subject,
+          message: emailData.html,
+          userInfo: {
+            name: emailData.toName
+          }
+        })
       })
 
       if (!response.ok) {
         const errorData = await response.text()
-        console.error('❌ 네이버 클라우드 이메일 발송 실패:', errorData)
+        console.error('❌ 이메일 발송 실패:', errorData)
         return {
           success: false,
           message: `이메일 발송 실패: ${response.status} ${response.statusText}`
@@ -41,12 +49,16 @@ export class NaverCloudEmailService {
       }
 
       const result = await response.json()
-      console.log('✅ 네이버 클라우드 이메일 발송 성공:', result)
+      console.log('✅ 이메일 발송 성공:', result)
 
-      return result
+      return {
+        success: result.success,
+        message: result.message || '이메일이 성공적으로 발송되었습니다',
+        requestId: result.messageId
+      }
 
     } catch (error) {
-      console.error('❌ 네이버 클라우드 이메일 발송 오류:', error)
+      console.error('❌ 이메일 발송 오류:', error)
       return {
         success: false,
         message: `이메일 발송 중 오류가 발생했습니다: ${error}`
@@ -55,21 +67,58 @@ export class NaverCloudEmailService {
   }
 
   // 🔥 승인 알림 이메일
-  async sendApprovalEmail(userEmail: string, userName: string, campaignName: string): Promise<{ success: boolean; message: string }> {
-    const subject = `🎉 체험단 신청이 승인되었습니다! - ${campaignName}`
-    const html = `
+  async sendApprovalEmail(
+    userEmail: string,
+    userName: string,
+    campaignName: string,
+    customSubject?: string,
+    customContent?: string
+  ): Promise<{ success: boolean; message: string }> {
+    const subject = customSubject || `🎉 체험단 신청이 승인되었습니다! - ${campaignName}`
+
+    const html = customContent ? `
       <div style="font-family: 'Malgun Gothic', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
           <h1 style="color: white; margin: 0; font-size: 24px;">🎉 체험단 신청 승인!</h1>
         </div>
-        
+
+        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div style="color: #666; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;">
+            ${customContent.replace(/\n/g, '<br>')}
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${window.location.origin}/my-applications"
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      padding: 12px 30px;
+                      text-decoration: none;
+                      border-radius: 25px;
+                      display: inline-block;
+                      font-weight: bold;">
+              내 신청 현황 보기
+            </a>
+          </div>
+
+          <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #999; font-size: 14px;">
+            <p>이 이메일은 올띵버킷에서 자동으로 발송되었습니다.</p>
+            <p>문의사항이 있으시면 <a href="mailto:support@allthingbucket.com" style="color: #667eea;">support@allthingbucket.com</a>으로 연락해주세요.</p>
+          </div>
+        </div>
+      </div>
+    ` : `
+      <div style="font-family: 'Malgun Gothic', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">🎉 체험단 신청 승인!</h1>
+        </div>
+
         <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <h2 style="color: #333; margin-bottom: 20px;">안녕하세요, ${userName}님!</h2>
-          
+
           <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
             <strong>${campaignName}</strong> 체험단 신청이 승인되었습니다! 🎊
           </p>
-          
+
           <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
             <h3 style="color: #2c5aa0; margin-top: 0;">📋 다음 단계</h3>
             <ul style="color: #666; margin: 0; padding-left: 20px;">
@@ -78,20 +127,20 @@ export class NaverCloudEmailService {
               <li>리뷰 가이드라인을 숙지해주세요</li>
             </ul>
           </div>
-          
+
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${window.location.origin}/my-applications" 
-               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                      color: white; 
-                      padding: 12px 30px; 
-                      text-decoration: none; 
-                      border-radius: 25px; 
-                      display: inline-block; 
+            <a href="${window.location.origin}/my-applications"
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      padding: 12px 30px;
+                      text-decoration: none;
+                      border-radius: 25px;
+                      display: inline-block;
                       font-weight: bold;">
               내 신청 현황 보기
             </a>
           </div>
-          
+
           <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #999; font-size: 14px;">
             <p>이 이메일은 올띵버킷에서 자동으로 발송되었습니다.</p>
             <p>문의사항이 있으시면 <a href="mailto:support@allthingbucket.com" style="color: #667eea;">support@allthingbucket.com</a>으로 연락해주세요.</p>
@@ -99,7 +148,8 @@ export class NaverCloudEmailService {
         </div>
       </div>
     `
-    const text = `안녕하세요, ${userName}님!\n\n${campaignName} 체험단 신청이 승인되었습니다!\n\n다음 단계:\n- 제품을 받으신 후 체험을 진행해주세요\n- 리뷰 작성 기한을 확인해주세요\n- 리뷰 가이드라인을 숙지해주세요\n\n내 신청 현황: ${window.location.origin}/my-applications\n\n문의: support@allthingbucket.com`
+
+    const text = customContent || `안녕하세요, ${userName}님!\n\n${campaignName} 체험단 신청이 승인되었습니다!\n\n다음 단계:\n- 제품을 받으신 후 체험을 진행해주세요\n- 리뷰 작성 기한을 확인해주세요\n- 리뷰 가이드라인을 숙지해주세요\n\n내 신청 현황: ${window.location.origin}/my-applications\n\n문의: support@allthingbucket.com`
 
     return this.sendEmail({
       to: userEmail,
@@ -237,6 +287,38 @@ export class NaverCloudEmailService {
     return this.sendEmail({
       to: userEmail,
       toName: userName,
+      subject,
+      html,
+      text
+    })
+  }
+
+  // 🔥 커스텀 이메일 발송 (UI에서 작성한 내용)
+  async sendCustomEmail(userEmail: string, subject: string, content: string): Promise<{ success: boolean; message: string; requestId?: string }> {
+    const html = `
+      <div style="font-family: 'Malgun Gothic', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">올띵버킷</h1>
+        </div>
+
+        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div style="white-space: pre-wrap; color: #333; line-height: 1.6;">
+            ${content.replace(/\n/g, '<br>')}
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding: 20px; color: #999; font-size: 12px;">
+          <p>올띵버킷 | support@allthingbucket.com | 010-7290-7620</p>
+          <p style="margin: 0;">본 메일은 발신전용입니다.</p>
+        </div>
+      </div>
+    `
+
+    const text = content.replace(/<[^>]*>/g, '')
+
+    return this.sendEmail({
+      to: userEmail,
+      toName: '고객',
       subject,
       html,
       text

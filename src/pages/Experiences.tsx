@@ -24,7 +24,7 @@ const Experiences: React.FC = () => {
   
   // useWishlist 훅을 try-catch로 감싸서 에러 처리
   try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+     
     useWishlist()
   } catch (wishlistError) {
     console.error('useWishlist 훅 에러:', wishlistError)

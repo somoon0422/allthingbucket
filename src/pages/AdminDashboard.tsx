@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { dataService } from '../lib/dataService'
+import { dataService, supabase } from '../lib/dataService'
 import ApprovalModal from '../components/ApprovalModal'
 import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
@@ -30,6 +30,12 @@ const AdminDashboard: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showApplicationDetailModal, setShowApplicationDetailModal] = useState(false)
   const [showShippingModal, setShowShippingModal] = useState(false)
+
+  // 🔥 리뷰 승인/반려 모달 상태
+  const [showReviewApprovalModal, setShowReviewApprovalModal] = useState(false)
+  const [showReviewRejectionModal, setShowReviewRejectionModal] = useState(false)
+  const [reviewRejectionReason, setReviewRejectionReason] = useState('')
+  const [selectedReviewApplication, setSelectedReviewApplication] = useState<any>(null)
   
   // 선택 상태들
   const [selectedApplications, setSelectedApplications] = useState<Set<string>>(new Set())
@@ -56,7 +62,7 @@ const AdminDashboard: React.FC = () => {
   // 🔥 이메일 알림 설정
   const [emailEnabled, setEmailEnabled] = useState<boolean>(true)
   const [emailFromName, setEmailFromName] = useState<string>('올띵버킷')
-  const [emailFromAddress, setEmailFromAddress] = useState<string>('noreply@allthingbucket.com')
+  const [emailFromAddress, setEmailFromAddress] = useState<string>('support@allthingbucket.com')
   
   // 🔥 이메일 알림 전송 함수
   const sendEmailNotification = async (userId: string, type: 'approval' | 'rejection' | 'withdrawal', data: any) => {
@@ -483,31 +489,99 @@ const AdminDashboard: React.FC = () => {
     setShowShippingModal(true)
   }
 
-  // 리뷰 승인 처리
-  const handleApproveReview = async (applicationId: string) => {
-    if (window.confirm('이 리뷰를 승인하시겠습니까?')) {
-      try {
-        await syncReviewStatus(applicationId, 'review_completed')
-        toast.success('리뷰가 승인되었습니다.')
-        loadAllData()
-      } catch (error) {
-        console.error('리뷰 승인 실패:', error)
-        toast.error('리뷰 승인에 실패했습니다.')
-      }
+  // 🔥 리뷰 승인 모달 열기
+  const handleApproveReview = (applicationId: string) => {
+    const application = applications.find(app => app.id === applicationId || app._id === applicationId)
+    if (application) {
+      setSelectedReviewApplication(application)
+      setShowReviewApprovalModal(true)
     }
   }
 
-  // 리뷰 거절 처리
-  const handleRejectReview = async (applicationId: string) => {
-    if (window.confirm('이 리뷰를 거절하시겠습니까?')) {
-      try {
-        await syncReviewStatus(applicationId, 'rejected')
-        toast.success('리뷰가 거절되었습니다.')
-        loadAllData()
-      } catch (error) {
-        console.error('리뷰 거절 실패:', error)
-        toast.error('리뷰 거절에 실패했습니다.')
+  // 🔥 리뷰 승인 확정 처리
+  const handleConfirmApproveReview = async () => {
+    if (!selectedReviewApplication) return
+
+    try {
+      const applicationId = selectedReviewApplication.id || selectedReviewApplication._id
+      await syncReviewStatus(applicationId, 'review_completed')
+
+      // 🔥 이메일 발송
+      const userEmail = selectedReviewApplication.email
+      const userName = selectedReviewApplication.name || '회원'
+      const campaignName = selectedReviewApplication.experience?.campaign_name ||
+                          selectedReviewApplication.campaign_name ||
+                          '캠페인'
+
+      if (userEmail) {
+        await emailNotificationService.sendReviewApprovalEmail(userEmail, userName, campaignName)
+        console.log('✅ 리뷰 승인 이메일 발송 완료')
       }
+
+      toast.success('리뷰가 승인되었습니다.')
+      setShowReviewApprovalModal(false)
+      setSelectedReviewApplication(null)
+      loadAllData()
+    } catch (error) {
+      console.error('리뷰 승인 실패:', error)
+      toast.error('리뷰 승인에 실패했습니다.')
+    }
+  }
+
+  // 🔥 리뷰 반려 모달 열기
+  const handleRejectReview = (applicationId: string) => {
+    const application = applications.find(app => app.id === applicationId || app._id === applicationId)
+    if (application) {
+      setSelectedReviewApplication(application)
+      setReviewRejectionReason('')
+      setShowReviewRejectionModal(true)
+    }
+  }
+
+  // 🔥 리뷰 반려 확정 처리
+  const handleConfirmRejectReview = async () => {
+    if (!selectedReviewApplication) return
+    if (!reviewRejectionReason.trim()) {
+      toast.error('반려 사유를 입력해주세요.')
+      return
+    }
+
+    try {
+      const applicationId = selectedReviewApplication.id || selectedReviewApplication._id
+
+      // user_applications에 반려 사유 저장
+      await dataService.entities.user_applications.update(applicationId, {
+        status: 'review_rejected',
+        rejection_reason: reviewRejectionReason.trim(),
+        rejected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+
+      // 🔥 이메일 발송
+      const userEmail = selectedReviewApplication.email
+      const userName = selectedReviewApplication.name || '회원'
+      const campaignName = selectedReviewApplication.experience?.campaign_name ||
+                          selectedReviewApplication.campaign_name ||
+                          '캠페인'
+
+      if (userEmail) {
+        await emailNotificationService.sendReviewRejectionEmail(
+          userEmail,
+          userName,
+          campaignName,
+          reviewRejectionReason.trim()
+        )
+        console.log('✅ 리뷰 반려 이메일 발송 완료')
+      }
+
+      toast.success('리뷰가 반려되었습니다.')
+      setShowReviewRejectionModal(false)
+      setSelectedReviewApplication(null)
+      setReviewRejectionReason('')
+      loadAllData()
+    } catch (error) {
+      console.error('리뷰 반려 실패:', error)
+      toast.error('리뷰 반려에 실패했습니다.')
     }
   }
 
@@ -1746,14 +1820,33 @@ const AdminDashboard: React.FC = () => {
       }
 
       setBulkActionLoading(true)
-      
-      // user_applications 테이블 업데이트는 400 에러 방지를 위해 건너뛰기
-      console.log('⚠️ 일괄 승인 - user_applications 업데이트 건너뛰기 (400 에러 방지)')
+
+      // 선택된 신청들을 승인 상태로 업데이트
+      let successCount = 0
+      let failCount = 0
+
       for (const applicationId of selectedApplications) {
-        console.log('📝 일괄 승인 처리:', applicationId)
+        try {
+          console.log('📝 신청 승인 처리:', applicationId)
+          await supabase
+            .from('user_applications')
+            .update({ status: 'approved' })
+            .eq('id', applicationId)
+
+          successCount++
+        } catch (error) {
+          console.error(`신청 ${applicationId} 승인 실패:`, error)
+          failCount++
+        }
       }
 
-      toast.success(`${selectedApplications.size}개의 신청이 승인되었습니다`)
+      if (successCount > 0) {
+        toast.success(`${successCount}개의 신청이 승인되었습니다`)
+      }
+      if (failCount > 0) {
+        toast.error(`${failCount}개의 신청 승인에 실패했습니다`)
+      }
+
       setSelectedApplications(new Set())
       await loadApplications()
     } catch (error) {
@@ -2095,105 +2188,121 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* 탭 메뉴 */}
+        {/* 상단 관리 메뉴 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <button
+            onClick={() => setActiveTab('campaigns')}
+            className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold">캠페인 관리</h3>
+                <p className="text-sm text-green-100 mt-1">체험단 캠페인 생성 및 관리</p>
+              </div>
+              <Package className="w-10 h-10 opacity-80" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('users')}
+            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold">회원 관리</h3>
+                <p className="text-sm text-purple-100 mt-1">회원 정보 조회 및 관리</p>
+              </div>
+              <User className="w-10 h-10 opacity-80" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/admin/chat')}
+            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold">실시간 채팅</h3>
+                <p className="text-sm text-blue-100 mt-1">고객 문의 실시간 응대</p>
+                {unreadChatCount > 0 && (
+                  <span className="inline-block mt-2 px-3 py-1 bg-white text-blue-600 text-xs font-bold rounded-full">
+                    {unreadChatCount}개의 새 메시지
+                  </span>
+                )}
+              </div>
+              <MessageCircle className="w-10 h-10 opacity-80" />
+            </div>
+          </button>
+        </div>
+
+        {/* 메인 탭 메뉴 (업무 흐름 순서) */}
         <div className="bg-white rounded-lg shadow mb-8">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('applications')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === 'applications'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                신청 관리
+                <FileText className="w-4 h-4" />
+                <span>1. 신청 관리</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                  activeTab === 'reviews'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <UserCheck className="w-4 h-4" />
+                <span>2. 리뷰 검수</span>
               </button>
               <button
                 onClick={() => setActiveTab('point-requests')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === 'point-requests'
                     ? 'border-orange-500 text-orange-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                포인트 지급 요청
+                <Gift className="w-4 h-4" />
+                <span>3. 포인트 지급</span>
                 {stats.pointRequestedApplications > 0 && (
-                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                     {stats.pointRequestedApplications}
                   </span>
                 )}
               </button>
               <button
                 onClick={() => setActiveTab('withdrawal-requests')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === 'withdrawal-requests'
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                출금 요청 관리
+                <Banknote className="w-4 h-4" />
+                <span>4. 출금 요청</span>
                 {withdrawalRequests.filter(req => req.status === 'pending').length > 0 && (
-                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                     {withdrawalRequests.filter(req => req.status === 'pending').length}
                   </span>
                 )}
               </button>
               <button
-                onClick={() => setActiveTab('reviews')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'reviews'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                리뷰 검수 관리
-              </button>
-              <button
-                onClick={() => setActiveTab('campaigns')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'campaigns'
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                캠페인 관리
-              </button>
-              <button
-                onClick={() => setActiveTab('users')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'users'
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                회원 관리
-              </button>
-              <button
                 onClick={() => setActiveTab('settings')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === 'settings'
                     ? 'border-gray-500 text-gray-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <Settings className="w-4 h-4 inline mr-1" />
-                설정
-              </button>
-              <button
-                onClick={() => setActiveTab('chat')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'chat'
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                실시간 채팅
-                {unreadChatCount > 0 && (
-                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {unreadChatCount}
-                  </span>
-                )}
+                <Settings className="w-4 h-4" />
+                <span>설정</span>
               </button>
             </nav>
           </div>
@@ -2237,6 +2346,8 @@ const AdminDashboard: React.FC = () => {
                 <option value="pending">대기중</option>
               <option value="approved">승인됨</option>
                 <option value="review_in_progress">리뷰제출완료</option>
+                <option value="review_resubmitted">리뷰보완제출</option>
+                <option value="review_rejected">리뷰반려</option>
                 <option value="review_completed">리뷰승인완료</option>
                 <option value="point_requested">포인트지급요청</option>
                 <option value="point_completed">포인트지급완료</option>
@@ -2327,13 +2438,21 @@ const AdminDashboard: React.FC = () => {
                           application.status === 'approved' ? 'bg-green-100 text-green-800' :
                           application.status === 'review_in_progress' ? 'bg-blue-100 text-blue-800' :
                           application.status === 'review_completed' ? 'bg-green-100 text-green-800' :
+                          application.status === 'product_purchased' ? 'bg-blue-100 text-blue-800' :
+                          application.status === 'shipping' ? 'bg-purple-100 text-purple-800' :
+                          application.status === 'delivered' ? 'bg-indigo-100 text-indigo-800' :
                           application.status === 'point_requested' ? 'bg-orange-100 text-orange-800' :
                           application.status === 'point_completed' ? 'bg-emerald-100 text-emerald-800' :
                           application.status === 'rejected' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
                           {application.status === 'approved' ? '승인됨' :
+                           application.status === 'product_purchased' ? '제품구매완료' :
+                           application.status === 'shipping' ? '제품배송중' :
+                           application.status === 'delivered' ? '제품수령완료' :
                            application.status === 'review_in_progress' ? '리뷰제출완료' :
+                           application.status === 'review_resubmitted' ? '리뷰보완제출' :
+                           application.status === 'review_rejected' ? '리뷰반려' :
                            application.status === 'review_completed' ? '리뷰승인완료' :
                            application.status === 'point_requested' ? '포인트지급요청' :
                            application.status === 'point_completed' ? '포인트지급완료' :
@@ -2381,12 +2500,12 @@ const AdminDashboard: React.FC = () => {
                             </>
                           )}
                           
-                          {/* 배송 정보 등록 버튼 (제품 구매 완료된 경우) */}
-                          {application.status === 'product_purchased' && (
+                          {/* 배송 정보 등록/수정 버튼 (제품 구매 완료 또는 배송중인 경우) */}
+                          {(application.status === 'product_purchased' || application.status === 'shipping') && (
                             <button
                               onClick={() => handleShippingModal(application)}
                               className="text-blue-600 hover:text-blue-900"
-                              title="배송 정보 등록"
+                              title={application.status === 'shipping' ? '배송 정보 수정' : '배송 정보 등록'}
                             >
                               <Truck className="w-4 h-4" />
                             </button>
@@ -2819,8 +2938,8 @@ const AdminDashboard: React.FC = () => {
         </div>
         )}
 
-        {/* 실시간 채팅 관리 Section */}
-        {activeTab === 'chat' && (
+        {/* 실시간 채팅 관리 Section - 별도 페이지로 이동 */}
+        {false && activeTab === 'chat' && (
         <div className="bg-white rounded-lg shadow mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex justify-between items-center">
@@ -3380,7 +3499,7 @@ const AdminDashboard: React.FC = () => {
                           </button>
                           
                           {/* 상태별 액션 버튼 */}
-                          {application.status === 'review_in_progress' && (
+                          {(application.status === 'review_in_progress' || application.status === 'review_resubmitted') && (
                             <>
                               <button
                                 onClick={() => handleApproveReview(application.id || application._id)}
@@ -3563,6 +3682,9 @@ const AdminDashboard: React.FC = () => {
                       <span className="text-gray-600">상태:</span>
                       <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${
                         selectedApplication.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        selectedApplication.status === 'product_purchased' ? 'bg-blue-100 text-blue-800' :
+                        selectedApplication.status === 'shipping' ? 'bg-purple-100 text-purple-800' :
+                        selectedApplication.status === 'delivered' ? 'bg-indigo-100 text-indigo-800' :
                         selectedApplication.status === 'review_in_progress' ? 'bg-blue-100 text-blue-800' :
                         selectedApplication.status === 'review_completed' ? 'bg-green-100 text-green-800' :
                         selectedApplication.status === 'point_requested' ? 'bg-orange-100 text-orange-800' :
@@ -3571,6 +3693,9 @@ const AdminDashboard: React.FC = () => {
                         'bg-yellow-100 text-yellow-800'
                       }`}>
                         {selectedApplication.status === 'approved' ? '승인됨' :
+                         selectedApplication.status === 'product_purchased' ? '제품구매완료' :
+                         selectedApplication.status === 'shipping' ? '제품배송중' :
+                         selectedApplication.status === 'delivered' ? '제품수령완료' :
                          selectedApplication.status === 'review_in_progress' ? '리뷰제출완료' :
                          selectedApplication.status === 'review_completed' ? '리뷰승인완료' :
                          selectedApplication.status === 'point_requested' ? '포인트지급요청' :
@@ -3581,6 +3706,40 @@ const AdminDashboard: React.FC = () => {
                     <div>
                       <span className="text-gray-600">캠페인:</span>
                       <span className="ml-2 font-medium">{selectedApplication.campaign_name}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 신청자 정보 */}
+                <div className="bg-gray-50 border rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                    <User className="w-5 h-5 mr-2" />
+                    신청자 정보
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-600">이름:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.applicant_name || selectedApplication.name || '정보 없음'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">연락처:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.phone || selectedApplication.contact || '정보 없음'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">이메일:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.email || '정보 없음'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">네이버 ID:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.naver_id || selectedApplication.application_data?.naver_id || '정보 없음'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">주소:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.address || selectedApplication.application_data?.address || '정보 없음'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">우편번호:</span>
+                      <span className="ml-2 font-medium">{selectedApplication.postal_code || selectedApplication.application_data?.postal_code || '정보 없음'}</span>
                     </div>
                   </div>
                 </div>
@@ -3614,6 +3773,71 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-yellow-700 text-sm mt-1">
                       신청자가 추가 정보를 입력하지 않았거나 데이터가 저장되지 않았습니다.
                     </p>
+                  </div>
+                )}
+
+                {/* 리뷰 정보 (리뷰 제출된 경우) */}
+                {(selectedApplication.status === 'review_in_progress' || selectedApplication.status === 'review_completed') && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+                      <FileText className="w-5 h-5 mr-2" />
+                      제출된 리뷰 정보
+                    </h4>
+                    <div className="space-y-4">
+                      {/* 리뷰 이미지 */}
+                      {selectedApplication.review_images && selectedApplication.review_images.length > 0 && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-700 mb-2">리뷰 이미지</div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {selectedApplication.review_images.map((img: string, idx: number) => (
+                              <img
+                                key={idx}
+                                src={img}
+                                alt={`리뷰 이미지 ${idx + 1}`}
+                                className="w-full h-48 object-cover rounded-lg border"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 블로그 URL */}
+                      {selectedApplication.blog_url && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-700 mb-1">블로그 URL</div>
+                          <a
+                            href={selectedApplication.blog_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline flex items-center"
+                          >
+                            {selectedApplication.blog_url}
+                            <ExternalLink className="w-4 h-4 ml-1" />
+                          </a>
+                        </div>
+                      )}
+
+                      {/* 추가 메모 */}
+                      {selectedApplication.additional_notes && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-700 mb-1">추가 메모</div>
+                          <div className="text-sm text-gray-600 bg-white p-3 rounded border">
+                            {selectedApplication.additional_notes}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 리워드 금액 */}
+                      <div>
+                        <div className="text-sm font-medium text-gray-700 mb-1">리워드 금액</div>
+                        <div className="text-lg font-bold text-green-600">
+                          {selectedApplication.experience?.rewards ||
+                           selectedApplication.experience?.reward_points ||
+                           selectedApplication.campaignInfo?.rewards ||
+                           '정보 없음'}P
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -4933,7 +5157,7 @@ const AdminDashboard: React.FC = () => {
                   type="email"
                   value={emailFromAddress}
                   onChange={(e) => setEmailFromAddress(e.target.value)}
-                  placeholder="noreply@allthingbucket.com"
+                  placeholder="support@allthingbucket.com"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
@@ -4977,6 +5201,100 @@ const AdminDashboard: React.FC = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   설정 저장
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 리뷰 승인 확인 모달 */}
+      {showReviewApprovalModal && selectedReviewApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">리뷰 승인 확인</h3>
+              <p className="text-gray-600 mb-6">
+                정말 이 리뷰를 승인하시겠습니까?<br />
+                승인 후 리워드 지급 절차가 진행됩니다.
+              </p>
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-700">
+                  <strong>신청자:</strong> {selectedReviewApplication.name || '정보 없음'}
+                </p>
+                <p className="text-sm text-gray-700 mt-1">
+                  <strong>캠페인:</strong> {selectedReviewApplication.experience?.campaign_name || '정보 없음'}
+                </p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowReviewApprovalModal(false)
+                    setSelectedReviewApplication(null)
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleConfirmApproveReview}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  승인하기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 리뷰 반려 모달 */}
+      {showReviewRejectionModal && selectedReviewApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">리뷰 반려</h3>
+              <p className="text-gray-600 mb-4">
+                반려 사유를 입력해주세요.<br />
+                회원은 반려 사유를 확인 후 리뷰를 수정하여 재제출할 수 있습니다.
+              </p>
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <p className="text-sm text-gray-700">
+                  <strong>신청자:</strong> {selectedReviewApplication.name || '정보 없음'}
+                </p>
+                <p className="text-sm text-gray-700 mt-1">
+                  <strong>캠페인:</strong> {selectedReviewApplication.experience?.campaign_name || '정보 없음'}
+                </p>
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  반려 사유 <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={reviewRejectionReason}
+                  onChange={(e) => setReviewRejectionReason(e.target.value)}
+                  placeholder="반려 사유를 상세히 입력해주세요..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                />
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowReviewRejectionModal(false)
+                    setSelectedReviewApplication(null)
+                    setReviewRejectionReason('')
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleConfirmRejectReview}
+                  disabled={!reviewRejectionReason.trim()}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  반려하기
                 </button>
               </div>
             </div>

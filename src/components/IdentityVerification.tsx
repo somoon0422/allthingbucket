@@ -94,7 +94,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
   }
 
   // 인증 상태 확인 (폴링)
-  const checkVerificationStatus = async (verificationId: string) => {
+  const checkVerificationStatus = async (_verificationId: string) => {
     const maxAttempts = 30 // 5분간 확인 (10초 간격)
     let attempts = 0
 

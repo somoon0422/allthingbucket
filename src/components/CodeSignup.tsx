@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
-import {Gift, User, Phone, Mail, Instagram, Youtube, AlertCircle, CheckCircle} from 'lucide-react'
+import {Gift, User, Phone, Mail, Instagram, Youtube, CheckCircle} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface CodeSignupProps {
@@ -14,7 +14,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
   const { getCampaignByCode } = useExperiences()
   
   const [code, setCode] = useState(initialCode || '')
-  const [campaign, setCampaign] = useState<any>(null)
+  const [campaign, setCampaign] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(false)
   const [verifying, setVerifying] = useState(false)
   

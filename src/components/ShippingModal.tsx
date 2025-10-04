@@ -19,6 +19,14 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
   const [courier, setCourier] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // 모달이 열릴 때 기존 배송 정보 로드
+  React.useEffect(() => {
+    if (isOpen && application) {
+      setTrackingNumber(application.tracking_number || '')
+      setCourier(application.courier || '')
+    }
+  }, [isOpen, application])
+
   const courierOptions = [
     { value: 'cj', label: 'CJ대한통운' },
     { value: 'hanjin', label: '한진택배' },
@@ -57,7 +65,8 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
       })
 
       if (result) {
-        toast.success('배송 정보가 등록되었습니다!')
+        const isUpdate = application.tracking_number && application.courier
+        toast.success(isUpdate ? '배송 정보가 수정되었습니다!' : '배송 정보가 등록되었습니다!')
         onSuccess()
         onClose()
         setTrackingNumber('')
@@ -85,7 +94,9 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
               <Truck className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">배송 정보 등록</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {application?.tracking_number ? '배송 정보 수정' : '배송 정보 등록'}
+              </h2>
               <p className="text-sm text-gray-600">택배 송장번호를 입력해주세요</p>
             </div>
           </div>
@@ -180,7 +191,7 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
               disabled={loading}
               className="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '등록 중...' : '배송 정보 등록'}
+              {loading ? '처리 중...' : (application?.tracking_number ? '배송 정보 수정' : '배송 정보 등록')}
             </button>
           </div>
         </form>

@@ -21,11 +21,11 @@ export interface UserNotificationSettings {
 }
 
 export class NaverCloudNotificationService {
-  // 🔥 승인 알림 발송
-  async sendApprovalNotification(
+  // 🔥 커스텀 메시지 발송 (UI에서 작성한 내용 사용)
+  async sendCustomNotification(
     userSettings: UserNotificationSettings,
-    userName: string,
-    campaignName: string,
+    subject: string,
+    content: string,
     channels: readonly NotificationChannel[] = ['email']
   ): Promise<NotificationResult[]> {
     const results: NotificationResult[] = []
@@ -35,18 +35,18 @@ export class NaverCloudNotificationService {
         let result: NotificationResult
 
         switch (channel) {
-          case 'email':
+          case 'email': {
             if (userSettings.email && userSettings.emailAddress) {
-              const emailResult = await naverCloudEmailService.sendApprovalEmail(
+              const emailResult = await naverCloudEmailService.sendCustomEmail(
                 userSettings.emailAddress,
-                userName,
-                campaignName
+                subject,
+                content
               )
               result = {
                 channel: 'email',
                 success: emailResult.success,
                 message: emailResult.message,
-                requestId: (emailResult as any).requestId
+                requestId: emailResult.requestId
               }
             } else {
               result = {
@@ -56,8 +56,115 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'sms':
+          case 'sms': {
+            if (userSettings.sms && userSettings.phoneNumber) {
+              const smsResult = await naverCloudSmsService.sendCustomSms(
+                userSettings.phoneNumber,
+                content
+              )
+              result = {
+                channel: 'sms',
+                success: smsResult.success,
+                message: smsResult.message,
+                requestId: smsResult.requestId
+              }
+            } else {
+              result = {
+                channel: 'sms',
+                success: false,
+                message: 'SMS 설정이 없습니다.'
+              }
+            }
+            break
+          }
+
+          case 'alimtalk': {
+            // 카카오 알림톡은 템플릿만 사용 가능
+            result = {
+              channel: 'alimtalk',
+              success: false,
+              message: '알림톡은 등록된 템플릿만 사용 가능합니다. 이메일/SMS를 이용해주세요.'
+            }
+            break
+          }
+
+          case 'all': {
+            // 이메일과 SMS만 발송
+            const allResults = await this.sendCustomNotification(
+              userSettings,
+              subject,
+              content,
+              ['email', 'sms']
+            )
+            results.push(...allResults)
+            continue
+          }
+
+          default:
+            result = {
+              channel,
+              success: false,
+              message: '지원하지 않는 알림 채널입니다.'
+            }
+        }
+
+        results.push(result)
+      } catch (error) {
+        results.push({
+          channel,
+          success: false,
+          message: `알림 발송 중 오류가 발생했습니다: ${error}`
+        })
+      }
+    }
+
+    return results
+  }
+
+  // 🔥 승인 알림 발송
+  async sendApprovalNotification(
+    userSettings: UserNotificationSettings,
+    userName: string,
+    campaignName: string,
+    channels: readonly NotificationChannel[] = ['email'],
+    customSubject?: string,
+    customContent?: string
+  ): Promise<NotificationResult[]> {
+    const results: NotificationResult[] = []
+
+    for (const channel of channels) {
+      try {
+        let result: NotificationResult
+
+        switch (channel) {
+          case 'email': {
+            if (userSettings.email && userSettings.emailAddress) {
+              const emailResult = await naverCloudEmailService.sendApprovalEmail(
+                userSettings.emailAddress,
+                userName,
+                campaignName,
+                customSubject,
+                customContent
+              )
+              result = {
+                channel: 'email',
+                success: emailResult.success,
+                message: emailResult.message,
+                requestId: emailResult.requestId
+              }
+            } else {
+              result = {
+                channel: 'email',
+                success: false,
+                message: '이메일 설정이 없습니다.'
+              }
+            }
+            break
+          }
+
+          case 'sms': {
             if (userSettings.sms && userSettings.phoneNumber) {
               const smsResult = await naverCloudSmsService.sendApprovalSms(
                 userSettings.phoneNumber,
@@ -68,7 +175,7 @@ export class NaverCloudNotificationService {
                 channel: 'sms',
                 success: smsResult.success,
                 message: smsResult.message,
-                requestId: (smsResult as any).requestId
+                requestId: smsResult.requestId
               }
             } else {
               result = {
@@ -78,8 +185,9 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'alimtalk':
+          case 'alimtalk': {
             if (userSettings.alimtalk && userSettings.phoneNumber) {
               const alimtalkResult = await naverCloudAlimtalkService.sendApprovalAlimtalk(
                 userSettings.phoneNumber,
@@ -90,7 +198,7 @@ export class NaverCloudNotificationService {
                 channel: 'alimtalk',
                 success: alimtalkResult.success,
                 message: alimtalkResult.message,
-                requestId: (alimtalkResult as any).requestId
+                requestId: alimtalkResult.requestId
               }
             } else {
               result = {
@@ -100,8 +208,9 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'all':
+          case 'all': {
             // 모든 채널로 발송
             const allResults = await this.sendApprovalNotification(
               userSettings,
@@ -111,6 +220,7 @@ export class NaverCloudNotificationService {
             )
             results.push(...allResults)
             continue
+          }
 
           default:
             result = {
@@ -148,7 +258,7 @@ export class NaverCloudNotificationService {
         let result: NotificationResult
 
         switch (channel) {
-          case 'email':
+          case 'email': {
             if (userSettings.email && userSettings.emailAddress) {
               const emailResult = await naverCloudEmailService.sendRejectionEmail(
                 userSettings.emailAddress,
@@ -160,7 +270,7 @@ export class NaverCloudNotificationService {
                 channel: 'email',
                 success: emailResult.success,
                 message: emailResult.message,
-                requestId: (emailResult as any).requestId
+                requestId: emailResult.requestId
               }
             } else {
               result = {
@@ -170,8 +280,9 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'sms':
+          case 'sms': {
             if (userSettings.sms && userSettings.phoneNumber) {
               const smsResult = await naverCloudSmsService.sendRejectionSms(
                 userSettings.phoneNumber,
@@ -183,7 +294,7 @@ export class NaverCloudNotificationService {
                 channel: 'sms',
                 success: smsResult.success,
                 message: smsResult.message,
-                requestId: (smsResult as any).requestId
+                requestId: smsResult.requestId
               }
             } else {
               result = {
@@ -193,8 +304,9 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'alimtalk':
+          case 'alimtalk': {
             if (userSettings.alimtalk && userSettings.phoneNumber) {
               const alimtalkResult = await naverCloudAlimtalkService.sendRejectionAlimtalk(
                 userSettings.phoneNumber,
@@ -206,7 +318,7 @@ export class NaverCloudNotificationService {
                 channel: 'alimtalk',
                 success: alimtalkResult.success,
                 message: alimtalkResult.message,
-                requestId: (alimtalkResult as any).requestId
+                requestId: alimtalkResult.requestId
               }
             } else {
               result = {
@@ -216,8 +328,9 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'all':
+          case 'all': {
             // 모든 채널로 발송
             const allResults = await this.sendRejectionNotification(
               userSettings,
@@ -228,6 +341,7 @@ export class NaverCloudNotificationService {
             )
             results.push(...allResults)
             continue
+          }
 
           default:
             result = {
@@ -264,7 +378,7 @@ export class NaverCloudNotificationService {
         let result: NotificationResult
 
         switch (channel) {
-          case 'email':
+          case 'email': {
             if (userSettings.email && userSettings.emailAddress) {
               const emailResult = await naverCloudEmailService.sendWithdrawalApprovalEmail(
                 userSettings.emailAddress,
@@ -275,7 +389,7 @@ export class NaverCloudNotificationService {
                 channel: 'email',
                 success: emailResult.success,
                 message: emailResult.message,
-                requestId: (emailResult as any).requestId
+                requestId: emailResult.requestId
               }
             } else {
               result = {
@@ -285,8 +399,9 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'sms':
+          case 'sms': {
             if (userSettings.sms && userSettings.phoneNumber) {
               const smsResult = await naverCloudSmsService.sendWithdrawalApprovalSms(
                 userSettings.phoneNumber,
@@ -297,7 +412,7 @@ export class NaverCloudNotificationService {
                 channel: 'sms',
                 success: smsResult.success,
                 message: smsResult.message,
-                requestId: (smsResult as any).requestId
+                requestId: smsResult.requestId
               }
             } else {
               result = {
@@ -307,8 +422,9 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'alimtalk':
+          case 'alimtalk': {
             if (userSettings.alimtalk && userSettings.phoneNumber) {
               const alimtalkResult = await naverCloudAlimtalkService.sendWithdrawalApprovalAlimtalk(
                 userSettings.phoneNumber,
@@ -319,7 +435,7 @@ export class NaverCloudNotificationService {
                 channel: 'alimtalk',
                 success: alimtalkResult.success,
                 message: alimtalkResult.message,
-                requestId: (alimtalkResult as any).requestId
+                requestId: alimtalkResult.requestId
               }
             } else {
               result = {
@@ -329,8 +445,9 @@ export class NaverCloudNotificationService {
               }
             }
             break
+          }
 
-          case 'all':
+          case 'all': {
             // 모든 채널로 발송
             const allResults = await this.sendWithdrawalApprovalNotification(
               userSettings,
@@ -340,6 +457,7 @@ export class NaverCloudNotificationService {
             )
             results.push(...allResults)
             continue
+          }
 
           default:
             result = {

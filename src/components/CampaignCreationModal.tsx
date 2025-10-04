@@ -97,7 +97,11 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     content_end_date: '', // 콘텐츠 등록 종료일
     experience_announcement_date: '', // 체험단 발표일
     result_announcement_date: '', // 캠페인 결과발표일
-    current_applicants: 0 // 현재 신청자 수
+    current_applicants: 0, // 현재 신청자 수
+    // 승인 안내 메시지 커스터마이징
+    approval_email_subject: '', // 승인 이메일 제목
+    approval_email_content: '', // 승인 이메일 내용
+    approval_sms_content: '' // 승인 SMS 내용
   })
 
   // 🔥 메인 이미지 변경 처리
@@ -172,7 +176,11 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         contact_email: 'support@allthingbucket.com',
         contact_phone: '01022129245',
         main_images: mainImages,
-        detail_images: detailImages
+        detail_images: detailImages,
+        // 승인 안내 메시지
+        approval_email_subject: formData.approval_email_subject.trim() || null,
+        approval_email_content: formData.approval_email_content.trim() || null,
+        approval_sms_content: formData.approval_sms_content.trim() || null
       }
 
       // 🔥 디버깅: 이미지 데이터 확인
@@ -740,6 +748,74 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   현재까지 신청한 인플루언서 수를 입력하세요
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 승인 안내 메시지 설정 */}
+          <div className="bg-green-50 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Mail className="w-5 h-5 mr-2 text-green-600" />
+              승인 안내 메시지 설정 (선택)
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              체험단 선정 시 발송될 이메일과 SMS 내용을 미리 설정할 수 있습니다.
+              비워두면 기본 템플릿이 사용됩니다.
+            </p>
+
+            <div className="space-y-4">
+              {/* 이메일 제목 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Mail className="w-4 h-4 mr-2 text-green-600" />
+                  승인 이메일 제목
+                </label>
+                <input
+                  type="text"
+                  name="approval_email_subject"
+                  value={formData.approval_email_subject}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="예: 🎉 '{캠페인명}' 최종 선정 안내"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {'{'}캠페인명{'}'}, {'{'}신청자명{'}'} 변수를 사용할 수 있습니다
+                </p>
+              </div>
+
+              {/* 이메일 내용 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <FileText className="w-4 h-4 mr-2 text-green-600" />
+                  승인 이메일 내용
+                </label>
+                <textarea
+                  name="approval_email_content"
+                  value={formData.approval_email_content}
+                  onChange={handleInputChange}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder={`예시:\n안녕하세요, {신청자명}님.\n\n'{캠페인명}'에 최종 선정되셨음을 진심으로 축하드립니다! 🎉\n\n아래 링크를 클릭해서 체험단 가이드를 확인하시고 다음 단계를 진행해주세요.`}
+                />
+              </div>
+
+              {/* SMS 내용 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Phone className="w-4 h-4 mr-2 text-green-600" />
+                  승인 SMS 내용
+                </label>
+                <textarea
+                  name="approval_sms_content"
+                  value={formData.approval_sms_content}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder={`예시:\n{신청자명}님, '{캠페인명}' 체험단에 최종 선정되셨습니다! 자세한 내용은 이메일을 확인해주세요.`}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  SMS는 90자 제한이 있습니다. 간결하게 작성해주세요.
                 </p>
               </div>
             </div>

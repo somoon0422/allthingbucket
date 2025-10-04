@@ -20,6 +20,7 @@ import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
 
 // 관리자 페이지
 import AdminDashboard from './pages/AdminDashboard'
+import AdminChat from './pages/AdminChat'
 
 function App() {
   return (
@@ -31,27 +32,28 @@ function App() {
         }}
       >
         <div className="min-h-screen bg-gray-50">
-          <Toaster 
+          <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
-              style: { 
-                background: '#363636', 
+              style: {
+                background: '#363636',
                 color: '#fff',
                 borderRadius: '12px'
               },
-              success: { 
-                style: { background: '#10b981' } 
+              success: {
+                style: { background: '#10b981' }
               },
-              error: { 
-                style: { background: '#ef4444' } 
+              error: {
+                style: { background: '#ef4444' }
               }
             }}
           />
-          
+
           <Routes>
             {/* 관리자 라우트 */}
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/chat" element={<AdminChat />} />
             
             {/* OAuth 콜백 */}
             <Route path="/auth/callback" element={<AuthCallback />} />

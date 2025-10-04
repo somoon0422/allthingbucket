@@ -20,7 +20,7 @@ export class NaverCloudSmsService {
         content: smsData.content
       })
 
-      const response = await fetch('/api/naver-cloud/send-sms', {
+      const response = await fetch('http://localhost:3001/api/naver-cloud/send-sms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,6 +78,14 @@ export class NaverCloudSmsService {
     return this.sendSms({
       to: userPhone,
       content
+    })
+  }
+
+  // 🔥 커스텀 SMS 발송 (UI에서 작성한 내용)
+  async sendCustomSms(userPhone: string, content: string): Promise<{ success: boolean; message: string; requestId?: string }> {
+    return this.sendSms({
+      to: userPhone,
+      content: `[올띵버킷] ${content}`
     })
   }
 }

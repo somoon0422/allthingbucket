@@ -267,6 +267,9 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         ...formData,
         // 🔥 다중 사용자 ID 보장 (우선순위: id > user_id > _id)
         user_id: userId,
+        // 🔥 연락처 정보 명시적 저장
+        user_phone: formData.phone,
+        phone: formData.phone,
         // 🔥 추가 사용자 정보 (디버깅용)
         original_user_object: user,
         submitted_by_role: user.role,

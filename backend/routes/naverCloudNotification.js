@@ -5,9 +5,10 @@ const CryptoJS = require('crypto-js')
 // 네이버 클라우드 플랫폼 설정
 const NCP_ACCESS_KEY = process.env.VITE_SMS_ACCESS_KEY
 const NCP_SECRET_KEY = process.env.VITE_SMS_SECRET_KEY
-const SMS_SERVICE_ID = process.env.VITE_SMS_SERVICE_ID
-const ALIMTALK_SERVICE_ID = 'ncp:kkobizmsg:kr:359104915298:allthingbucket'
-const EMAIL_ENDPOINT = 'https://mail.apigw.ntruss.com/api/v1'
+// SENS SMS 서비스 ID (전체 형식 그대로 사용)
+const SMS_SERVICE_ID = process.env.VITE_SMS_SERVICE_ID || 'ncp:sms:kr:359104922813:allthingbucket'
+const ALIMTALK_SERVICE_ID = process.env.VITE_NCP_ALIMTALK_SERVICE_ID || 'ncp:kkobizmsg:kr:359104915298:allthingbucket'
+const EMAIL_ENDPOINT = 'https://mail.apigw.ntruss.com'
 const SMS_ENDPOINT = 'https://sens.apigw.ntruss.com/sms/v2'
 const ALIMTALK_ENDPOINT = 'https://sens.apigw.ntruss.com/alimtalk/v2'
 
@@ -39,13 +40,11 @@ router.post('/send-email', async (req, res) => {
       senderAddress: process.env.VITE_SUPPORT_EMAIL || 'support@allthingbucket.com',
       title: subject,
       body: html,
-      recipients: [{
+      recipientList: [{
         address: to,
         name: toName,
         type: 'R'
-      }],
-      individual: true,
-      advertising: false
+      }]
     }
 
     console.log('📧 네이버 클라우드 이메일 발송 요청:', { to, toName, subject })
@@ -98,8 +97,12 @@ router.post('/send-sms', async (req, res) => {
       return res.status(400).json({ error: 'Missing required SMS fields' })
     }
 
+    // 전화번호에서 하이픈 제거
+    const phoneNumber = to.replace(/-/g, '')
+
     const timestamp = Date.now().toString()
-    const url = `/services/${SMS_SERVICE_ID}/messages`
+    const url = `/sms/v2/services/${SMS_SERVICE_ID}/messages`
+    const urlForFetch = `/services/${SMS_SERVICE_ID}/messages`
     const signature = makeSignature('POST', url, timestamp, NCP_SECRET_KEY, NCP_ACCESS_KEY)
 
     const requestBody = {
@@ -109,14 +112,23 @@ router.post('/send-sms', async (req, res) => {
       from: process.env.VITE_SMS_FROM_NUMBER || '01072907620',
       content: content,
       messages: [{
-        to: to,
+        to: phoneNumber,
         content: content
       }]
     }
 
-    console.log('📱 네이버 클라우드 SMS 발송 요청:', { to, content })
+    const fullUrl = `${SMS_ENDPOINT}${urlForFetch}`
+    console.log('📱 네이버 클라우드 SMS 발송 요청:', {
+      to,
+      content,
+      url: fullUrl,
+      signatureUrl: url,
+      serviceId: SMS_SERVICE_ID,
+      timestamp,
+      accessKey: NCP_ACCESS_KEY?.substring(0, 20) + '...'
+    })
 
-    const response = await fetch(`${SMS_ENDPOINT}${url}`, {
+    const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
@@ -164,7 +176,8 @@ router.post('/send-alimtalk', async (req, res) => {
     }
 
     const timestamp = Date.now().toString()
-    const url = `/services/${ALIMTALK_SERVICE_ID}/messages`
+    const url = `/alimtalk/v2/services/${ALIMTALK_SERVICE_ID}/messages`
+    const urlForFetch = `/services/${ALIMTALK_SERVICE_ID}/messages`
     const signature = makeSignature('POST', url, timestamp, NCP_SECRET_KEY, NCP_ACCESS_KEY)
 
     const requestBody = {
@@ -181,7 +194,7 @@ router.post('/send-alimtalk', async (req, res) => {
 
     console.log('💬 네이버 클라우드 알림톡 발송 요청:', { to, title, templateCode })
 
-    const response = await fetch(`${ALIMTALK_ENDPOINT}${url}`, {
+    const response = await fetch(`${ALIMTALK_ENDPOINT}${urlForFetch}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',

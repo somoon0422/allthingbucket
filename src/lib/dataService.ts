@@ -701,6 +701,7 @@ export const dataService = {
       },
       create: async (data: any) => {
         try {
+          console.log('🔥 user_applications.create 호출:', data)
           const { data: result, error } = await supabase
             .from('user_applications')
             .insert([data])
@@ -709,13 +710,14 @@ export const dataService = {
           
           if (error) {
             console.error('❌ user_applications 생성 실패:', error)
-            return null
+            return { success: false, error: error.message }
           }
           
-          return result
+          console.log('✅ user_applications 생성 성공:', result)
+          return { success: true, data: result }
         } catch (error) {
           console.error('❌ user_applications 생성 실패:', error)
-          return null
+          return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다' }
         }
       },
       update: async (id: string, data: any) => {
@@ -760,19 +762,25 @@ export const dataService = {
 
     // 리뷰 제출
     review_submissions: {
-      list: async () => {
+      list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase review_submissions.list 호출됨')
-          const { data, error } = await supabase
-            .from('review_submissions')
-            .select('*')
-            .order('updated_at', { ascending: false })
-          
+          console.log('🔥 Supabase review_submissions.list 호출됨', options)
+
+          let query = supabase.from('review_submissions').select('*')
+
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+
+          const { data, error } = await query.order('updated_at', { ascending: false })
+
           if (error) {
             console.error('❌ review_submissions 조회 실패:', error)
             return []
           }
-          
+
           console.log('✅ Supabase review_submissions.list 결과:', data)
           return data || []
         } catch (error) {
@@ -901,21 +909,23 @@ export const dataService = {
       },
       create: async (data: any) => {
         try {
+          console.log('🔥 user_reviews.create 호출:', data)
           const { data: result, error } = await supabase
             .from('user_reviews')
             .insert([data])
             .select()
             .maybeSingle()
-          
+
           if (error) {
             console.error('❌ user_reviews 생성 실패:', error)
-            return null
+            return { success: false, error: error.message }
           }
-          
-          return result
+
+          console.log('✅ user_reviews 생성 성공:', result)
+          return { success: true, data: result }
         } catch (error) {
           console.error('❌ user_reviews 생성 실패:', error)
-          return null
+          return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다' }
         }
       },
       update: async (id: string, data: any) => {

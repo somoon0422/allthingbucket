@@ -715,7 +715,7 @@ const Points: React.FC = () => {
                           })
                           
                           // campaign_id가 있으면 사용하고, 없으면 description에서 캠페인 이름 추출
-                          let campaignId = point.campaign_id
+                          const campaignId = point.campaign_id
                           let campaignName = point.campaign_name
                           
                           if (!campaignId && !campaignName) {

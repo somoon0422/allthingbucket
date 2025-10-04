@@ -812,7 +812,21 @@ const CampaignDetail: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-gray-600 mb-4 text-sm">
-                        {new Date(safeString(applicationStatus, 'applied_at') || safeString(applicationStatus, 'created_at')).toLocaleDateString('ko-KR')}에 신청하셨습니다
+                        {(() => {
+                          const appliedAt = safeString(applicationStatus, 'applied_at') || safeString(applicationStatus, 'created_at')
+                          if (appliedAt) {
+                            try {
+                              const date = new Date(appliedAt)
+                              if (isNaN(date.getTime())) {
+                                return '신청하셨습니다'
+                              }
+                              return `${date.toLocaleDateString('ko-KR')}에 신청하셨습니다`
+                            } catch (error) {
+                              return '신청하셨습니다'
+                            }
+                          }
+                          return '신청하셨습니다'
+                        })()}
                       </p>
                       <button
                         onClick={() => navigate('/my-applications')}

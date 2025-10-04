@@ -237,7 +237,7 @@ const MyApplications: React.FC = () => {
     switch (status) {
       case 'pending':
         return {
-          label: '검토중',
+          label: '승인 대기',
           color: 'bg-yellow-100 text-yellow-800',
           icon: Clock
         }
@@ -301,6 +301,12 @@ const MyApplications: React.FC = () => {
           color: 'bg-blue-100 text-blue-800',
           icon: FileText
         }
+      case 'review_in_progress':
+        return {
+          label: '리뷰 검수중',
+          color: 'bg-purple-100 text-purple-800',
+          icon: FileText
+        }
       case 'review_approved':
         return {
           label: '리뷰 승인됨',
@@ -312,6 +318,12 @@ const MyApplications: React.FC = () => {
           label: '리뷰 반려됨',
           color: 'bg-red-100 text-red-800',
           icon: XCircle
+        }
+      case 'review_resubmitted':
+        return {
+          label: '리뷰 보완 제출',
+          color: 'bg-orange-100 text-orange-800',
+          icon: RefreshCw
         }
       case 'point_requested':
         return {
@@ -386,6 +398,11 @@ const MyApplications: React.FC = () => {
         return
       }
 
+      // 확인 다이얼로그
+      if (!confirm('제품을 구매하셨나요?\n\n구매 완료 후에는 리뷰 작성이 가능합니다.\n이 작업은 되돌릴 수 없습니다.')) {
+        return
+      }
+
       const applicationId = application._id || application.id
       if (!applicationId) {
         toast.error('신청 정보를 찾을 수 없습니다')
@@ -395,7 +412,6 @@ const MyApplications: React.FC = () => {
       // 상태를 'product_purchased'로 업데이트
       const result = await dataService.entities.user_applications.update(applicationId, {
         status: 'product_purchased',
-        product_purchased_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
 
@@ -414,6 +430,11 @@ const MyApplications: React.FC = () => {
 
   // 🔥 제품 수령 완료 처리
   const handleProductDelivered = async (application: any) => {
+    // 확인 다이얼로그
+    if (!confirm('제품을 수령하셨나요?\n\n수령 완료 후에는 리뷰 작성이 가능합니다.\n이 작업은 되돌릴 수 없습니다.')) {
+      return
+    }
+
     try {
       if (!user?.user_id) {
         toast.error('로그인이 필요합니다')
@@ -429,7 +450,6 @@ const MyApplications: React.FC = () => {
       // 상태를 'delivered'로 업데이트
       const result = await dataService.entities.user_applications.update(applicationId, {
         status: 'delivered',
-        delivered_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
 
@@ -808,6 +828,60 @@ const MyApplications: React.FC = () => {
           </div>
         </div>
 
+        {/* 프로세스 안내 박스 */}
+        {filteredApplications.length > 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 sm:p-6 mb-6">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  체험단 진행 프로세스 안내
+                </h3>
+                <div className="space-y-2.5 text-sm sm:text-base">
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      1
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">선정완료:</span>
+                      <span className="text-gray-700 ml-1">제품을 구매하신 후 '제품 구매 완료' 버튼을 클릭해주세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      2
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">제품구매완료:</span>
+                      <span className="text-gray-700 ml-1">관리자가 배송 정보를 등록하면 송장번호를 확인하실 수 있습니다.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      3
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">제품배송중:</span>
+                      <span className="text-gray-700 ml-1">제품을 받으시면 '제품 수령 완료' 버튼을 클릭해주세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      4
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">제품수령완료:</span>
+                      <span className="text-gray-700 ml-1">'리뷰 인증하기' 버튼을 통해 리뷰를 인증해주세요.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 🔥 안전한 배열 길이 체크 */}
         {!Array.isArray(filteredApplications) || filteredApplications.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center">
@@ -1019,18 +1093,6 @@ const MyApplications: React.FC = () => {
                             </button>
                           )}
 
-                          {/* 🔥 리뷰 제출 버튼 (제품 구매 완료된 경우) */}
-                          {status === 'product_purchased' && (
-                            <button
-                              onClick={() => handleWriteReview(application)}
-                              className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                              <FileText className="w-4 h-4 mr-1 sm:mr-2" />
-                              <span className="hidden sm:inline">리뷰 작성하기</span>
-                              <span className="sm:hidden">리뷰</span>
-                            </button>
-                          )}
-
                           {/* 🔥 리뷰 수정 버튼 (리뷰 제출된 경우만) */}
                           {status === 'review_in_progress' && (
                             <button
@@ -1084,8 +1146,35 @@ const MyApplications: React.FC = () => {
                               <span className="sm:hidden">리뷰인증</span>
                             </button>
                           )}
+
+                          {/* 🔥 반려 사유 표시 (리뷰 반려된 경우) */}
+                          {status === 'review_rejected' && (application as any).rejection_reason && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <div className="flex items-start space-x-2">
+                                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-red-800 mb-1">반려 사유</p>
+                                  <p className="text-sm text-red-700 whitespace-pre-wrap">
+                                    {(application as any).rejection_reason}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 🔥 리뷰 수정 버튼 (리뷰 반려된 경우) */}
+                          {status === 'review_rejected' && (
+                            <button
+                              onClick={() => handleWriteReview(application)}
+                              className="inline-flex items-center px-3 py-2 bg-red-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                              <RefreshCw className="w-4 h-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">리뷰 수정하기</span>
+                              <span className="sm:hidden">수정</span>
+                            </button>
+                          )}
                         </div>
-                        
+
                         {/* 취소 버튼 (승인 대기중인 경우만) */}
                         {status === 'pending' && (
                           <button

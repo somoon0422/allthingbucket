@@ -929,13 +929,44 @@ function ExperienceDetail() {
                   
                   <div className="flex flex-col sm:flex-row gap-4">
                     {(() => {
-                      console.log('🔍 버튼 렌더링 상태:', { 
-                        isApplicationClosed, 
+                      console.log('🔍 버튼 렌더링 상태:', {
+                        isApplicationClosed,
+                        userApplication,
+                        status: userApplication?.status,
                         experience: experience?.title || experience?.campaign_name,
-                        status: experience?.status,
                         application_end_date: experience?.application_end_date
                       })
-                      
+
+                      // 신청 상태별 버튼 표시
+                      if (userApplication) {
+                        const status = userApplication.status
+
+                        // 상태별 버튼 설정
+                        const statusConfig: { [key: string]: { text: string; color: string; disabled?: boolean } } = {
+                          pending: { text: '검수 대기중', color: 'bg-yellow-500', disabled: true },
+                          approved: { text: '승인 완료', color: 'bg-green-500', disabled: true },
+                          rejected: { text: '반려됨', color: 'bg-red-500', disabled: true },
+                          product_purchased: { text: '제품 구매 완료', color: 'bg-blue-500', disabled: true },
+                          shipping: { text: '배송중', color: 'bg-indigo-500', disabled: true },
+                          delivered: { text: '제품 수령 완료', color: 'bg-teal-500', disabled: true },
+                          review_in_progress: { text: '리뷰 검수중', color: 'bg-purple-500', disabled: true },
+                          review_completed: { text: '리뷰 완료', color: 'bg-emerald-500', disabled: true },
+                          reward_paid: { text: '리워드 지급 완료', color: 'bg-pink-500', disabled: true }
+                        }
+
+                        const config = statusConfig[status] || { text: '신청 완료', color: 'bg-gray-500', disabled: true }
+
+                        return (
+                          <button
+                            disabled={config.disabled}
+                            className={`flex-1 px-8 py-4 ${config.color} text-white rounded-lg font-medium text-lg ${config.disabled ? 'cursor-not-allowed opacity-90' : 'hover:opacity-90 transition-opacity'}`}
+                          >
+                            {config.text}
+                          </button>
+                        )
+                      }
+
+                      // 신청 전
                       return isApplicationClosed ? (
                         <button
                           disabled

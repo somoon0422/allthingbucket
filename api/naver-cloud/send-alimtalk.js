@@ -1,4 +1,18 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
+
+// HMAC-SHA256 서명 생성
+function makeSignature(timestamp, method, url, secretKey) {
+  const space = ' ';
+  const newLine = '\n';
+  const message = method + space + url + newLine + timestamp + newLine + process.env.VITE_SMS_ACCESS_KEY;
+  
+  const signature = crypto
+    .createHmac('sha256', secretKey)
+    .update(message)
+    .digest('base64');
+    
+  return signature;
+}
 
 export default async function handler(req, res) {
   // CORS 설정
@@ -32,8 +46,8 @@ export default async function handler(req, res) {
     // 환경 변수 확인
     const NCP_ACCESS_KEY = process.env.VITE_SMS_ACCESS_KEY;
     const NCP_SECRET_KEY = process.env.VITE_SMS_SECRET_KEY;
-    const NCP_ALIMTALK_SERVICE_ID = process.env.VITE_NCP_ALIMTALK_SERVICE_ID || 'ncp:kkobizmsg:kr:359104915298:allthingbucket';
-    const NCP_PLUS_FRIEND_ID = process.env.VITE_COMPANY_NAME || '올띵버킷';
+    const NCP_ALIMTALK_SERVICE_ID = 'ncp:kkobizmsg:kr:359104915298:allthingbucket'; // 실제 서비스 ID
+    const NCP_PLUS_FRIEND_ID = '@올띵버킷'; // 플러스친구 ID
 
     console.log('🔑 알림톡 환경 변수 확인:', {
       hasAccessKey: !!NCP_ACCESS_KEY,
@@ -50,14 +64,55 @@ export default async function handler(req, res) {
       });
     }
 
-    // 임시로 성공 응답 반환 (실제 알림톡 발송은 나중에 구현)
-    console.log('✅ 알림톡 발송 시뮬레이션 완료');
-    
-    return res.status(200).json({
-      success: true,
-      message: '알림톡이 성공적으로 발송되었습니다 (시뮬레이션)',
-      requestId: Date.now().toString()
+    // 네이버 클라우드 알림톡 API 호출
+    const timestamp = Date.now().toString();
+    const method = 'POST';
+    const url = `/alimtalk/v2/services/${NCP_ALIMTALK_SERVICE_ID}/messages`;
+    const signature = makeSignature(timestamp, method, url, NCP_SECRET_KEY);
+
+    const alimtalkData = {
+      plusFriendId: NCP_PLUS_FRIEND_ID,
+      templateCode: templateCode || 'APPROVAL_TEMPLATE',
+      messages: [
+        {
+          to: to.replace(/-/g, ''), // 하이픈 제거
+          content: content,
+          countryCode: '82'
+        }
+      ]
+    };
+
+    // 버튼이 있는 경우 추가
+    if (buttons && buttons.length > 0) {
+      alimtalkData.messages[0].buttons = buttons;
+    }
+
+    console.log('💬 알림톡 API 호출 데이터:', alimtalkData);
+
+    const response = await fetch(`https://sens.apigw.ntruss.com${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'x-ncp-apigw-timestamp': timestamp,
+        'x-ncp-iam-access-key': NCP_ACCESS_KEY,
+        'x-ncp-apigw-signature-v2': signature
+      },
+      body: JSON.stringify(alimtalkData)
     });
+
+    const responseData = await response.json();
+    console.log('💬 알림톡 API 응답:', responseData);
+
+    if (response.ok) {
+      return res.status(200).json({
+        success: true,
+        message: '알림톡이 성공적으로 발송되었습니다',
+        requestId: responseData.requestId || Date.now().toString(),
+        data: responseData
+      });
+    } else {
+      throw new Error(`알림톡 API 오류: ${responseData.errorMessage || response.statusText}`);
+    }
 
   } catch (error) {
     console.error('알림톡 발송 오류:', error);

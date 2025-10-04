@@ -1,4 +1,18 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
+
+// HMAC-SHA256 서명 생성
+function makeSignature(timestamp, method, url, secretKey) {
+  const space = ' ';
+  const newLine = '\n';
+  const message = method + space + url + newLine + timestamp + newLine + process.env.VITE_NCP_ACCESS_KEY;
+  
+  const signature = crypto
+    .createHmac('sha256', secretKey)
+    .update(message)
+    .digest('base64');
+    
+  return signature;
+}
 
 export default async function handler(req, res) {
   // CORS 설정
@@ -48,14 +62,51 @@ export default async function handler(req, res) {
       });
     }
 
-    // 임시로 성공 응답 반환 (실제 이메일 발송은 나중에 구현)
-    console.log('✅ 이메일 발송 시뮬레이션 완료');
-    
-    return res.status(200).json({
-      success: true,
-      message: '이메일이 성공적으로 발송되었습니다 (시뮬레이션)',
-      requestId: Date.now().toString()
+    // 네이버 클라우드 Cloud Outbound Mailer API 호출
+    const timestamp = Date.now().toString();
+    const method = 'POST';
+    const url = `/api/v1/mails`;
+    const signature = makeSignature(timestamp, method, url, NCP_SECRET_KEY);
+
+    const emailData = {
+      senderAddress: NCP_EMAIL_SENDER_ADDRESS,
+      title: subject,
+      body: html || text,
+      recipientList: [
+        {
+          address: to,
+          name: toName,
+          type: 'R'
+        }
+      ]
+    };
+
+    console.log('📧 이메일 API 호출 데이터:', emailData);
+
+    const response = await fetch(`https://mail.apigw.ntruss.com${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'x-ncp-apigw-timestamp': timestamp,
+        'x-ncp-iam-access-key': NCP_ACCESS_KEY,
+        'x-ncp-apigw-signature-v2': signature
+      },
+      body: JSON.stringify(emailData)
     });
+
+    const responseData = await response.json();
+    console.log('📧 이메일 API 응답:', responseData);
+
+    if (response.ok) {
+      return res.status(200).json({
+        success: true,
+        message: '이메일이 성공적으로 발송되었습니다',
+        requestId: responseData.requestId || Date.now().toString(),
+        data: responseData
+      });
+    } else {
+      throw new Error(`이메일 API 오류: ${responseData.errorMessage || response.statusText}`);
+    }
 
   } catch (error) {
     console.error('이메일 발송 오류:', error);

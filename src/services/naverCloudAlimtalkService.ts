@@ -28,7 +28,7 @@ export class NaverCloudAlimtalkService {
         templateCode: alimtalkData.templateCode
       })
 
-      const response = await fetch('/api/naver-cloud/send-alimtalk', {
+      const response = await fetch('http://localhost:3001/api/naver-cloud/send-alimtalk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,22 +61,19 @@ export class NaverCloudAlimtalkService {
 
   // 🔥 승인 알림톡
   async sendApprovalAlimtalk(userPhone: string, userName: string, campaignName: string): Promise<{ success: boolean; message: string }> {
-    const title = '🎉 체험단 신청 승인!'
-    const content = `안녕하세요, ${userName}님!
+    const title = `🎉 '${campaignName}' 최종 선정 안내`
+    const content = `안녕하세요, #{userName}님.
 
-${campaignName} 체험단 신청이 승인되었습니다! 🎊
+올바른 먹거리로 반려견의 일상을 함께하는 농심 반려다움입니다.
 
-📋 다음 단계
-• 제품을 받으신 후 체험을 진행해주세요
-• 리뷰 작성 기한을 확인해주세요
-• 리뷰 가이드라인을 숙지해주세요
+'${campaignName}'에 #{userName}님이 최종 선정되셨음을 진심으로 축하드립니다! 🎉
 
-자세한 내용은 올띵버킷에서 확인하세요.`
+아래 링크를 클릭해서 체험단 가이드를 확인하시고 다음 단계를 진행해주세요.`
 
     const buttons = [
       {
         type: 'WL',
-        name: '내 신청 현황 보기',
+        name: '체험단 가이드 확인하기',
         linkMo: `${window.location.origin}/my-applications`,
         linkPc: `${window.location.origin}/my-applications`
       }

@@ -50,11 +50,26 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
         console.log('📋 검색된 리뷰:', reviewsResponse)
         
         const reviews = Array.isArray(reviewsResponse) ? reviewsResponse : (reviewsResponse as any).data || []
-        
+
         // 🔥 user_applications에서도 이미지 데이터 확인
         const applicationResponse = await (dataService.entities as any).user_applications.get(applicationId)
-        console.log('📋 신청 데이터에서 이미지 확인:', applicationResponse)
-        
+        console.log('📋 신청 데이터 전체:', applicationResponse)
+        console.log('📋 review_images 필드:', applicationResponse?.review_images)
+        console.log('📋 blog_url 필드:', applicationResponse?.blog_url)
+        console.log('📋 additional_notes 필드:', applicationResponse?.additional_notes)
+
+        // 🔥 user_reviews에서도 이미지 데이터 확인
+        let userReviewData = null
+        if (reviews && reviews.length > 0 && reviews[0].review_id) {
+          try {
+            const userReview = await (dataService.entities as any).user_reviews.get(reviews[0].review_id)
+            console.log('📋 user_reviews 데이터:', userReview)
+            userReviewData = userReview
+          } catch (err) {
+            console.error('❌ user_reviews 조회 실패:', err)
+          }
+        }
+
         if (reviews && reviews.length > 0) {
           const review = reviews[0] // 첫 번째 리뷰 사용
           setExistingReview(review)
@@ -62,25 +77,36 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
           // 기존 데이터로 폼 채우기
           setBlogUrl(review.blog_url || '')
           
-          // 🔥 모든 가능한 이미지 필드 확인 (리뷰 데이터에서)
-          let existingImages = review.review_images || 
-                              review.images || 
-                              review.image_urls || 
-                              review.attached_images ||
-                              (review.main_image ? [review.main_image] : []) ||
-                              []
-          
-          // 🔥 submission_data 필드에서도 이미지 확인
-          if (review.submission_data && review.submission_data.images) {
+          // 🔥 모든 가능한 이미지 필드 확인 (우선순위: user_reviews > submission_data > review_submissions > user_applications)
+          let existingImages = []
+
+          // 1. user_reviews 테이블에서 이미지 확인 (최우선)
+          if (userReviewData && userReviewData.images && userReviewData.images.length > 0) {
+            existingImages = userReviewData.images
+            console.log('🔄 user_reviews에서 이미지 데이터 발견:', userReviewData.images)
+          }
+
+          // 2. submission_data 필드에서 이미지 확인
+          if (existingImages.length === 0 && review.submission_data && review.submission_data.images) {
             existingImages = review.submission_data.images
             console.log('🔄 submission_data에서 이미지 데이터 발견:', review.submission_data.images)
           }
-          
-          // 🔥 user_applications에서도 이미지 데이터 확인
-          if (applicationResponse && (existingImages.length === 0 || !existingImages[0])) {
-            const appImages = (applicationResponse as any).review_images || 
-                             (applicationResponse as any).images || 
-                             (applicationResponse as any).image_urls || 
+
+          // 3. review_submissions 테이블에서 이미지 확인
+          if (existingImages.length === 0) {
+            existingImages = review.review_images ||
+                            review.images ||
+                            review.image_urls ||
+                            review.attached_images ||
+                            (review.main_image ? [review.main_image] : []) ||
+                            []
+          }
+
+          // 4. user_applications에서 이미지 데이터 확인 (최후)
+          if (existingImages.length === 0 && applicationResponse) {
+            const appImages = (applicationResponse as any).review_images ||
+                             (applicationResponse as any).images ||
+                             (applicationResponse as any).image_urls ||
                              (applicationResponse as any).attached_images ||
                              []
             if (appImages.length > 0) {
@@ -173,24 +199,33 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
 
   // 🔧 리뷰 제출 처리
   const handleSubmitReview = async () => {
+    console.log('🚀 handleSubmitReview 시작')
+    console.log('📋 입력 데이터:', { applicationId, experienceId, blogUrl, reviewImagesCount: reviewImages.length })
+
     if (!applicationId || !experienceId) {
+      console.error('❌ 신청 정보 없음')
       toast.error('신청 정보가 없습니다')
       return
     }
 
     // 유효성 검사
     if (!blogUrl.trim() && reviewImages.length === 0) {
+      console.error('❌ 블로그 URL과 이미지 모두 없음')
       toast.error('블로그 URL 또는 구매평 이미지 중 하나는 필수입니다')
       return
     }
 
     if (blogUrl.trim() && !validateBlogUrl(blogUrl)) {
+      console.error('❌ 블로그 URL 유효성 검사 실패:', blogUrl)
       toast.error('올바른 블로그 URL을 입력해주세요 (네이버 블로그, 티스토리, 인스타그램 등)')
       return
     }
 
+    console.log('✅ 유효성 검사 통과')
+
     try {
       setSubmitting(true)
+      console.log('🔄 제출 시작')
       
       // 사용자 ID 확인 및 users 테이블에서 실제 ID 조회
       const authUserId = user?.user_id || user?.id || (user as any)?._id
@@ -282,7 +317,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
         authUserId: authUserId
       })
       
-      // 1. 먼저 user_reviews 테이블에 리뷰 내용 저장
+      // 1. 먼저 user_reviews 테이블에 리뷰 내용 저장 또는 업데이트
       const userReviewData = {
         user_id: dbUser.user_id, // users.user_id (문자열) 사용 - FK 제약 조건에 맞춤
         campaign_id: experienceId,
@@ -298,18 +333,30 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
 
       console.log('📝 user_reviews 데이터:', userReviewData)
 
-      // user_reviews 테이블에 저장
-      const userReviewResult = await (dataService.entities as any).user_reviews.create(userReviewData)
-      console.log('✅ user_reviews 생성 결과:', userReviewResult)
+      let userReviewResult
+      if (existingReview && (existingReview as any).review_id) {
+        // 기존 리뷰 업데이트
+        const reviewId = (existingReview as any).review_id
+        console.log('🔄 기존 user_reviews 업데이트:', reviewId)
+        const updateResult = await (dataService.entities as any).user_reviews.update(reviewId, userReviewData)
+        userReviewResult = { success: !!updateResult, data: updateResult }
+        console.log('✅ user_reviews 업데이트 결과:', userReviewResult)
+      } else {
+        // 새 리뷰 생성
+        userReviewResult = await (dataService.entities as any).user_reviews.create(userReviewData)
+        console.log('✅ user_reviews 생성 결과:', userReviewResult)
+      }
 
       if (!userReviewResult.success) {
-        throw new Error('리뷰 저장에 실패했습니다')
+        console.error('❌ user_reviews 저장 실패 상세:', userReviewResult)
+        throw new Error(`리뷰 저장에 실패했습니다: ${userReviewResult.error || '알 수 없는 오류'}`)
       }
 
       // 2. review_submissions 테이블에 제출 신청 저장
       const submissionData = {
         user_id: dbUser.user_id, // users.user_id (문자열) 사용 - FK 제약 조건에 맞춤
         campaign_id: experienceId,
+        application_id: applicationId, // 🔥 application_id 추가 - 리뷰 수정시 필요
         review_id: userReviewResult.data.id,
         submission_data: userReviewData, // user_reviews 정보를 JSON으로 저장
         status: 'submitted',
@@ -330,28 +377,32 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
         console.log('✅ 리뷰 제출 결과:', submissionResult)
       }
 
-      // 🚀 user_applications 상태 업데이트
+      // 🚀 user_applications 상태 업데이트 (리뷰 데이터도 함께 저장)
+      let updateResult = null
       try {
-        // user_applications 테이블의 기존 데이터 확인
+        // 🔥 현재 신청 정보 확인 (반려된 상태인지 체크)
         const currentApplication = await (dataService.entities as any).user_applications.get(applicationId)
-        console.log('🔍 현재 신청 데이터:', currentApplication)
-        
+        const isResubmission = currentApplication?.status === 'review_rejected'
+
         const updateData: any = {
-          status: 'review_in_progress', // 리뷰검수중으로 변경
-          review_submitted_at: new Date().toISOString() // 리뷰 제출 날짜 항상 설정
+          status: isResubmission ? 'review_resubmitted' : 'review_in_progress', // 재제출이면 review_resubmitted, 아니면 review_in_progress
+          updated_at: new Date().toISOString(),
+          review_images: reviewImages, // 리뷰 이미지 저장
+          blog_url: blogUrl.trim() || null, // 블로그 URL 저장
+          additional_notes: additionalNotes.trim() || null, // 추가 노트 저장
+          rejection_reason: null, // 반려 사유 초기화
+          rejected_at: null // 반려 시간 초기화
         }
-        
-        // 기존 필드가 있는 경우만 업데이트
-        if (currentApplication && currentApplication.data) {
-          const app = currentApplication.data
-          if (app.review_submission_id !== undefined) updateData.review_submission_id = (submissionResult as any)._id || (submissionResult as any).id
-          if (app.blog_url !== undefined) updateData.blog_url = blogUrl.trim() || null
-          if (app.review_images !== undefined) updateData.review_images = reviewImages
-        }
-        
+
+        console.log('📝 재제출 여부:', isResubmission)
+
         console.log('📝 user_applications 업데이트 데이터:', { applicationId, updateData })
-        const updateResult = await (dataService.entities as any).user_applications.update(applicationId, updateData)
+        updateResult = await (dataService.entities as any).user_applications.update(applicationId, updateData)
         console.log('✅ 신청 내역 상태 업데이트 결과:', updateResult)
+
+        if (!updateResult) {
+          console.error('❌ user_applications 업데이트 결과가 null입니다')
+        }
       } catch (updateError) {
         console.error('❌ user_applications 업데이트 실패:', updateError)
         // 업데이트 실패해도 리뷰 제출은 성공한 것으로 처리
@@ -379,12 +430,22 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
       }
 
       toast.success(existingReview ? '리뷰가 수정되었습니다! 검수 후 포인트가 지급됩니다.' : '리뷰가 제출되었습니다! 검수 후 포인트가 지급됩니다.')
-      
-      // 페이지 새로고침하여 상태 업데이트 반영
-      setTimeout(() => {
-        window.location.reload()
-      }, 1500)
-      
+
+      // 성공 메시지 표시
+      toast.success('리뷰가 성공적으로 제출되었습니다!')
+
+      // 디버그 로그를 localStorage에 저장
+      localStorage.setItem('lastReviewSubmit', JSON.stringify({
+        timestamp: new Date().toISOString(),
+        applicationId,
+        updateResult: updateResult ? 'success' : 'null',
+        success: true
+      }))
+
+      console.log('🎉 리뷰 제출 완료! 상태 업데이트 결과:', updateResult)
+
+      // 모달 닫고 부모 컴포넌트에서 데이터 새로고침
+      onClose()
       onSubmitComplete()
       
     } catch (error) {

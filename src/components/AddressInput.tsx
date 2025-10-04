@@ -82,7 +82,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
           }
         }, 100)
       },
-      onresize: (size) => {
+      onresize: () => {
         // 팝업 크기 조정 시 처리
       },
       width: '100%',

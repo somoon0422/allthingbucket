@@ -141,41 +141,73 @@ export const useExperiences = () => {
         console.warn('캠페인 상태 체크 실패:', error)
       }
 
-      // 신청 데이터 생성
-      const applicationData = {
-        user_id: userId,
-        experience_id: experienceId,
-        status: 'pending',
-        applied_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        
-        name: additionalData.name || '',
-        email: additionalData.email || '',
-        phone: additionalData.phone || '',
-        address: additionalData.address || '',
-        detailed_address: additionalData.detailed_address || '',
-        
-        instagram_handle: additionalData.instagram_handle || '',
-        blog_url: additionalData.blog_url || '',
-        youtube_channel: additionalData.youtube_channel || '',
-        
-        application_reason: additionalData.application_reason || '',
-        experience_plan: additionalData.experience_plan || '',
-        additional_info: additionalData.additional_info || '',
-        
-        submitted_by_role: additionalData.submitted_by_role || '',
-        submitted_by_admin_role: additionalData.submitted_by_admin_role || '',
-        debug_info: additionalData.debug_info || {}
+      // 먼저 기존 데이터 구조 확인
+      console.log('🔍 데이터베이스 테이블 구조 확인 중...')
+      
+      let actualColumns: string[] = []
+      try {
+        const existingApps = await (dataService.entities as any).user_applications.list()
+        if (existingApps && existingApps.length > 0) {
+          actualColumns = Object.keys(existingApps[0])
+          console.log('📋 실제 데이터베이스 컬럼들:', actualColumns)
+          console.log('📋 기존 데이터 샘플:', existingApps[0])
+        } else {
+          console.log('⚠️ 기존 데이터가 없어서 컬럼 구조를 확인할 수 없습니다')
+          throw new Error('기존 데이터가 없어서 테이블 구조를 확인할 수 없습니다')
+        }
+      } catch (error) {
+        console.log('❌ 기존 데이터 조회 실패:', error)
+        throw new Error('데이터베이스 테이블 구조를 확인할 수 없습니다')
       }
+
+      // 실제 존재하는 컬럼만 사용하여 신청 데이터 생성
+      const applicationData: any = {}
+      
+      // user_id가 존재하는지 확인
+      if (actualColumns.includes('user_id')) {
+        applicationData.user_id = userId
+      } else if (actualColumns.includes('userid')) {
+        applicationData.userid = userId
+      } else if (actualColumns.includes('user')) {
+        applicationData.user = userId
+      }
+      
+      // experience_id가 존재하는지 확인
+      if (actualColumns.includes('experience_id')) {
+        applicationData.experience_id = experienceId
+      } else if (actualColumns.includes('campaign_id')) {
+        applicationData.campaign_id = experienceId
+      } else if (actualColumns.includes('experienceid')) {
+        applicationData.experienceid = experienceId
+      }
+
+      // 날짜 필드 추가 (존재하는 경우에만)
+      const currentDate = new Date().toISOString()
+      if (actualColumns.includes('applied_at')) {
+        applicationData.applied_at = currentDate
+      }
+      if (actualColumns.includes('created_at')) {
+        applicationData.created_at = currentDate
+      }
+      if (actualColumns.includes('applied_date')) {
+        applicationData.applied_date = currentDate
+      }
+      if (actualColumns.includes('application_date')) {
+        applicationData.application_date = currentDate
+      }
+
+      console.log('🔍 최종 신청 데이터:', applicationData)
 
       // Supabase API로 신청 생성
       const result = await (dataService.entities as any).user_applications.create(applicationData)
       
-      if (result.success) {
+      if (result && result.success) {
         toast.success('체험단 신청이 완료되었습니다!')
         return { success: true, application: result.data }
       } else {
-        throw new Error(result.message || '신청 생성에 실패했습니다')
+        const errorMessage = result?.error || '신청 생성에 실패했습니다'
+        console.error('❌ 신청 실패:', result)
+        throw new Error(errorMessage)
       }
     } catch (error) {
       console.error('체험단 신청 실패:', error)

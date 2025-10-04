@@ -10,12 +10,12 @@ interface EmailTemplate {
 interface EmailData {
   to: string
   toName: string
-  type: 'approval' | 'rejection' | 'withdrawal'
+  type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection'
   data: any
 }
 
 // 🔥 이메일 템플릿 생성
-const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal', data: any): EmailTemplate => {
+const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection', data: any): EmailTemplate => {
   const baseUrl = window.location.origin
   const currentDate = new Date().toLocaleDateString('ko-KR')
   
@@ -132,14 +132,14 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal', data
             <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
               <h1 style="color: white; margin: 0; font-size: 24px;">💰 출금 승인 완료!</h1>
             </div>
-            
+
             <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
               <h2 style="color: #333; margin-bottom: 20px;">안녕하세요, ${data.userName}님!</h2>
-              
+
               <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
                 포인트 출금 요청이 승인되어 처리되었습니다.
               </p>
-              
+
               <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
                 <h3 style="color: #2e7d32; margin-top: 0;">💳 출금 정보</h3>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0;">
@@ -151,7 +151,7 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal', data
                   <span style="color: #2e7d32;">${currentDate}</span>
                 </div>
               </div>
-              
+
               <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="color: #2c5aa0; margin-top: 0;">📋 안내사항</h3>
                 <ul style="color: #666; margin: 0; padding-left: 20px;">
@@ -160,20 +160,20 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal', data
                   <li>문의사항이 있으시면 고객센터로 연락해주세요</li>
                 </ul>
               </div>
-              
+
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${baseUrl}/points" 
-                   style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
-                          color: white; 
-                          padding: 12px 30px; 
-                          text-decoration: none; 
-                          border-radius: 25px; 
-                          display: inline-block; 
+                <a href="${baseUrl}/points"
+                   style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+                          color: white;
+                          padding: 12px 30px;
+                          text-decoration: none;
+                          border-radius: 25px;
+                          display: inline-block;
                           font-weight: bold;">
                   포인트 내역 보기
                 </a>
               </div>
-              
+
               <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #999; font-size: 14px;">
                 <p>이 이메일은 올띵버킷에서 자동으로 발송되었습니다.</p>
                 <p>문의사항이 있으시면 <a href="mailto:support@allthingbucket.com" style="color: #667eea;">support@allthingbucket.com</a>으로 연락해주세요.</p>
@@ -183,7 +183,118 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal', data
         `,
         text: `안녕하세요, ${data.userName}님!\n\n포인트 출금 요청이 승인되어 처리되었습니다.\n\n출금 정보:\n- 출금 금액: ${data.amount.toLocaleString()}P\n- 승인일: ${currentDate}\n\n포인트 내역: ${baseUrl}/points\n\n문의: support@allthingbucket.com`
       }
-      
+
+    case 'review_approval':
+      return {
+        subject: `🎉 리뷰가 승인되었습니다! - ${data.campaignName}`,
+        html: `
+          <div style="font-family: 'Malgun Gothic', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">🎉 리뷰 승인 완료!</h1>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <h2 style="color: #333; margin-bottom: 20px;">안녕하세요, ${data.userName}님!</h2>
+
+              <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                <strong>${data.campaignName}</strong> 캠페인에 제출하신 리뷰가 승인되었습니다! 🎊
+              </p>
+
+              <div style="background: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+                <h3 style="color: #065f46; margin-top: 0;">✅ 리뷰 승인</h3>
+                <p style="color: #065f46; margin: 0;">
+                  작성하신 리뷰가 검토를 통과하여 승인되었습니다.<br>
+                  곧 리워드 지급 절차가 진행될 예정입니다.
+                </p>
+              </div>
+
+              <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #2c5aa0; margin-top: 0;">📋 다음 단계</h3>
+                <ul style="color: #666; margin: 0; padding-left: 20px;">
+                  <li>리워드 지급 요청이 가능합니다</li>
+                  <li>마이페이지에서 신청 현황을 확인할 수 있습니다</li>
+                  <li>다른 캠페인에도 참여해보세요</li>
+                </ul>
+              </div>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${baseUrl}/my-applications"
+                   style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                          color: white;
+                          padding: 12px 30px;
+                          text-decoration: none;
+                          border-radius: 25px;
+                          display: inline-block;
+                          font-weight: bold;">
+                  내 신청 현황 보기
+                </a>
+              </div>
+
+              <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #999; font-size: 14px;">
+                <p>이 이메일은 올띵버킷에서 자동으로 발송되었습니다.</p>
+                <p>문의사항이 있으시면 <a href="mailto:support@allthingbucket.com" style="color: #667eea;">support@allthingbucket.com</a>으로 연락해주세요.</p>
+              </div>
+            </div>
+          </div>
+        `,
+        text: `안녕하세요, ${data.userName}님!\n\n${data.campaignName} 캠페인에 제출하신 리뷰가 승인되었습니다!\n\n다음 단계:\n- 리워드 지급 요청이 가능합니다\n- 마이페이지에서 신청 현황을 확인할 수 있습니다\n\n내 신청 현황: ${baseUrl}/my-applications\n\n문의: support@allthingbucket.com`
+      }
+
+    case 'review_rejection':
+      return {
+        subject: `😔 리뷰 검토 결과 안내 - ${data.campaignName}`,
+        html: `
+          <div style="font-family: 'Malgun Gothic', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+            <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">😔 리뷰 검토 결과</h1>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <h2 style="color: #333; margin-bottom: 20px;">안녕하세요, ${data.userName}님!</h2>
+
+              <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                <strong>${data.campaignName}</strong> 캠페인에 제출하신 리뷰 검토 결과를 안내드립니다.
+              </p>
+
+              <div style="background: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
+                <h3 style="color: #991b1b; margin-top: 0;">📝 반려 사유</h3>
+                <p style="color: #991b1b; margin: 0; white-space: pre-wrap;">
+                  ${data.rejectionReason || '리뷰 내용을 보완해주세요.'}
+                </p>
+              </div>
+
+              <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+                <h3 style="color: #92400e; margin-top: 0;">💡 다음 단계</h3>
+                <ul style="color: #92400e; margin: 0; padding-left: 20px;">
+                  <li>반려 사유를 확인하고 리뷰를 수정해주세요</li>
+                  <li>마이페이지에서 "리뷰 수정하기" 버튼을 눌러 재제출할 수 있습니다</li>
+                  <li>리뷰 가이드라인을 다시 확인해주세요</li>
+                </ul>
+              </div>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${baseUrl}/my-applications"
+                   style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                          color: white;
+                          padding: 12px 30px;
+                          text-decoration: none;
+                          border-radius: 25px;
+                          display: inline-block;
+                          font-weight: bold;">
+                  리뷰 수정하러 가기
+                </a>
+              </div>
+
+              <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #999; font-size: 14px;">
+                <p>이 이메일은 올띵버킷에서 자동으로 발송되었습니다.</p>
+                <p>문의사항이 있으시면 <a href="mailto:support@allthingbucket.com" style="color: #667eea;">support@allthingbucket.com</a>으로 연락해주세요.</p>
+              </div>
+            </div>
+          </div>
+        `,
+        text: `안녕하세요, ${data.userName}님!\n\n${data.campaignName} 캠페인에 제출하신 리뷰 검토 결과를 안내드립니다.\n\n반려 사유:\n${data.rejectionReason || '리뷰 내용을 보완해주세요.'}\n\n다음 단계:\n- 반려 사유를 확인하고 리뷰를 수정해주세요\n- 마이페이지에서 "리뷰 수정하기" 버튼을 눌러 재제출할 수 있습니다\n\n리뷰 수정: ${baseUrl}/my-applications\n\n문의: support@allthingbucket.com`
+      }
+
     default:
       throw new Error(`Unknown email type: ${type}`)
   }
@@ -267,6 +378,26 @@ export class EmailNotificationService {
       toName: userName,
       type: 'withdrawal',
       data: { userName, amount }
+    })
+  }
+
+  // 🔥 리뷰 승인 이메일
+  async sendReviewApprovalEmail(userEmail: string, userName: string, campaignName: string): Promise<{ success: boolean; message: string }> {
+    return this.sendEmail({
+      to: userEmail,
+      toName: userName,
+      type: 'review_approval',
+      data: { userName, campaignName }
+    })
+  }
+
+  // 🔥 리뷰 반려 이메일
+  async sendReviewRejectionEmail(userEmail: string, userName: string, campaignName: string, rejectionReason: string): Promise<{ success: boolean; message: string }> {
+    return this.sendEmail({
+      to: userEmail,
+      toName: userName,
+      type: 'review_rejection',
+      data: { userName, campaignName, rejectionReason }
     })
   }
 }

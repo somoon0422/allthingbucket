@@ -5,10 +5,15 @@ const supabaseService = require('./supabaseService');
 
 class NotificationService {
   constructor() {
-    this.smsEnabled = !!(process.env.NAVER_ACCESS_KEY && process.env.NAVER_SECRET_KEY && process.env.NAVER_SERVICE_ID);
-    this.emailEnabled = !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
-    this.kakaoEnabled = !!(process.env.KAKAO_APP_KEY && process.env.KAKAO_TEMPLATE_CODE);
-    
+    // SMS 서비스 - 여러 환경변수 이름 지원
+    const smsAccessKey = process.env.SMS_ACCESS_KEY || process.env.NAVER_CLOUD_ACCESS_KEY || process.env.NAVER_ACCESS_KEY;
+    const smsSecretKey = process.env.SMS_SECRET_KEY || process.env.NAVER_CLOUD_SECRET_KEY || process.env.NAVER_SECRET_KEY;
+    const smsServiceId = process.env.SMS_SERVICE_ID || process.env.NAVER_CLOUD_SENS_SERVICE_ID || process.env.NAVER_SERVICE_ID;
+
+    this.smsEnabled = !!(smsAccessKey && smsSecretKey && smsServiceId);
+    this.emailEnabled = !!(process.env.EMAIL_USER || process.env.GMAIL_USER) && (process.env.EMAIL_PASS || process.env.GMAIL_APP_PASSWORD);
+    this.kakaoEnabled = !!(smsAccessKey && smsSecretKey && process.env.KAKAO_TEMPLATE_CODE);
+
     console.log(`📱 SMS 서비스: ${this.smsEnabled ? '활성화' : '비활성화'}`);
     console.log(`📧 이메일 서비스: ${this.emailEnabled ? '활성화' : '비활성화'}`);
     console.log(`💬 카카오 알림톡: ${this.kakaoEnabled ? '활성화' : '비활성화'}`);

@@ -39,7 +39,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       try {
         await adminLoginWithCredentials(formData.admin_name, formData.password)
         onClose()
-      } catch (error) {
+      } catch {
         // 에러는 useAuth에서 처리됨
       }
     } else if (isLogin) {
@@ -52,7 +52,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       try {
         await loginWithCredentials(formData.email, formData.password)
         onClose()
-      } catch (error) {
+      } catch {
         // 에러는 useAuth에서 처리됨
       }
     } else {
@@ -73,7 +73,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           gender: formData.gender as 'male' | 'female' | 'other'
         })
         onClose()
-      } catch (error) {
+      } catch {
         // 에러는 useAuth에서 처리됨
       }
     }
