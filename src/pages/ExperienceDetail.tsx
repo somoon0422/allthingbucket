@@ -711,6 +711,129 @@ function ExperienceDetail() {
               </div>
             </div>
 
+            {/* 체험단 진행 프로세스 */}
+            <div id="process-guide" className="mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <svg className="w-6 h-6 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                체험단 진행 프로세스
+              </h2>
+              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-xl p-6">
+                <div className="space-y-4">
+                  {/* STEP 1 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                        1
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">체험단 신청</h3>
+                      <p className="text-sm text-gray-600">체험단에 신청하고 관리자 승인을 기다립니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 2 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+                        2
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">제품 구매 및 수령</h3>
+                      <p className="text-sm text-gray-600">승인 후 제품을 구매하고, 배송을 받습니다 (배송형인 경우)</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 3 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
+                        3
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">체험 및 리뷰 작성</h3>
+                      <p className="text-sm text-gray-600">제품을 체험하고 리뷰를 작성하여 제출합니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 4 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
+                        4
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">리뷰 검수</h3>
+                      <p className="text-sm text-gray-600">관리자가 리뷰를 검수하고 승인/반려를 진행합니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 5 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold">
+                        5
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">포인트 지급 요청</h3>
+                      <p className="text-sm text-gray-600">리뷰 승인 완료 후 '내 신청' 페이지에서 포인트 지급을 요청합니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 6 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold">
+                        6
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">포인트 지급 승인</h3>
+                      <p className="text-sm text-gray-600">관리자가 포인트 지급을 승인하고 포인트가 지급됩니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 7 */}
+                  <div className="flex items-start space-x-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4 shadow-sm border-2 border-purple-300">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full flex items-center justify-center font-bold">
+                        7
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1 flex items-center">
+                        체험 종료 🎉
+                      </h3>
+                      <p className="text-sm text-gray-600">모든 프로세스가 완료되었습니다. 다음 체험단도 기대해주세요!</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 추가 안내 */}
+                <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-yellow-900 mb-1">💡 참고사항</h4>
+                      <ul className="text-sm text-yellow-800 space-y-1">
+                        <li>• 리뷰가 반려된 경우 수정 후 재제출이 가능합니다</li>
+                        <li>• 각 단계별 진행 상태는 '내 신청' 페이지에서 확인할 수 있습니다</li>
+                        <li>• 포인트는 1,000P 이상부터 출금 신청이 가능합니다</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 상세 이미지 갤러리 - 댕댕뷰 스타일 */}
             {experience.detail_images && experience.detail_images.length > 0 && (
               <div className="mb-8">
@@ -950,19 +1073,74 @@ function ExperienceDetail() {
                           shipping: { text: '배송중', color: 'bg-indigo-500', disabled: true },
                           delivered: { text: '제품 수령 완료', color: 'bg-teal-500', disabled: true },
                           review_in_progress: { text: '리뷰 검수중', color: 'bg-purple-500', disabled: true },
-                          review_completed: { text: '리뷰 완료', color: 'bg-emerald-500', disabled: true },
-                          reward_paid: { text: '리워드 지급 완료', color: 'bg-pink-500', disabled: true }
+                          review_rejected: { text: '리뷰 반려됨', color: 'bg-red-500', disabled: true },
+                          review_resubmitted: { text: '리뷰 재제출됨', color: 'bg-orange-500', disabled: true },
+                          review_completed: { text: '리뷰 승인 완료', color: 'bg-emerald-500', disabled: true },
+                          point_requested: { text: '포인트 지급 요청됨', color: 'bg-orange-500', disabled: true },
+                          point_completed: { text: '🎉 체험 종료', color: 'bg-gradient-to-r from-purple-500 to-pink-500', disabled: true }
                         }
 
                         const config = statusConfig[status] || { text: '신청 완료', color: 'bg-gray-500', disabled: true }
 
+                        // 프로세스 단계 정보
+                        const getProcessInfo = (status: string) => {
+                          switch (status) {
+                            case 'pending':
+                              return { current: '신청 검수중', next: '승인 결과를 기다려주세요' }
+                            case 'approved':
+                              return { current: '체험단 선정 완료', next: '제품 구매 완료 버튼을 눌러주세요 (내 신청 페이지)' }
+                            case 'product_purchased':
+                              return { current: '제품 구매 완료', next: '배송 대기중입니다' }
+                            case 'shipping':
+                              return { current: '배송중', next: '제품 수령 후 수령 완료 버튼을 눌러주세요' }
+                            case 'delivered':
+                              return { current: '제품 수령 완료', next: '리뷰를 작성해주세요 (내 신청 페이지)' }
+                            case 'review_in_progress':
+                              return { current: '리뷰 검수중', next: '관리자 검수를 기다려주세요' }
+                            case 'review_rejected':
+                              return { current: '리뷰 반려됨', next: '반려 사유를 확인하고 리뷰를 수정해주세요 (내 신청 페이지)' }
+                            case 'review_resubmitted':
+                              return { current: '리뷰 재제출 완료', next: '관리자 재검수를 기다려주세요' }
+                            case 'review_completed':
+                              return { current: '리뷰 승인 완료 ✅', next: '포인트 지급을 신청해주세요 (내 신청 페이지)' }
+                            case 'point_requested':
+                              return { current: '포인트 지급 요청됨', next: '관리자 승인을 기다려주세요' }
+                            case 'point_completed':
+                              return { current: '체험 완료 🎉', next: '모든 프로세스가 완료되었습니다. 감사합니다!' }
+                            default:
+                              return { current: '진행중', next: '다음 단계를 진행해주세요' }
+                          }
+                        }
+
+                        const processInfo = getProcessInfo(status)
+
                         return (
-                          <button
-                            disabled={config.disabled}
-                            className={`flex-1 px-8 py-4 ${config.color} text-white rounded-lg font-medium text-lg ${config.disabled ? 'cursor-not-allowed opacity-90' : 'hover:opacity-90 transition-opacity'}`}
-                          >
-                            {config.text}
-                          </button>
+                          <>
+                            <button
+                              disabled={config.disabled}
+                              className={`flex-1 px-8 py-4 ${config.color} text-white rounded-lg font-medium text-lg ${config.disabled ? 'cursor-not-allowed opacity-90' : 'hover:opacity-90 transition-opacity'}`}
+                            >
+                              {config.text}
+                            </button>
+                            {/* 프로세스 안내 */}
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4 mt-4">
+                              <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0">
+                                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                                    📍 현재 단계: {processInfo.current}
+                                  </h4>
+                                  <p className="text-sm text-blue-800">
+                                    ➡️ 다음 단계: {processInfo.next}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </>
                         )
                       }
 

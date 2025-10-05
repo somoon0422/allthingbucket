@@ -154,6 +154,9 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
     if (status === 'point_requested') {
       return '💰 포인트 지급 승인'
     }
+    if (status === 'review_in_progress' || status === 'review_resubmitted') {
+      return '✨ 체험단 리뷰 승인'
+    }
     return '✅ 체험단 신청 승인'
   }
   
@@ -339,6 +342,43 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 감사합니다.
 올띵버킷 팀`
     },
+    'review_approval': {
+      subject: `✨ {campaign_name} 리뷰 승인 완료!`,
+      content: `안녕하세요 {name}님!
+
+✨ {campaign_name} 리뷰가 승인되었습니다!
+
+📋 리뷰 승인 안내:
+- 체험단: {campaign_name}
+- 브랜드: {brand_name}
+- 리워드: {reward_points}P
+- 승인일: {approval_date}
+
+🎉 리뷰 검수 완료:
+{name}님께서 작성해주신 {campaign_name} 리뷰가 성공적으로 검수되었습니다.
+정성스러운 리뷰 작성 감사드립니다!
+
+💰 다음 단계 - 포인트 지급 요청:
+리뷰 승인이 완료되었으니 이제 포인트 지급을 요청하실 수 있습니다.
+
+📝 포인트 지급 요청 방법:
+1. 올띵버킷 사이트 접속
+2. "내 신청" 페이지로 이동
+3. 해당 캠페인에서 "포인트 지급 요청" 버튼 클릭
+4. 관리자 승인 후 포인트 지급 완료
+
+💳 포인트 안내:
+- 지급 예정 포인트: {reward_points}P
+- 포인트 출금: 1,000P 이상부터 가능
+- 포인트 유효기간: 영구 유효
+
+📞 문의사항이 있으시면 고객센터로 연락주세요:
+- 이메일: support@allthingbucket.com
+- 전화: 01022129245
+
+감사합니다.
+올띵버킷 팀`
+    },
     'custom': {
       subject: '',
       content: ''
@@ -353,10 +393,12 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
       templateKey = 'point_requested'
     } else if (application?.status === 'point_completed') {
       templateKey = 'point_completed'
+    } else if (application?.status === 'review_in_progress' || application?.status === 'review_resubmitted') {
+      templateKey = 'review_approval'
     } else if (application?.status === 'approved') {
       templateKey = 'approval'
     }
-    
+
     if (templateKey && emailTemplates[templateKey as keyof typeof emailTemplates]) {
       const template = emailTemplates[templateKey as keyof typeof emailTemplates]
       setSubject(template.subject)
@@ -649,7 +691,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  상세 승인 안내
+                  신청 승인 안내
                 </button>
                 <button
                   onClick={() => setSelectedTemplate('simple')}
@@ -660,6 +702,16 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   }`}
                 >
                   간단 승인 안내
+                </button>
+                <button
+                  onClick={() => setSelectedTemplate('review_approval')}
+                  className={`p-2 rounded-lg border text-sm transition-colors ${
+                    selectedTemplate === 'review_approval'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  리뷰 승인 안내
                 </button>
                 <button
                   onClick={() => setSelectedTemplate('point_completed')}
@@ -675,7 +727,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   onClick={() => setSelectedTemplate('custom')}
                   className={`p-2 rounded-lg border text-sm transition-colors ${
                     selectedTemplate === 'custom'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >

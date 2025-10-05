@@ -504,7 +504,14 @@ const AdminDashboard: React.FC = () => {
 
     try {
       const applicationId = selectedReviewApplication.id || selectedReviewApplication._id
-      await syncReviewStatus(applicationId, 'review_completed')
+
+      // 🔥 user_applications 상태 업데이트
+      await dataService.entities.user_applications.update(applicationId, {
+        status: 'review_completed',
+        updated_at: new Date().toISOString()
+      })
+
+      console.log('✅ 리뷰 승인 완료 - user_applications 업데이트됨')
 
       // 🔥 이메일 발송
       const userEmail = selectedReviewApplication.email
@@ -514,8 +521,12 @@ const AdminDashboard: React.FC = () => {
                           '캠페인'
 
       if (userEmail) {
-        await emailNotificationService.sendReviewApprovalEmail(userEmail, userName, campaignName)
-        console.log('✅ 리뷰 승인 이메일 발송 완료')
+        try {
+          await emailNotificationService.sendReviewApprovalEmail(userEmail, userName, campaignName)
+          console.log('✅ 리뷰 승인 이메일 발송 완료')
+        } catch (emailError) {
+          console.error('⚠️ 이메일 발송 실패 (승인은 완료됨):', emailError)
+        }
       }
 
       toast.success('리뷰가 승인되었습니다.')
@@ -557,6 +568,8 @@ const AdminDashboard: React.FC = () => {
         updated_at: new Date().toISOString()
       })
 
+      console.log('✅ 리뷰 반려 완료 - user_applications 업데이트됨')
+
       // 🔥 이메일 발송
       const userEmail = selectedReviewApplication.email
       const userName = selectedReviewApplication.name || '회원'
@@ -565,13 +578,17 @@ const AdminDashboard: React.FC = () => {
                           '캠페인'
 
       if (userEmail) {
-        await emailNotificationService.sendReviewRejectionEmail(
-          userEmail,
-          userName,
-          campaignName,
-          reviewRejectionReason.trim()
-        )
-        console.log('✅ 리뷰 반려 이메일 발송 완료')
+        try {
+          await emailNotificationService.sendReviewRejectionEmail(
+            userEmail,
+            userName,
+            campaignName,
+            reviewRejectionReason.trim()
+          )
+          console.log('✅ 리뷰 반려 이메일 발송 완료')
+        } catch (emailError) {
+          console.error('⚠️ 이메일 발송 실패 (반려는 완료됨):', emailError)
+        }
       }
 
       toast.success('리뷰가 반려되었습니다.')
@@ -5168,11 +5185,22 @@ const AdminDashboard: React.FC = () => {
               {/* 이메일 템플릿 정보 */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-blue-900 mb-2">📧 이메일 템플릿</h4>
-                <div className="text-xs text-blue-700 space-y-1">
-                  <p>• <strong>승인 알림</strong>: 체험단명과 다음 단계 안내 (HTML + 텍스트)</p>
-                  <p>• <strong>거절 알림</strong>: 거절 사유와 다음 기회 안내 (HTML + 텍스트)</p>
-                  <p>• <strong>출금 승인</strong>: 출금 금액과 승인일이 포함된 메시지 (HTML + 텍스트)</p>
-                  <p className="mt-2 font-medium">모든 이메일은 반응형 HTML 디자인으로 전송됩니다.</p>
+                <div className="text-xs text-blue-700 space-y-2">
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">체험단 신청 관련:</p>
+                    <p>• <strong>신청 승인</strong>: 체험단명과 다음 단계 안내</p>
+                    <p>• <strong>신청 거절</strong>: 거절 사유와 다음 기회 안내</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">리뷰 검수 관련:</p>
+                    <p>• <strong>리뷰 승인</strong>: 리뷰 승인 축하 및 리워드 안내 (진행 상태 포함)</p>
+                    <p>• <strong>리뷰 반려</strong>: 검토 의견 및 수정 가이드 (재제출 안내)</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">포인트 관련:</p>
+                    <p>• <strong>포인트 출금</strong>: 출금 금액과 승인일 포함</p>
+                  </div>
+                  <p className="mt-2 font-medium text-blue-900">✨ 모든 이메일은 최신 트렌드를 반영한 반응형 HTML 디자인으로 전송됩니다.</p>
                 </div>
               </div>
 

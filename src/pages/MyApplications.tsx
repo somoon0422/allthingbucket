@@ -325,9 +325,15 @@ const MyApplications: React.FC = () => {
           color: 'bg-orange-100 text-orange-800',
           icon: RefreshCw
         }
+      case 'review_completed':
+        return {
+          label: '리뷰 승인 완료 (포인트 지급 요청 가능)',
+          color: 'bg-emerald-100 text-emerald-800',
+          icon: CheckCircle
+        }
       case 'point_requested':
         return {
-          label: '포인트 지급 요청됨',
+          label: '포인트 지급 요청됨 (승인 대기중)',
           color: 'bg-orange-100 text-orange-800',
           icon: Coins
         }
@@ -339,8 +345,8 @@ const MyApplications: React.FC = () => {
         }
       case 'point_completed':
         return {
-          label: '종료',
-          color: 'bg-purple-100 text-purple-800',
+          label: '🎉 캠페인 체험 종료 (포인트 지급 완료)',
+          color: 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-900',
           icon: CheckCircle
         }
       case 'cancelled':
@@ -874,6 +880,42 @@ const MyApplications: React.FC = () => {
                     <div>
                       <span className="font-semibold text-gray-900">제품수령완료:</span>
                       <span className="text-gray-700 ml-1">'리뷰 인증하기' 버튼을 통해 리뷰를 인증해주세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      5
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">리뷰 검수중:</span>
+                      <span className="text-gray-700 ml-1">관리자가 리뷰를 검수합니다. 승인될 때까지 기다려주세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      6
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">리뷰 승인 완료:</span>
+                      <span className="text-gray-700 ml-1">'포인트 지급 신청' 버튼을 클릭하여 포인트를 요청하세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      7
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">포인트 지급 요청됨:</span>
+                      <span className="text-gray-700 ml-1">관리자 승인을 기다립니다.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      8
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">🎉 체험 종료:</span>
+                      <span className="text-gray-700 ml-1">포인트가 지급되었습니다. 모든 프로세스가 완료되었습니다!</span>
                     </div>
                   </div>
                 </div>
