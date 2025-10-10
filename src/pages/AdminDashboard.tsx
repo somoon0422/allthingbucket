@@ -131,7 +131,19 @@ const AdminDashboard: React.FC = () => {
   // 포인트 지급 요청 모달 상태
   const [showPointRequestModal, setShowPointRequestModal] = useState(false)
   const [selectedPointApplication, setSelectedPointApplication] = useState<any>(null)
-  
+
+  // 포인트 수정 모달 상태
+  const [showEditPointModal, setShowEditPointModal] = useState(false)
+  const [editingApplication, setEditingApplication] = useState<any>(null)
+  const [editPointAmount, setEditPointAmount] = useState(0)
+
+  // 출금 수정 모달 상태
+  const [showEditWithdrawalModal, setShowEditWithdrawalModal] = useState(false)
+  const [editingWithdrawal, setEditingWithdrawal] = useState<any>(null)
+  const [editWithdrawalAmount, setEditWithdrawalAmount] = useState(0)
+  const [editWithdrawalMethod, setEditWithdrawalMethod] = useState('')
+  const [editAccountInfo, setEditAccountInfo] = useState('')
+
   // 관리자 탭 상태
   const [activeTab, setActiveTab] = useState('applications')
   
@@ -714,30 +726,17 @@ const AdminDashboard: React.FC = () => {
       try {
         console.log('포인트 지급 완료 시작:', applicationId)
         
-        // 1. user_applications 상태를 point_approved로 변경 (승인 단계)
+        // 1. user_applications 상태를 point_completed로 변경 (포인트 지급 완료)
         try {
           await (dataService.entities as any).user_applications.update(applicationId, {
-            status: 'point_approved',
+            status: 'point_completed',
             updated_at: new Date().toISOString()
           })
-          console.log('✅ user_applications 상태 업데이트 완료: point_approved')
+          console.log('✅ user_applications 상태 업데이트 완료: point_completed')
         } catch (updateError) {
           console.warn('⚠️ user_applications 업데이트 실패 (무시):', updateError)
         }
-        
-        // 2. 잠시 대기 후 point_completed로 변경 (완료 단계)
-        setTimeout(async () => {
-          try {
-            await (dataService.entities as any).user_applications.update(applicationId, {
-              status: 'point_completed',
-              updated_at: new Date().toISOString()
-            })
-            console.log('✅ user_applications 상태 업데이트 완료: point_completed')
-          } catch (updateError) {
-            console.warn('⚠️ user_applications 최종 업데이트 실패 (무시):', updateError)
-          }
-        }, 1000)
-        
+
         await syncReviewStatus(applicationId, 'point_completed')
         
         // 2. points_history에서 해당 신청의 pending 상태를 success로 변경
@@ -1188,10 +1187,38 @@ const AdminDashboard: React.FC = () => {
   }
 
   // 사용자 포인트 내역 조회 함수
-  const handleViewUserPoints = async (userId: string) => {
+  const handleViewUserPoints = async (userId: string, applicationId?: string) => {
     try {
-      // 사용자 정보 조회
-      const user = await dataService.entities.users.get(userId)
+      console.log('🔍 사용자 포인트 조회 시작:', { userId, applicationId })
+
+      // 사용자 정보 조회 - Supabase auth.users 테이블에서 조회
+      let user = null
+      try {
+        const usersResult = await dataService.entities.users.list({
+          filter: { user_id: userId }
+        })
+        user = usersResult && usersResult.length > 0 ? usersResult[0] : null
+        console.log('✅ 사용자 조회 결과:', user)
+      } catch (userError) {
+        console.error('❌ 사용자 조회 실패:', userError)
+      }
+
+      // 사용자 정보를 찾지 못한 경우, application에서 정보 가져오기
+      if (!user && applicationId) {
+        const application = applications.find(app =>
+          (app.id || app._id) === applicationId
+        )
+        if (application) {
+          user = {
+            user_id: userId,
+            name: application.name,
+            email: application.email,
+            phone: application.phone
+          }
+          console.log('✅ Application에서 사용자 정보 추출:', user)
+        }
+      }
+
       if (!user) {
         toast.error('사용자 정보를 찾을 수 없습니다.')
         return
@@ -1201,15 +1228,37 @@ const AdminDashboard: React.FC = () => {
       const userPoints = await dataService.entities.user_points.list({
         filter: { user_id: userId }
       })
+      console.log('✅ 사용자 포인트 정보:', userPoints)
 
       // 포인트 내역 조회
       const pointsHistory = await dataService.entities.points_history.list({
         filter: { user_id: userId }
       })
+      console.log('✅ 포인트 내역:', pointsHistory)
+
+      // 현재 포인트 계산
+      const currentPoints = userPoints && userPoints.length > 0 ? userPoints[0].points || 0 : 0
+
+      // 이번 적립 포인트 (해당 application의 포인트)
+      let addPoints = 0
+      if (applicationId) {
+        const application = applications.find(app =>
+          (app.id || app._id) === applicationId
+        )
+        if (application) {
+          addPoints = application.experience?.rewards ||
+                     application.experience?.reward_points ||
+                     application.campaignInfo?.rewards ||
+                     0
+        }
+      }
 
       setSelectedUserPoints({
         ...user,
-        ...userPoints[0] // 첫 번째 포인트 정보 사용
+        ...(userPoints && userPoints.length > 0 ? userPoints[0] : {}),
+        currentPoints, // 현재 포인트
+        addPoints, // 적립될 포인트
+        afterPoints: currentPoints + addPoints // 적립 후 포인트
       })
       setUserPointsHistory(pointsHistory || [])
       setShowUserPointsModal(true)
@@ -1220,9 +1269,45 @@ const AdminDashboard: React.FC = () => {
   }
 
   // 출금 요청 수정 함수
-  const handleEditWithdrawal = async (_requestId: string) => {
-    // 출금 요청 수정 로직 (추후 구현)
-    toast('출금 요청 수정 기능은 추후 구현 예정입니다.', { icon: 'ℹ️' })
+  const handleEditWithdrawal = async (requestId: string) => {
+    const request = withdrawalRequests.find(req => (req.id || req._id) === requestId)
+    if (!request) {
+      toast.error('출금 요청 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    setEditingWithdrawal(request)
+    setEditWithdrawalAmount(request.amount || 0)
+    setEditWithdrawalMethod(request.withdrawal_method || '')
+    setEditAccountInfo(request.account_info || '')
+    setShowEditWithdrawalModal(true)
+  }
+
+  // 출금 수정 저장
+  const handleSaveEditWithdrawal = async () => {
+    if (!editingWithdrawal) return
+
+    try {
+      const requestId = editingWithdrawal.id || editingWithdrawal._id
+
+      await (dataService.entities as any).withdrawal_requests.update(requestId, {
+        amount: editWithdrawalAmount,
+        withdrawal_method: editWithdrawalMethod,
+        account_info: editAccountInfo,
+        updated_at: new Date().toISOString()
+      })
+
+      toast.success('출금 요청이 수정되었습니다.')
+      setShowEditWithdrawalModal(false)
+      setEditingWithdrawal(null)
+      setEditWithdrawalAmount(0)
+      setEditWithdrawalMethod('')
+      setEditAccountInfo('')
+      await loadWithdrawalRequests()
+    } catch (error) {
+      console.error('출금 수정 실패:', error)
+      toast.error('출금 수정에 실패했습니다.')
+    }
   }
 
   // 출금 요청 삭제 함수
@@ -1267,9 +1352,124 @@ const AdminDashboard: React.FC = () => {
   }
 
   // 포인트 지급 요청 수정 함수
-  const handleEditPointRequest = async (_applicationId: string) => {
-    // 포인트 지급 요청 수정 로직 (추후 구현)
-    toast('포인트 지급 요청 수정 기능은 추후 구현 예정입니다.', { icon: 'ℹ️' })
+  const handleEditPointRequest = async (applicationId: string) => {
+    const application = applications.find(app => (app.id || app._id) === applicationId)
+    if (!application) {
+      toast.error('신청 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    // 현재 포인트 금액 가져오기
+    const currentPoints = application.experience?.rewards ||
+                         application.experience?.reward_points ||
+                         application.campaignInfo?.rewards || 0
+
+    setEditingApplication(application)
+    setEditPointAmount(currentPoints)
+    setShowEditPointModal(true)
+  }
+
+  // 포인트 수정 저장
+  const handleSaveEditPoint = async () => {
+    if (!editingApplication) return
+
+    try {
+      const applicationId = editingApplication.id || editingApplication._id
+      const oldPoints = editingApplication.experience?.rewards ||
+                       editingApplication.experience?.reward_points ||
+                       editingApplication.campaignInfo?.rewards || 0
+      const pointDifference = editPointAmount - oldPoints
+
+      // user_applications의 포인트 정보 업데이트
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      }
+
+      // experience 또는 campaignInfo 객체를 업데이트
+      if (editingApplication.experience) {
+        updateData.experience = {
+          ...editingApplication.experience,
+          rewards: editPointAmount,
+          reward_points: editPointAmount
+        }
+      }
+
+      if (editingApplication.campaignInfo) {
+        updateData.campaignInfo = {
+          ...editingApplication.campaignInfo,
+          rewards: editPointAmount
+        }
+      }
+
+      await (dataService.entities as any).user_applications.update(applicationId, updateData)
+
+      // 이미 포인트가 지급된 경우(point_completed 상태)에만 실제 포인트 업데이트
+      if (editingApplication.status === 'point_completed' && pointDifference !== 0) {
+        console.log('🔧 포인트 수정:', {
+          oldPoints,
+          newPoints: editPointAmount,
+          difference: pointDifference,
+          userId: editingApplication.user_id
+        })
+
+        // 1. points_history 업데이트 - 기존 레코드 찾기
+        const pointsHistory = await (dataService.entities as any).points_history.list()
+        const relatedHistory = pointsHistory.find((record: any) =>
+          (record.campaign_id === applicationId ||
+           record.application_id === applicationId) &&
+          record.user_id === editingApplication.user_id &&
+          record.status === 'success'
+        )
+
+        if (relatedHistory) {
+          // 기존 레코드 업데이트
+          await (dataService.entities as any).points_history.update(relatedHistory.id || relatedHistory._id, {
+            points: editPointAmount,
+            points_amount: editPointAmount,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ points_history 업데이트 완료')
+        } else {
+          console.warn('⚠️ 관련 points_history 레코드를 찾을 수 없음')
+        }
+
+        // 2. user_points 업데이트 - 포인트 차이만큼 증감
+        const userPoints = await (dataService.entities as any).user_points.list()
+        const targetUserPoints = userPoints.find((points: any) =>
+          points.user_id === editingApplication.user_id
+        )
+
+        if (targetUserPoints) {
+          const currentPoints = targetUserPoints.points || 0
+          const currentEarned = targetUserPoints.earned_points || 0
+
+          await (dataService.entities as any).user_points.update(targetUserPoints.id || targetUserPoints._id, {
+            points: currentPoints + pointDifference,
+            earned_points: currentEarned + pointDifference,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ user_points 업데이트 완료:', {
+            before: currentPoints,
+            difference: pointDifference,
+            after: currentPoints + pointDifference
+          })
+        } else {
+          console.warn('⚠️ user_points 레코드를 찾을 수 없음')
+        }
+
+        toast.success(`포인트가 ${pointDifference > 0 ? '+' : ''}${pointDifference}P 조정되었습니다.`)
+      } else {
+        toast.success('포인트 금액이 수정되었습니다.')
+      }
+
+      setShowEditPointModal(false)
+      setEditingApplication(null)
+      setEditPointAmount(0)
+      await loadAllData()
+    } catch (error) {
+      console.error('포인트 수정 실패:', error)
+      toast.error('포인트 수정에 실패했습니다.')
+    }
   }
 
   // 포인트 지급 요청 삭제 함수
@@ -1954,9 +2154,9 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="backdrop-blur-sm bg-white/90 shadow-xl border-b border-white/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
@@ -1968,32 +2168,32 @@ const AdminDashboard: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:scale-105 hover:shadow-lg transition-all duration-200"
                 >
-                  <Bell className="w-4 h-4" />
-                  알림
+                  <Bell className="w-5 h-5" />
+                  <span className="font-medium">알림</span>
                   {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-lg">
                       {unreadNotifications}
                     </span>
                   )}
                 </button>
               </div>
-              
+
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
               >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                새로고침
+                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="font-medium">새로고침</span>
               </button>
               <button
                 onClick={() => navigate('/')}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200"
               >
-                <Home className="w-4 h-4" />
-                홈으로
+                <Home className="w-5 h-5" />
+                <span className="font-medium">홈으로</span>
               </button>
             </div>
           </div>
@@ -2002,24 +2202,24 @@ const AdminDashboard: React.FC = () => {
 
       {/* 알림 패널 */}
       {showNotifications && (
-        <div className="bg-white shadow-lg border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">관리자 알림</h2>
-              <div className="flex items-center gap-2">
+        <div className="backdrop-blur-sm bg-white/95 shadow-2xl border-b border-white/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900">관리자 알림</h2>
+              <div className="flex items-center gap-3">
                 {unreadNotifications > 0 && (
                   <button
                     onClick={markAllNotificationsAsRead}
-                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition-colors"
+                    className="px-4 py-2 text-sm bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 hover:scale-105 hover:shadow-lg rounded-xl transition-all duration-200 font-medium"
                   >
                     모두 읽음
                   </button>
                 )}
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 hover:scale-110 transition-all duration-200 p-2 rounded-lg hover:bg-gray-100"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
                 </button>
               </div>
             </div>
@@ -2027,14 +2227,14 @@ const AdminDashboard: React.FC = () => {
             {notifications.length === 0 ? (
               <p className="text-gray-500 text-center py-8">알림이 없습니다.</p>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-4 max-h-96 overflow-y-auto">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
                     onClick={() => !notification.is_read && markNotificationAsRead(notification.id)}
-                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                      notification.is_read ? 'bg-gray-50' : 
-                      notification.type === 'point_request' ? 'bg-orange-50 border-orange-200 hover:bg-orange-100' : 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+                    className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-xl ${
+                      notification.is_read ? 'bg-gray-50/50 backdrop-blur-sm border-gray-200' :
+                      notification.type === 'point_request' ? 'bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-300 hover:shadow-orange-200' : 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300 hover:shadow-blue-200'
                     }`}
                   >
                     <div className="flex justify-between items-start">
@@ -2045,12 +2245,12 @@ const AdminDashboard: React.FC = () => {
                           )}
                           <h3 className="font-medium text-gray-900">{notification.title}</h3>
                           {notification.type === 'point_request' && (
-                            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+                            <span className="px-3 py-1.5 bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 text-xs rounded-full font-semibold shadow-sm">
                               포인트 요청
                             </span>
                           )}
                           {notification.type === 'email_sent' && (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                            <span className="px-3 py-1.5 bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-xs rounded-full font-semibold shadow-sm">
                               이메일 발송
                             </span>
                           )}
@@ -2083,242 +2283,246 @@ const AdminDashboard: React.FC = () => {
 
       {/* Stats */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('all')}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('all')}>
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                <FileText className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">총 신청</p>
-                <p className="text-lg font-bold text-gray-900">{stats.totalApplications}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">총 신청</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('pending')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('pending')}>
             <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Clock className="w-5 h-5 text-yellow-600" />
+              <div className="p-3 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg">
+                <Clock className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">대기중</p>
-                <p className="text-lg font-bold text-gray-900">{stats.pendingApplications}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">대기중</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.pendingApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('approved')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('approved')}>
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <UserCheck className="w-5 h-5 text-green-600" />
+              <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+                <UserCheck className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">승인됨</p>
-                <p className="text-lg font-bold text-gray-900">{stats.approvedApplications}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">승인됨</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.approvedApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('product_purchased')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('product_purchased')}>
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="w-5 h-5 text-blue-600" />
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                <Package className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">제품구매완료</p>
-                <p className="text-lg font-bold text-gray-900">{applications.filter(app => app.status === 'product_purchased').length}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">제품구매완료</p>
+                <p className="text-2xl font-bold text-gray-900">{applications.filter(app => app.status === 'product_purchased').length}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('shipping')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('shipping')}>
             <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Truck className="w-5 h-5 text-purple-600" />
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+                <Truck className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">배송중</p>
-                <p className="text-lg font-bold text-gray-900">{applications.filter(app => app.status === 'shipping').length}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">배송중</p>
+                <p className="text-2xl font-bold text-gray-900">{applications.filter(app => app.status === 'shipping').length}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('review_in_progress')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('review_in_progress')}>
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
+                <FileText className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">리뷰제출완료</p>
-                <p className="text-lg font-bold text-gray-900">{stats.reviewInProgressApplications}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">리뷰제출완료</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.reviewInProgressApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('review_completed')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('review_completed')}>
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+              <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+                <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">리뷰승인완료</p>
-                <p className="text-lg font-bold text-gray-900">{stats.reviewCompletedApplications}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">리뷰승인완료</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.reviewCompletedApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('point_requested')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('point_requested')}>
             <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Gift className="w-5 h-5 text-orange-600" />
+              <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
+                <Gift className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">포인트지급요청</p>
-                <p className="text-lg font-bold text-gray-900">{stats.pointRequestedApplications}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">포인트지급요청</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.pointRequestedApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('point_completed')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('point_completed')}>
             <div className="flex items-center">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+                <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">포인트지급완료</p>
-                <p className="text-lg font-bold text-gray-900">{stats.pointCompletedApplications}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">포인트지급완료</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.pointCompletedApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('rejected')}>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('rejected')}>
             <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <XCircle className="w-5 h-5 text-red-600" />
+              <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
+                <XCircle className="w-6 h-6 text-white" />
               </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">거절됨</p>
-                <p className="text-lg font-bold text-gray-900">{stats.rejectedApplications}</p>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600">거절됨</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.rejectedApplications}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* 상단 관리 메뉴 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <button
             onClick={() => setActiveTab('campaigns')}
-            className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            className="backdrop-blur-sm bg-gradient-to-br from-green-500 to-green-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(34,197,94,0.3)] transition-all duration-200 hover:scale-105"
           >
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold">캠페인 관리</h3>
-                <p className="text-sm text-green-100 mt-1">체험단 캠페인 생성 및 관리</p>
+              <div className="text-left">
+                <h3 className="text-2xl font-bold">캠페인 관리</h3>
+                <p className="text-sm text-green-100 mt-2">체험단 캠페인 생성 및 관리</p>
               </div>
-              <Package className="w-10 h-10 opacity-80" />
+              <Package className="w-12 h-12 opacity-90" />
             </div>
           </button>
 
           <button
             onClick={() => setActiveTab('users')}
-            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            className="backdrop-blur-sm bg-gradient-to-br from-purple-500 to-purple-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(168,85,247,0.3)] transition-all duration-200 hover:scale-105"
           >
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold">회원 관리</h3>
-                <p className="text-sm text-purple-100 mt-1">회원 정보 조회 및 관리</p>
+              <div className="text-left">
+                <h3 className="text-2xl font-bold">회원 관리</h3>
+                <p className="text-sm text-purple-100 mt-2">회원 정보 조회 및 관리</p>
               </div>
-              <User className="w-10 h-10 opacity-80" />
+              <User className="w-12 h-12 opacity-90" />
             </div>
           </button>
 
           <button
             onClick={() => navigate('/admin/chat')}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            className="backdrop-blur-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all duration-200 hover:scale-105"
           >
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold">실시간 채팅</h3>
-                <p className="text-sm text-blue-100 mt-1">고객 문의 실시간 응대</p>
+              <div className="text-left">
+                <h3 className="text-2xl font-bold">실시간 채팅</h3>
+                <p className="text-sm text-blue-100 mt-2">고객 문의 실시간 응대</p>
                 {unreadChatCount > 0 && (
-                  <span className="inline-block mt-2 px-3 py-1 bg-white text-blue-600 text-xs font-bold rounded-full">
+                  <span className="inline-block mt-2 px-4 py-1.5 bg-white text-blue-600 text-xs font-bold rounded-full shadow-lg">
                     {unreadChatCount}개의 새 메시지
                   </span>
                 )}
               </div>
-              <MessageCircle className="w-10 h-10 opacity-80" />
+              <MessageCircle className="w-12 h-12 opacity-90" />
             </div>
           </button>
         </div>
 
         {/* 메인 탭 메뉴 (업무 흐름 순서) */}
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8 overflow-hidden">
+          <div className="border-b border-white/50">
+            <nav className="-mb-px flex space-x-2 px-8 py-2" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('applications')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'applications'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <FileText className="w-4 h-4" />
+                <FileText className="w-5 h-5" />
                 <span>1. 신청 관리</span>
               </button>
               <button
                 onClick={() => setActiveTab('reviews')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'reviews'
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <UserCheck className="w-4 h-4" />
+                <UserCheck className="w-5 h-5" />
                 <span>2. 리뷰 검수</span>
               </button>
               <button
                 onClick={() => setActiveTab('point-requests')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'point-requests'
-                    ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <Gift className="w-4 h-4" />
+                <Gift className="w-5 h-5" />
                 <span>3. 포인트 지급</span>
                 {stats.pointRequestedApplications > 0 && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
+                    activeTab === 'point-requests' ? 'bg-white text-orange-600' : 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800'
+                  }`}>
                     {stats.pointRequestedApplications}
                   </span>
                 )}
               </button>
               <button
                 onClick={() => setActiveTab('withdrawal-requests')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'withdrawal-requests'
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <Banknote className="w-4 h-4" />
+                <Banknote className="w-5 h-5" />
                 <span>4. 출금 요청</span>
                 {withdrawalRequests.filter(req => req.status === 'pending').length > 0 && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
+                    activeTab === 'withdrawal-requests' ? 'bg-white text-purple-600' : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800'
+                  }`}>
                     {withdrawalRequests.filter(req => req.status === 'pending').length}
                   </span>
                 )}
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'settings'
-                    ? 'border-gray-500 text-gray-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-gradient-to-br from-gray-500 to-gray-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <Settings className="w-4 h-4" />
+                <Settings className="w-5 h-5" />
                 <span>설정</span>
               </button>
             </nav>
@@ -2327,37 +2531,37 @@ const AdminDashboard: React.FC = () => {
 
         {/* Applications Section */}
         {activeTab === 'applications' && (
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
+          <div className="px-8 py-6 border-b border-white/50">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">신청 관리</h2>
-              <div className="flex gap-2">
+              <h2 className="text-2xl font-bold text-gray-900">신청 관리</h2>
+              <div className="flex gap-3">
           <button
                   onClick={handleBulkApprove}
                   disabled={selectedApplications.size === 0 || bulkActionLoading}
-                  className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 font-medium"
           >
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-5 h-5" />
                   일괄 승인
           </button>
           <button
                   onClick={() => setShowRejectionModal(true)}
                   disabled={selectedApplications.size === 0}
-                  className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 font-medium"
                 >
-                  <XCircle className="w-4 h-4" />
+                  <XCircle className="w-5 h-5" />
                   일괄 거절
           </button>
         </div>
             </div>
             </div>
             
-          <div className="p-6">
-            <div className="flex gap-4 mb-4">
+          <div className="p-8">
+            <div className="flex gap-4 mb-6">
             <select
                 value={applicationFilter}
                 onChange={(e) => setApplicationFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 font-medium text-gray-700 bg-white hover:border-blue-400"
               >
                 <option value="all">전체</option>
                 <option value="pending">대기중</option>
@@ -2375,15 +2579,15 @@ const AdminDashboard: React.FC = () => {
                 placeholder="신청자 검색..."
                 value={applicationSearch}
                 onChange={(e) => setApplicationSearch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg flex-1"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl flex-1 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 font-medium text-gray-700 placeholder-gray-400"
               />
         </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-2xl border-2 border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         <input
                           type="checkbox"
                           checked={selectedApplications.size === filteredApplications.length && filteredApplications.length > 0}
@@ -2394,19 +2598,19 @@ const AdminDashboard: React.FC = () => {
                             setSelectedApplications(new Set())
                           }
                         }}
-                        className="rounded border-gray-300"
+                        className="rounded border-gray-300 w-5 h-5 cursor-pointer"
                         />
                       </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">신청자</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">체험단</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">신청일</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">신청자</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">체험단</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">상태</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">신청일</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">액션</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                   {filteredApplications.map((application) => (
-                    <tr key={application.id} className="hover:bg-gray-50">
+                    <tr key={application.id} className="hover:bg-blue-50 transition-colors duration-150">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <input
                                 type="checkbox"
@@ -2420,7 +2624,7 @@ const AdminDashboard: React.FC = () => {
                             }
                             setSelectedApplications(newSelected)
                           }}
-                          className="rounded border-gray-300"
+                          className="rounded border-gray-300 w-5 h-5 cursor-pointer"
                               />
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -2451,17 +2655,17 @@ const AdminDashboard: React.FC = () => {
                         </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          application.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          application.status === 'review_in_progress' ? 'bg-blue-100 text-blue-800' :
-                          application.status === 'review_completed' ? 'bg-green-100 text-green-800' :
-                          application.status === 'product_purchased' ? 'bg-blue-100 text-blue-800' :
-                          application.status === 'shipping' ? 'bg-purple-100 text-purple-800' :
-                          application.status === 'delivered' ? 'bg-indigo-100 text-indigo-800' :
-                          application.status === 'point_requested' ? 'bg-orange-100 text-orange-800' :
-                          application.status === 'point_completed' ? 'bg-emerald-100 text-emerald-800' :
-                          application.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
+                        <span className={`px-4 py-2 text-xs font-bold rounded-xl shadow-sm ${
+                          application.status === 'approved' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800' :
+                          application.status === 'review_in_progress' ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800' :
+                          application.status === 'review_completed' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800' :
+                          application.status === 'product_purchased' ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800' :
+                          application.status === 'shipping' ? 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800' :
+                          application.status === 'delivered' ? 'bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800' :
+                          application.status === 'point_requested' ? 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800' :
+                          application.status === 'point_completed' ? 'bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800' :
+                          application.status === 'rejected' ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800' :
+                          'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800'
                         }`}>
                           {application.status === 'approved' ? '승인됨' :
                            application.status === 'product_purchased' ? '제품구매완료' :
@@ -2499,32 +2703,32 @@ const AdminDashboard: React.FC = () => {
                                   setSelectedApplication(application)
                                   setShowApprovalModal(true)
                                 }}
-                                className="text-green-600 hover:text-green-900"
+                                className="p-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                                 title="승인"
                               >
-                                <CheckCircle className="w-4 h-4" />
+                                <CheckCircle className="w-5 h-5" />
                               </button>
                               <button
                                 onClick={() => {
                                   setSelectedApplication(application)
                                   setShowRejectionModal(true)
                                 }}
-                                className="text-red-600 hover:text-red-900"
+                                className="p-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                                 title="거절"
                               >
-                                <XCircle className="w-4 h-4" />
+                                <XCircle className="w-5 h-5" />
                               </button>
                             </>
                           )}
-                          
+
                           {/* 배송 정보 등록/수정 버튼 (제품 구매 완료 또는 배송중인 경우) */}
                           {(application.status === 'product_purchased' || application.status === 'shipping') && (
                             <button
                               onClick={() => handleShippingModal(application)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                               title={application.status === 'shipping' ? '배송 정보 수정' : '배송 정보 등록'}
                             >
-                              <Truck className="w-4 h-4" />
+                              <Truck className="w-5 h-5" />
                             </button>
                           )}
                           
@@ -2552,22 +2756,22 @@ const AdminDashboard: React.FC = () => {
 
         {/* 포인트 지급 요청 Section */}
         {activeTab === 'point-requests' && (
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
+          <div className="px-8 py-6 border-b border-white/50">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">포인트 지급 요청 관리</h2>
-              <div className="text-sm text-gray-600">
+              <h2 className="text-2xl font-bold text-gray-900">포인트 지급 요청 관리</h2>
+              <div className="text-sm font-semibold text-gray-700 bg-gradient-to-r from-orange-100 to-orange-200 px-4 py-2 rounded-xl">
                 총 {stats.pointRequestedApplications}개의 요청
               </div>
             </div>
           </div>
-          
-          <div className="p-6">
-            <div className="flex gap-4 mb-4">
+
+          <div className="p-8">
+            <div className="flex gap-4 mb-6">
               <select
                 value={pointRequestFilter}
                 onChange={(e) => setPointRequestFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all duration-200 font-medium text-gray-700 bg-white hover:border-orange-400"
               >
                 <option value="all">전체</option>
                 <option value="point_requested">포인트 지급 요청</option>
@@ -2595,20 +2799,20 @@ const AdminDashboard: React.FC = () => {
                   </p>
                 </div>
               ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-2xl border-2 border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">캠페인</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">포인트</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">요청일</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">사용자</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">캠페인</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">포인트</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">요청일</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">액션</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredPointRequests.map((application) => (
-                        <tr key={application.id || application._id} className="hover:bg-gray-50">
+                        <tr key={application.id || application._id} className="hover:bg-orange-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-gray-900">{application.name || '이름 없음'}</div>
@@ -2619,7 +2823,7 @@ const AdminDashboard: React.FC = () => {
                             <div className="text-sm text-gray-900">{application.campaign_name || '캠페인명 없음'}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            <span className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 shadow-sm">
                               {(() => {
                                 const pointAmount = application.experience?.rewards || 
                                                    application.experience?.reward_points || 
@@ -2647,27 +2851,27 @@ const AdminDashboard: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
                           <button
-                            onClick={() => handleViewUserPoints(application.user_id)}
-                            className="text-purple-600 hover:text-purple-900"
+                            onClick={() => handleViewUserPoints(application.user_id, application.id || application._id)}
+                            className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                             title="사용자 포인트 내역"
                           >
-                            <Gift className="w-4 h-4" />
+                            <Gift className="w-5 h-5" />
                           </button>
                           {application.status === 'point_requested' && (
                             <>
                               <button
                                 onClick={() => handleCompletePoints(application.id || application._id)}
-                                className="text-green-600 hover:text-green-900"
+                                className="p-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                                 title="포인트 지급 승인"
                               >
-                                <CheckCircle className="w-4 h-4" />
+                                <CheckCircle className="w-5 h-5" />
                               </button>
                               <button
                                 onClick={() => handleRejectPointRequest(application.id || application._id)}
-                                className="text-red-600 hover:text-red-900"
+                                className="p-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                                 title="포인트 지급 거절"
                               >
-                                <XCircle className="w-4 h-4" />
+                                <XCircle className="w-5 h-5" />
                               </button>
                             </>
                           )}
@@ -2675,14 +2879,14 @@ const AdminDashboard: React.FC = () => {
                             <>
                               <button
                                 onClick={() => handleEditPointRequest(application.id || application._id)}
-                                className="text-yellow-600 hover:text-yellow-900"
+                                className="p-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                                 title="수정"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="w-5 h-5" />
                               </button>
                               <button
                                 onClick={() => handleDeletePointRequest(application.id || application._id)}
-                                className="text-red-600 hover:text-red-900"
+                                className="p-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                                 title="삭제"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -2714,26 +2918,26 @@ const AdminDashboard: React.FC = () => {
 
         {/* Experiences Section */}
         {activeTab === 'campaigns' && (
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
+          <div className="px-8 py-6 border-b border-white/50">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">캠페인 관리</h2>
+              <h2 className="text-2xl font-bold text-gray-900">캠페인 관리</h2>
               <button
                 onClick={() => setShowCampaignModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 font-medium"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
                 새 체험단
               </button>
                 </div>
             </div>
-            
-          <div className="p-6">
-            <div className="flex gap-4 mb-4">
+
+          <div className="p-8">
+            <div className="flex gap-4 mb-6">
                   <select
                 value={experienceFilter}
                 onChange={(e) => setExperienceFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 font-medium text-gray-700 bg-white hover:border-green-400"
               >
                 <option value="all">전체</option>
                 <option value="recruiting">모집중</option>
@@ -2744,50 +2948,50 @@ const AdminDashboard: React.FC = () => {
                 placeholder="체험단 검색..."
                 value={experienceSearch}
                 onChange={(e) => setExperienceSearch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg flex-1"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl flex-1 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 font-medium text-gray-700 placeholder-gray-400"
               />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredExperiences.map((experience) => {
                 // 🔥 체험단명 우선 표시 (campaign_name이 있으면 사용, 없으면 다른 필드들 확인)
-                const displayName = experience.campaign_name || 
-                                  experience.product_name || 
-                                  experience.title || 
-                                  experience.experience_name || 
-                                  experience.name || 
+                const displayName = experience.campaign_name ||
+                                  experience.product_name ||
+                                  experience.title ||
+                                  experience.experience_name ||
+                                  experience.name ||
                                   '제목 없음'
-                
+
                 // 🔥 status 값 기반으로 상태 표시
                 const getStatusInfo = (status: string) => {
                   switch (status) {
                     case 'active':
                     case 'recruiting':
-                      return { label: '모집중', color: 'bg-green-100 text-green-800' }
+                      return { label: '모집중', color: 'bg-gradient-to-r from-green-100 to-green-200 text-green-800' }
                     case 'closed':
                     case 'completed':
-                      return { label: '마감', color: 'bg-red-100 text-red-800' }
+                      return { label: '마감', color: 'bg-gradient-to-r from-red-100 to-red-200 text-red-800' }
                     case 'pending':
-                      return { label: '준비중', color: 'bg-yellow-100 text-yellow-800' }
+                      return { label: '준비중', color: 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800' }
                     case 'cancelled':
-                      return { label: '취소', color: 'bg-gray-100 text-gray-800' }
+                      return { label: '취소', color: 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800' }
                     default:
-                      return { label: '알 수 없음', color: 'bg-gray-100 text-gray-800' }
+                      return { label: '알 수 없음', color: 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800' }
                   }
                 }
-                
+
                 const statusInfo = getStatusInfo(experience.status || experience.campaign_status || 'active')
-                
+
                 return (
-                  <div key={experience.id} className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-2">
+                  <div key={experience.id} className="backdrop-blur-sm bg-white/90 border-2 border-gray-200 rounded-2xl p-6 hover:scale-105 hover:shadow-2xl transition-all duration-200">
+                    <h3 className="font-bold text-gray-900 mb-3 text-lg">
                       {displayName}
                     </h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
                       {experience.description || '설명이 없습니다.'}
                     </p>
                     <div className="flex justify-between items-center">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusInfo.color}`}>
+                      <span className={`px-4 py-2 text-xs font-bold rounded-xl shadow-sm ${statusInfo.color}`}>
                         {statusInfo.label}
                       </span>
                       <div className="flex gap-2">
@@ -2808,15 +3012,15 @@ const AdminDashboard: React.FC = () => {
                             }
                             setShowEditModal(true)
                           }}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDeleteExperience(experience.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="p-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
                     </div>
@@ -2830,37 +3034,37 @@ const AdminDashboard: React.FC = () => {
 
         {/* 회원 관리 Section */}
         {activeTab === 'users' && (
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
+          <div className="px-8 py-6 border-b border-white/50">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">회원 관리</h2>
-              <div className="text-sm text-gray-600">
+              <h2 className="text-2xl font-bold text-gray-900">회원 관리</h2>
+              <div className="text-sm font-semibold text-gray-700 bg-gradient-to-r from-purple-100 to-purple-200 px-4 py-2 rounded-xl">
                 총 {filteredUsers.length}명의 회원
               </div>
             </div>
           </div>
-          
-          <div className="p-6">
-            <div className="flex gap-4 mb-4">
+
+          <div className="p-8">
+            <div className="flex gap-4 mb-6">
               <input
                 type="text"
                 placeholder="회원 검색 (이름, 이메일)..."
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg flex-1"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl flex-1 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 font-medium text-gray-700 placeholder-gray-400"
               />
             </div>
-            
-            <div className="overflow-x-auto">
+
+            <div className="overflow-x-auto rounded-2xl border-2 border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">마지막 로그인</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">이름</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">이메일</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">가입일</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">마지막 로그인</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">상태</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">액션</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -2922,8 +3126,24 @@ const AdminDashboard: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
                             <button
-                              onClick={() => {
-                                setSelectedUser(user)
+                              onClick={async () => {
+                                // 본인인증 정보 조회
+                                try {
+                                  const { data: identityInfo } = await supabase
+                                    .from('user_identity_info')
+                                    .select('*')
+                                    .eq('user_id', user.user_id || user.id)
+                                    .maybeSingle()
+
+                                  setSelectedUser({
+                                    ...user,
+                                    identity_info: identityInfo
+                                  })
+                                } catch (error) {
+                                  console.error('본인인증 정보 조회 실패:', error)
+                                  setSelectedUser(user)
+                                }
+
                                 setShowUserDetailModal(true)
                                 // 사용자 신청 정보도 함께 로드
                                 loadUserApplications(user.user_id || user.id)
@@ -3334,7 +3554,11 @@ const AdminDashboard: React.FC = () => {
                                 {request.status === 'pending' && (
                                   <>
                                     <button
-                                      onClick={() => handleApproveWithdrawal(request.id)}
+                                      onClick={() => {
+                                        if (window.confirm('이 출금 요청을 승인하시겠습니까?')) {
+                                          handleApproveWithdrawal(request.id)
+                                        }
+                                      }}
                                       disabled={loading}
                                       className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
                                       title="승인"
@@ -4022,6 +4246,58 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* 본인인증 및 계좌 정보 */}
+                {selectedUser.identity_info && (
+                  <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border-2 border-green-200">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <Shield className="w-5 h-5 text-green-600" />
+                      <h4 className="text-lg font-semibold text-gray-900">본인인증 및 계좌 정보</h4>
+                      {selectedUser.identity_info.identity_verified && (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          인증 완료
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">본인인증 이름</label>
+                        <p className="mt-1 text-sm text-gray-900">{selectedUser.identity_info.identity_name || '미인증'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">생년월일</label>
+                        <p className="mt-1 text-sm text-gray-900">{selectedUser.identity_info.identity_birth || '미인증'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">전화번호</label>
+                        <p className="mt-1 text-sm text-gray-900">{selectedUser.identity_info.identity_phone || '미인증'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">인증일시</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {selectedUser.identity_info.identity_verified_at ? new Date(selectedUser.identity_info.identity_verified_at).toLocaleDateString('ko-KR') : '미인증'}
+                        </p>
+                      </div>
+                      <div className="md:col-span-2 pt-3 border-t border-green-200">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">계좌 정보</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-500">은행</label>
+                            <p className="mt-1 text-sm text-gray-900 font-medium">{selectedUser.identity_info.bank_name || '미등록'}</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500">계좌번호</label>
+                            <p className="mt-1 text-sm text-gray-900 font-mono">{selectedUser.identity_info.bank_account || '미등록'}</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500">예금주</label>
+                            <p className="mt-1 text-sm text-gray-900 font-medium">{selectedUser.identity_info.account_holder || '미등록'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* 아바타 이미지 */}
                 {selectedUser.avatar_url && (
@@ -5031,36 +5307,73 @@ const AdminDashboard: React.FC = () => {
             </div>
             
             <div className="space-y-6">
-              {/* 사용자 정보 */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">사용자 정보</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">이름:</span>
-                    <span className="ml-2 font-medium">{selectedUserPoints.name || '이름 없음'}</span>
+              {/* 사용자 프로필 정보 */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6 rounded-xl">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                    {selectedUserPoints.name?.charAt(0) || '?'}
                   </div>
-                  <div>
-                    <span className="text-gray-500">이메일:</span>
-                    <span className="ml-2 font-medium">{selectedUserPoints.email || '이메일 없음'}</span>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-xl text-gray-900">{selectedUserPoints.name || '이름 없음'}</h4>
+                    <p className="text-sm text-gray-600">{selectedUserPoints.email || '이메일 없음'}</p>
+                    {selectedUserPoints.phone && (
+                      <p className="text-sm text-gray-600">{selectedUserPoints.phone}</p>
+                    )}
                   </div>
                 </div>
               </div>
 
+              {/* 포인트 적립 정보 */}
+              {selectedUserPoints.addPoints > 0 && (
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300 p-6 rounded-xl">
+                  <h4 className="font-bold text-lg text-emerald-900 mb-4 flex items-center">
+                    <Gift className="w-5 h-5 mr-2" />
+                    이번 포인트 적립 정보
+                  </h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center bg-white p-4 rounded-lg shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">현재 포인트</div>
+                      <div className="text-2xl font-bold text-gray-700">
+                        {selectedUserPoints.currentPoints?.toLocaleString() || 0}<span className="text-lg">P</span>
+                      </div>
+                    </div>
+                    <div className="text-center bg-emerald-100 p-4 rounded-lg shadow-sm">
+                      <div className="text-sm text-emerald-800 mb-1">적립 포인트</div>
+                      <div className="text-2xl font-bold text-emerald-600">
+                        +{selectedUserPoints.addPoints?.toLocaleString() || 0}<span className="text-lg">P</span>
+                      </div>
+                    </div>
+                    <div className="text-center bg-blue-100 p-4 rounded-lg shadow-sm border-2 border-blue-400">
+                      <div className="text-sm text-blue-800 mb-1 font-semibold">적립 후 포인트</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {selectedUserPoints.afterPoints?.toLocaleString() || 0}<span className="text-lg">P</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 현재 포인트 현황 */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-3">현재 포인트 현황</h4>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{selectedUserPoints.available_points?.toLocaleString() || 0}P</div>
-                    <div className="text-gray-500">사용 가능</div>
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-6 rounded-xl">
+                <h4 className="font-bold text-lg text-gray-900 mb-4">전체 포인트 현황</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center bg-white p-4 rounded-lg shadow-sm">
+                    <div className="text-sm text-gray-600 mb-1">사용 가능</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedUserPoints.available_points?.toLocaleString() || selectedUserPoints.currentPoints?.toLocaleString() || 0}<span className="text-lg">P</span>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{selectedUserPoints.total_points?.toLocaleString() || 0}P</div>
-                    <div className="text-gray-500">총 적립</div>
+                  <div className="text-center bg-white p-4 rounded-lg shadow-sm">
+                    <div className="text-sm text-gray-600 mb-1">총 적립</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {selectedUserPoints.total_points?.toLocaleString() || 0}<span className="text-lg">P</span>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">{selectedUserPoints.withdrawn_points?.toLocaleString() || 0}P</div>
-                    <div className="text-gray-500">출금 완료</div>
+                  <div className="text-center bg-white p-4 rounded-lg shadow-sm">
+                    <div className="text-sm text-gray-600 mb-1">출금 완료</div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {selectedUserPoints.withdrawn_points?.toLocaleString() || 0}<span className="text-lg">P</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -5115,6 +5428,180 @@ const AdminDashboard: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 포인트 수정 모달 */}
+      {showEditPointModal && editingApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold">포인트 금액 수정</h3>
+              <button
+                onClick={() => {
+                  setShowEditPointModal(false)
+                  setEditingApplication(null)
+                  setEditPointAmount(0)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* 캠페인 정보 */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">캠페인</p>
+                <p className="font-semibold text-gray-900">
+                  {editingApplication.campaign_name || editingApplication.experience_name || '알 수 없음'}
+                </p>
+              </div>
+
+              {/* 사용자 정보 */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">신청자</p>
+                <p className="font-semibold text-gray-900">{editingApplication.name || '알 수 없음'}</p>
+              </div>
+
+              {/* 포인트 입력 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  지급 포인트
+                </label>
+                <input
+                  type="number"
+                  value={editPointAmount}
+                  onChange={(e) => setEditPointAmount(Number(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="포인트를 입력하세요"
+                  min="0"
+                />
+                <p className="mt-2 text-sm text-gray-500">
+                  현재: {editingApplication.experience?.rewards || editingApplication.campaignInfo?.rewards || 0}P
+                </p>
+              </div>
+
+              {/* 버튼 */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowEditPointModal(false)
+                    setEditingApplication(null)
+                    setEditPointAmount(0)
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveEditPoint}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 출금 수정 모달 */}
+      {showEditWithdrawalModal && editingWithdrawal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold">출금 요청 수정</h3>
+              <button
+                onClick={() => {
+                  setShowEditWithdrawalModal(false)
+                  setEditingWithdrawal(null)
+                  setEditWithdrawalAmount(0)
+                  setEditWithdrawalMethod('')
+                  setEditAccountInfo('')
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* 사용자 정보 */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">신청자</p>
+                <p className="font-semibold text-gray-900">{editingWithdrawal.user_name || '알 수 없음'}</p>
+              </div>
+
+              {/* 출금 금액 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  출금 금액
+                </label>
+                <input
+                  type="number"
+                  value={editWithdrawalAmount}
+                  onChange={(e) => setEditWithdrawalAmount(Number(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="출금 금액을 입력하세요"
+                  min="0"
+                />
+                <p className="mt-2 text-sm text-gray-500">
+                  현재: {editingWithdrawal.amount?.toLocaleString()}원
+                </p>
+              </div>
+
+              {/* 출금 방법 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  출금 방법
+                </label>
+                <input
+                  type="text"
+                  value={editWithdrawalMethod}
+                  onChange={(e) => setEditWithdrawalMethod(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="예: 계좌이체"
+                />
+              </div>
+
+              {/* 계좌 정보 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  계좌 정보
+                </label>
+                <input
+                  type="text"
+                  value={editAccountInfo}
+                  onChange={(e) => setEditAccountInfo(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="예: 국민은행 123-456-789"
+                />
+              </div>
+
+              {/* 버튼 */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowEditWithdrawalModal(false)
+                    setEditingWithdrawal(null)
+                    setEditWithdrawalAmount(0)
+                    setEditWithdrawalMethod('')
+                    setEditAccountInfo('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveEditWithdrawal}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  저장
+                </button>
               </div>
             </div>
           </div>

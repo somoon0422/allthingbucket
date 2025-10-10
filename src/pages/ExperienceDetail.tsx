@@ -410,13 +410,34 @@ function ExperienceDetail() {
     checkApplicationStatus()
   }, [user, experience, getUserApplications])
 
-  const handleApplyClick = () => {
+  const handleApplyClick = async () => {
     console.log('🔥 handleApplyClick 호출됨', { isApplicationClosed, experience })
-    
+
     if (!isAuthenticated) {
       toast.error('로그인이 필요합니다.')
       navigate('/login')
       return
+    }
+
+    // 본인인증 완료 여부 확인
+    if (user) {
+      try {
+        const { data: identityInfo } = await supabase
+          .from('user_identity_info')
+          .select('identity_verified')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!identityInfo?.identity_verified) {
+          toast.error('캠페인 신청을 위해 본인인증이 필요합니다.')
+          setTimeout(() => {
+            navigate('/identity-verification')
+          }, 1500)
+          return
+        }
+      } catch (error) {
+        console.error('본인인증 확인 실패:', error)
+      }
     }
     
     // 마감 상태 재확인

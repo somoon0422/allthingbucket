@@ -15,6 +15,7 @@ import Wishlist from './pages/Wishlist'
 import Points from './pages/Points'
 import Profile from './pages/Profile'
 import WithdrawalRequest from './pages/WithdrawalRequest'
+import IdentityVerification from './pages/IdentityVerification'
 import AuthCallback from './pages/AuthCallback'
 import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
 
@@ -73,6 +74,7 @@ function App() {
                   <Route path="/points" element={<Points />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/withdrawal" element={<WithdrawalRequest />} />
+                  <Route path="/identity-verification" element={<IdentityVerification />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

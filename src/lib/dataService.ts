@@ -480,67 +480,24 @@ export const dataService = {
     campaigns: {
       list: async (options?: { select?: string; limit?: number }) => {
         try {
-          console.log('🔥 Supabase campaigns.list 호출됨', options)
-          
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
             return []
           }
-          
-          // 🔥 실제 DB 테이블 구조에 맞는 모든 필드 조회
+
           const selectFields = options?.select || '*'
           let query = supabase.from('campaigns').select(selectFields)
-          
-          // 제한된 수량만 가져오기 (기본 20개로 줄임)
+
           const limit = options?.limit || 20
           query = query.limit(limit)
-          
+
           const { data, error } = await query.order('created_at', { ascending: false })
-          
+
           if (error) {
             console.error('❌ campaigns 조회 실패:', error)
-            
-            // 🔍 실제 테이블 구조 확인을 위해 전체 필드 조회 시도
-            try {
-              console.log('🔍 실제 campaigns 테이블 구조 확인 중...')
-              const { data: sampleData } = await supabase
-                .from('campaigns')
-                .select('*')
-                .limit(1)
-              
-              if (sampleData && sampleData.length > 0) {
-                console.log('🔍 실제 campaigns 테이블 구조:', Object.keys(sampleData[0]))
-                console.log('🔍 첫 번째 레코드 샘플:', sampleData[0])
-              } else {
-                console.log('🔍 campaigns 테이블이 비어있거나 접근할 수 없음')
-              }
-            } catch (structureError) {
-              console.error('❌ 테이블 구조 확인 실패:', structureError)
-            }
-            
             return []
           }
-          
-          console.log('✅ Supabase campaigns.list 결과:', data?.length, '개')
-          
-          // 🔥 디버깅: 첫 번째 캠페인의 실제 데이터 구조 확인
-          if (data && data.length > 0) {
-            const firstCampaign = data[0] as any
-            console.log('🔍 campaigns.list 첫 번째 캠페인 실제 데이터:', {
-              id: firstCampaign.id,
-              campaign_name: firstCampaign.campaign_name,
-              status: firstCampaign.status,
-              main_images: firstCampaign.main_images,
-              detail_images: firstCampaign.detail_images,
-              end_date: firstCampaign.end_date,
-              application_end: firstCampaign.application_end,
-              review_deadline: firstCampaign.review_deadline,
-              max_participants: firstCampaign.max_participants,
-              current_participants: firstCampaign.current_participants,
-              allFields: Object.keys(firstCampaign)
-            })
-          }
-          
+
           return data || []
         } catch (error) {
           console.error('❌ campaigns 조회 실패:', error)

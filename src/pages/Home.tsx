@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { dataService } from '../lib/dataService'
 import { setHomeOGTags } from '../utils/ogTags'
-import { 
-  Gift, Star, Users, ArrowRight, Calendar, MapPin, 
-  Coins, Sparkles, Award, Zap, Target, CheckCircle, Heart
+import {
+  Gift, Star, Users, ArrowRight, Calendar, MapPin,
+  Coins, Sparkles, Award, Zap, Target, CheckCircle, Heart, TrendingUp
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useWishlist } from '../hooks/useWishlist'
@@ -25,44 +25,39 @@ const Home: React.FC = () => {
 
   // D-Day 계산 함수 - 실제 날짜 기반
   const getDeadlineDisplay = (experience: any) => {
-    // 다양한 날짜 필드명 시도
-    const deadline = experience.application_end_date || 
+    const deadline = experience.application_end_date ||
                     experience.application_deadline ||
                     experience.end_date ||
                     experience.deadline ||
                     experience.신청_마감일 ||
                     experience.application_end
-    
-    // 캠페인 상태 확인
+
     const status = experience.status || experience.campaign_status
-    
-    // 상태가 'closed'이거나 'inactive'인 경우
+
     if (status === 'closed' || status === 'inactive') {
       return '마감됨'
     }
-    
-    // 최대 참가자 수 체크
+
     const maxParticipants = experience.max_participants
     const currentParticipants = experience.current_participants || 0
     if (maxParticipants && currentParticipants >= maxParticipants) {
       return '마감됨'
     }
-    
+
     if (!deadline) {
-      // 날짜가 없으면 상태 기반으로 표시
       if (status === 'active' || status === 'recruiting') return '모집중'
       return '진행중'
     }
-    
+
     try {
       const deadlineDate = new Date(deadline)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       deadlineDate.setHours(0, 0, 0, 0)
-      
+
       const diffTime = deadlineDate.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
+
       if (diffDays < 0) return '마감됨'
       if (diffDays === 0) return 'D-Day'
       if (diffDays === 1) return 'D-1'
@@ -78,31 +73,28 @@ const Home: React.FC = () => {
     const status = experience.status || experience.campaign_status
     const maxParticipants = experience.max_participants
     const currentParticipants = experience.current_participants || 0
-    
-    // 상태가 'closed'이거나 'inactive'인 경우
+
     if (status === 'closed' || status === 'inactive') {
       return true
     }
-    
-    // 최대 참가자 수 도달
+
     if (maxParticipants && currentParticipants >= maxParticipants) {
       return true
     }
-    
-    // 신청 마감일 체크
-    const deadline = experience.application_end_date || 
+
+    const deadline = experience.application_end_date ||
                     experience.application_deadline ||
                     experience.end_date ||
                     experience.deadline ||
                     experience.신청_마감일 ||
                     experience.application_end
-    
+
     if (deadline) {
       try {
         const deadlineDate = new Date(deadline)
         const today = new Date()
         today.setHours(23, 59, 59, 999)
-        
+
         if (deadlineDate < today) {
           return true
         }
@@ -110,21 +102,17 @@ const Home: React.FC = () => {
         console.error('날짜 계산 오류:', error)
       }
     }
-    
+
     return false
   }
 
-  // 🔥 최적화된 헬퍼 함수들
   const updateFeaturedExperiences = (campaigns: any[]) => {
     try {
-      console.log('🔥 추천 체험단 업데이트 시작...')
-      
       const safeCampaigns = Array.isArray(campaigns) ? campaigns : []
       const featured = safeCampaigns
         .filter(campaign => campaign && (campaign.status === 'recruiting' || campaign.status === 'active'))
         .slice(0, 6)
-      
-      console.log('✅ 추천 체험단 업데이트 완료:', featured.length, '개')
+
       setFeaturedExperiences(featured)
     } catch (error) {
       console.error('추천 체험단 업데이트 실패:', error)
@@ -134,15 +122,11 @@ const Home: React.FC = () => {
 
   const updateStats = (campaigns: any[], users: any[], reviews: any[]) => {
     try {
-      console.log('📊 통계 업데이트 시작...')
-      
       setStats({
         totalExperiences: Array.isArray(campaigns) ? campaigns.length : 0,
         totalUsers: Array.isArray(users) ? users.length : 0,
         totalReviews: Array.isArray(reviews) ? reviews.length : 0
       })
-      
-      console.log('✅ 통계 업데이트 완료')
     } catch (error) {
       console.error('통계 업데이트 실패:', error)
     }
@@ -150,14 +134,11 @@ const Home: React.FC = () => {
 
   const updateReviews = (reviews: any[]) => {
     try {
-      console.log('💬 리뷰 업데이트 시작...')
-      
       const safeReviews = Array.isArray(reviews) ? reviews : []
       const approvedReviews = safeReviews
         .filter(review => review && review.status === 'approved')
         .slice(0, 5)
-      
-      console.log('✅ 리뷰 업데이트 완료:', approvedReviews.length, '개')
+
       setReviews(approvedReviews)
     } catch (error) {
       console.error('리뷰 업데이트 실패:', error)
@@ -166,60 +147,37 @@ const Home: React.FC = () => {
   }
 
   useEffect(() => {
-    // 🔥 홈페이지 OG 태그 설정 (카카오톡 링크 공유용)
     setHomeOGTags()
-    
+
     const loadData = async () => {
       setLoading(true)
       try {
-        // 🔥 데이터를 한 번만 로드하고 공유하여 성능 최적화
-        console.log('🚀 홈페이지 데이터 로드 시작...')
-        
         let campaigns = [], users = [], reviews = []
-        
-        // 🔥 병렬로 모든 데이터 로드 (각각 타임아웃 처리)
+
         const [campaignsResult, usersResult, reviewsResult] = await Promise.allSettled([
-          (dataService.entities as any).campaigns.list().catch((err: any) => {
-            console.warn('⚠️ campaigns 로드 실패:', err)
-            return []
-          }),
-          (dataService.entities as any).users.list().catch((err: any) => {
-            console.warn('⚠️ users 로드 실패:', err)
-            return []
-          }),
-          (dataService.entities as any).review_submissions.list().catch((err: any) => {
-            console.warn('⚠️ reviews 로드 실패:', err)
-            return []
-          })
+          (dataService.entities as any).campaigns.list().catch(() => []),
+          (dataService.entities as any).users.list().catch(() => []),
+          (dataService.entities as any).review_submissions.list().catch(() => [])
         ])
-        
-        // 결과 추출
+
         campaigns = campaignsResult.status === 'fulfilled' ? campaignsResult.value : []
         users = usersResult.status === 'fulfilled' ? usersResult.value : []
         reviews = reviewsResult.status === 'fulfilled' ? reviewsResult.value : []
-        
-        console.log('✅ 데이터 로드 완료:', { 
-          campaigns: campaigns?.length || 0, 
-          users: users?.length || 0, 
-          reviews: reviews?.length || 0 
-        })
-        
-        // 🔥 로드된 데이터로 각 섹션 업데이트
+
         updateFeaturedExperiences(campaigns)
         updateStats(campaigns, users, reviews)
         updateReviews(reviews)
-        
+
       } catch (error) {
-        console.error('❌ 홈페이지 데이터 로드 실패:', error)
+        console.error('홈페이지 데이터 로드 실패:', error)
       } finally {
         setLoading(false)
       }
     }
 
     loadData()
-  }, [isAuthenticated]) // 🔥 로그인 상태 변경 시 데이터 다시 로드
+  }, [isAuthenticated])
 
-  // 리뷰 자동 슬라이드
   useEffect(() => {
     if (reviews.length > 1) {
       const interval = setInterval(() => {
@@ -231,45 +189,55 @@ const Home: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">올띵버킷을 불러오는 중...</p>
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">올띵버킷을 불러오는 중...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 opacity-90"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Hero Section - 더 현대적이고 세련된 디자인 */}
+      <section className="relative overflow-hidden pt-20 pb-32">
+        {/* 배경 장식 */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="flex justify-center mb-6 sm:mb-8">
-              <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 sm:p-4">
-                <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
-              </div>
+            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 mb-8 shadow-lg">
+              <TrendingUp className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-semibold text-gray-700">대한민국 No.1 체험단 플랫폼</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-              올띵버킷
+
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-6 tracking-tight">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
+                올띵버킷
+              </span>
             </h1>
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
-              최고의 체험단 플랫폼에서 특별한 경험을 시작하세요
+
+            <p className="text-xl sm:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+              최고의 체험단 플랫폼에서<br className="sm:hidden" />
+              <span className="font-semibold text-gray-900"> 특별한 경험</span>을 시작하세요
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/experiences"
-                className="bg-white text-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg"
               >
                 체험단 둘러보기
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 inline" />
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               {!isAuthenticated && (
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('openLoginModal'))}
-                  className="border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:text-purple-600 transition-all duration-300"
+                  className="inline-flex items-center justify-center bg-white text-gray-900 px-8 py-4 rounded-2xl font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-gray-200"
                 >
                   지금 시작하기
                 </button>
@@ -279,118 +247,100 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-12 sm:py-16 bg-white">
+      {/* Stats Section - 글래스모피즘 효과 */}
+      <section className="py-16 -mt-20 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-            <div className="text-center">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+          <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+              <div className="text-center group">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg shadow-blue-500/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Gift className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-4xl font-bold text-gray-900 mb-2">{stats.totalExperiences}</h3>
+                <p className="text-gray-600 font-medium">진행 중인 체험단</p>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{stats.totalExperiences}</h3>
-              <p className="text-sm sm:text-base text-gray-600">진행 중인 체험단</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-gradient-to-r from-pink-500 to-orange-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <div className="text-center group">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg shadow-purple-500/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-4xl font-bold text-gray-900 mb-2">{stats.totalUsers}</h3>
+                <p className="text-gray-600 font-medium">활성 사용자</p>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{stats.totalUsers}</h3>
-              <p className="text-sm sm:text-base text-gray-600">활성 사용자</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <div className="text-center group">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg shadow-orange-500/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Star className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-4xl font-bold text-gray-900 mb-2">{stats.totalReviews}</h3>
+                <p className="text-gray-600 font-medium">완료된 리뷰</p>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{stats.totalReviews}</h3>
-              <p className="text-sm sm:text-base text-gray-600">완료된 리뷰</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Experiences */}
-      <section className="py-12 sm:py-16">
+      {/* Featured Experiences - 개선된 카드 디자인 */}
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-              🔥 인기 체험단
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full px-4 py-2 mb-4 shadow-lg">
+              <Sparkles className="w-4 h-4" />
+              <span className="text-sm font-semibold">HOT</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              인기 체험단
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 px-4">
+            <p className="text-xl text-gray-600">
               지금 가장 인기 있는 체험단들을 만나보세요
             </p>
           </div>
 
           {featuredExperiences.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {featuredExperiences.map((experience, index) => (
-                <div
+                <Link
                   key={experience.id || index}
-                  className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden ${
-                    isCampaignClosed(experience) ? 'opacity-75' : ''
+                  to={`/campaign/${experience.id}`}
+                  className={`group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden ${
+                    isCampaignClosed(experience) ? 'opacity-60' : 'hover:scale-105'
                   }`}
                 >
-                  <div className="h-48 sm:h-56 bg-gradient-to-r from-purple-400 to-pink-400 relative overflow-hidden">
+                  <div className="relative h-56 bg-gradient-to-br from-blue-400 to-purple-400 overflow-hidden">
                     {(() => {
-                      // 🔥 실제 DB 필드명 기반 이미지 소스 확인 (main_images, detail_images)
                       const imageSources = [
-                        // 실제 DB 필드: main_images (jsonb 배열)
                         (experience.main_images && Array.isArray(experience.main_images) && experience.main_images.length > 0) ? experience.main_images[0] : null,
-                        // 실제 DB 필드: detail_images (jsonb 배열) - 메인 이미지가 없을 때 사용
                         (experience.detail_images && Array.isArray(experience.detail_images) && experience.detail_images.length > 0) ? experience.detail_images[0] : null,
-                        // 호환성을 위한 추가 필드들 (실제 DB에는 없지만 혹시 있을 경우)
                         experience.image_url,
                         experience.main_image,
                         experience.thumbnail
                       ].filter(Boolean)
-                      
-                      // 🔥 디버깅: 이미지 소스 확인 (첫 번째 체험단만)
-                      if (index === 0) {
-                        console.log('🔍 홈페이지 첫 번째 체험단 이미지 디버깅 (실제 DB 필드명):', {
-                          campaignName: experience.campaign_name,
-                          mainImages: experience.main_images,
-                          detailImages: experience.detail_images,
-                          mainImagesType: typeof experience.main_images,
-                          mainImagesIsArray: Array.isArray(experience.main_images),
-                          mainImagesLength: Array.isArray(experience.main_images) ? experience.main_images.length : 'N/A',
-                          imageSources,
-                          foundImageSrc: imageSources[0],
-                          allKeys: Object.keys(experience || {})
-                        })
-                      }
-                      
+
                       const imageSrc = imageSources[0]
-                      
+
                       if (imageSrc) {
                         return (
                           <img
                             src={imageSrc}
-                            alt={experience.campaign_name || experience.title || experience.experience_name || experience.product_name || experience.name || experience.campaign_title || experience.product_title}
-                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                            }}
+                            alt={experience.campaign_name || ''}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            onError={(e) => e.currentTarget.style.display = 'none'}
                           />
                         )
                       } else {
                         return (
                           <div className="w-full h-full flex items-center justify-center">
-                            <div className="text-center text-white">
-                              <Gift className="w-12 h-12 mx-auto mb-2 opacity-80" />
-                              <p className="text-sm font-medium opacity-80">이미지 준비중</p>
-                            </div>
+                            <Gift className="w-16 h-16 text-white/50" />
                           </div>
                         )
                       }
                     })()}
-                    
-                    {/* 그라데이션 오버레이 */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                    
-                    <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center space-x-2">
-                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold shadow-lg ${
-                        isCampaignClosed(experience) 
-                          ? 'bg-red-500/95 text-white' 
-                          : 'bg-white/95 text-purple-600'
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+
+                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-sm ${
+                        isCampaignClosed(experience)
+                          ? 'bg-red-500/90 text-white'
+                          : 'bg-white/90 text-blue-600'
                       }`}>
                         {getDeadlineDisplay(experience)}
                       </span>
@@ -401,87 +351,83 @@ const Home: React.FC = () => {
                             e.stopPropagation()
                             toggleWishlist(experience.id)
                           }}
-                          className="bg-white/95 hover:bg-white p-1.5 sm:p-2 rounded-full transition-colors shadow-lg"
+                          className="bg-white/90 backdrop-blur-sm hover:bg-white p-2 rounded-full transition-all shadow-lg"
                         >
-                          <Heart 
-                            className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                              wishlist.some(item => item.campaign_id === experience.id) 
-                                ? 'text-red-500 fill-current' 
+                          <Heart
+                            className={`w-5 h-5 ${
+                              wishlist.some(item => item.campaign_id === experience.id)
+                                ? 'text-red-500 fill-current'
                                 : 'text-gray-400'
-                            }`} 
+                            }`}
                           />
                         </button>
                       )}
                     </div>
-                    
-                    {/* 브랜드 정보 오버레이 */}
-                    <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white/95 rounded-full flex items-center justify-center text-purple-600 font-bold text-xs sm:text-sm shadow-lg">
-                          {(experience.brand || experience.brand_name || 'B').charAt(0)}
+
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-3 py-2 inline-flex items-center gap-2 shadow-lg">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {(experience.brand || 'B').charAt(0)}
                         </div>
-                        <span className="bg-white/95 text-gray-800 px-2 py-1 rounded-full text-xs sm:text-sm font-semibold shadow-lg">
+                        <span className="text-gray-900 font-semibold text-sm">
                           {experience.brand || experience.brand_name || '브랜드'}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 sm:p-6">
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                      {experience.campaign_name || 
-                       experience.title || 
-                       experience.experience_name || 
-                       experience.product_name ||
-                       experience.name ||
-                       experience.campaign_title ||
-                       experience.product_title ||
+
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                      {experience.campaign_name ||
+                       experience.title ||
+                       experience.experience_name ||
                        '제목 없음'}
                     </h3>
-                    <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 line-clamp-3">
+                    <p className="text-gray-600 mb-4 line-clamp-2 leading-relaxed">
                       {experience.description || '설명이 없습니다.'}
                     </p>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
-                      <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        {experience.experience_location || '전국'}
+
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        <span>{experience.experience_location || '전국'}</span>
                       </div>
-                      <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        {experience.experience_period || '2주'}
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{experience.experience_period || '2주'}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                      <div className="flex items-center text-purple-600 font-semibold text-sm sm:text-base">
-                        <Coins className="w-4 h-4 sm:w-5 sm:h-5 mr-1" />
-                        {experience.rewards || 0} P
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-blue-600 font-bold">
+                        <Coins className="w-5 h-5" />
+                        <span>{experience.rewards || 0} P</span>
                       </div>
-                      <Link
-                        to={`/campaign/${experience.id}`}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 text-center"
-                      >
-                        자세히 보기
-                      </Link>
+                      <div className="inline-flex items-center gap-1 text-blue-600 font-semibold group-hover:gap-2 transition-all">
+                        <span>자세히 보기</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Gift className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">
+            <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl">
+              <Gift className="w-20 h-20 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-semibold text-gray-600 mb-2">
                 아직 등록된 체험단이 없습니다
               </h3>
-              <p className="text-gray-500">
+              <p className="text-gray-500 text-lg">
                 곧 멋진 체험단들이 등록될 예정입니다!
               </p>
             </div>
           )}
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-16">
             <Link
               to="/experiences"
-              className="inline-flex items-center bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              className="inline-flex items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-5 rounded-2xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-lg"
             >
               모든 체험단 보기
               <ArrowRight className="w-5 h-5 ml-2" />
@@ -492,11 +438,11 @@ const Home: React.FC = () => {
 
       {/* Reviews Section */}
       {reviews.length > 0 && (
-        <section className="py-16 bg-gradient-to-r from-purple-100 to-pink-100">
+        <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                💬 사용자 리뷰
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                사용자 리뷰
               </h2>
               <p className="text-xl text-gray-600">
                 실제 사용자들의 솔직한 후기를 확인해보세요
@@ -504,29 +450,29 @@ const Home: React.FC = () => {
             </div>
 
             <div className="relative">
-              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto">
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl shadow-xl p-10 max-w-4xl mx-auto border border-white">
                 <div className="flex items-center mb-6">
                   <div className="flex text-yellow-400">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-6 h-6 fill-current" />
                     ))}
                   </div>
-                  <span className="ml-2 text-gray-600 font-semibold">
+                  <span className="ml-3 text-gray-700 font-bold text-lg">
                     {reviews[currentReviewIndex]?.rating || 5}점
                   </span>
                 </div>
-                <blockquote className="text-lg text-gray-700 mb-6 italic">
+                <blockquote className="text-xl text-gray-800 mb-8 italic leading-relaxed">
                   "{reviews[currentReviewIndex]?.review_content || '훌륭한 체험단이었습니다!'}"
                 </blockquote>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
                     {reviews[currentReviewIndex]?.user_name?.charAt(0) || 'U'}
                   </div>
                   <div className="ml-4">
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-bold text-gray-900 text-lg">
                       {reviews[currentReviewIndex]?.user_name || '익명 사용자'}
                     </p>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600">
                       {reviews[currentReviewIndex]?.experience_name || '체험단 참여자'}
                     </p>
                   </div>
@@ -534,14 +480,14 @@ const Home: React.FC = () => {
               </div>
 
               {reviews.length > 1 && (
-                <div className="flex justify-center mt-6 space-x-2">
+                <div className="flex justify-center mt-8 gap-2">
                   {reviews.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentReviewIndex(index)}
                       className={`w-3 h-3 rounded-full transition-all duration-300 ${
                         index === currentReviewIndex
-                          ? 'bg-purple-600'
+                          ? 'bg-blue-600 w-8'
                           : 'bg-gray-300 hover:bg-gray-400'
                       }`}
                     />
@@ -554,11 +500,11 @@ const Home: React.FC = () => {
       )}
 
       {/* Features Section */}
-      <section className="py-16 bg-white">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              ✨ 올띵버킷의 특별함
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              올띵버킷의 특별함
             </h2>
             <p className="text-xl text-gray-600">
               왜 올띵버킷을 선택해야 할까요?
@@ -566,59 +512,51 @@ const Home: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-white" />
+            {[
+              { icon: Zap, title: '빠른 신청', desc: '간편한 신청 과정으로 빠르게 체험단에 참여하세요', gradient: 'from-blue-500 to-cyan-500' },
+              { icon: Award, title: '품질 보장', desc: '엄선된 브랜드와 제품으로 만족스러운 경험을 제공합니다', gradient: 'from-green-500 to-emerald-500' },
+              { icon: Target, title: '맞춤 추천', desc: '당신의 관심사에 맞는 체험단을 추천해드립니다', gradient: 'from-purple-500 to-pink-500' },
+              { icon: CheckCircle, title: '안전한 거래', desc: '안전하고 투명한 시스템으로 보호받으세요', gradient: 'from-orange-500 to-red-500' }
+            ].map((feature, index) => (
+              <div key={index} className="text-center group">
+                <div className={`inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br ${feature.gradient} rounded-3xl shadow-lg mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <feature.icon className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">빠른 신청</h3>
-              <p className="text-gray-600">간편한 신청 과정으로 빠르게 체험단에 참여하세요</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Award className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">품질 보장</h3>
-              <p className="text-gray-600">엄선된 브랜드와 제품으로 만족스러운 경험을 제공합니다</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Target className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">맞춤 추천</h3>
-              <p className="text-gray-600">당신의 관심사에 맞는 체험단을 추천해드립니다</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">안전한 거래</h3>
-              <p className="text-gray-600">안전하고 투명한 시스템으로 보호받으세요</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600"></div>
+        <div className="absolute inset-0">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             지금 시작하세요!
           </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-12 max-w-2xl mx-auto leading-relaxed">
             특별한 체험단과 함께 새로운 경험을 시작해보세요
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/experiences"
-              className="bg-white text-purple-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              className="inline-flex items-center justify-center bg-white text-gray-900 px-10 py-5 rounded-2xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-xl"
             >
               체험단 둘러보기
-              <ArrowRight className="w-5 h-5 ml-2 inline" />
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             {!isAuthenticated && (
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('openLoginModal'))}
-                className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-purple-600 transition-all duration-300"
+                className="inline-flex items-center justify-center border-2 border-white text-white px-10 py-5 rounded-2xl font-semibold text-lg hover:bg-white hover:text-gray-900 transition-all duration-300"
               >
                 회원가입하기
               </button>
@@ -627,8 +565,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      
-      {/* 채팅봇 */}
       <ChatBot />
     </div>
   )
