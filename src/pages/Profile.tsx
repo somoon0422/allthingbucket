@@ -222,9 +222,24 @@ const Profile: React.FC = () => {
         console.error('이름 저장 실패:', nameUpdateError)
       }
 
-      // 2. influencer_profiles 테이블의 실제 스키마에 맞춰 필드 구성 (name 제외, 존재하는 필드만)
+      // 2. influencer_profiles 테이블의 실제 스키마에 맞춰 필드 구성
+      // platform: 주요 활동 플랫폼 결정 (팔로워가 가장 많은 플랫폼)
+      let mainPlatform = 'instagram' // 기본값
+      const followerCounts = formData.follower_counts
+      const platforms = [
+        { name: 'instagram', count: followerCounts.instagram },
+        { name: 'youtube', count: followerCounts.youtube },
+        { name: 'tiktok', count: followerCounts.tiktok },
+        { name: 'naver_blog', count: followerCounts.naver_blog }
+      ]
+      const maxPlatform = platforms.reduce((max, p) => p.count > max.count ? p : max, platforms[0])
+      if (maxPlatform.count > 0) {
+        mainPlatform = maxPlatform.name
+      }
+
       const profileData: any = {
         user_id: user.user_id,
+        platform: mainPlatform,
         phone: formData.phone,
         gender: formData.gender || null,
         naver_blog: formData.naver_blog || null,
