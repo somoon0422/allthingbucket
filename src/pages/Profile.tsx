@@ -19,7 +19,6 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showEmailVerification, setShowEmailVerification] = useState(false)
-  const [isIdentityVerified, setIsIdentityVerified] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
@@ -83,21 +82,6 @@ const Profile: React.FC = () => {
         console.log('🏷️ 사용자 회원코드 확인:', userCodeData.user_code)
       }
 
-      // 🔐 본인인증 상태 확인
-      try {
-        const { data: identityInfo } = await (dataService as any).supabase
-          .from('user_identity_info')
-          .select('identity_verified')
-          .eq('user_id', user.user_id)
-          .maybeSingle()
-
-        if (identityInfo?.identity_verified) {
-          setIsIdentityVerified(true)
-        }
-      } catch (error) {
-        console.error('본인인증 상태 확인 실패:', error)
-      }
-      
       // 먼저 user_profiles에서 기본 정보 확인 - Supabase API 사용
       const userProfiles = await (dataService.entities as any).user_profiles.list()
       const userProfile = Array.isArray(userProfiles) 
@@ -357,16 +341,7 @@ const Profile: React.FC = () => {
             {/* 🎨 새로운 로고 적용 */}
             <img src="/logo.png" alt="올띵버킷 로고" className="w-12 h-12" />
             <div>
-              <div className="flex items-center space-x-3">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">프로필 관리</h1>
-                {/* 🔐 본인인증 완료 뱃지 */}
-                {isIdentityVerified && (
-                  <div className="flex items-center space-x-1 bg-green-100 px-3 py-1 rounded-full">
-                    <Shield className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-700">본인인증 완료</span>
-                  </div>
-                )}
-              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">프로필 관리</h1>
               <p className="text-gray-600">
                 개인정보, SNS 정보를 관리하세요
               </p>
