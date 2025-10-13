@@ -244,10 +244,14 @@ const Profile: React.FC = () => {
         mainHandle = selectedPlatform.handle
       }
 
+      // 총 팔로워 수 계산
+      const totalFollowers = Object.values(followerCounts).reduce((sum: number, count: any) => sum + (count || 0), 0)
+
       const profileData: any = {
         user_id: user.user_id,
         platform: mainPlatform,
         handle: mainHandle,
+        follower_count: totalFollowers, // 총 팔로워 수
         phone: formData.phone,
         gender: formData.gender || null,
         naver_blog: formData.naver_blog || null,
