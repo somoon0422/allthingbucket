@@ -5,9 +5,8 @@ import { dataService } from '../lib/dataService'
 
 // Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
-import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Mail} from 'lucide-react'
+import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield} from 'lucide-react'
 import { PhoneInput } from '../components/PhoneInput'
-import EmailVerification from '../components/EmailVerification'
 import ProfileCompletionModal from '../components/ProfileCompletionModal'
 import ChatBot from '../components/ChatBot'
 
@@ -18,7 +17,6 @@ const Profile: React.FC = () => {
   const [editMode, setEditMode] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [showEmailVerification, setShowEmailVerification] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [formData, setFormData] = useState({
@@ -520,20 +518,9 @@ const Profile: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             ) : (
-                <div className="space-y-2">
-                  <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                    {user?.email || '미입력'}
-                  </p>
-                  {user?.email && (
-                    <button
-                      onClick={() => setShowEmailVerification(true)}
-                      className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      <Mail className="w-4 h-4" />
-                      <span>이메일 인증</span>
-                    </button>
-                  )}
-                </div>
+              <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                {user?.email || '미입력'}
+              </p>
             )}
           </div>
 
@@ -977,18 +964,6 @@ const Profile: React.FC = () => {
             <span>저장</span>
           </button>
         </div>
-      )}
-
-      {/* 이메일 인증 모달 */}
-      {showEmailVerification && (
-        <EmailVerification
-          userId={user?.user_id || ''}
-          onVerificationComplete={() => {
-            setShowEmailVerification(false)
-            toast.success('이메일 인증이 완료되었습니다!')
-          }}
-          onClose={() => setShowEmailVerification(false)}
-        />
       )}
 
       {/* 프로필 완성 안내 모달 */}
