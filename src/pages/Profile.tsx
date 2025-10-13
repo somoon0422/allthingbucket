@@ -20,6 +20,7 @@ const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [showEmailVerification, setShowEmailVerification] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
+  const [missingFields, setMissingFields] = useState<string[]>([])
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -149,8 +150,35 @@ const Profile: React.FC = () => {
         }))
       }
 
+      // 필수 필드 체크
+      const missing: string[] = []
+
+      // 1. 실명 체크
+      if (!user.name) {
+        missing.push('name')
+      }
+
+      // 2. 전화번호 체크
+      const currentPhone = influencerProfile?.phone || userProfile?.phone
+      if (!currentPhone) {
+        missing.push('phone')
+      }
+
+      // 3. SNS 계정 최소 1개 체크
+      const hasSNS = influencerProfile && (
+        influencerProfile.instagram_id ||
+        influencerProfile.youtube_channel ||
+        influencerProfile.tiktok_id ||
+        influencerProfile.naver_blog
+      )
+      if (!hasSNS) {
+        missing.push('sns')
+      }
+
+      setMissingFields(missing)
+
       // 프로필 미완성 시 안내 모달 표시
-      if (user.is_profile_completed === false) {
+      if (missing.length > 0) {
         setShowCompletionModal(true)
         setEditMode(true) // 자동으로 편집 모드 활성화
       }
@@ -194,23 +222,20 @@ const Profile: React.FC = () => {
         console.error('이름 저장 실패:', nameUpdateError)
       }
 
-      // 2. influencer_profiles 테이블의 실제 스키마에 맞춰 필드 구성 (name 제외)
+      // 2. influencer_profiles 테이블의 실제 스키마에 맞춰 필드 구성 (name 제외, 존재하는 필드만)
       const profileData: any = {
         user_id: user.user_id,
         phone: formData.phone,
-        gender: formData.gender,
-        naver_blog: formData.naver_blog || '',
-        instagram_id: formData.instagram_id || '',
-        youtube_channel: formData.youtube_channel || '',
-        tiktok_id: formData.tiktok_id || '',
-        facebook_page: formData.facebook_page || '',
-        other_sns: formData.other_sns || '',
+        gender: formData.gender || null,
+        naver_blog: formData.naver_blog || null,
+        instagram_id: formData.instagram_id || null,
+        youtube_channel: formData.youtube_channel || null,
+        tiktok_id: formData.tiktok_id || null,
+        facebook_page: formData.facebook_page || null,
+        other_sns: formData.other_sns || null,
         follower_counts: formData.follower_counts,
         categories: formData.categories,
         experience_level: formData.experience_level,
-        profile_status: profile?.profile_status || 'pending',
-        rating: profile?.rating || 0,
-        total_experiences: profile?.total_experiences || 0,
       }
 
       // birth_date가 있으면 추가
@@ -961,6 +986,7 @@ const Profile: React.FC = () => {
       <ProfileCompletionModal
         isOpen={showCompletionModal}
         onClose={() => setShowCompletionModal(false)}
+        missingFields={missingFields}
       />
 
       {/* 채팅봇 */}
