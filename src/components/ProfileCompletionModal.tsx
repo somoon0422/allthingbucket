@@ -90,9 +90,6 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({ isOpen,
                 전화번호
               </span>
               <span className="inline-flex items-center px-3 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-700">
-                배송 주소
-              </span>
-              <span className="inline-flex items-center px-3 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-700">
                 SNS 정보
               </span>
             </div>

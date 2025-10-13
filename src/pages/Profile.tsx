@@ -193,8 +193,11 @@ const Profile: React.FC = () => {
 
     setSaving(true)
     try {
+      // email 필드는 influencer_profiles 테이블에 없으므로 제거
+      const { email, ...formDataWithoutEmail } = formData
+
       const profileData = {
-        ...formData,
+        ...formDataWithoutEmail,
         user_id: user.user_id,
         birth_date: formData.birth_date ? new Date(formData.birth_date).toISOString() : '',
         profile_status: profile?.profile_status || 'pending',
