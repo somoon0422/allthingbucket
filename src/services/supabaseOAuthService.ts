@@ -66,7 +66,7 @@ export class SupabaseOAuthService {
           redirectTo: redirectTo,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',  // 구글: 매번 계정 선택 화면 표시
           },
           scopes: 'openid email profile'
         }
@@ -111,8 +111,7 @@ export class SupabaseOAuthService {
         options: {
           redirectTo: redirectTo,
           queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'login',  // 카카오: 매번 로그인 화면 표시
           }
         }
       })
