@@ -9,6 +9,7 @@ import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, Tr
 import { AddressInput } from '../components/AddressInput'
 import { PhoneInput } from '../components/PhoneInput'
 import EmailVerification from '../components/EmailVerification'
+import ProfileCompletionModal from '../components/ProfileCompletionModal'
 import ChatBot from '../components/ChatBot'
 
 const Profile: React.FC = () => {
@@ -20,6 +21,7 @@ const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [showEmailVerification, setShowEmailVerification] = useState(false)
   const [isIdentityVerified, setIsIdentityVerified] = useState(false)
+  const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -162,6 +164,12 @@ const Profile: React.FC = () => {
           email: user.email || '',
           full_name: user.name || ''
         }))
+      }
+
+      // 프로필 미완성 시 안내 모달 표시
+      if (user.is_profile_completed === false) {
+        setShowCompletionModal(true)
+        setEditMode(true) // 자동으로 편집 모드 활성화
       }
     } catch (error) {
       console.error('프로필 로딩 실패:', error)
@@ -977,6 +985,12 @@ const Profile: React.FC = () => {
           onClose={() => setShowEmailVerification(false)}
         />
       )}
+
+      {/* 프로필 완성 안내 모달 */}
+      <ProfileCompletionModal
+        isOpen={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+      />
 
       {/* 채팅봇 */}
       <ChatBot />
