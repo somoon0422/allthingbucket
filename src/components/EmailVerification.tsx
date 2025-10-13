@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { X, Mail, Loader2, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/dataService';
 
 interface EmailVerificationProps {
   userId: string;
@@ -18,7 +19,6 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({
   const [loading, setLoading] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
-  const [sentCode, setSentCode] = useState('');
 
   const handleSendCode = async () => {
     if (!user?.email) {
@@ -28,26 +28,20 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({
 
     setLoading(true);
     try {
-      // Vercel Functions 경로 사용
-      const response = await fetch('/api/notification/send-verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: userId,
-          type: 'email'
-        })
+      // Supabase Auth의 OTP 기능 사용
+      const { error } = await supabase.auth.signInWithOtp({
+        email: user.email,
+        options: {
+          shouldCreateUser: false, // 기존 사용자만 허용
+        }
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        setCodeSent(true);
-        setSentCode(result.verificationCode); // 개발용 - 실제로는 제거
-        toast.success('인증번호가 이메일로 발송되었습니다');
+      if (error) {
+        console.error('OTP 발송 실패:', error);
+        toast.error('인증번호 발송에 실패했습니다');
       } else {
-        toast.error(result.error || '인증번호 발송에 실패했습니다');
+        setCodeSent(true);
+        toast.success('인증번호가 이메일로 발송되었습니다');
       }
     } catch (error) {
       console.error('인증번호 발송 실패:', error);
@@ -63,12 +57,32 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({
       return;
     }
 
-    // 개발용: 발송된 코드와 일치하면 성공
-    if (verificationCode === sentCode) {
-      toast.success('이메일 인증이 완료되었습니다!');
-      onVerificationComplete();
-    } else {
-      toast.error('인증번호가 올바르지 않습니다');
+    if (!user?.email) {
+      toast.error('이메일 주소가 없습니다');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Supabase OTP 검증
+      const { error } = await supabase.auth.verifyOtp({
+        email: user.email,
+        token: verificationCode,
+        type: 'email'
+      });
+
+      if (error) {
+        console.error('OTP 검증 실패:', error);
+        toast.error('인증번호가 올바르지 않습니다');
+      } else {
+        toast.success('이메일 인증이 완료되었습니다!');
+        onVerificationComplete();
+      }
+    } catch (error) {
+      console.error('OTP 검증 실패:', error);
+      toast.error('인증 중 오류가 발생했습니다');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,11 +135,6 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({
                       <p className="text-sm text-green-700">
                         {user?.email}로 인증번호가 발송되었습니다.
                       </p>
-                      {sentCode && (
-                        <p className="text-xs text-green-600 mt-2">
-                          개발용 인증번호: <strong>{sentCode}</strong>
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
