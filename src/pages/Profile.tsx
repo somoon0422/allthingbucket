@@ -113,9 +113,9 @@ const Profile: React.FC = () => {
       if (influencerProfile) {
         setProfile(influencerProfile)
         setFormData({
-          full_name: influencerProfile.full_name || userProfile?.name || user.name || '',
+          full_name: influencerProfile.name || userProfile?.name || user.name || '',
           phone: influencerProfile.phone || userProfile?.phone || '',
-          email: influencerProfile.email || user.email || '',
+          email: user.email || '',
           birth_date: influencerProfile.birth_date ? influencerProfile.birth_date.split('T')[0] : '',
           birth_year: influencerProfile.birth_date ? influencerProfile.birth_date.split('T')[0].split('-')[0] : '',
           birth_month: influencerProfile.birth_date ? influencerProfile.birth_date.split('T')[0].split('-')[1] : '',
@@ -192,11 +192,12 @@ const Profile: React.FC = () => {
 
     setSaving(true)
     try {
-      // email 필드는 influencer_profiles 테이블에 없으므로 제거
-      const { email, ...formDataWithoutEmail } = formData
+      // email과 full_name 필드는 influencer_profiles 테이블에 없으므로 제거하고 name으로 매핑
+      const { email, full_name, ...formDataWithoutEmailAndName } = formData
 
       const profileData = {
-        ...formDataWithoutEmail,
+        ...formDataWithoutEmailAndName,
+        name: full_name,  // full_name을 name으로 매핑
         user_id: user.user_id,
         birth_date: formData.birth_date ? new Date(formData.birth_date).toISOString() : '',
         profile_status: profile?.profile_status || 'pending',
@@ -350,7 +351,7 @@ const Profile: React.FC = () => {
       </div>
 
       {/* 🔔 프로필 정보 채우기 공지 */}
-      {(!profile || !profile.full_name || !profile.phone) && (
+      {(!profile || !profile.name || !profile.phone) && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -364,11 +365,11 @@ const Profile: React.FC = () => {
               </h3>
               <div className="mt-2 text-sm text-blue-700">
                 <p className="mb-2">
-                  체험단 신청 시 자동으로 입력되는 정보입니다. 
+                  체험단 신청 시 자동으로 입력되는 정보입니다.
                   <strong>실명, 전화번호</strong>를 모두 입력해주세요.
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-xs">
-                  {!profile?.full_name && <li>실명을 입력해주세요</li>}
+                  {!profile?.name && <li>실명을 입력해주세요</li>}
                   {!profile?.phone && <li>전화번호를 입력해주세요</li>}
                 </ul>
               </div>
@@ -426,7 +427,7 @@ const Profile: React.FC = () => {
               />
             ) : (
               <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                {profile?.full_name || '미입력'}
+                {profile?.name || '미입력'}
               </p>
             )}
           </div>
