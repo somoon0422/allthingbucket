@@ -297,33 +297,12 @@ const Profile: React.FC = () => {
           console.log('✅ 프로필 생성 성공:', result)
           toast.success('프로필이 생성되었습니다')
 
-          // 프로필 완성 후 users 테이블의 is_profile_completed를 true로 업데이트
-          try {
-            const usersResponse = await (dataService.entities as any).users.list()
-            const dbUser = Array.isArray(usersResponse)
-              ? usersResponse.find((u: any) => u.user_id === user.user_id)
-              : null
-
-            if (dbUser) {
-              await (dataService.entities as any).users.update(dbUser.id, {
-                is_profile_completed: true,
-                updated_at: new Date().toISOString()
-              })
-              console.log('✅ 프로필 완성 상태 업데이트 완료')
-
-              // 사용자 상태 업데이트
-              updateUser({ is_profile_completed: true })
-
-              // 축하 메시지
-              setTimeout(() => {
-                toast.success('🎉 프로필이 완성되었습니다! 이제 캠페인에 신청할 수 있어요!', {
-                  duration: 4000
-                })
-              }, 500)
-            }
-          } catch (updateError) {
-            console.warn('⚠️ 프로필 완성 상태 업데이트 실패 (무시):', updateError)
-          }
+          // 축하 메시지
+          setTimeout(() => {
+            toast.success('🎉 프로필이 완성되었습니다! 이제 캠페인에 신청할 수 있어요!', {
+              duration: 4000
+            })
+          }, 500)
         } else {
           console.error('프로필 생성 실패:', result)
           toast.error('프로필 생성에 실패했습니다')
