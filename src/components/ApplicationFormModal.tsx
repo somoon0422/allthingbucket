@@ -179,9 +179,20 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!isAuthenticated || !user) {
       toast.error('로그인이 필요합니다')
+      return
+    }
+
+    // 프로필 완성 여부 체크
+    if (!user.is_profile_completed) {
+      toast.error('프로필을 먼저 완성해주세요!', {
+        duration: 4000
+      })
+      setTimeout(() => {
+        window.location.href = '/profile'
+      }, 1000)
       return
     }
 

@@ -60,13 +60,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     window.addEventListener('openLoginModal', handleOpenLoginModal)
     window.addEventListener('openAdminLoginModal', handleOpenAdminLoginModal)
     window.addEventListener('closeLoginModal', handleCloseLoginModal)
-    
+
     return () => {
       window.removeEventListener('openLoginModal', handleOpenLoginModal)
       window.removeEventListener('openAdminLoginModal', handleOpenAdminLoginModal)
       window.removeEventListener('closeLoginModal', handleCloseLoginModal)
     }
   }, [])
+
+  // 프로필 미완성 사용자 자동 리디렉션
+  useEffect(() => {
+    if (isAuthenticated && user && !isAdminUser()) {
+      // 프로필이 미완성이고, 현재 프로필 페이지가 아닌 경우에만 리디렉션
+      if (user.is_profile_completed === false && location.pathname !== '/profile') {
+        console.log('🔄 프로필 미완성 감지 - /profile로 리디렉션')
+        navigate('/profile')
+      }
+    }
+  }, [isAuthenticated, user, location.pathname, navigate, isAdminUser])
 
   return (
     <div className="min-h-screen bg-gray-50">

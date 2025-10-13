@@ -14,6 +14,7 @@ interface User {
   profile?: any
   admin_name?: string
   admin_role?: string
+  is_profile_completed?: boolean
 }
 
 interface AuthContextType {
@@ -48,7 +49,8 @@ function processUserData(userData: any): User | null {
       user_code: userData.user_code ? String(userData.user_code) : '',
       profile: userData.profile || userData.user_profile || null,
       admin_name: userData.admin_name ? String(userData.admin_name) : '',
-      admin_role: userData.admin_role ? String(userData.admin_role) : ''
+      admin_role: userData.admin_role ? String(userData.admin_role) : '',
+      is_profile_completed: userData.is_profile_completed ?? true
     }
 
     return processedUser
@@ -146,15 +148,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: any) => {
     try {
       setLoading(true)
-      
+
       // Supabase Auth를 사용한 회원가입
       const result = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password
       })
-      
+
       if (result.data?.user) {
-        // 사용자 프로필 생성
+        // users 테이블에 사용자 생성 (프로필 미완성 상태)
+        try {
+          await (dataService.entities as any).users.create({
+            user_id: result.data.user.id,
+            email: userData.email,
+            name: userData.name,
+            phone: userData.phone || null,
+            is_active: true,
+            is_profile_completed: false,
+            created_at: new Date().toISOString()
+          })
+          console.log('✅ users 테이블에 사용자 생성 완료')
+        } catch (userError) {
+          console.warn('⚠️ users 테이블 사용자 생성 실패 (무시):', userError)
+        }
+
+        // 사용자 프로필 생성 (기본 정보만)
         const profileData = {
           id: result.data.user.id,
           name: userData.name,
@@ -163,22 +181,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           address: userData.address,
           birth_date: userData.birth_date,
           gender: userData.gender,
+          total_points: 0,
+          available_points: 0,
+          used_points: 0,
+          pending_points: 0,
           created_at: new Date().toISOString()
         }
-        
+
         await (dataService.entities as any).user_profiles.create(profileData)
-        
+
         const processedUser = processUserData({
           id: result.data.user.id,
           email: result.data.user.email || '',
           name: userData.name,
           role: 'user',
-          profile: profileData
+          profile: profileData,
+          is_profile_completed: false
         })
-        
+
         if (processedUser) {
           setUser(processedUser)
           toast.success(`회원가입이 완료되었습니다, ${processedUser.name}님!`)
+          setTimeout(() => {
+            toast('프로필을 완성하면 캠페인에 신청할 수 있어요!', {
+              icon: '👋',
+              duration: 5000
+            })
+          }, 1000)
         }
       } else {
         throw new Error('회원가입에 실패했습니다')
@@ -417,7 +446,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               console.log('✅ users 테이블에서 사용자 확인됨:', dbUser)
               console.log('✅ 사용자 이메일:', dbUser.email)
               console.log('✅ 사용자 이름:', dbUser.name)
-              
+
               // users 테이블의 이름이 없거나 비어있는 경우 업데이트
               if (!dbUser.name && (session.user.user_metadata?.full_name || session.user.user_metadata?.name)) {
                 const newName = session.user.user_metadata?.full_name || session.user.user_metadata?.name
@@ -432,11 +461,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   console.warn('⚠️ users 테이블 이름 업데이트 실패 (무시):', updateError)
                 }
               }
-              
+
+              // 프로필 완성 여부 체크 (influencer_profiles 존재 여부)
+              let isProfileCompleted = dbUser.is_profile_completed ?? false
+              try {
+                const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+                const hasInfluencerProfile = influencerProfiles.some((p: any) => p.user_id === session.user.id)
+                if (hasInfluencerProfile && !isProfileCompleted) {
+                  // influencer_profiles가 있으면 프로필 완성으로 간주
+                  isProfileCompleted = true
+                  // users 테이블 업데이트
+                  try {
+                    await (dataService.entities as any).users.update(dbUser.id, {
+                      is_profile_completed: true,
+                      updated_at: new Date().toISOString()
+                    })
+                  } catch (updateError) {
+                    console.warn('⚠️ 프로필 완성 상태 업데이트 실패 (무시):', updateError)
+                  }
+                }
+              } catch (influencerError) {
+                console.warn('⚠️ influencer_profiles 조회 실패 (무시):', influencerError)
+              }
+
               // 사용자 프로필 정보 가져오기
               try {
                 const profile = await (dataService.entities as any).user_profiles.get(session.user.id)
-                
+
                 // 프로필이 있지만 이름이 없는 경우 업데이트
                 if (profile && !profile.name && (session.user.user_metadata?.full_name || session.user.user_metadata?.name)) {
                   const newName = session.user.user_metadata?.full_name || session.user.user_metadata?.name
@@ -451,16 +502,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     console.warn('⚠️ 프로필 이름 업데이트 실패 (무시):', updateError)
                   }
                 }
-                
+
                 const processedUser = processUserData({
                   id: session.user.id,
                   user_id: session.user.id,
                   email: session.user.email,
                   name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || profile?.name || session.user.email?.split('@')[0] || '사용자',
                   role: 'user',
-                  profile: profile
+                  profile: profile,
+                  is_profile_completed: isProfileCompleted
                 })
-                
+
                 if (processedUser) {
                   console.log('✅ 최종 사용자 로그인 성공 (프로필 있음):', processedUser)
                   setUser(processedUser)
@@ -468,7 +520,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
               } catch (profileError) {
                 console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
-                
+
                 // 프로필이 없는 경우 기본 사용자 정보로 처리
                 const processedUser = processUserData({
                   id: session.user.id,
@@ -476,9 +528,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   email: session.user.email,
                   name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || session.user.email?.split('@')[0] || '사용자',
                   role: 'user',
-                  profile: null
+                  profile: null,
+                  is_profile_completed: isProfileCompleted
                 })
-                
+
                 if (processedUser) {
                   setUser(processedUser)
                   return
@@ -495,17 +548,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자',
                   phone: null,
                   google_id: session.user.app_metadata?.provider === 'google' ? session.user.id : null,
+                  kakao_id: session.user.app_metadata?.provider === 'kakao' ? session.user.id : null,
                   profile_image_url: session.user.user_metadata?.avatar_url || null,
-                  is_active: true
+                  is_active: true,
+                  is_profile_completed: false
                 }
-                
+
                 console.log('📝 users 테이블에 새 사용자 생성 중:', newUser)
                 const createResult = await (dataService.entities as any).users.create(newUser)
-                
-                if (createResult && createResult.success) {
+
+                if (createResult) {
                   console.log('✅ users 테이블에 사용자 생성 완료')
-                  
-                  // 사용자 프로필도 생성
+
+                  // 사용자 프로필도 생성 (기본 정보만)
                   try {
                     await (dataService.entities as any).user_profiles.create({
                       user_id: session.user.id,
@@ -524,19 +579,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   } catch (profileError) {
                     console.warn('⚠️ 사용자 프로필 생성 실패 (무시):', profileError)
                   }
-                  
-                  // 생성된 사용자 정보로 로그인 처리
+
+                  // 생성된 사용자 정보로 로그인 처리 (프로필 미완성 표시)
                   const processedUser = processUserData({
                     id: session.user.id,
                     user_id: session.user.id,
                     email: session.user.email,
                     name: newUser.name,
                     role: 'user',
-                    profile: null
+                    profile: null,
+                    is_profile_completed: false
                   })
-                  
+
                   if (processedUser) {
                     setUser(processedUser)
+                    // 프로필 완성 필요 메시지
+                    toast.success(`${processedUser.name}님, 환영합니다!`)
+                    setTimeout(() => {
+                      toast('프로필을 완성하면 캠페인에 신청할 수 있어요!', {
+                        icon: '👋',
+                        duration: 5000
+                      })
+                    }, 1000)
                     return
                   }
                 } else {
