@@ -113,7 +113,7 @@ const Profile: React.FC = () => {
       if (influencerProfile) {
         setProfile(influencerProfile)
         setFormData({
-          full_name: influencerProfile.name || userProfile?.name || user.name || '',
+          full_name: user.name || '',  // users 테이블에서 가져옴
           phone: influencerProfile.phone || userProfile?.phone || '',
           email: user.email || '',
           birth_date: influencerProfile.birth_date ? influencerProfile.birth_date.split('T')[0] : '',
@@ -152,7 +152,7 @@ const Profile: React.FC = () => {
         setProfile(userProfile)
         setFormData(prev => ({
           ...prev,
-          full_name: userProfile.name || user.name || '',
+          full_name: user.name || '',  // users 테이블에서 가져옴
           phone: userProfile.phone || '',
           email: user.email || '',
         }))
@@ -192,19 +192,56 @@ const Profile: React.FC = () => {
 
     setSaving(true)
     try {
-      // email과 full_name 필드는 influencer_profiles 테이블에 없으므로 제거하고 name으로 매핑
-      const { email, full_name, ...formDataWithoutEmailAndName } = formData
+      // 1. users 테이블에 full_name 저장
+      try {
+        const usersResponse = await (dataService.entities as any).users.list()
+        const dbUser = Array.isArray(usersResponse)
+          ? usersResponse.find((u: any) => u.user_id === user.user_id)
+          : null
 
-      const profileData = {
-        ...formDataWithoutEmailAndName,
-        name: full_name,  // full_name을 name으로 매핑
+        if (dbUser && formData.full_name) {
+          await (dataService.entities as any).users.update(dbUser.id, {
+            name: formData.full_name,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ users 테이블에 이름 저장 완료')
+        }
+      } catch (nameUpdateError) {
+        console.error('이름 저장 실패:', nameUpdateError)
+      }
+
+      // 2. influencer_profiles 테이블의 실제 스키마에 맞춰 필드 구성 (name 제외)
+      const profileData: any = {
         user_id: user.user_id,
-        birth_date: formData.birth_date ? new Date(formData.birth_date).toISOString() : '',
+        phone: formData.phone,
+        gender: formData.gender,
+        naver_blog: formData.naver_blog || '',
+        instagram_id: formData.instagram_id || '',
+        youtube_channel: formData.youtube_channel || '',
+        tiktok_id: formData.tiktok_id || '',
+        facebook_page: formData.facebook_page || '',
+        other_sns: formData.other_sns || '',
+        follower_counts: formData.follower_counts,
+        categories: formData.categories,
+        experience_level: formData.experience_level,
         profile_status: profile?.profile_status || 'pending',
         rating: profile?.rating || 0,
         total_experiences: profile?.total_experiences || 0,
-        updated_at: new Date().toISOString(),
-        created_at: profile?.created_at || new Date().toISOString()
+      }
+
+      // birth_date가 있으면 추가
+      if (formData.birth_date) {
+        profileData.birth_date = new Date(formData.birth_date).toISOString()
+      }
+
+      // address가 있으면 추가
+      if (formData.address && (formData.address.street || formData.address.district)) {
+        profileData.address = formData.address
+      }
+
+      // tax_info가 있으면 추가
+      if (formData.tax_info) {
+        profileData.tax_info = formData.tax_info
       }
 
       if (profile && profile._id) {
@@ -351,7 +388,7 @@ const Profile: React.FC = () => {
       </div>
 
       {/* 🔔 프로필 정보 채우기 공지 */}
-      {(!profile || !profile.name || !profile.phone) && (
+      {(!user?.name || !profile?.phone) && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -369,7 +406,7 @@ const Profile: React.FC = () => {
                   <strong>실명, 전화번호</strong>를 모두 입력해주세요.
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-xs">
-                  {!profile?.name && <li>실명을 입력해주세요</li>}
+                  {!user?.name && <li>실명을 입력해주세요</li>}
                   {!profile?.phone && <li>전화번호를 입력해주세요</li>}
                 </ul>
               </div>
@@ -427,7 +464,7 @@ const Profile: React.FC = () => {
               />
             ) : (
               <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                {profile?.name || '미입력'}
+                {user?.name || '미입력'}
               </p>
             )}
           </div>
