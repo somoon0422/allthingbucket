@@ -227,19 +227,27 @@ const Profile: React.FC = () => {
       let mainPlatform = 'instagram' // 기본값
       const followerCounts = formData.follower_counts
       const platforms = [
-        { name: 'instagram', count: followerCounts.instagram },
-        { name: 'youtube', count: followerCounts.youtube },
-        { name: 'tiktok', count: followerCounts.tiktok },
-        { name: 'naver_blog', count: followerCounts.naver_blog }
+        { name: 'instagram', count: followerCounts.instagram, handle: formData.instagram_id },
+        { name: 'youtube', count: followerCounts.youtube, handle: formData.youtube_channel },
+        { name: 'tiktok', count: followerCounts.tiktok, handle: formData.tiktok_id },
+        { name: 'naver_blog', count: followerCounts.naver_blog, handle: formData.naver_blog }
       ]
       const maxPlatform = platforms.reduce((max, p) => p.count > max.count ? p : max, platforms[0])
       if (maxPlatform.count > 0) {
         mainPlatform = maxPlatform.name
       }
 
+      // handle: 주요 플랫폼의 계정 아이디 (필수)
+      let mainHandle = formData.instagram_id || formData.youtube_channel || formData.tiktok_id || formData.naver_blog || user.email || 'user'
+      const selectedPlatform = platforms.find(p => p.name === mainPlatform)
+      if (selectedPlatform && selectedPlatform.handle) {
+        mainHandle = selectedPlatform.handle
+      }
+
       const profileData: any = {
         user_id: user.user_id,
         platform: mainPlatform,
+        handle: mainHandle,
         phone: formData.phone,
         gender: formData.gender || null,
         naver_blog: formData.naver_blog || null,
