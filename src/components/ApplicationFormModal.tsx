@@ -185,8 +185,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       return
     }
 
-    // 프로필 완성 여부 체크
-    if (!user.is_profile_completed) {
+    // 프로필 필수 정보 체크 (실명)
+    if (!user.name) {
       toast.error('프로필을 먼저 완성해주세요!', {
         duration: 4000
       })

@@ -156,7 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
 
       if (result.data?.user) {
-        // users 테이블에 사용자 생성 (프로필 미완성 상태)
+        // users 테이블에 사용자 생성
         try {
           await (dataService.entities as any).users.create({
             user_id: result.data.user.id,
@@ -164,7 +164,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             name: userData.name,
             phone: userData.phone || null,
             is_active: true,
-            is_profile_completed: false,
             created_at: new Date().toISOString()
           })
           console.log('✅ users 테이블에 사용자 생성 완료')
@@ -195,8 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: result.data.user.email || '',
           name: userData.name,
           role: 'user',
-          profile: profileData,
-          is_profile_completed: false
+          profile: profileData
         })
 
         if (processedUser) {
@@ -462,27 +460,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
               }
 
-              // 프로필 완성 여부 체크 (influencer_profiles 존재 여부)
-              let isProfileCompleted = dbUser.is_profile_completed ?? false
-              try {
-                const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
-                const hasInfluencerProfile = influencerProfiles.some((p: any) => p.user_id === session.user.id)
-                if (hasInfluencerProfile && !isProfileCompleted) {
-                  // influencer_profiles가 있으면 프로필 완성으로 간주
-                  isProfileCompleted = true
-                  // users 테이블 업데이트
-                  try {
-                    await (dataService.entities as any).users.update(dbUser.id, {
-                      is_profile_completed: true,
-                      updated_at: new Date().toISOString()
-                    })
-                  } catch (updateError) {
-                    console.warn('⚠️ 프로필 완성 상태 업데이트 실패 (무시):', updateError)
-                  }
-                }
-              } catch (influencerError) {
-                console.warn('⚠️ influencer_profiles 조회 실패 (무시):', influencerError)
-              }
+              // 프로필 완성 여부 체크는 필요할 때만 influencer_profiles 존재 여부로 확인
 
               // 사용자 프로필 정보 가져오기
               try {
@@ -509,8 +487,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   email: session.user.email,
                   name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || profile?.name || session.user.email?.split('@')[0] || '사용자',
                   role: 'user',
-                  profile: profile,
-                  is_profile_completed: isProfileCompleted
+                  profile: profile
                 })
 
                 if (processedUser) {
@@ -528,8 +505,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   email: session.user.email,
                   name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || session.user.email?.split('@')[0] || '사용자',
                   role: 'user',
-                  profile: null,
-                  is_profile_completed: isProfileCompleted
+                  profile: null
                 })
 
                 if (processedUser) {
@@ -550,8 +526,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   google_id: session.user.app_metadata?.provider === 'google' ? session.user.id : null,
                   kakao_id: session.user.app_metadata?.provider === 'kakao' ? session.user.id : null,
                   profile_image_url: session.user.user_metadata?.avatar_url || null,
-                  is_active: true,
-                  is_profile_completed: false
+                  is_active: true
                 }
 
                 console.log('📝 users 테이블에 새 사용자 생성 중:', newUser)
@@ -580,15 +555,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     console.warn('⚠️ 사용자 프로필 생성 실패 (무시):', profileError)
                   }
 
-                  // 생성된 사용자 정보로 로그인 처리 (프로필 미완성 표시)
+                  // 생성된 사용자 정보로 로그인 처리
                   const processedUser = processUserData({
                     id: session.user.id,
                     user_id: session.user.id,
                     email: session.user.email,
                     name: newUser.name,
                     role: 'user',
-                    profile: null,
-                    is_profile_completed: false
+                    profile: null
                   })
 
                   if (processedUser) {
