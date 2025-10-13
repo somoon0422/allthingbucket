@@ -6,7 +6,6 @@ import { dataService } from '../lib/dataService'
 // Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
 import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Mail} from 'lucide-react'
-import { AddressInput } from '../components/AddressInput'
 import { PhoneInput } from '../components/PhoneInput'
 import EmailVerification from '../components/EmailVerification'
 import ProfileCompletionModal from '../components/ProfileCompletionModal'
@@ -627,50 +626,6 @@ const Profile: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* 🔹 주소 정보 */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">주소 정보</h2>
-        
-        {editMode ? (
-          <AddressInput
-            address={formData.address.street || ''}
-            detailedAddress={formData.address.district || ''}
-            onAddressChange={(address, detailedAddress) => {
-              setFormData(prev => ({
-                ...prev,
-                address: {
-                  ...prev.address,
-                  street: address,
-                  district: detailedAddress
-                }
-              }))
-            }}
-            required
-          />
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                주소
-              </label>
-              <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                {profile?.address?.street || '미입력'}
-              </p>
-            </div>
-            {profile?.address?.district && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  상세 주소
-                </label>
-                <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                  {profile.address.district}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* 🔹 SNS 정보 */}
