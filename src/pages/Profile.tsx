@@ -510,18 +510,12 @@ const Profile: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               이메일
             </label>
-            {editMode ? (
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            ) : (
+            <div className="relative">
               <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
                 {user?.email || '미입력'}
               </p>
-            )}
+              <p className="text-xs text-gray-500 mt-1">수정 불가 (회원가입 시 등록된 이메일)</p>
+            </div>
           </div>
 
           <div>
