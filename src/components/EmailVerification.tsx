@@ -28,13 +28,13 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({
 
     setLoading(true);
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiBaseUrl}/api/notification/send-verification`, {
+      // Vercel Functions 경로 사용
+      const response = await fetch('/api/notification/send-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           userId: userId,
           type: 'email'
         })
