@@ -291,7 +291,10 @@ const Profile: React.FC = () => {
       } else {
         // 새 influencer_profile 생성 - Supabase API 사용
         const result = await (dataService.entities as any).influencer_profiles.create(profileData)
-        if (result && result.success) {
+
+        // Supabase는 성공시 생성된 데이터를 직접 반환함 (result.id가 있으면 성공)
+        if (result && result.id) {
+          console.log('✅ 프로필 생성 성공:', result)
           toast.success('프로필이 생성되었습니다')
 
           // 프로필 완성 후 users 테이블의 is_profile_completed를 true로 업데이트
@@ -540,9 +543,9 @@ const Profile: React.FC = () => {
             ) : (
                 <div className="space-y-2">
                   <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                    {profile?.email || '미입력'}
+                    {user?.email || '미입력'}
                   </p>
-                  {profile?.email && (
+                  {user?.email && (
                     <button
                       onClick={() => setShowEmailVerification(true)}
                       className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
