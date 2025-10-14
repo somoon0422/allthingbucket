@@ -295,9 +295,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
           
-          <div className="border-t mt-6 sm:mt-8 pt-6 sm:pt-8 text-center">
-            <p className="text-xs sm:text-sm text-gray-500">
-              © 2024 올띵버킷 체험단. All rights reserved.
+          <div className="border-t mt-6 sm:mt-8 pt-6 sm:pt-8">
+            <div className="text-center mb-4">
+              <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                <p className="font-semibold">올띵버킷</p>
+                <p>사업자번호: 250-14-02600 | 대표자: 김소희</p>
+                <p>주소: 서울특별시 마포구 염리동 488-3 401호</p>
+              </div>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-500 text-center">
+              © 2025 올띵버킷 체험단. All rights reserved.
             </p>
           </div>
         </div>
