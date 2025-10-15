@@ -1057,55 +1057,72 @@ const AdminDashboard: React.FC = () => {
   const loadUserApplications = async (userId: string) => {
     setLoadingUserApplications(true)
     try {
-      console.log('🔥 사용자 신청 정보 로드 시작:', userId)
-      
-      // user_applications에서 해당 사용자의 신청 정보만 가져오기 (user_id로 직접 필터링)
-      let userApplications = await (dataService.entities as any).user_applications.list({
-        filter: { user_id: userId }
-      })
-      console.log('🔥 user_id로 필터링된 user_applications 데이터:', userApplications)
-      console.log('🔥 userApplications.length:', userApplications?.length)
-      
-      // 필터링 결과가 비어있으면 전체 데이터를 가져와서 클라이언트에서 필터링
-      if (!userApplications || userApplications.length === 0) {
-        console.log('⚠️ 필터링 결과가 비어있음. 전체 데이터를 가져와서 클라이언트에서 필터링')
-        const allApplications = await (dataService.entities as any).user_applications.list()
-        console.log('🔥 전체 user_applications 데이터:', allApplications)
-        
-        userApplications = (allApplications || []).filter((app: any) => {
-          const appUserId = app.user_id || app.userId
-          const isMatch = appUserId === userId
-          console.log('🔍 클라이언트 필터링:', { 
-            appUserId, 
-            targetUserId: userId, 
-            isMatch,
-            appId: app.id
-          })
-          return isMatch
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('🔥 사용자 신청 정보 로드 시작')
+      console.log('🎯 조회할 사용자 ID:', userId)
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+      // 항상 전체 데이터를 가져와서 클라이언트에서 확실하게 필터링
+      const allApplications = await (dataService.entities as any).user_applications.list()
+      console.log('📦 전체 신청 데이터 개수:', allApplications?.length || 0)
+
+      // 전체 데이터 구조 확인
+      if (allApplications && allApplications.length > 0) {
+        console.log('📋 첫 번째 신청 데이터 샘플:', {
+          id: allApplications[0].id,
+          user_id: allApplications[0].user_id,
+          userId: allApplications[0].userId,
+          campaign_id: allApplications[0].campaign_id
         })
-        console.log('🔥 클라이언트 필터링 결과:', userApplications)
       }
-      
+
+      // 해당 사용자의 신청만 필터링 (모든 가능한 필드명 확인)
+      const userApplications = (allApplications || []).filter((app: any) => {
+        // 가능한 모든 user_id 필드 확인
+        const appUserId = app.user_id || app.userId || app.user || app.applicant_id
+        const isMatch = appUserId === userId
+
+        if (isMatch) {
+          console.log('✅ 매칭된 신청:', {
+            신청ID: app.id,
+            사용자ID: appUserId,
+            캠페인ID: app.campaign_id,
+            신청일: app.created_at
+          })
+        }
+
+        return isMatch
+      })
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('🎯 필터링 결과:', userApplications.length, '개')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+      if (userApplications.length === 0) {
+        console.warn('⚠️ 해당 사용자의 신청이 없습니다')
+        setUserApplications([])
+        return
+      }
+
       // 모든 캠페인 정보를 한 번에 가져오기
       const allCampaigns = await (dataService.entities as any).campaigns.list()
-      console.log('🔥 전체 캠페인 데이터:', allCampaigns)
-      
+      console.log('📦 전체 캠페인 데이터 개수:', allCampaigns?.length || 0)
+
       // 각 신청에 대해 캠페인 정보 매칭
       const applicationsWithCampaigns = userApplications.map((app: any) => {
         const campaignId = app.campaign_id || app.experience_id
-        console.log('🔍 캠페인 매칭:', { 
-          campaignId, 
-          appId: app.id 
-        })
-        
+
         // 캠페인 정보 찾기
-        const campaign = allCampaigns.find((c: any) => 
+        const campaign = allCampaigns.find((c: any) =>
           c.id === campaignId || c._id === campaignId
         )
-        
-        console.log('🔍 찾은 캠페인:', campaign)
-        console.log('🔍 신청서 데이터 (application_data):', app.application_data)
-        
+
+        console.log('🔗 신청-캠페인 매칭:', {
+          신청ID: app.id,
+          캠페인ID: campaignId,
+          캠페인명: campaign?.campaign_name || campaign?.name || '❌ 찾을 수 없음'
+        })
+
         return {
           ...app,
           campaign_name: campaign?.campaign_name || campaign?.product_name || campaign?.name || '캠페인 정보 없음',
@@ -1116,8 +1133,11 @@ const AdminDashboard: React.FC = () => {
           application_data: app.application_data || {}
         }
       })
-      
-      console.log('🔥 신청 정보 + 캠페인 정보:', applicationsWithCampaigns)
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('✅ 최종 결과:', applicationsWithCampaigns.length, '개 신청')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
       setUserApplications(applicationsWithCampaigns || [])
     } catch (error) {
       console.error('❌ 사용자 신청 정보 로드 실패:', error)
