@@ -450,9 +450,25 @@ export class EmailNotificationService {
   async sendEmail(emailData: EmailData): Promise<{ success: boolean; message: string }> {
     try {
       const template = createEmailTemplate(emailData.type, emailData.data)
-      
+
+      // API URL 결정 (환경에 따라 다름)
+      // 프로덕션: 상대 경로 사용 (Vercel이 자동 처리)
+      // 개발: 배포된 프로덕션 API 사용 또는 환경 변수 사용
+      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      const apiUrl = isDev
+        ? import.meta.env.VITE_API_URL || 'https://allthingbucket.vercel.app'
+        : ''
+      const emailApiUrl = `${apiUrl}/api/send-email`
+
+      console.log('📧 Gmail 이메일 발송 요청:', {
+        to: emailData.to,
+        toName: emailData.toName,
+        subject: template.subject,
+        apiUrl: emailApiUrl
+      })
+
       // 🔥 실제 이메일 전송 (Gmail SMTP 사용)
-      const response = await fetch('/api/send-email', {
+      const response = await fetch(emailApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
