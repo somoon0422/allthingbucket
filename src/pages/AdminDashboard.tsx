@@ -1092,20 +1092,31 @@ const AdminDashboard: React.FC = () => {
         })
       }
 
-      // 3. 이메일 기준으로 필터링 (가장 명확하고 확실한 방법)
+      // 3. 이메일 기준으로 필터링 - 신청 관리(line 331)와 동일한 로직
       const userApplications = (allApplications || []).filter((app: any) => {
-        // 신청 데이터에서 이메일 추출 (application_data 우선, 그 다음 직접 필드)
-        const appEmail = app.application_data?.email || app.email
+        // 먼저 해당 신청의 사용자 정보를 찾기
+        let appUserInfo = null
+        if (app.user_id) {
+          appUserInfo = allUsers.find((user: any) =>
+            user.user_id === app.user_id || user.id === app.user_id
+          )
+        }
+
+        // 신청 관리와 동일한 우선순위로 이메일 추출
+        const appData = app.application_data || {}
+        const appEmail = appData.email || appUserInfo?.email || appUserInfo?.user_email || app.email
         const targetEmail = targetUser.email
 
-        const isMatch = appEmail && targetEmail && appEmail.toLowerCase() === targetEmail.toLowerCase()
+        const isMatch = appEmail && targetEmail &&
+                       appEmail.toLowerCase().trim() === targetEmail.toLowerCase().trim()
 
         console.log('🔍 이메일 기준 필터링:', {
           신청ID: app.id,
+          'app.user_id': app.user_id,
+          'appUserInfo 찾음': !!appUserInfo,
           '신청의 이메일': appEmail,
           '사용자 이메일': targetEmail,
-          '매칭 여부': isMatch ? '✅' : '❌',
-          '전체 app': app
+          '매칭 여부': isMatch ? '✅' : '❌'
         })
 
         return isMatch
