@@ -1062,7 +1062,24 @@ const AdminDashboard: React.FC = () => {
       console.log('🎯 조회할 사용자 ID:', userId)
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
-      // 항상 전체 데이터를 가져와서 클라이언트에서 확실하게 필터링
+      // 1. users 테이블에서 해당 사용자 정보 가져오기
+      const allUsers = await (dataService.entities as any).users.list()
+      const targetUser = allUsers.find((u: any) => u.id === userId || u.user_id === userId)
+
+      if (!targetUser) {
+        console.error('❌ 사용자를 찾을 수 없습니다:', userId)
+        setUserApplications([])
+        return
+      }
+
+      console.log('👤 찾은 사용자:', {
+        id: targetUser.id,
+        user_id: targetUser.user_id,
+        name: targetUser.name,
+        email: targetUser.email
+      })
+
+      // 2. 항상 전체 데이터를 가져와서 클라이언트에서 확실하게 필터링
       const allApplications = await (dataService.entities as any).user_applications.list()
       console.log('📦 전체 신청 데이터 개수:', allApplications?.length || 0)
 
@@ -1071,25 +1088,23 @@ const AdminDashboard: React.FC = () => {
         console.log('📋 첫 번째 신청 데이터 샘플:', {
           id: allApplications[0].id,
           user_id: allApplications[0].user_id,
-          userId: allApplications[0].userId,
           campaign_id: allApplications[0].campaign_id
         })
       }
 
-      // 해당 사용자의 신청만 필터링 (모든 가능한 필드명 확인)
+      // 3. 신청 관리와 동일한 방식으로 필터링: app.user_id를 user.user_id 또는 user.id와 비교
       const userApplications = (allApplications || []).filter((app: any) => {
-        // 가능한 모든 user_id 필드 확인
-        const appUserId = app.user_id || app.userId || app.user || app.applicant_id
-        const isMatch = appUserId === userId
+        const appUserId = app.user_id
+        // ⚠️ 중요: 신청 관리와 동일한 로직 (line 309)
+        const isMatch = targetUser.user_id === appUserId || targetUser.id === appUserId
 
-        if (isMatch) {
-          console.log('✅ 매칭된 신청:', {
-            신청ID: app.id,
-            사용자ID: appUserId,
-            캠페인ID: app.campaign_id,
-            신청일: app.created_at
-          })
-        }
+        console.log('🔍 필터링 체크:', {
+          신청ID: app.id,
+          '신청의 user_id': appUserId,
+          '사용자의 user_id': targetUser.user_id,
+          '사용자의 id': targetUser.id,
+          '매칭 여부': isMatch ? '✅' : '❌'
+        })
 
         return isMatch
       })
