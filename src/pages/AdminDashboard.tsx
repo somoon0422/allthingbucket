@@ -3127,6 +3127,9 @@ const AdminDashboard: React.FC = () => {
                           <div className="flex space-x-2">
                             <button
                               onClick={async () => {
+                                // ⚠️ 먼저 신청 정보 초기화
+                                setUserApplications([])
+
                                 // 본인인증 정보 조회
                                 try {
                                   const { data: identityInfo } = await supabase
@@ -3144,8 +3147,9 @@ const AdminDashboard: React.FC = () => {
                                   setSelectedUser(user)
                                 }
 
+                                // 모달 열기
                                 setShowUserDetailModal(true)
-                                // 사용자 신청 정보도 함께 로드
+                                // 사용자 신청 정보 로드 (비동기)
                                 loadUserApplications(user.user_id || user.id)
                               }}
                               className="text-blue-600 hover:text-blue-900"
