@@ -569,7 +569,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className={`text-xl font-bold ${application?.status === 'point_completed' ? 'text-blue-600' : 'text-green-600'}`}>
+              <h3 className={`text-xl font-bold ${application?.status === 'point_completed' ? 'text-vintage-600' : 'text-green-600'}`}>
                 {getModalTitle()}
               </h3>
               <p className="text-sm text-gray-500 mt-1">
@@ -595,7 +595,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   onClick={() => setSendMethod('email')}
                   className={`p-3 rounded-lg border-2 transition-colors ${
                     sendMethod === 'email'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      ? 'border-vintage-500 bg-blue-50 text-vintage-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -634,7 +634,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   onClick={() => setSendMethod('all')}
                   className={`p-3 rounded-lg border-2 transition-colors ${
                     sendMethod === 'all'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      ? 'border-navy-500 bg-purple-50 text-navy-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -682,7 +682,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   onClick={() => setSelectedTemplate('simple')}
                   className={`p-2 rounded-lg border text-sm transition-colors ${
                     selectedTemplate === 'simple'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      ? 'border-vintage-500 bg-blue-50 text-vintage-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -702,7 +702,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   onClick={() => setSelectedTemplate('point_completed')}
                   className={`p-2 rounded-lg border text-sm transition-colors ${
                     selectedTemplate === 'point_completed'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      ? 'border-navy-500 bg-purple-50 text-navy-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -744,7 +744,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowVariableHelp(!showVariableHelp)}
-                  className="text-xs text-blue-600 hover:text-blue-800"
+                  className="text-xs text-vintage-600 hover:text-vintage-800"
                 >
                   {showVariableHelp ? '변수 도움말 숨기기' : '사용 가능한 변수 보기'}
                 </button>
@@ -752,8 +752,8 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
               
               {showVariableHelp && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                  <h5 className="text-sm font-medium text-blue-800 mb-2">사용 가능한 변수:</h5>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
+                  <h5 className="text-sm font-medium text-vintage-800 mb-2">사용 가능한 변수:</h5>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-vintage-700">
                     <div><code>{'{name}'}</code> - 수신자 이름</div>
                     <div><code>{'{email}'}</code> - 수신자 이메일</div>
                     <div><code>{'{phone}'}</code> - 수신자 휴대폰</div>
@@ -786,7 +786,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 <h4 className="font-medium">수신자 정보</h4>
                 <button
                   onClick={() => setEditingRecipient(!editingRecipient)}
-                  className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                  className="text-vintage-600 hover:text-vintage-800 text-sm flex items-center"
                 >
                   <Edit className="w-4 h-4 mr-1" />
                   {editingRecipient ? '완료' : '수정'}
@@ -853,14 +853,14 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
             </div>
 
             {/* 🔥 미리보기 */}
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+            <div className="bg-gradient-to-br from-vintage-50 to-navy-50 rounded-lg p-4 border border-blue-200">
               <h4 className="font-medium mb-3 flex items-center">
-                <CheckCircle className="w-5 h-5 mr-2 text-blue-600" />
+                <CheckCircle className="w-5 h-5 mr-2 text-vintage-600" />
                 발송 미리보기
               </h4>
               <div className="text-sm text-gray-700 space-y-2">
                 <div className="bg-white p-3 rounded-lg">
-                  <div className="font-medium text-blue-900 mb-2">📋 발송 정보</div>
+                  <div className="font-medium text-vintage-900 mb-2">📋 발송 정보</div>
                   <div className="space-y-1 text-sm">
                     <div><strong>수신자:</strong> {editableRecipient.name || '(이름 없음)'}</div>
                     <div><strong>발송방식:</strong> {
@@ -884,7 +884,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
                 {(sendMethod === 'email' || sendMethod === 'all') && (
                   <div className="bg-white p-3 rounded-lg">
-                    <div className="font-medium text-blue-900 mb-2">📧 이메일 내용</div>
+                    <div className="font-medium text-vintage-900 mb-2">📧 이메일 내용</div>
                     <div><strong>제목:</strong> {replaceVariables(subject)}</div>
                     <div className="mt-2"><strong>내용:</strong></div>
                     <div className="bg-gray-50 p-2 rounded border max-h-32 overflow-y-auto whitespace-pre-wrap text-xs">

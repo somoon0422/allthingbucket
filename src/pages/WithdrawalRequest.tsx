@@ -119,7 +119,7 @@ const WithdrawalRequest: React.FC = () => {
       case 'pending':
         return { color: 'text-yellow-600 bg-yellow-100', icon: Clock, text: '대기중' }
       case 'approved':
-        return { color: 'text-blue-600 bg-blue-100', icon: CheckCircle, text: '승인됨' }
+        return { color: 'text-vintage-600 bg-blue-100', icon: CheckCircle, text: '승인됨' }
       case 'rejected':
         return { color: 'text-red-600 bg-red-100', icon: X, text: '거절됨' }
       case 'completed':
@@ -151,14 +151,14 @@ const WithdrawalRequest: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                <Banknote className="w-8 h-8 mr-3 text-blue-600" />
+                <Banknote className="w-8 h-8 mr-3 text-vintage-600" />
                 포인트 출금
               </h1>
               <p className="text-gray-600 mt-1">보유 포인트를 현금으로 출금하세요</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">보유 포인트</p>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-vintage-600">
                 {(userPoints?.available_points || 0).toLocaleString()}P
               </p>
             </div>
@@ -167,11 +167,11 @@ const WithdrawalRequest: React.FC = () => {
 
         {/* 출금 안내 정보 */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+          <h2 className="text-lg font-semibold text-vintage-900 mb-4 flex items-center">
             <AlertCircle className="w-5 h-5 mr-2" />
             출금 안내사항
           </h2>
-          <div className="space-y-3 text-sm text-blue-800">
+          <div className="space-y-3 text-sm text-vintage-800">
             <p>• 포인트가 5,000원 이상 모이면 출금 신청을 할 수 있으며, 출금 시 금융 수수료 및 세금을 차감하고 지급됩니다.</p>
             <p>• <strong>신청 기간 및 지급일 안내:</strong></p>
             <ul className="ml-4 space-y-1">
@@ -207,7 +207,7 @@ const WithdrawalRequest: React.FC = () => {
                 <p className="text-sm text-gray-400 mb-4">출금을 위해 나이스평가정보를 통한 실명인증을 진행해주세요</p>
                 <button
                   onClick={() => setShowIdentityVerification(true)}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                  className="inline-flex items-center px-4 py-2 bg-vintage-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
                 >
                   <Shield className="w-4 h-4 mr-2" />
                   실명인증하기
@@ -269,7 +269,7 @@ const WithdrawalRequest: React.FC = () => {
                           <p className="text-sm text-gray-500">{request.request_reason}</p>
                         )}
                         {request.admin_notes && (
-                          <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+                          <p className="text-sm text-vintage-600 bg-blue-50 p-2 rounded">
                             관리자 메모: {request.admin_notes}
                           </p>
                         )}
@@ -314,7 +314,7 @@ const WithdrawalRequest: React.FC = () => {
                     type="number"
                     value={withdrawalForm.points_amount}
                     onChange={(e) => setWithdrawalForm({ ...withdrawalForm, points_amount: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
                     placeholder="출금할 포인트를 입력하세요"
                     min="1000"
                     max={userPoints?.available_points || 0}
@@ -332,17 +332,17 @@ const WithdrawalRequest: React.FC = () => {
                   <textarea
                     value={withdrawalForm.request_reason}
                     onChange={(e) => setWithdrawalForm({ ...withdrawalForm, request_reason: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
                     rows={3}
                     placeholder="출금 사유를 입력하세요"
                   />
                 </div>
 
                 <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                  <p className="text-sm text-vintage-800">
                     <strong>예상 출금 금액:</strong> {withdrawalForm.points_amount.toLocaleString()}원
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">
+                  <p className="text-xs text-vintage-600 mt-1">
                     * 환율: 1P = 1원 (실제 출금 시 환율이 적용될 수 있습니다)
                   </p>
                 </div>

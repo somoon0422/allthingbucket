@@ -381,7 +381,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   <Star className="w-4 h-4 text-green-600" />
                 </div>
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-bold text-sm">B</span>
+                  <span className="text-vintage-600 font-bold text-sm">B</span>
                 </div>
               </div>
               
@@ -414,7 +414,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                     placeholder="실명을 입력해주세요"
                     required
                   />
@@ -429,7 +429,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                     placeholder="example@email.com"
                     required
                   />
@@ -464,7 +464,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   <div 
                     className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
                       formData.platform_type === 'review' 
-                        ? 'border-blue-500 bg-blue-50' 
+                        ? 'border-vintage-500 bg-blue-50' 
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                     onClick={() => setFormData(prev => ({ ...prev, platform_type: 'review' }))}
@@ -478,7 +478,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                         </div>
                       </div>
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-bold text-xs">R</span>
+                        <span className="text-vintage-600 font-bold text-xs">R</span>
                       </div>
                     </div>
                     <div className="mt-2">
@@ -489,7 +489,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                       </div>
                     </div>
                     {formData.platform_type === 'review' && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="absolute top-2 right-2 w-4 h-4 bg-vintage-500 rounded-full flex items-center justify-center">
                         <div className="w-2 h-2 bg-white rounded-full"></div>
                       </div>
                     )}
@@ -604,7 +604,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="instagram_handle"
                     value={formData.instagram_handle}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                     placeholder="@username"
                   />
                 </div>
@@ -618,7 +618,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="blog_url"
                     value={formData.blog_url}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                     placeholder="https://blog.example.com"
                   />
                 </div>
@@ -632,7 +632,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="youtube_channel"
                     value={formData.youtube_channel}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                     placeholder="https://youtube.com/@channel"
                   />
                 </div>
@@ -655,7 +655,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   value={formData.application_reason}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
                   placeholder="이 체험단에 신청하는 이유를 자세히 작성해주세요"
                   required
                 />
@@ -670,7 +670,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   value={formData.experience_plan}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
                   placeholder="제품 체험 후 어떤 활동을 할 계획인지 작성해주세요"
                 />
               </div>
@@ -684,7 +684,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   value={formData.additional_info}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
                   placeholder="추가로 전달하고 싶은 내용이 있다면 작성해주세요"
                 />
               </div>
@@ -702,7 +702,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? '신청 중...' : '신청하기'}
               </button>

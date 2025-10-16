@@ -50,7 +50,7 @@ const DetailImageGallery: React.FC<{
         {detailImages.length > 0 && (
           <button
             onClick={onToggle}
-            className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm"
+            className="flex items-center text-vintage-600 hover:text-vintage-700 font-medium text-sm"
           >
             {isExpanded ? (
               <>
@@ -209,7 +209,7 @@ const CampaignDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
           <p className="text-gray-600">캠페인 정보를 불러오는 중...</p>
         </div>
       </div>
@@ -268,7 +268,7 @@ const CampaignDetail: React.FC = () => {
       default:
         return {
           label: '신청완료',
-          color: 'bg-blue-100 text-blue-800',
+          color: 'bg-blue-100 text-vintage-800',
           icon: CheckCircle
         }
     }
@@ -509,7 +509,7 @@ const CampaignDetail: React.FC = () => {
                         onClick={() => setCurrentMainImageIndex(index)}
                         className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                           index === currentMainImageIndex 
-                            ? 'border-blue-500 ring-2 ring-blue-200' 
+                            ? 'border-vintage-500 ring-2 ring-blue-200' 
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
@@ -561,7 +561,7 @@ const CampaignDetail: React.FC = () => {
 
                 {/* 플랫폼 및 배송 정보 */}
                 <div className="flex items-center space-x-4 mb-4">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                  <span className="px-3 py-1 bg-blue-100 text-vintage-800 rounded-full text-sm font-medium">
                     {platform}
                   </span>
                   <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
@@ -597,7 +597,7 @@ const CampaignDetail: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                      <Hash className="w-5 h-5 mr-2 text-purple-600" />
+                      <Hash className="w-5 h-5 mr-2 text-navy-600" />
                       키워드
                     </h2>
                     <button
@@ -613,7 +613,7 @@ const CampaignDetail: React.FC = () => {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {keywords.map((keyword, index) => (
-                      <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                      <span key={index} className="px-3 py-1 bg-purple-100 text-navy-800 rounded-full text-sm">
                         #{keyword}
                       </span>
                     ))}
@@ -659,7 +659,7 @@ const CampaignDetail: React.FC = () => {
               {/* 캠페인 정보 */}
               <div className="bg-white rounded-xl shadow-sm p-6 min-w-80">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Info className="w-5 h-5 mr-2 text-blue-600" />
+                  <Info className="w-5 h-5 mr-2 text-vintage-600" />
                   캠페인 정보
                 </h3>
                 
@@ -671,7 +671,7 @@ const CampaignDetail: React.FC = () => {
                   
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">리워드</span>
-                    <span className="font-medium text-purple-600">{rewards} P</span>
+                    <span className="font-medium text-navy-600">{rewards} P</span>
                   </div>
                   
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -830,7 +830,7 @@ const CampaignDetail: React.FC = () => {
                       </p>
                       <button
                         onClick={() => navigate('/my-applications')}
-                        className="w-full px-4 py-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                        className="w-full px-4 py-2 text-vintage-600 hover:text-vintage-700 font-medium text-sm"
                       >
                         내 신청 현황 보기
                       </button>
@@ -838,7 +838,7 @@ const CampaignDetail: React.FC = () => {
                   ) : safeString(campaign, 'status') === 'active' ? (
                     <button
                       onClick={handleApplyClick}
-                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      className="w-full px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                     >
                       리뷰 신청하기
                     </button>
@@ -847,7 +847,7 @@ const CampaignDetail: React.FC = () => {
                       <p className="text-gray-600 mb-2 text-sm">현재 모집이 마감되었습니다</p>
                       <button
                         onClick={() => navigate('/experiences')}
-                        className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                        className="text-vintage-600 hover:text-vintage-700 font-medium text-sm"
                       >
                         다른 캠페인 보기
                       </button>

@@ -205,7 +205,7 @@ const AdminChat: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
           <p className="text-gray-600">로딩 중...</p>
         </div>
       </div>
@@ -264,7 +264,7 @@ const AdminChat: React.FC = () => {
                         key={room.id}
                         onClick={() => selectChatRoom(room)}
                         className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
-                          selectedChatRoom?.id === room.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                          selectedChatRoom?.id === room.id ? 'bg-blue-50 border-l-4 border-vintage-500' : ''
                         }`}
                       >
                         <div className="flex items-start justify-between">
@@ -292,7 +292,7 @@ const AdminChat: React.FC = () => {
                           </div>
                           {hasUnread && (
                             <div className="ml-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="w-2 h-2 bg-vintage-500 rounded-full"></div>
                             </div>
                           )}
                         </div>
@@ -357,14 +357,14 @@ const AdminChat: React.FC = () => {
                               className={`max-w-md px-4 py-3 rounded-2xl ${
                                 message.sender_type === 'user'
                                   ? 'bg-white shadow-sm'
-                                  : 'bg-blue-500 text-white'
+                                  : 'bg-vintage-500 text-white'
                               }`}
                             >
                               <div className="whitespace-pre-line break-words">
                                 {message.message}
                               </div>
                               <div className={`text-xs mt-2 ${
-                                message.sender_type === 'user' ? 'text-gray-400' : 'text-blue-100'
+                                message.sender_type === 'user' ? 'text-gray-400' : 'text-vintage-100'
                               }`}>
                                 {new Date(message.created_at).toLocaleTimeString('ko-KR', {
                                   hour: '2-digit',
@@ -392,12 +392,12 @@ const AdminChat: React.FC = () => {
                           }
                         }}
                         placeholder="메시지를 입력하세요..."
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                       />
                       <button
                         onClick={sendAdminMessage}
                         disabled={!chatInput.trim()}
-                        className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-6 py-3 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
+                        className="bg-vintage-500 hover:bg-vintage-600 disabled:bg-gray-300 text-white px-6 py-3 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <Send className="w-5 h-5" />
                         <span>전송</span>

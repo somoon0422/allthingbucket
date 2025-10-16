@@ -279,10 +279,10 @@ const Points: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const statusMap = {
       pending: { text: '대기중', color: 'bg-yellow-100 text-yellow-800' },
-      account_verified: { text: '계좌인증완료', color: 'bg-blue-100 text-blue-800' },
-      pending_approval: { text: '승인대기', color: 'bg-purple-100 text-purple-800' },
-      approved: { text: '승인됨', color: 'bg-blue-100 text-blue-800' },
-      processing: { text: '처리중', color: 'bg-purple-100 text-purple-800' },
+      account_verified: { text: '계좌인증완료', color: 'bg-blue-100 text-vintage-800' },
+      pending_approval: { text: '승인대기', color: 'bg-purple-100 text-navy-800' },
+      approved: { text: '승인됨', color: 'bg-blue-100 text-vintage-800' },
+      processing: { text: '처리중', color: 'bg-purple-100 text-navy-800' },
       completed: { text: '완료', color: 'bg-green-100 text-green-800' },
       rejected: { text: '거절됨', color: 'bg-red-100 text-red-800' }
     }
@@ -368,7 +368,7 @@ const Points: React.FC = () => {
           status: app.status,
           details: `신청 상태: ${app.status}`,
           icon: FileText,
-          color: 'text-blue-500'
+          color: 'text-vintage-500'
         })),
         ...campaignReviews.map((review: any) => ({
           type: 'review',
@@ -377,7 +377,7 @@ const Points: React.FC = () => {
           status: review.status,
           details: review.review_content ? `리뷰: ${review.review_content.substring(0, 50)}...` : '리뷰 제출 완료',
           icon: Star,
-          color: 'text-purple-500'
+          color: 'text-navy-500'
         }))
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       
@@ -405,7 +405,7 @@ const Points: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-600"></div>
       </div>
     )
   }
@@ -422,7 +422,7 @@ const Points: React.FC = () => {
           </div>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+            className="px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
           >
             <ArrowUpRight className="w-4 h-4" />
             새로고침
@@ -484,7 +484,7 @@ const Points: React.FC = () => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border">
           <div className="flex items-center">
-            <TrendingUp className="w-8 h-8 text-blue-600" />
+            <TrendingUp className="w-8 h-8 text-vintage-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">총 적립</p>
               <p className="text-2xl font-bold text-gray-900">
@@ -515,7 +515,7 @@ const Points: React.FC = () => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border">
           <div className="flex items-center">
-            <CreditCard className="w-8 h-8 text-purple-600" />
+            <CreditCard className="w-8 h-8 text-navy-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">체험단 참여</p>
               <p className="text-2xl font-bold text-gray-900">
@@ -592,7 +592,7 @@ const Points: React.FC = () => {
             console.log('🔍 출금 버튼 - 히스토리에서 계산:', availablePoints)
             return availablePoints < 1000
           })()}
-          className="bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+          className="bg-navy-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
           <ArrowUpRight className="w-5 h-5" />
           <span>포인트 출금</span>
         </button>
@@ -667,7 +667,7 @@ const Points: React.FC = () => {
                           })
                           setShowAccountVerificationModal(true)
                         }}
-                        className="mt-2 px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600"
+                        className="mt-2 px-3 py-1 bg-vintage-500 text-white text-xs rounded-lg hover:bg-vintage-600"
                       >
                         1원 인증
                       </button>
@@ -705,7 +705,7 @@ const Points: React.FC = () => {
                     )}
                     <div>
                       <h3 
-                        className={`font-medium text-gray-900 ${(point.campaign_id || point.campaign_name || point.description?.includes('캠페인')) ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''}`}
+                        className={`font-medium text-gray-900 ${(point.campaign_id || point.campaign_name || point.description?.includes('캠페인')) ? 'cursor-pointer hover:text-vintage-600 hover:underline' : ''}`}
                         onClick={() => {
                           console.log('🔍 포인트 제목 클릭:', {
                             description: point.description,
@@ -739,7 +739,7 @@ const Points: React.FC = () => {
                       {point.campaign_name && (
                         <div className="flex items-center space-x-2">
                           <p 
-                            className={`text-sm text-gray-600 ${point.campaign_id ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''}`}
+                            className={`text-sm text-gray-600 ${point.campaign_id ? 'cursor-pointer hover:text-vintage-600 hover:underline' : ''}`}
                             onClick={() => {
                               if (point.campaign_id) {
                                 fetchCampaignHistory(point.campaign_id, point.campaign_name)
@@ -751,7 +751,7 @@ const Points: React.FC = () => {
                           {point.campaign_id && (
                             <button
                               onClick={() => navigate(`/campaigns/${point.campaign_id}`)}
-                              className="text-blue-500 hover:text-blue-700 transition-colors"
+                              className="text-vintage-500 hover:text-vintage-700 transition-colors"
                               title="캠페인 상세페이지로 이동"
                             >
                               <ExternalLink className="w-4 h-4" />
@@ -762,7 +762,7 @@ const Points: React.FC = () => {
                       <div className="flex items-center space-x-2 mt-1">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           point.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
-                          point.payment_status === 'approved' ? 'bg-purple-100 text-purple-800' :
+                          point.payment_status === 'approved' ? 'bg-purple-100 text-navy-800' :
                           point.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           point.payment_status === 'failed' ? 'bg-red-100 text-red-800' :
                           point.status === 'success' ? 'bg-green-100 text-green-800' :
@@ -814,16 +814,16 @@ const Points: React.FC = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <CreditCard className="w-5 h-5 text-blue-400" />
+                    <CreditCard className="w-5 h-5 text-vintage-400" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800 mb-1">
+                    <h3 className="text-sm font-medium text-vintage-800 mb-1">
                       계좌인증 필수 안내
                     </h3>
-                    <p className="text-sm text-blue-700">
+                    <p className="text-sm text-vintage-700">
                       출금 요청을 위해서는 먼저 계좌인증이 완료되어야 합니다.
                     </p>
-                    <ul className="text-xs text-blue-600 mt-2 space-y-1">
+                    <ul className="text-xs text-vintage-600 mt-2 space-y-1">
                       <li>• 1원 인증을 통해 계좌 소유자 본인 확인</li>
                       <li>• 인증 완료 후 출금 요청 가능</li>
                       <li>• 새로운 계좌 입력 시 재인증 필요</li>
@@ -866,7 +866,7 @@ const Points: React.FC = () => {
                       })()}
                       value={withdrawalData.requested_amount}
                       onChange={(e) => setWithdrawalData(prev => ({ ...prev, requested_amount: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500"
                       placeholder="1000"
                     />
                     <span className="absolute right-3 top-2 text-gray-500">P</span>
@@ -1026,7 +1026,7 @@ const Points: React.FC = () => {
                   <button
                     type="submit"
                     disabled={!withdrawalData.requested_amount || Number(withdrawalData.requested_amount) < 1000}
-                    className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-navy-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     출금 요청
                   </button>
@@ -1050,7 +1050,7 @@ const Points: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => navigate(`/campaigns/${selectedCampaign.id}`)}
-                    className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-1 text-sm"
+                    className="px-3 py-1 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-1 text-sm"
                   >
                     <ExternalLink className="w-4 h-4" />
                     <span>상세페이지</span>
@@ -1092,7 +1092,7 @@ const Points: React.FC = () => {
                           <div className="mt-2">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               history.status === 'completed' || history.status === '지급완료' ? 'bg-green-100 text-green-800' :
-                              history.status === 'approved' || history.status === '승인됨' ? 'bg-blue-100 text-blue-800' :
+                              history.status === 'approved' || history.status === '승인됨' ? 'bg-blue-100 text-vintage-800' :
                               history.status === 'pending' || history.status === '대기중' ? 'bg-yellow-100 text-yellow-800' :
                               history.status === 'rejected' || history.status === '거절됨' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-800'
@@ -1130,8 +1130,8 @@ const Points: React.FC = () => {
               
               <div className="space-y-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">인증 방법</h4>
-                  <ol className="text-sm text-blue-800 space-y-1">
+                  <h4 className="font-medium text-vintage-900 mb-2">인증 방법</h4>
+                  <ol className="text-sm text-vintage-800 space-y-1">
                     <li>1. 계좌로 1원을 입금해주세요</li>
                     <li>2. 입금자명: <strong>올띵버킷</strong></li>
                     <li>3. 입금 후 아래에 입금자명을 입력해주세요</li>
@@ -1147,7 +1147,7 @@ const Points: React.FC = () => {
                     required
                     value={verificationData.depositName}
                     onChange={(e) => setVerificationData(prev => ({ ...prev, depositName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500"
                     placeholder="입금자명을 입력하세요"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -1185,7 +1185,7 @@ const Points: React.FC = () => {
                 </button>
                 <button
                   onClick={handleAccountVerification}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   인증 완료
                 </button>
@@ -1238,7 +1238,7 @@ const Points: React.FC = () => {
           <div>
             <h4 className="font-medium text-gray-900 mb-2">🔸 실명인증 안내</h4>
             <ul className="space-y-1 text-xs ml-4">
-              <li>• 명의도용 차단이 되어 있거나 나이스평가 정보에서 사용자 정보를 불러올 수 없는 경우, <a href="https://www.namecheck.co.kr/prod_name.nc" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">온라인 실명 등록 서비스</a>를 이용하세요.</li>
+              <li>• 명의도용 차단이 되어 있거나 나이스평가 정보에서 사용자 정보를 불러올 수 없는 경우, <a href="https://www.namecheck.co.kr/prod_name.nc" target="_blank" rel="noopener noreferrer" className="text-vintage-600 hover:text-vintage-800 underline">온라인 실명 등록 서비스</a>를 이용하세요.</li>
             </ul>
           </div>
         </div>

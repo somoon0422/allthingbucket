@@ -2198,7 +2198,7 @@ const AdminDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-vintage-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">관리자 대시보드를 불러오는 중...</p>
         </div>
       </div>
@@ -2206,7 +2206,7 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-vintage-50 to-navy-50">
       {/* Header */}
       <div className="backdrop-blur-sm bg-white/90 shadow-xl border-b border-white/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2235,7 +2235,7 @@ const AdminDashboard: React.FC = () => {
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-vintage-600 to-navy-600 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
                 <span className="font-medium">새로고침</span>
@@ -2262,7 +2262,7 @@ const AdminDashboard: React.FC = () => {
                 {unreadNotifications > 0 && (
                   <button
                     onClick={markAllNotificationsAsRead}
-                    className="px-4 py-2 text-sm bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 hover:scale-105 hover:shadow-lg rounded-xl transition-all duration-200 font-medium"
+                    className="px-4 py-2 text-sm bg-gradient-to-r from-vintage-100 to-vintage-200 text-vintage-700 hover:scale-105 hover:shadow-lg rounded-xl transition-all duration-200 font-medium"
                   >
                     모두 읽음
                   </button>
@@ -2286,7 +2286,7 @@ const AdminDashboard: React.FC = () => {
                     onClick={() => !notification.is_read && markNotificationAsRead(notification.id)}
                     className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-xl ${
                       notification.is_read ? 'bg-gray-50/50 backdrop-blur-sm border-gray-200' :
-                      notification.type === 'point_request' ? 'bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-300 hover:shadow-orange-200' : 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300 hover:shadow-blue-200'
+                      notification.type === 'point_request' ? 'bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-300 hover:shadow-orange-200' : 'bg-gradient-to-br from-vintage-50 to-vintage-100/50 border-blue-300 hover:shadow-blue-200'
                     }`}
                   >
                     <div className="flex justify-between items-start">
@@ -2321,7 +2321,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       {!notification.read && (
                         <div className={`w-2 h-2 rounded-full ml-2 ${
-                          notification.type === 'point_request' ? 'bg-orange-500' : 'bg-blue-500'
+                          notification.type === 'point_request' ? 'bg-orange-500' : 'bg-vintage-500'
                         }`}></div>
                       )}
                     </div>
@@ -2338,7 +2338,7 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('all')}>
             <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-gradient-to-br from-vintage-500 to-vintage-600 rounded-xl shadow-lg">
                 <FileText className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
@@ -2374,7 +2374,7 @@ const AdminDashboard: React.FC = () => {
 
           <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('product_purchased')}>
             <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-gradient-to-br from-vintage-500 to-vintage-600 rounded-xl shadow-lg">
                 <Package className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
@@ -2386,7 +2386,7 @@ const AdminDashboard: React.FC = () => {
 
           <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('shipping')}>
             <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-gradient-to-br from-navy-500 to-navy-600 rounded-xl shadow-lg">
                 <Truck className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
@@ -2398,7 +2398,7 @@ const AdminDashboard: React.FC = () => {
 
           <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('review_in_progress')}>
             <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-gradient-to-br from-navy-500 to-navy-600 rounded-xl shadow-lg">
                 <FileText className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
@@ -2474,12 +2474,12 @@ const AdminDashboard: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('users')}
-            className="backdrop-blur-sm bg-gradient-to-br from-purple-500 to-purple-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(168,85,247,0.3)] transition-all duration-200 hover:scale-105"
+            className="backdrop-blur-sm bg-gradient-to-br from-navy-500 to-navy-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(168,85,247,0.3)] transition-all duration-200 hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div className="text-left">
                 <h3 className="text-2xl font-bold">회원 관리</h3>
-                <p className="text-sm text-purple-100 mt-2">회원 정보 조회 및 관리</p>
+                <p className="text-sm text-navy-100 mt-2">회원 정보 조회 및 관리</p>
               </div>
               <User className="w-12 h-12 opacity-90" />
             </div>
@@ -2487,14 +2487,14 @@ const AdminDashboard: React.FC = () => {
 
           <button
             onClick={() => navigate('/admin/chat')}
-            className="backdrop-blur-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all duration-200 hover:scale-105"
+            className="backdrop-blur-sm bg-gradient-to-br from-vintage-500 to-vintage-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all duration-200 hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div className="text-left">
                 <h3 className="text-2xl font-bold">실시간 채팅</h3>
-                <p className="text-sm text-blue-100 mt-2">고객 문의 실시간 응대</p>
+                <p className="text-sm text-vintage-100 mt-2">고객 문의 실시간 응대</p>
                 {unreadChatCount > 0 && (
-                  <span className="inline-block mt-2 px-4 py-1.5 bg-white text-blue-600 text-xs font-bold rounded-full shadow-lg">
+                  <span className="inline-block mt-2 px-4 py-1.5 bg-white text-vintage-600 text-xs font-bold rounded-full shadow-lg">
                     {unreadChatCount}개의 새 메시지
                   </span>
                 )}
@@ -2512,7 +2512,7 @@ const AdminDashboard: React.FC = () => {
                 onClick={() => setActiveTab('applications')}
                 className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'applications'
-                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg scale-105'
+                    ? 'bg-gradient-to-br from-vintage-500 to-vintage-600 text-white shadow-lg scale-105'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
@@ -2523,7 +2523,7 @@ const AdminDashboard: React.FC = () => {
                 onClick={() => setActiveTab('reviews')}
                 className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'reviews'
-                    ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg scale-105'
+                    ? 'bg-gradient-to-br from-navy-500 to-navy-600 text-white shadow-lg scale-105'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
@@ -2552,7 +2552,7 @@ const AdminDashboard: React.FC = () => {
                 onClick={() => setActiveTab('withdrawal-requests')}
                 className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'withdrawal-requests'
-                    ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg scale-105'
+                    ? 'bg-gradient-to-br from-navy-500 to-navy-600 text-white shadow-lg scale-105'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
@@ -2560,7 +2560,7 @@ const AdminDashboard: React.FC = () => {
                 <span>4. 출금 요청</span>
                 {withdrawalRequests.filter(req => req.status === 'pending').length > 0 && (
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
-                    activeTab === 'withdrawal-requests' ? 'bg-white text-purple-600' : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800'
+                    activeTab === 'withdrawal-requests' ? 'bg-white text-navy-600' : 'bg-gradient-to-r from-navy-100 to-navy-200 text-navy-800'
                   }`}>
                     {withdrawalRequests.filter(req => req.status === 'pending').length}
                   </span>
@@ -2613,7 +2613,7 @@ const AdminDashboard: React.FC = () => {
             <select
                 value={applicationFilter}
                 onChange={(e) => setApplicationFilter(e.target.value)}
-                className="px-5 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 font-medium text-gray-700 bg-white hover:border-blue-400"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl focus:border-vintage-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 font-medium text-gray-700 bg-white hover:border-vintage-400"
               >
                 <option value="all">전체</option>
                 <option value="pending">대기중</option>
@@ -2631,7 +2631,7 @@ const AdminDashboard: React.FC = () => {
                 placeholder="신청자 검색..."
                 value={applicationSearch}
                 onChange={(e) => setApplicationSearch(e.target.value)}
-                className="px-5 py-3 border-2 border-gray-300 rounded-xl flex-1 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 font-medium text-gray-700 placeholder-gray-400"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl flex-1 focus:border-vintage-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 font-medium text-gray-700 placeholder-gray-400"
               />
         </div>
 
@@ -2695,7 +2695,7 @@ const AdminDashboard: React.FC = () => {
                               {application.detailed_address && <div>{application.detailed_address}</div>}
                             </div>
                           )}
-                          <div className="text-xs text-blue-600 mt-1">클릭하여 상세보기</div>
+                          <div className="text-xs text-vintage-600 mt-1">클릭하여 상세보기</div>
                               </div>
                             </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -2709,11 +2709,11 @@ const AdminDashboard: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-4 py-2 text-xs font-bold rounded-xl shadow-sm ${
                           application.status === 'approved' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800' :
-                          application.status === 'review_in_progress' ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800' :
+                          application.status === 'review_in_progress' ? 'bg-gradient-to-r from-vintage-100 to-vintage-200 text-vintage-800' :
                           application.status === 'review_completed' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800' :
-                          application.status === 'product_purchased' ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800' :
-                          application.status === 'shipping' ? 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800' :
-                          application.status === 'delivered' ? 'bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800' :
+                          application.status === 'product_purchased' ? 'bg-gradient-to-r from-vintage-100 to-vintage-200 text-vintage-800' :
+                          application.status === 'shipping' ? 'bg-gradient-to-r from-navy-100 to-navy-200 text-navy-800' :
+                          application.status === 'delivered' ? 'bg-gradient-to-r from-navy-100 to-navy-200 text-navy-800' :
                           application.status === 'point_requested' ? 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800' :
                           application.status === 'point_completed' ? 'bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800' :
                           application.status === 'rejected' ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800' :
@@ -2777,7 +2777,7 @@ const AdminDashboard: React.FC = () => {
                           {(application.status === 'product_purchased' || application.status === 'shipping') && (
                             <button
                               onClick={() => handleShippingModal(application)}
-                              className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
+                              className="p-2 bg-gradient-to-r from-vintage-500 to-vintage-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                               title={application.status === 'shipping' ? '배송 정보 수정' : '배송 정보 등록'}
                             >
                               <Truck className="w-5 h-5" />
@@ -2904,7 +2904,7 @@ const AdminDashboard: React.FC = () => {
                             <div className="flex space-x-2">
                           <button
                             onClick={() => handleViewUserPoints(application.user_id, application.id || application._id)}
-                            className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
+                            className="p-2 bg-gradient-to-r from-navy-500 to-navy-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                             title="사용자 포인트 내역"
                           >
                             <Gift className="w-5 h-5" />
@@ -2946,7 +2946,7 @@ const AdminDashboard: React.FC = () => {
                             </>
                           )}
                               {application.status === 'point_approved' && (
-                                <span className="text-purple-600" title="지급 승인됨">
+                                <span className="text-navy-600" title="지급 승인됨">
                                   <CheckCircle className="w-4 h-4" />
                                 </span>
                               )}
@@ -2976,7 +2976,7 @@ const AdminDashboard: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-900">캠페인 관리</h2>
               <button
                 onClick={() => setShowCampaignModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 font-medium"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-vintage-600 to-navy-600 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 font-medium"
               >
                 <Plus className="w-5 h-5" />
                 새 체험단
@@ -3064,7 +3064,7 @@ const AdminDashboard: React.FC = () => {
                             }
                             setShowEditModal(true)
                           }}
-                          className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
+                          className="p-2 bg-gradient-to-r from-vintage-500 to-vintage-600 text-white rounded-lg hover:scale-110 hover:shadow-lg transition-all duration-200"
                         >
                           <Edit3 className="w-5 h-5" />
                         </button>
@@ -3090,7 +3090,7 @@ const AdminDashboard: React.FC = () => {
           <div className="px-8 py-6 border-b border-white/50">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-900">회원 관리</h2>
-              <div className="text-sm font-semibold text-gray-700 bg-gradient-to-r from-purple-100 to-purple-200 px-4 py-2 rounded-xl">
+              <div className="text-sm font-semibold text-gray-700 bg-gradient-to-r from-navy-100 to-navy-200 px-4 py-2 rounded-xl">
                 총 {filteredUsers.length}명의 회원
               </div>
             </div>
@@ -3103,7 +3103,7 @@ const AdminDashboard: React.FC = () => {
                 placeholder="회원 검색 (이름, 이메일)..."
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                className="px-5 py-3 border-2 border-gray-300 rounded-xl flex-1 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 font-medium text-gray-700 placeholder-gray-400"
+                className="px-5 py-3 border-2 border-gray-300 rounded-xl flex-1 focus:border-navy-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 font-medium text-gray-700 placeholder-gray-400"
               />
             </div>
 
@@ -3204,7 +3204,7 @@ const AdminDashboard: React.FC = () => {
                                 // 사용자 신청 정보 로드 (비동기)
                                 loadUserApplications(user.user_id || user.id)
                               }}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-vintage-600 hover:text-vintage-900"
                               title="상세보기"
                             >
                               <Eye className="w-4 h-4" />
@@ -3437,7 +3437,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <button
                   onClick={exportWithdrawalRequestsToExcel}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-navy-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-navy-500"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   엑셀 다운로드
@@ -3493,7 +3493,7 @@ const AdminDashboard: React.FC = () => {
             
             {selectedUserId && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-700">
+                <p className="text-sm text-vintage-700">
                   <strong>사용자 필터 활성화:</strong> {selectedUserId}의 출금 내역만 표시 중
                 </p>
               </div>
@@ -3547,7 +3547,7 @@ const AdminDashboard: React.FC = () => {
                                   setWithdrawalFilter('all')
                                   setShowCompletedWithdrawals(true)
                                 }}
-                                className="text-blue-600 hover:text-blue-800 hover:underline font-mono text-xs"
+                                className="text-vintage-600 hover:text-vintage-800 hover:underline font-mono text-xs"
                                 title="이 사용자의 모든 출금 내역 보기"
                               >
                                 {request.user_id}
@@ -3574,7 +3574,7 @@ const AdminDashboard: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                 request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                request.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                                request.status === 'approved' ? 'bg-blue-100 text-vintage-800' :
                                 request.status === 'completed' ? 'bg-green-100 text-green-800' :
                                 request.status === 'rejected' ? 'bg-red-100 text-red-800' :
                                 'bg-gray-100 text-gray-800'
@@ -3595,14 +3595,14 @@ const AdminDashboard: React.FC = () => {
                                     setSelectedWithdrawalRequest(request)
                                     setShowWithdrawalDetailModal(true)
                                   }}
-                                  className="text-indigo-600 hover:text-indigo-900"
+                                  className="text-navy-600 hover:text-navy-900"
                                   title="상세보기"
                                 >
                                   <Eye className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handleViewUserPoints(request.user_id)}
-                                  className="text-purple-600 hover:text-purple-900"
+                                  className="text-navy-600 hover:text-navy-900"
                                   title="사용자 포인트 내역"
                                 >
                                   <Gift className="w-4 h-4" />
@@ -3633,7 +3633,7 @@ const AdminDashboard: React.FC = () => {
                                 {request.status === 'approved' && (
                                   <button
                                     onClick={() => handleCompleteWithdrawal(request.id)}
-                                    className="text-blue-600 hover:text-blue-900"
+                                    className="text-vintage-600 hover:text-vintage-900"
                                     title="완료처리"
                                   >
                                     완료처리
@@ -3741,7 +3741,7 @@ const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            application.status === 'review_in_progress' ? 'bg-blue-100 text-blue-800' :
+                            application.status === 'review_in_progress' ? 'bg-blue-100 text-vintage-800' :
                             application.status === 'review_completed' ? 'bg-green-100 text-green-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
@@ -3789,7 +3789,7 @@ const AdminDashboard: React.FC = () => {
                               setSelectedApplication(application)
                               setShowApplicationDetailModal(true)
                             }}
-                            className="text-indigo-600 hover:text-indigo-900 mr-3"
+                            className="text-navy-600 hover:text-navy-900 mr-3"
                             title="상세보기"
                           >
                             <Eye className="w-4 h-4" />
@@ -3979,10 +3979,10 @@ const AdminDashboard: React.FC = () => {
                       <span className="text-gray-600">상태:</span>
                       <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${
                         selectedApplication.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        selectedApplication.status === 'product_purchased' ? 'bg-blue-100 text-blue-800' :
-                        selectedApplication.status === 'shipping' ? 'bg-purple-100 text-purple-800' :
-                        selectedApplication.status === 'delivered' ? 'bg-indigo-100 text-indigo-800' :
-                        selectedApplication.status === 'review_in_progress' ? 'bg-blue-100 text-blue-800' :
+                        selectedApplication.status === 'product_purchased' ? 'bg-blue-100 text-vintage-800' :
+                        selectedApplication.status === 'shipping' ? 'bg-purple-100 text-navy-800' :
+                        selectedApplication.status === 'delivered' ? 'bg-indigo-100 text-navy-800' :
+                        selectedApplication.status === 'review_in_progress' ? 'bg-blue-100 text-vintage-800' :
                         selectedApplication.status === 'review_completed' ? 'bg-green-100 text-green-800' :
                         selectedApplication.status === 'point_requested' ? 'bg-orange-100 text-orange-800' :
                         selectedApplication.status === 'point_completed' ? 'bg-emerald-100 text-emerald-800' :
@@ -4076,7 +4076,7 @@ const AdminDashboard: React.FC = () => {
                 {/* 리뷰 정보 (리뷰 제출된 경우) */}
                 {(selectedApplication.status === 'review_in_progress' || selectedApplication.status === 'review_completed') && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+                    <h4 className="font-medium text-vintage-900 mb-3 flex items-center">
                       <FileText className="w-5 h-5 mr-2" />
                       제출된 리뷰 정보
                     </h4>
@@ -4106,7 +4106,7 @@ const AdminDashboard: React.FC = () => {
                             href={selectedApplication.blog_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline flex items-center"
+                            className="text-vintage-600 hover:underline flex items-center"
                           >
                             {selectedApplication.blog_url}
                             <ExternalLink className="w-4 h-4 ml-1" />
@@ -4197,7 +4197,7 @@ const AdminDashboard: React.FC = () => {
             </div>
             
             <div className="bg-blue-50 p-4 rounded-lg mb-4">
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-vintage-800">
                 이 사용자에게 포인트 지급을 요청하시겠습니까?
               </p>
             </div>
@@ -4305,7 +4305,7 @@ const AdminDashboard: React.FC = () => {
 
                 {/* 본인인증 및 계좌 정보 */}
                 {selectedUser.identity_info && (
-                  <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border-2 border-green-200">
+                  <div className="bg-gradient-to-r from-green-50 to-vintage-50 rounded-lg p-4 border-2 border-green-200">
                     <div className="flex items-center space-x-2 mb-4">
                       <Shield className="w-5 h-5 text-green-600" />
                       <h4 className="text-lg font-semibold text-gray-900">본인인증 및 계좌 정보</h4>
@@ -4377,7 +4377,7 @@ const AdminDashboard: React.FC = () => {
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">신청한 캠페인</h4>
                   {loadingUserApplications ? (
                     <div className="flex justify-center py-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-vintage-600"></div>
                     </div>
                   ) : userApplications.length > 0 ? (
                     <div className="space-y-4">
@@ -4392,8 +4392,8 @@ const AdminDashboard: React.FC = () => {
                               app.status === 'approved' ? 'bg-green-100 text-green-800' :
                               app.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                               app.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                              app.status === 'point_requested' ? 'bg-blue-100 text-blue-800' :
-                              app.status === 'point_completed' ? 'bg-purple-100 text-purple-800' :
+                              app.status === 'point_requested' ? 'bg-blue-100 text-vintage-800' :
+                              app.status === 'point_completed' ? 'bg-purple-100 text-navy-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {app.status === 'approved' ? '승인됨' :
@@ -4692,7 +4692,7 @@ const AdminDashboard: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          request.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                          request.status === 'approved' ? 'bg-blue-100 text-vintage-800' :
                           request.status === 'rejected' ? 'bg-red-100 text-red-800' :
                           request.status === 'completed' ? 'bg-green-100 text-green-800' :
                           request.status === 'failed' ? 'bg-red-100 text-red-800' :
@@ -4724,7 +4724,7 @@ const AdminDashboard: React.FC = () => {
                               setSelectedWithdrawalRequest(request)
                               setShowWithdrawalDetailModal(true)
                             }}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-vintage-600 hover:text-vintage-900"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -4753,7 +4753,7 @@ const AdminDashboard: React.FC = () => {
                           {request.status === 'approved' && (
                             <button
                               onClick={() => handleCompleteWithdrawal(request.id)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-vintage-600 hover:text-vintage-900"
                             >
                               완료 처리
                             </button>
@@ -4815,7 +4815,7 @@ const AdminDashboard: React.FC = () => {
                     <div><span className="font-medium">상태:</span> 
                       <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
                         selectedWithdrawalRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                        selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-vintage-800' :
                         selectedWithdrawalRequest.status === 'rejected' ? 'bg-red-100 text-red-800' :
                         selectedWithdrawalRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
                         'bg-gray-100 text-gray-800'
@@ -4939,7 +4939,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">요청 횟수:</span>
-                      <span className="font-medium text-blue-600">
+                      <span className="font-medium text-vintage-600">
                         {selectedWithdrawalRequest.withdrawal_count || 1}번째
                       </span>
                     </div>
@@ -5231,7 +5231,7 @@ const AdminDashboard: React.FC = () => {
                         <span className="text-sm font-medium text-gray-500">상태:</span>
                         <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           selectedWithdrawalRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                          selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-vintage-800' :
                           selectedWithdrawalRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
                           selectedWithdrawalRequest.status === 'rejected' ? 'bg-red-100 text-red-800' :
                           'bg-gray-100 text-gray-800'
@@ -5313,7 +5313,7 @@ const AdminDashboard: React.FC = () => {
                         setShowWithdrawalDetailModal(false)
                         setSelectedWithdrawalRequest(null)
                       }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       완료 처리
                     </button>
@@ -5364,9 +5364,9 @@ const AdminDashboard: React.FC = () => {
             
             <div className="space-y-6">
               {/* 사용자 프로필 정보 */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6 rounded-xl">
+              <div className="bg-gradient-to-r from-vintage-50 to-navy-50 border border-blue-200 p-6 rounded-xl">
                 <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-16 h-16 bg-vintage-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                     {selectedUserPoints.name?.charAt(0) || '?'}
                   </div>
                   <div className="flex-1">
@@ -5399,9 +5399,9 @@ const AdminDashboard: React.FC = () => {
                         +{selectedUserPoints.addPoints?.toLocaleString() || 0}<span className="text-lg">P</span>
                       </div>
                     </div>
-                    <div className="text-center bg-blue-100 p-4 rounded-lg shadow-sm border-2 border-blue-400">
-                      <div className="text-sm text-blue-800 mb-1 font-semibold">적립 후 포인트</div>
-                      <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-center bg-blue-100 p-4 rounded-lg shadow-sm border-2 border-vintage-400">
+                      <div className="text-sm text-vintage-800 mb-1 font-semibold">적립 후 포인트</div>
+                      <div className="text-2xl font-bold text-vintage-600">
                         {selectedUserPoints.afterPoints?.toLocaleString() || 0}<span className="text-lg">P</span>
                       </div>
                     </div>
@@ -5410,12 +5410,12 @@ const AdminDashboard: React.FC = () => {
               )}
 
               {/* 현재 포인트 현황 */}
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-6 rounded-xl">
+              <div className="bg-gradient-to-r from-navy-50 to-pink-50 border border-purple-200 p-6 rounded-xl">
                 <h4 className="font-bold text-lg text-gray-900 mb-4">전체 포인트 현황</h4>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center bg-white p-4 rounded-lg shadow-sm">
                     <div className="text-sm text-gray-600 mb-1">사용 가능</div>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-vintage-600">
                       {selectedUserPoints.available_points?.toLocaleString() || selectedUserPoints.currentPoints?.toLocaleString() || 0}<span className="text-lg">P</span>
                     </div>
                   </div>
@@ -5532,7 +5532,7 @@ const AdminDashboard: React.FC = () => {
                   type="number"
                   value={editPointAmount}
                   onChange={(e) => setEditPointAmount(Number(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
                   placeholder="포인트를 입력하세요"
                   min="0"
                 />
@@ -5555,7 +5555,7 @@ const AdminDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={handleSaveEditPoint}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   저장
                 </button>
@@ -5601,7 +5601,7 @@ const AdminDashboard: React.FC = () => {
                   type="number"
                   value={editWithdrawalAmount}
                   onChange={(e) => setEditWithdrawalAmount(Number(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
                   placeholder="출금 금액을 입력하세요"
                   min="0"
                 />
@@ -5619,7 +5619,7 @@ const AdminDashboard: React.FC = () => {
                   type="text"
                   value={editWithdrawalMethod}
                   onChange={(e) => setEditWithdrawalMethod(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
                   placeholder="예: 계좌이체"
                 />
               </div>
@@ -5633,7 +5633,7 @@ const AdminDashboard: React.FC = () => {
                   type="text"
                   value={editAccountInfo}
                   onChange={(e) => setEditAccountInfo(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
                   placeholder="예: 국민은행 123-456-789"
                 />
               </div>
@@ -5654,7 +5654,7 @@ const AdminDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={handleSaveEditWithdrawal}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   저장
                 </button>
@@ -5687,7 +5687,7 @@ const AdminDashboard: React.FC = () => {
                     onChange={(e) => setEmailEnabled(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vintage-600"></div>
                 </label>
               </div>
 
@@ -5701,7 +5701,7 @@ const AdminDashboard: React.FC = () => {
                   value={emailFromName}
                   onChange={(e) => setEmailFromName(e.target.value)}
                   placeholder="올띵버킷"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-vintage-500 focus:border-vintage-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   이메일 발신자로 표시될 이름입니다.
@@ -5718,7 +5718,7 @@ const AdminDashboard: React.FC = () => {
                   value={emailFromAddress}
                   onChange={(e) => setEmailFromAddress(e.target.value)}
                   placeholder="support@allthingbucket.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-vintage-500 focus:border-vintage-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   이메일 발신자 주소입니다. (Supabase SMTP 설정 필요)
@@ -5727,23 +5727,23 @@ const AdminDashboard: React.FC = () => {
 
               {/* 이메일 템플릿 정보 */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">📧 이메일 템플릿</h4>
-                <div className="text-xs text-blue-700 space-y-2">
+                <h4 className="text-sm font-medium text-vintage-900 mb-2">📧 이메일 템플릿</h4>
+                <div className="text-xs text-vintage-700 space-y-2">
                   <div>
-                    <p className="font-semibold text-blue-900 mb-1">체험단 신청 관련:</p>
+                    <p className="font-semibold text-vintage-900 mb-1">체험단 신청 관련:</p>
                     <p>• <strong>신청 승인</strong>: 체험단명과 다음 단계 안내</p>
                     <p>• <strong>신청 거절</strong>: 거절 사유와 다음 기회 안내</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-blue-900 mb-1">리뷰 검수 관련:</p>
+                    <p className="font-semibold text-vintage-900 mb-1">리뷰 검수 관련:</p>
                     <p>• <strong>리뷰 승인</strong>: 리뷰 승인 축하 및 리워드 안내 (진행 상태 포함)</p>
                     <p>• <strong>리뷰 반려</strong>: 검토 의견 및 수정 가이드 (재제출 안내)</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-blue-900 mb-1">포인트 관련:</p>
+                    <p className="font-semibold text-vintage-900 mb-1">포인트 관련:</p>
                     <p>• <strong>포인트 출금</strong>: 출금 금액과 승인일 포함</p>
                   </div>
-                  <p className="mt-2 font-medium text-blue-900">✨ 모든 이메일은 최신 트렌드를 반영한 반응형 HTML 디자인으로 전송됩니다.</p>
+                  <p className="mt-2 font-medium text-vintage-900">✨ 모든 이메일은 최신 트렌드를 반영한 반응형 HTML 디자인으로 전송됩니다.</p>
                 </div>
               </div>
 
@@ -5769,7 +5769,7 @@ const AdminDashboard: React.FC = () => {
                       toast.error('이메일 설정 저장에 실패했습니다.')
                     }
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   설정 저장
                 </button>

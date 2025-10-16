@@ -358,7 +358,7 @@ const Profile: React.FC = () => {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-600 mx-auto mb-4"></div>
           <p className="text-gray-600">프로필 정보를 불러오는 중...</p>
         </div>
       </div>
@@ -384,7 +384,7 @@ const Profile: React.FC = () => {
             {!editMode && (
               <button
                 onClick={() => setEditMode(true)}
-                className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 bg-purple-50 px-4 py-2 rounded-lg hover:bg-purple-100 transition-colors"
+                className="flex items-center space-x-2 text-navy-600 hover:text-navy-700 bg-purple-50 px-4 py-2 rounded-lg hover:bg-purple-100 transition-colors"
               >
                 <Edit3 className="w-4 h-4" />
                 <span>수정</span>
@@ -396,18 +396,18 @@ const Profile: React.FC = () => {
 
       {/* 🔔 프로필 정보 채우기 공지 */}
       {(!user?.name || !profile?.phone) && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
+        <div className="bg-gradient-to-r from-vintage-50 to-navy-50 border-l-4 border-vintage-400 p-4 mb-6 rounded-r-lg">
           <div className="flex items-start">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600" />
+                <User className="w-5 h-5 text-vintage-600" />
               </div>
             </div>
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-blue-800">
+              <h3 className="text-sm font-medium text-vintage-800">
                 프로필 정보를 완성해주세요!
               </h3>
-              <div className="mt-2 text-sm text-blue-700">
+              <div className="mt-2 text-sm text-vintage-700">
                 <p className="mb-2">
                   체험단 신청 시 자동으로 입력되는 정보입니다.
                   <strong>실명, 전화번호</strong>를 모두 입력해주세요.
@@ -420,7 +420,7 @@ const Profile: React.FC = () => {
               <div className="mt-3">
                 <button
                   onClick={() => setEditMode(true)}
-                  className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 bg-vintage-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Edit3 className="w-4 h-4 mr-1" />
                   지금 완성하기
@@ -433,20 +433,20 @@ const Profile: React.FC = () => {
 
       {/* 🏷️ 회원코드 표시 (수정 불가) */}
       {userCode && (
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 p-6 mb-6">
+        <div className="bg-gradient-to-r from-navy-50 to-pink-50 rounded-xl border-2 border-purple-200 p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Shield className="w-8 h-8 text-purple-600" />
+              <Shield className="w-8 h-8 text-navy-600" />
               <div>
-                <h2 className="text-xl font-bold text-purple-900">회원코드</h2>
-                <p className="text-purple-700 text-sm">본인에게 부여된 고유 회원코드입니다</p>
+                <h2 className="text-xl font-bold text-navy-900">회원코드</h2>
+                <p className="text-navy-700 text-sm">본인에게 부여된 고유 회원코드입니다</p>
               </div>
             </div>
             <div className="text-right">
               <div className="bg-white px-6 py-3 rounded-xl shadow-sm border-2 border-purple-300">
-                <p className="text-2xl font-bold text-purple-600">{userCode}</p>
+                <p className="text-2xl font-bold text-navy-600">{userCode}</p>
               </div>
-              <p className="text-xs text-purple-600 mt-2">수정 불가</p>
+              <p className="text-xs text-navy-600 mt-2">수정 불가</p>
             </div>
           </div>
         </div>
@@ -467,7 +467,7 @@ const Profile: React.FC = () => {
                 required
                 value={formData.full_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
               />
             ) : (
               <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
@@ -547,7 +547,7 @@ const Profile: React.FC = () => {
                       document.getElementById('birth-month')?.focus()
                     }
                   }}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center"
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent text-center"
                 />
                 <span className="flex items-center text-gray-500">년</span>
                 <input
@@ -573,7 +573,7 @@ const Profile: React.FC = () => {
                       document.getElementById('birth-day')?.focus()
                     }
                   }}
-                  className="w-16 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center"
+                  className="w-16 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent text-center"
                 />
                 <span className="flex items-center text-gray-500">월</span>
                 <input
@@ -596,7 +596,7 @@ const Profile: React.FC = () => {
                       birth_date: prev.birth_year && prev.birth_month && value ? `${prev.birth_year}-${prev.birth_month.padStart(2, '0')}-${value.padStart(2, '0')}` : ''
                     }))
                   }}
-                  className="w-16 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center"
+                  className="w-16 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent text-center"
                 />
                 <span className="flex items-center text-gray-500">일</span>
               </div>
@@ -615,7 +615,7 @@ const Profile: React.FC = () => {
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
               >
                 <option value="">선택하세요</option>
                 <option value="male">남성</option>
@@ -639,7 +639,7 @@ const Profile: React.FC = () => {
               <select
                 value={formData.experience_level}
                 onChange={(e) => setFormData(prev => ({ ...prev, experience_level: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
               >
                 <option value="beginner">초급 (1-5회)</option>
                 <option value="intermediate">중급 (6-20회)</option>
@@ -673,7 +673,7 @@ const Profile: React.FC = () => {
                   value={formData.instagram_id}
                   onChange={(e) => setFormData(prev => ({ ...prev, instagram_id: e.target.value }))}
                   placeholder="@your_instagram"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
                 />
                 <div className="ml-2">
                   <label className="block text-xs text-gray-500 mb-1">팔로워 수</label>
@@ -721,7 +721,7 @@ const Profile: React.FC = () => {
                   value={formData.youtube_channel}
                   onChange={(e) => setFormData(prev => ({ ...prev, youtube_channel: e.target.value }))}
                   placeholder="https://youtube.com/c/yourchannel"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
                 />
                 <div className="ml-2">
                   <label className="block text-xs text-gray-500 mb-1">구독자 수</label>
@@ -769,7 +769,7 @@ const Profile: React.FC = () => {
                   value={formData.tiktok_id}
                   onChange={(e) => setFormData(prev => ({ ...prev, tiktok_id: e.target.value }))}
                   placeholder="@your_tiktok"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
                 />
                 <div className="ml-2">
                   <label className="block text-xs text-gray-500 mb-1">팔로워 수</label>
@@ -817,7 +817,7 @@ const Profile: React.FC = () => {
                   value={formData.naver_blog}
                   onChange={(e) => setFormData(prev => ({ ...prev, naver_blog: e.target.value }))}
                   placeholder="https://blog.naver.com/yourblog"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
                 />
                 <div className="ml-2">
                   <label className="block text-xs text-gray-500 mb-1">이웃 수</label>
@@ -863,7 +863,7 @@ const Profile: React.FC = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, other_sns: e.target.value }))}
                 placeholder="기타 SNS 계정이나 플랫폼 정보를 입력하세요"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
               />
             ) : (
               <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg min-h-[80px]">
@@ -887,14 +887,14 @@ const Profile: React.FC = () => {
                     type="checkbox"
                     checked={formData.categories.includes(category)}
                     onChange={() => handleCategoryToggle(category)}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-navy-600 focus:ring-navy-500"
                   />
                   <span className="text-sm">{getCategoryLabel(category)}</span>
                 </label>
               ) : (
                 <span className={`inline-block px-3 py-1 rounded-full text-sm ${
                   profile?.categories?.includes(category)
-                    ? 'bg-purple-100 text-purple-800'
+                    ? 'bg-purple-100 text-navy-800'
                     : 'bg-gray-100 text-gray-400'
                 }`}>
                   {getCategoryLabel(category)}
@@ -913,9 +913,9 @@ const Profile: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <Award className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-purple-600">{profile.total_experiences || 0}</p>
-              <p className="text-sm text-purple-700 mt-1">참여한 체험단</p>
+              <Award className="w-8 h-8 text-navy-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-navy-600">{profile.total_experiences || 0}</p>
+              <p className="text-sm text-navy-700 mt-1">참여한 체험단</p>
             </div>
 
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
@@ -925,11 +925,11 @@ const Profile: React.FC = () => {
             </div>
 
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <TrendingUp className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-blue-600">
+              <TrendingUp className="w-8 h-8 text-vintage-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-vintage-600">
                 {Object.values(profile.follower_counts || {}).reduce((sum: number, count: any) => sum + (count || 0), 0).toLocaleString()}
               </p>
-              <p className="text-sm text-blue-700 mt-1">총 팔로워 수</p>
+              <p className="text-sm text-vintage-700 mt-1">총 팔로워 수</p>
             </div>
           </div>
         </div>
@@ -948,7 +948,7 @@ const Profile: React.FC = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {saving ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

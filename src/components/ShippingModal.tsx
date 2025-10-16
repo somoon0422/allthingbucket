@@ -91,7 +91,7 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Truck className="w-5 h-5 text-blue-600" />
+              <Truck className="w-5 h-5 text-vintage-600" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
@@ -135,7 +135,7 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
             <select
               value={courier}
               onChange={(e) => setCourier(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
               required
             >
               <option value="">택배사를 선택해주세요</option>
@@ -157,7 +157,7 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
               value={trackingNumber}
               onChange={(e) => setTrackingNumber(e.target.value)}
               placeholder="송장번호를 입력해주세요"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
               required
             />
           </div>
@@ -166,11 +166,11 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
               <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Package className="w-3 h-3 text-blue-600" />
+                <Package className="w-3 h-3 text-vintage-600" />
               </div>
               <div>
-                <p className="text-sm text-blue-800 font-medium">배송 정보 등록 안내</p>
-                <p className="text-sm text-blue-700 mt-1">
+                <p className="text-sm text-vintage-800 font-medium">배송 정보 등록 안내</p>
+                <p className="text-sm text-vintage-700 mt-1">
                   송장번호를 등록하면 체험단원이 배송 추적을 할 수 있습니다.
                 </p>
               </div>
@@ -189,7 +189,7 @@ export const ShippingModal: React.FC<ShippingModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 bg-vintage-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '처리 중...' : (application?.tracking_number ? '배송 정보 수정' : '배송 정보 등록')}
             </button>

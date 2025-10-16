@@ -70,10 +70,10 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({ isOpen,
           {/* 안내 문구 */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <div className="flex items-start space-x-2">
-              <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-900">
+              <CheckCircle2 className="w-5 h-5 text-vintage-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-vintage-900">
                 <p className="font-medium mb-1">정보 입력 후 바로 이용 가능</p>
-                <p className="text-xs text-blue-700">
+                <p className="text-xs text-vintage-700">
                   입력하신 정보는 암호화되어 안전하게 보관되며, 캠페인 신청 시에만 사용됩니다.
                 </p>
               </div>
@@ -83,7 +83,7 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({ isOpen,
           {/* 확인 버튼 */}
           <button
             onClick={onClose}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3.5 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            className="w-full bg-gradient-to-r from-navy-600 to-pink-600 text-white py-3.5 rounded-xl font-semibold hover:from-navy-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             지금 입력하기
           </button>

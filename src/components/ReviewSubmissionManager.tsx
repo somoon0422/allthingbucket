@@ -490,7 +490,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-lg p-6 max-w-md w-full">
           <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-vintage-600 mr-3"></div>
             <span className="text-gray-700">기존 리뷰 데이터를 불러오는 중...</span>
           </div>
         </div>
@@ -508,7 +508,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
             </h3>
             <p className="text-sm text-gray-600 mt-1">{experienceName}</p>
             {existingReview && (
-              <p className="text-xs text-blue-600 mt-1">기존 리뷰를 수정하여 재제출합니다</p>
+              <p className="text-xs text-vintage-600 mt-1">기존 리뷰를 수정하여 재제출합니다</p>
             )}
           </div>
           <button
@@ -523,8 +523,8 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
           {/* 안내 메시지 */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start">
-              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
+              <AlertCircle className="w-5 h-5 text-vintage-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div className="text-sm text-vintage-800">
                 <p className="font-medium mb-1">리뷰 제출 안내</p>
                 <ul className="list-disc list-inside space-y-1 text-xs">
                   <li>블로그 URL 또는 구매평 이미지 중 하나는 필수로 제출해야 합니다</li>
@@ -547,7 +547,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
                 value={blogUrl}
                 onChange={(e) => setBlogUrl(e.target.value)}
                 placeholder="https://blog.naver.com/... 또는 https://instagram.com/..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
               />
               
               {/* URL 유효성 표시 */}
@@ -563,7 +563,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
                         href={blogUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="ml-2 text-blue-600 hover:text-blue-700"
+                        className="ml-2 text-vintage-600 hover:text-vintage-700"
                       >
                         <ExternalLink className="w-4 h-4 inline" />
                       </a>
@@ -609,7 +609,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
               onChange={(e) => setAdditionalNotes(e.target.value)}
               placeholder="리뷰 관련 추가 설명이나 요청사항을 입력해주세요..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
             />
           </div>
 
@@ -655,7 +655,7 @@ const ReviewSubmissionManager: React.FC<ReviewSubmissionManagerProps> = ({
             <button
               onClick={handleSubmitReview}
               disabled={submitting || (!blogUrl.trim() && reviewImages.length === 0)}
-              className="flex-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              className="flex-2 px-6 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {submitting ? (
                 <>

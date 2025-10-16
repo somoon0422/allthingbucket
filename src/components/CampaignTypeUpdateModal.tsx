@@ -130,13 +130,13 @@ const CampaignTypeUpdateModal: React.FC<CampaignTypeUpdateModalProps> = ({
                     setSelectedTypes([])
                   }
                 }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-vintage-600 border-gray-300 rounded focus:ring-vintage-500"
               />
-              <label htmlFor="updateAll" className="ml-3 text-sm font-medium text-blue-900">
+              <label htmlFor="updateAll" className="ml-3 text-sm font-medium text-vintage-900">
                 모든 캠페인 ({experiences.length}개) 수정
               </label>
             </div>
-            <p className="text-xs text-blue-700 mt-1 ml-7">
+            <p className="text-xs text-vintage-700 mt-1 ml-7">
               현재 등록된 모든 캠페인의 타입을 변경합니다
             </p>
           </div>
@@ -148,7 +148,7 @@ const CampaignTypeUpdateModal: React.FC<CampaignTypeUpdateModalProps> = ({
                 <h3 className="text-lg font-medium text-gray-900">수정할 캠페인 타입 선택</h3>
                 <button
                   onClick={handleSelectAll}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  className="text-sm text-vintage-600 hover:text-vintage-800"
                 >
                   {selectedTypes.length === Object.keys(typeStats).length ? '전체 해제' : '전체 선택'}
                 </button>
@@ -163,7 +163,7 @@ const CampaignTypeUpdateModal: React.FC<CampaignTypeUpdateModalProps> = ({
                         id={`type-${type}`}
                         checked={selectedTypes.includes(type)}
                         onChange={() => handleTypeToggle(type)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-vintage-600 border-gray-300 rounded focus:ring-vintage-500"
                       />
                       <label htmlFor={`type-${type}`} className="ml-3 text-sm font-medium text-gray-900">
                         {typeLabels[type] || type}
@@ -182,7 +182,7 @@ const CampaignTypeUpdateModal: React.FC<CampaignTypeUpdateModalProps> = ({
             <select
               value={newType}
               onChange={(e) => setNewType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
             >
               <option value="purchase_review">구매평</option>
               <option value="product">제품 체험</option>
@@ -221,7 +221,7 @@ const CampaignTypeUpdateModal: React.FC<CampaignTypeUpdateModalProps> = ({
             <button
               onClick={handleSubmit}
               disabled={loading || (!updateAll && selectedTypes.length === 0)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+              className="px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
             >
               {loading ? (
                 <>

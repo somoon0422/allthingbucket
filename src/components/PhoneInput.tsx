@@ -111,7 +111,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   const showValidation = displayValue.length > 0 && !isFocused
 
   const getInputClassName = () => {
-    let baseClass = "w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+    let baseClass = "w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent transition-colors"
     
     if (disabled) {
       baseClass += " bg-gray-100 cursor-not-allowed"

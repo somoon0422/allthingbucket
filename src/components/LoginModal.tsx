@@ -160,7 +160,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={() => setIsLogin(false)}
-                  className="text-purple-600 hover:text-purple-700 font-medium"
+                  className="text-navy-600 hover:text-navy-700 font-medium"
                 >
                   회원가입
                 </button>
@@ -171,7 +171,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={() => setIsLogin(true)}
-                  className="text-purple-600 hover:text-purple-700 font-medium"
+                  className="text-navy-600 hover:text-navy-700 font-medium"
                 >
                   로그인
                 </button>
@@ -206,7 +206,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                 placeholder={isLogin ? "이메일 또는 아이디를 입력하세요" : "이메일을 입력하세요"}
               />
             </div>
@@ -226,7 +226,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                 placeholder="비밀번호를 입력하세요"
               />
               <button
@@ -256,7 +256,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     required
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                     placeholder="이름을 입력하세요"
                   />
                 </div>
@@ -275,7 +275,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     type="tel"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                     placeholder="010-1234-5678"
                   />
                 </div>
@@ -294,7 +294,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                     placeholder="주소를 입력하세요"
                   />
                 </div>
@@ -313,7 +313,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     type="date"
                     value={formData.birth_date}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                   />
                 </div>
               </div>
@@ -330,7 +330,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                   >
                     <option value="">성별을 선택하세요</option>
                     <option value="male">남성</option>
@@ -346,7 +346,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-navy-500 to-pink-500 text-white py-4 rounded-xl font-medium hover:from-navy-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50"
           >
             {loading ? '처리 중...' : (isLogin ? '로그인' : '회원가입')}
           </button>

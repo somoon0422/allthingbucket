@@ -117,7 +117,7 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({
           <div className="space-y-4">
             {!codeSent ? (
               <div className="text-center">
-                <Mail className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                <Mail className="w-16 h-16 text-vintage-500 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   이메일 인증
                 </h3>
@@ -127,7 +127,7 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({
                 <button
                   onClick={handleSendCode}
                   disabled={loading}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -162,7 +162,7 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
                     placeholder="6자리 인증번호를 입력하세요"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                     maxLength={6}
                   />
                 </div>

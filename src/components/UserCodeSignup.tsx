@@ -141,7 +141,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
       <div className="bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-purple-600" />
+            <User className="w-8 h-8 text-navy-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">회원 코드 입력</h2>
           <p className="text-gray-600">발급받은 회원 코드를 입력해주세요</p>
@@ -157,7 +157,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
               value={userCode}
               onChange={(e) => setUserCode(e.target.value.toUpperCase())}
               placeholder="예: USER001"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center text-lg font-mono"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-navy-500 text-center text-lg font-mono"
               required
             />
           </div>
@@ -165,14 +165,14 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+            className="w-full bg-navy-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
           >
             {loading ? '확인 중...' : '다음 단계'}
           </button>
         </form>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700">
+          <p className="text-sm text-vintage-700">
             💡 <strong>회원 코드가 없으신가요?</strong><br />
             관리자에게 문의하여 회원 코드를 발급받으세요.
           </p>
@@ -208,7 +208,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
               type="text"
               value={profileData.name}
               onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
               required
             />
           </div>
@@ -222,7 +222,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
               value={profileData.phone}
               onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
               placeholder="010-1234-5678"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
               required
             />
           </div>
@@ -238,7 +238,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
               type="date"
               value={profileData.birth_date}
               onChange={(e) => setProfileData(prev => ({ ...prev, birth_date: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
             />
           </div>
           <div>
@@ -251,7 +251,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
               value={profileData.address}
               onChange={(e) => setProfileData(prev => ({ ...prev, address: e.target.value }))}
               placeholder="서울시 강남구..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
             />
           </div>
         </div>
