@@ -1,6 +1,4 @@
-// 간단한 이메일 전송 API (Gmail SMTP 사용)
-// 실제 프로덕션에서는 더 안전한 방법 사용 권장
-
+// Gmail SMTP 이메일 전송 API
 const nodemailer = require('nodemailer')
 
 module.exports = async function handler(req, res) {
@@ -17,21 +15,26 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // 🔍 환경 변수 확인 로그 (디버그용)
-  console.log('🔑 GMAIL_USER:', process.env.GMAIL_USER ? '설정됨' : '❌ 없음')
-  console.log('🔑 GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? '설정됨' : '❌ 없음')
+  console.log('📧 send-email API 호출됨')
+  console.log('🔑 환경 변수:', {
+    hasGmailUser: !!process.env.GMAIL_USER,
+    hasGmailPassword: !!process.env.GMAIL_APP_PASSWORD,
+    gmailUser: process.env.GMAIL_USER || '없음'
+  })
 
   try {
     const { to, toName, subject, html, text } = req.body
 
+    // 필수 필드 확인
     if (!to || !subject || !html) {
+      console.error('❌ 필수 필드 누락:', { to: !!to, subject: !!subject, html: !!html })
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: to, subject, html'
       })
     }
 
-    // 🔥 환경 변수 확인
+    // 환경 변수 확인
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
       console.error('❌ 환경 변수 누락!')
       return res.status(500).json({
@@ -41,11 +44,13 @@ module.exports = async function handler(req, res) {
           hasGmailUser: !!process.env.GMAIL_USER,
           hasGmailPassword: !!process.env.GMAIL_APP_PASSWORD
         },
-        message: 'Gmail 인증 정보가 설정되지 않았습니다. Vercel 환경 변수를 확인하세요.'
+        message: '⚠️ Vercel 환경 변수를 설정하고 Redeploy 해주세요!'
       })
     }
 
-    // 🔥 Gmail SMTP transporter 생성 (함수 내부에서)
+    console.log('📧 Transporter 생성 시작...')
+
+    // Transporter 생성
     const transporter = nodemailer.createTransporter({
       service: 'gmail',
       auth: {
@@ -54,15 +59,16 @@ module.exports = async function handler(req, res) {
       }
     })
 
-    console.log('📧 Transporter 생성 완료')
+    console.log('✅ Transporter 생성 완료')
+    console.log('📨 이메일 전송 시작:', { to, subject })
 
     // 이메일 전송
     const info = await transporter.sendMail({
-      from: `"올띵버킷" <${process.env.GMAIL_USER || 'noreply@allthingbucket.com'}>`,
+      from: `"올띵버킷" <${process.env.GMAIL_USER}>`,
       to: to,
       subject: subject,
       html: html,
-      text: text
+      text: text || ''
     })
 
     console.log('✅ 이메일 전송 성공:', info.messageId)
@@ -74,9 +80,13 @@ module.exports = async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('❌ 이메일 전송 실패:', error)
+    console.error('❌ 이메일 전송 오류:', {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response
+    })
 
-    // 🔍 상세한 에러 정보 반환 (디버그용)
     return res.status(500).json({
       success: false,
       error: error.message,
