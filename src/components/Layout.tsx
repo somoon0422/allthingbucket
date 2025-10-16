@@ -88,7 +88,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* 로고 */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
-                <img src="/logo.png" alt="올띵버킷 로고" className="w-6 h-6 sm:w-8 sm:h-8" />
+                <img
+                  src="/logo.png"
+                  alt="올띵버킷 로고"
+                  className="w-6 h-6 sm:w-8 sm:h-8 object-cover"
+                  style={{ clipPath: 'ellipse(50% 50% at 50% 50%)', objectFit: 'cover' }}
+                />
                 <span className="text-lg sm:text-xl font-bold text-gray-900">올띵버킷</span>
                 <span className="hidden sm:inline text-sm text-gray-500">체험단</span>
               </Link>
@@ -268,7 +273,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="sm:col-span-2 lg:col-span-1">
               <div className="flex items-center space-x-2 mb-3 sm:mb-4">
-                <img src="/logo.png" alt="올띵버킷 로고" className="w-6 h-6 sm:w-8 sm:h-8" />
+                <img
+                  src="/logo.png"
+                  alt="올띵버킷 로고"
+                  className="w-6 h-6 sm:w-8 sm:h-8 object-cover"
+                  style={{ clipPath: 'ellipse(50% 50% at 50% 50%)', objectFit: 'cover' }}
+                />
                 <span className="text-base sm:text-lg font-bold text-gray-900">올띵버킷 체험단</span>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed">
