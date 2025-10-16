@@ -10,15 +10,15 @@ interface EmailTemplate {
 interface EmailData {
   to: string
   toName: string
-  type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection'
+  type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection' | 'custom'
   data: any
 }
 
 // 🔥 이메일 템플릿 생성
-const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection', data: any): EmailTemplate => {
+const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection' | 'custom', data: any): EmailTemplate => {
   const baseUrl = window.location.origin
   const currentDate = new Date().toLocaleDateString('ko-KR')
-  
+
   switch (type) {
     case 'approval':
       return {
@@ -433,6 +433,24 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 're
           </html>
         `,
         text: `📝 리뷰 보완 요청\n\n안녕하세요, ${data.userName}님!\n\n${data.campaignName} 캠페인에 제출하신 리뷰에 대한 검토 의견을 전달드립니다.\n\n💡 걱정하지 마세요!\n리뷰 수정은 여러 번 가능합니다.\n아래 의견을 참고하여 보완해주시면 됩니다.\n\n📋 검토 의견:\n${data.rejectionReason || '리뷰 내용을 보완해주세요.'}\n\n✏️ 리뷰 수정 가이드:\n1. 검토 의견 확인 - 위 의견을 꼼꼼히 확인해주세요\n2. 리뷰 수정 - 마이페이지에서 "리뷰 수정하기" 버튼 클릭\n3. 재제출 - 수정 완료 후 재제출하면 즉시 재검토됩니다\n\n💬 궁금한 점이 있으신가요?\n리뷰 작성이 어렵거나 의견이 불분명하시다면 언제든 문의해주세요.\n친절히 도와드리겠습니다!\n\n👉 리뷰 수정하기: ${baseUrl}/my-applications\n\n문의: support@allthingbucket.com`
+      }
+
+    case 'custom':
+      // 커스텀 이메일 - data.subject와 data.content를 직접 사용
+      return {
+        subject: data.subject || '알림',
+        html: `
+          <div style="font-family: 'Malgun Gothic', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+            <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <div style="white-space: pre-wrap; color: #333; line-height: 1.6;">${data.content || ''}</div>
+            </div>
+            <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; text-align: center; color: #999; font-size: 14px;">
+              <p>이 이메일은 올띵버킷에서 발송되었습니다.</p>
+              <p>문의사항이 있으시면 <a href="mailto:support@allthingbucket.com" style="color: #667eea;">support@allthingbucket.com</a>으로 연락해주세요.</p>
+            </div>
+          </div>
+        `,
+        text: data.content || ''
       }
 
     default:

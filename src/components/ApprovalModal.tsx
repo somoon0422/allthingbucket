@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react'
 import {X, Mail, CheckCircle, Edit} from 'lucide-react'
-import { naverCloudNotificationService } from '../services/naverCloudNotificationService'
+import { emailNotificationService } from '../services/emailNotificationService'
 import { campaignService } from '../services/campaignService'
 import toast from 'react-hot-toast'
 
@@ -522,50 +522,35 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         }
       }
 
-      console.log('🚀 이메일 발송 시작:', {
+      console.log('🚀 Gmail 이메일 발송 시작:', {
         to: editableRecipient.email,
         toName: editableRecipient.name,
         campaignName: experienceName
       })
-      
-      // 🔥 네이버 클라우드 통합 알림 전송
-      const userSettings = {
-        email: sendMethod === 'email' || sendMethod === 'all',
-        sms: sendMethod === 'sms' || sendMethod === 'all',
-        alimtalk: sendMethod === 'alimtalk' || sendMethod === 'all',
-        emailAddress: editableRecipient.email,
-        phoneNumber: editableRecipient.phone
-      }
 
-      const channels = sendMethod === 'all' ? ['email', 'sms', 'alimtalk'] as const : [sendMethod] as const
-
+      // 🔥 Gmail SMTP 이메일 발송 (emailNotificationService 사용)
       // 변수 치환된 제목과 내용
       const replacedSubject = replaceVariables(subject)
       const replacedContent = replaceVariables(emailContent)
 
-      const results = await naverCloudNotificationService.sendApprovalNotification(
-        userSettings,
-        editableRecipient.name,
-        experienceName,
-        channels,
-        replacedSubject,
-        replacedContent
-      )
-      
-      console.log('📧 알림 발송 결과:', results)
-      
-      const successResults = results.filter(r => r.success)
-      const failedResults = results.filter(r => !r.success)
-      
-      if (successResults.length > 0) {
-        toast.success(`${successResults.length}개 채널로 알림을 전송했습니다.`)
+      // 커스텀 이메일 발송
+      const result = await emailNotificationService.sendEmail({
+        to: editableRecipient.email,
+        toName: editableRecipient.name,
+        type: 'custom',
+        data: {
+          subject: replacedSubject,
+          content: replacedContent
+        }
+      })
+
+      console.log('📧 Gmail 이메일 발송 결과:', result)
+
+      if (result.success) {
+        toast.success(`${editableRecipient.name}님에게 승인 안내 이메일을 전송했습니다.`)
         onApprovalComplete()
-      }
-      
-      if (failedResults.length > 0) {
-        failedResults.forEach(result => {
-          toast.error(`${result.channel}: ${result.message}`)
-        })
+      } else {
+        toast.error(`이메일 발송 실패: ${result.message}`)
       }
 
     } catch (error) {
