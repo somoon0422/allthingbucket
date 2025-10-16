@@ -59,9 +59,23 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ 이메일 전송 실패:', error)
+
+    // 🔍 상세한 에러 정보 반환 (디버그용)
     return res.status(500).json({
       success: false,
       error: error.message,
+      errorCode: error.code,
+      errorDetails: {
+        command: error.command,
+        response: error.response,
+        responseCode: error.responseCode
+      },
+      envCheck: {
+        hasGmailUser: !!process.env.GMAIL_USER,
+        hasGmailPassword: !!process.env.GMAIL_APP_PASSWORD,
+        gmailUserLength: process.env.GMAIL_USER?.length || 0,
+        gmailPasswordLength: process.env.GMAIL_APP_PASSWORD?.length || 0
+      },
       message: '이메일 전송 중 오류가 발생했습니다.'
     })
   }
