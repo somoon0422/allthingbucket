@@ -9,8 +9,8 @@ import CampaignEditModal from '../components/CampaignEditModal'
 import ShippingModal from '../components/ShippingModal'
 import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, User, Calculator, Truck, Package, Edit} from 'lucide-react'
 import toast from 'react-hot-toast'
-// 카카오 알림톡은 사용하지 않음 - 이메일만 사용
-import { emailNotificationService } from '../services/emailNotificationService'
+// 네이버 클라우드 이메일 서비스 사용
+import { naverCloudEmailService } from '../services/naverCloudEmailService'
 
 const AdminDashboard: React.FC = () => {
   const { isAuthenticated, isAdminUser } = useAuth()
@@ -84,14 +84,14 @@ const AdminDashboard: React.FC = () => {
       let result
       switch (type) {
         case 'approval':
-          result = await emailNotificationService.sendApprovalEmail(
+          result = await naverCloudEmailService.sendApprovalEmail(
             userProfile.email,
             userProfile.name || '사용자',
             data.campaignName
           )
           break
         case 'rejection':
-          result = await emailNotificationService.sendRejectionEmail(
+          result = await naverCloudEmailService.sendRejectionEmail(
             userProfile.email,
             userProfile.name || '사용자',
             data.campaignName,
@@ -99,7 +99,7 @@ const AdminDashboard: React.FC = () => {
           )
           break
         case 'withdrawal':
-          result = await emailNotificationService.sendWithdrawalApprovalEmail(
+          result = await naverCloudEmailService.sendWithdrawalApprovalEmail(
             userProfile.email,
             userProfile.name || '사용자',
             data.amount
