@@ -3,15 +3,6 @@
 
 const nodemailer = require('nodemailer')
 
-// Gmail SMTP 설정 (앱 비밀번호 사용)
-const transporter = nodemailer.createTransporter({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
-  }
-})
-
 export default async function handler(req, res) {
   // CORS 설정
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -34,11 +25,36 @@ export default async function handler(req, res) {
     const { to, toName, subject, html, text } = req.body
 
     if (!to || !subject || !html) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing required fields: to, subject, html' 
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: to, subject, html'
       })
     }
+
+    // 🔥 환경 변수 확인
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      console.error('❌ 환경 변수 누락!')
+      return res.status(500).json({
+        success: false,
+        error: 'Gmail credentials not configured',
+        envCheck: {
+          hasGmailUser: !!process.env.GMAIL_USER,
+          hasGmailPassword: !!process.env.GMAIL_APP_PASSWORD
+        },
+        message: 'Gmail 인증 정보가 설정되지 않았습니다. Vercel 환경 변수를 확인하세요.'
+      })
+    }
+
+    // 🔥 Gmail SMTP transporter 생성 (함수 내부에서)
+    const transporter = nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD
+      }
+    })
+
+    console.log('📧 Transporter 생성 완료')
 
     // 이메일 전송
     const info = await transporter.sendMail({
