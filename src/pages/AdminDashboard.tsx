@@ -1036,14 +1036,13 @@ const AdminDashboard: React.FC = () => {
       let authUsers = []
       try {
         const { data: authData, error } = await supabase.auth.admin.listUsers()
-        if (error) {
-          console.warn('⚠️ auth.users 조회 실패:', error)
-        } else {
-          authUsers = authData?.users || []
+        if (!error && authData) {
+          authUsers = authData.users || []
           console.log('🔥 auth.users 데이터 로드:', authUsers.length, '명')
         }
+        // 에러는 조용히 무시 (클라이언트에서는 권한 없음)
       } catch (authError) {
-        console.warn('⚠️ auth.users 조회 실패:', authError)
+        // 에러는 조용히 무시 (클라이언트에서는 권한 없음)
       }
 
       // 3. public.users와 auth.users 병합
