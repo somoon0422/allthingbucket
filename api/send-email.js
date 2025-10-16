@@ -3,7 +3,7 @@ let nodemailer;
 try {
   nodemailer = require('nodemailer');
   console.log('📦 nodemailer 로드 성공:', typeof nodemailer);
-  console.log('📦 createTransporter:', typeof nodemailer.createTransporter);
+  console.log('📦 createTransport:', typeof nodemailer.createTransport);
 } catch (error) {
   console.error('❌ nodemailer 로드 실패:', error);
 }
@@ -58,27 +58,27 @@ module.exports = async function handler(req, res) {
     console.log('📧 Transporter 생성 시작...')
     console.log('🔍 nodemailer 체크:', {
       type: typeof nodemailer,
-      hasCreateTransporter: typeof nodemailer?.createTransporter,
+      hasCreateTransport: typeof nodemailer?.createTransport,
       keys: nodemailer ? Object.keys(nodemailer).slice(0, 5) : []
     })
 
     // nodemailer 체크
-    if (!nodemailer || typeof nodemailer.createTransporter !== 'function') {
-      console.error('❌ nodemailer.createTransporter가 함수가 아님!')
+    if (!nodemailer || typeof nodemailer.createTransport !== 'function') {
+      console.error('❌ nodemailer.createTransport가 함수가 아님!')
       return res.status(500).json({
         success: false,
         error: 'nodemailer not loaded correctly',
         debug: {
           nodemailerType: typeof nodemailer,
-          hasCreateTransporter: typeof nodemailer?.createTransporter,
+          hasCreateTransport: typeof nodemailer?.createTransport,
           nodemailerKeys: nodemailer ? Object.keys(nodemailer) : []
         },
         message: 'nodemailer 로드 실패'
       })
     }
 
-    // Transporter 생성
-    const transporter = nodemailer.createTransporter({
+    // Transporter 생성 (올바른 함수명: createTransport)
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.GMAIL_USER,
