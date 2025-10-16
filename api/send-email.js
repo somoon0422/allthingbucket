@@ -26,6 +26,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // 🔍 환경 변수 확인 로그 (디버그용)
+  console.log('🔑 GMAIL_USER:', process.env.GMAIL_USER ? '설정됨' : '❌ 없음')
+  console.log('🔑 GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? '설정됨' : '❌ 없음')
+
   try {
     const { to, toName, subject, html, text } = req.body
 
