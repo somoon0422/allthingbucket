@@ -1025,49 +1025,31 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
-  // 회원 데이터 로드 (public.users + auth.users 병합)
+  // 회원 데이터 로드 (public.users 테이블만 사용)
   const loadUsers = async () => {
     try {
-      // 1. public.users 테이블에서 조회
+      // public.users 테이블에서 조회
       const usersData = await (dataService.entities as any).users.list()
       console.log('🔥 public.users 데이터 로드:', usersData)
 
-      // 2. Supabase Auth의 실제 인증 데이터 조회
-      let authUsers = []
-      try {
-        const { data: authData, error } = await supabase.auth.admin.listUsers()
-        if (!error && authData) {
-          authUsers = authData.users || []
-          console.log('🔥 auth.users 데이터 로드:', authUsers.length, '명')
-        }
-        // 에러는 조용히 무시 (클라이언트에서는 권한 없음)
-      } catch (authError) {
-        // 에러는 조용히 무시 (클라이언트에서는 권한 없음)
-      }
-
-      // 3. public.users와 auth.users 병합
+      // 사용자 데이터 포맷팅
       const formattedUsers = (usersData || []).map((user: any) => {
-        // auth.users에서 실제 로그인 정보 찾기
-        const authUser = authUsers.find((au: any) =>
-          au.id === user.user_id || au.id === user.id || au.email === user.email
-        )
-
         return {
           id: user.id,
           user_id: user.user_id || user.id,
           email: user.email,
-          name: user.name || user.display_name || authUser?.user_metadata?.full_name || '이름 없음',
+          name: user.name || user.display_name || '이름 없음',
           display_name: user.display_name || user.name || '이름 없음',
-          created_at: authUser?.created_at || user.created_at,
-          email_confirmed_at: authUser?.email_confirmed_at || user.email_confirmed_at,
-          last_sign_in_at: authUser?.last_sign_in_at || user.last_sign_in_at, // ⭐ auth.users 우선
+          created_at: user.created_at,
+          email_confirmed_at: user.email_confirmed_at,
+          last_sign_in_at: user.last_sign_in_at,
           phone: user.phone,
-          avatar_url: user.avatar_url || authUser?.user_metadata?.avatar_url,
-          provider: authUser?.app_metadata?.provider || user.provider
+          avatar_url: user.avatar_url,
+          provider: user.provider
         }
       })
 
-      console.log('✅ 병합된 사용자 데이터:', formattedUsers.length, '명')
+      console.log('✅ 사용자 데이터:', formattedUsers.length, '명')
       setUsers(formattedUsers || [])
     } catch (error) {
       console.error('❌ 회원 데이터 로드 실패:', error)
