@@ -1,5 +1,12 @@
 // Gmail SMTP 이메일 전송 API
-const nodemailer = require('nodemailer')
+let nodemailer;
+try {
+  nodemailer = require('nodemailer');
+  console.log('📦 nodemailer 로드 성공:', typeof nodemailer);
+  console.log('📦 createTransporter:', typeof nodemailer.createTransporter);
+} catch (error) {
+  console.error('❌ nodemailer 로드 실패:', error);
+}
 
 module.exports = async function handler(req, res) {
   // CORS 설정
@@ -49,6 +56,26 @@ module.exports = async function handler(req, res) {
     }
 
     console.log('📧 Transporter 생성 시작...')
+    console.log('🔍 nodemailer 체크:', {
+      type: typeof nodemailer,
+      hasCreateTransporter: typeof nodemailer?.createTransporter,
+      keys: nodemailer ? Object.keys(nodemailer).slice(0, 5) : []
+    })
+
+    // nodemailer 체크
+    if (!nodemailer || typeof nodemailer.createTransporter !== 'function') {
+      console.error('❌ nodemailer.createTransporter가 함수가 아님!')
+      return res.status(500).json({
+        success: false,
+        error: 'nodemailer not loaded correctly',
+        debug: {
+          nodemailerType: typeof nodemailer,
+          hasCreateTransporter: typeof nodemailer?.createTransporter,
+          nodemailerKeys: nodemailer ? Object.keys(nodemailer) : []
+        },
+        message: 'nodemailer 로드 실패'
+      })
+    }
 
     // Transporter 생성
     const transporter = nodemailer.createTransporter({
