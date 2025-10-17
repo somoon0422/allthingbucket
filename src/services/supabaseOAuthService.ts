@@ -353,16 +353,7 @@ export class SupabaseOAuthService {
           user_id: oauthUser.id,
           name: oauthUser.name,
           email: oauthUser.email,
-          profile_image: oauthUser.avatar_url || '',
-          total_points: 0,
-          available_points: 0,
-          used_points: 0,
-          pending_points: 0,
-          last_login: new Date().toISOString(),
-          login_count: 0,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          profile_image: oauthUser.avatar_url || ''
         })
         
         this.saveLog('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
@@ -491,16 +482,7 @@ export class SupabaseOAuthService {
           user_id: oauthUser.id,
           name: oauthUser.name,
           email: oauthUser.email,
-          profile_image: oauthUser.avatar_url || '',
-          total_points: 0,
-          available_points: 0,
-          used_points: 0,
-          pending_points: 0,
-          last_login: new Date().toISOString(),
-          login_count: 0,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          profile_image: oauthUser.avatar_url || ''
         })
         
         console.log('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)

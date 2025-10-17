@@ -179,12 +179,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           phone: userData.phone,
           address: userData.address,
           birth_date: userData.birth_date,
-          gender: userData.gender,
-          total_points: 0,
-          available_points: 0,
-          used_points: 0,
-          pending_points: 0,
-          created_at: new Date().toISOString()
+          gender: userData.gender
         }
 
         await (dataService.entities as any).user_profiles.create(profileData)
@@ -540,14 +535,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                       user_id: session.user.id,
                       name: newUser.name,
                       email: session.user.email,
-                      profile_image: newUser.profile_image_url || '',
-                      total_points: 0,
-                      available_points: 0,
-                      used_points: 0,
-                      pending_points: 0,
-                      last_login: new Date().toISOString(),
-                      login_count: 0,
-                      is_active: true
+                      profile_image: newUser.profile_image_url || ''
                     })
                     console.log('✅ 사용자 프로필 생성 완료 - 이름:', newUser.name)
                   } catch (profileError) {
