@@ -118,20 +118,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return
           }
         } catch (profileError) {
-          console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
-          
-          // 프로필이 없는 경우 기본 사용자 정보로 처리
-          const processedUser = processUserData({
-            id: result.data.user.id,
-            email: result.data.user.email || '',
-            name: result.data.user.user_metadata?.full_name || result.data.user.user_metadata?.name || result.data.user.email?.split('@')[0] || '사용자',
-            role: 'user',
-            profile: null
-          })
-          
-          if (processedUser) {
-            setUser(processedUser)
-            return
+          console.log('⚠️ 사용자 프로필을 찾을 수 없습니다. 자동으로 생성합니다.')
+
+          // 프로필이 없는 경우 자동으로 생성
+          try {
+            const userName = result.data.user.user_metadata?.full_name || result.data.user.user_metadata?.name || result.data.user.email?.split('@')[0] || '사용자'
+
+            await (dataService.entities as any).user_profiles.create({
+              user_id: result.data.user.id,
+              name: userName
+            })
+
+            console.log('✅ user_profiles 자동 생성 완료 (loginWithCredentials):', userName)
+
+            // 생성된 프로필로 다시 조회
+            const newProfile = await (dataService.entities as any).user_profiles.get(result.data.user.id)
+
+            const processedUser = processUserData({
+              id: result.data.user.id,
+              email: result.data.user.email || '',
+              name: userName,
+              role: 'user',
+              profile: newProfile
+            })
+
+            if (processedUser) {
+              setUser(processedUser)
+              return
+            }
+          } catch (createProfileError) {
+            console.error('❌ user_profiles 자동 생성 실패:', createProfileError)
+
+            // 프로필 생성 실패해도 로그인은 진행 (기본 정보로)
+            const processedUser = processUserData({
+              id: result.data.user.id,
+              email: result.data.user.email || '',
+              name: result.data.user.user_metadata?.full_name || result.data.user.user_metadata?.name || result.data.user.email?.split('@')[0] || '사용자',
+              role: 'user',
+              profile: null
+            })
+
+            if (processedUser) {
+              setUser(processedUser)
+              return
+            }
           }
         }
       } else {
@@ -490,21 +520,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   return
                 }
               } catch (profileError) {
-                console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
+                console.log('⚠️ 사용자 프로필을 찾을 수 없습니다. 자동으로 생성합니다.')
 
-                // 프로필이 없는 경우 기본 사용자 정보로 처리
-                const processedUser = processUserData({
-                  id: session.user.id,
-                  user_id: session.user.id,
-                  email: session.user.email,
-                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || session.user.email?.split('@')[0] || '사용자',
-                  role: 'user',
-                  profile: null
-                })
+                // 프로필이 없는 경우 자동으로 생성
+                try {
+                  const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || session.user.email?.split('@')[0] || '사용자'
 
-                if (processedUser) {
-                  setUser(processedUser)
-                  return
+                  await (dataService.entities as any).user_profiles.create({
+                    user_id: session.user.id,
+                    name: userName
+                  })
+
+                  console.log('✅ user_profiles 자동 생성 완료:', userName)
+
+                  // 생성된 프로필로 다시 조회
+                  const newProfile = await (dataService.entities as any).user_profiles.get(session.user.id)
+
+                  const processedUser = processUserData({
+                    id: session.user.id,
+                    user_id: session.user.id,
+                    email: session.user.email,
+                    name: userName,
+                    role: 'user',
+                    profile: newProfile
+                  })
+
+                  if (processedUser) {
+                    setUser(processedUser)
+                    return
+                  }
+                } catch (createProfileError) {
+                  console.error('❌ user_profiles 자동 생성 실패:', createProfileError)
+
+                  // 프로필 생성 실패해도 로그인은 진행 (기본 정보로)
+                  const processedUser = processUserData({
+                    id: session.user.id,
+                    user_id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || dbUser.name || session.user.email?.split('@')[0] || '사용자',
+                    role: 'user',
+                    profile: null
+                  })
+
+                  if (processedUser) {
+                    setUser(processedUser)
+                    return
+                  }
                 }
               }
             } else {
@@ -609,21 +670,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 return
               }
             } catch (profileError) {
-              console.log('사용자 프로필을 찾을 수 없습니다. 기본 사용자 정보로 진행합니다.')
-              
-              // 프로필이 없는 경우 기본 사용자 정보로 처리
-              const processedUser = processUserData({
-                id: session.user.id,
-                user_id: session.user.id,
-                email: session.user.email,
-                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자',
-                role: 'user',
-                profile: null
-              })
-              
-              if (processedUser) {
-                setUser(processedUser)
-                return
+              console.log('⚠️ 사용자 프로필을 찾을 수 없습니다. 자동으로 생성합니다.')
+
+              // 프로필이 없는 경우 자동으로 생성
+              try {
+                const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자'
+
+                await (dataService.entities as any).user_profiles.create({
+                  user_id: session.user.id,
+                  name: userName
+                })
+
+                console.log('✅ user_profiles 자동 생성 완료 (users 테이블 조회 실패 후):', userName)
+
+                // 생성된 프로필로 다시 조회
+                const newProfile = await (dataService.entities as any).user_profiles.get(session.user.id)
+
+                const processedUser = processUserData({
+                  id: session.user.id,
+                  user_id: session.user.id,
+                  email: session.user.email,
+                  name: userName,
+                  role: 'user',
+                  profile: newProfile
+                })
+
+                if (processedUser) {
+                  setUser(processedUser)
+                  return
+                }
+              } catch (createProfileError) {
+                console.error('❌ user_profiles 자동 생성 실패:', createProfileError)
+
+                // 프로필 생성 실패해도 로그인은 진행 (기본 정보로)
+                const processedUser = processUserData({
+                  id: session.user.id,
+                  user_id: session.user.id,
+                  email: session.user.email,
+                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자',
+                  role: 'user',
+                  profile: null
+                })
+
+                if (processedUser) {
+                  setUser(processedUser)
+                  return
+                }
               }
             }
           }
