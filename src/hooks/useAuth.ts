@@ -175,7 +175,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profileData = {
           id: result.data.user.id,
           name: userData.name,
-          email: userData.email,
           phone: userData.phone,
           address: userData.address,
           birth_date: userData.birth_date,
@@ -534,7 +533,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     await (dataService.entities as any).user_profiles.create({
                       user_id: session.user.id,
                       name: newUser.name,
-                      email: session.user.email,
                       profile_image: newUser.profile_image_url || ''
                     })
                     console.log('✅ 사용자 프로필 생성 완료 - 이름:', newUser.name)

@@ -352,7 +352,6 @@ export class SupabaseOAuthService {
         await (dataService.entities as any).user_profiles.create({
           user_id: oauthUser.id,
           name: oauthUser.name,
-          email: oauthUser.email,
           profile_image: oauthUser.avatar_url || ''
         })
         
@@ -481,7 +480,6 @@ export class SupabaseOAuthService {
         await (dataService.entities as any).user_profiles.create({
           user_id: oauthUser.id,
           name: oauthUser.name,
-          email: oauthUser.email,
           profile_image: oauthUser.avatar_url || ''
         })
         
