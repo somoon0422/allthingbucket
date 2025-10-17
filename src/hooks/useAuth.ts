@@ -173,7 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // 사용자 프로필 생성 (기본 정보만)
         const profileData = {
-          id: result.data.user.id,
+          user_id: result.data.user.id,
           name: userData.name,
           phone: userData.phone,
           address: userData.address,
@@ -532,8 +532,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   try {
                     await (dataService.entities as any).user_profiles.create({
                       user_id: session.user.id,
-                      name: newUser.name,
-                      profile_image: newUser.profile_image_url || ''
+                      name: newUser.name
                     })
                     console.log('✅ 사용자 프로필 생성 완료 - 이름:', newUser.name)
                   } catch (profileError) {

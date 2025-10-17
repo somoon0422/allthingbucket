@@ -351,8 +351,7 @@ export class SupabaseOAuthService {
         // 사용자 프로필 생성
         await (dataService.entities as any).user_profiles.create({
           user_id: oauthUser.id,
-          name: oauthUser.name,
-          profile_image: oauthUser.avatar_url || ''
+          name: oauthUser.name
         })
         
         this.saveLog('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
@@ -479,8 +478,7 @@ export class SupabaseOAuthService {
         // 새 프로필 생성
         await (dataService.entities as any).user_profiles.create({
           user_id: oauthUser.id,
-          name: oauthUser.name,
-          profile_image: oauthUser.avatar_url || ''
+          name: oauthUser.name
         })
         
         console.log('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
