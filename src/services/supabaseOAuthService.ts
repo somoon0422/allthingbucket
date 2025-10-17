@@ -354,9 +354,11 @@ export class SupabaseOAuthService {
           this.saveLog('🔄 사용자 프로필 생성 시작...')
           const profileCreateResult = await (dataService.entities as any).user_profiles.create({
             user_id: oauthUser.id,
-            name: oauthUser.name
+            name: oauthUser.name,
+            phone: null
           })
           this.saveLog('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
+          this.saveLog('📋 생성된 프로필 정보:', { user_id: oauthUser.id, name: oauthUser.name, phone: null })
           this.saveLog('✅ 프로필 생성 결과:', profileCreateResult)
         } catch (profileError: any) {
           this.saveLog('❌ 사용자 프로필 생성 실패:', {
@@ -494,15 +496,18 @@ export class SupabaseOAuthService {
       // 새 프로필 생성 (에러 발생 시 상위로 전파)
       const profileResult = await (dataService.entities as any).user_profiles.create({
         user_id: oauthUser.id,
-        name: oauthUser.name
+        name: oauthUser.name,
+        phone: null
       })
 
       this.saveLog('✅ ensureUserProfile: 사용자 프로필 생성 완료', {
         user_id: oauthUser.id,
         name: oauthUser.name,
+        phone: null,
         result: profileResult
       })
       console.log('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
+      console.log('📋 생성된 프로필 정보:', { user_id: oauthUser.id, name: oauthUser.name, phone: null })
     } else {
       this.saveLog('✅ 기존 사용자 프로필 확인됨')
       console.log('✅ 기존 사용자 프로필 확인됨')

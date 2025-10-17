@@ -126,10 +126,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             await (dataService.entities as any).user_profiles.create({
               user_id: result.data.user.id,
-              name: userName
+              name: userName,
+              phone: null
             })
 
             console.log('✅ user_profiles 자동 생성 완료 (loginWithCredentials):', userName)
+            console.log('📋 생성된 프로필 정보:', { user_id: result.data.user.id, name: userName, phone: null })
 
             // 생성된 프로필로 다시 조회
             const newProfile = await (dataService.entities as any).user_profiles.get(result.data.user.id)
@@ -528,10 +530,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
                   await (dataService.entities as any).user_profiles.create({
                     user_id: session.user.id,
-                    name: userName
+                    name: userName,
+                    phone: dbUser.phone || null
                   })
 
                   console.log('✅ user_profiles 자동 생성 완료:', userName)
+                  console.log('📋 생성된 프로필 정보:', { user_id: session.user.id, name: userName, phone: dbUser.phone })
 
                   // 생성된 프로필로 다시 조회
                   const newProfile = await (dataService.entities as any).user_profiles.get(session.user.id)
@@ -594,9 +598,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   try {
                     await (dataService.entities as any).user_profiles.create({
                       user_id: session.user.id,
-                      name: newUser.name
+                      name: newUser.name,
+                      phone: null
                     })
                     console.log('✅ 사용자 프로필 생성 완료 - 이름:', newUser.name)
+                    console.log('📋 생성된 프로필 정보:', { user_id: session.user.id, name: newUser.name, phone: null })
                   } catch (profileError) {
                     console.warn('⚠️ 사용자 프로필 생성 실패 (무시):', profileError)
                   }
@@ -678,10 +684,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
                 await (dataService.entities as any).user_profiles.create({
                   user_id: session.user.id,
-                  name: userName
+                  name: userName,
+                  phone: null
                 })
 
                 console.log('✅ user_profiles 자동 생성 완료 (users 테이블 조회 실패 후):', userName)
+                console.log('📋 생성된 프로필 정보:', { user_id: session.user.id, name: userName, phone: null })
 
                 // 생성된 프로필로 다시 조회
                 const newProfile = await (dataService.entities as any).user_profiles.get(session.user.id)

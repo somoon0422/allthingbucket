@@ -86,20 +86,22 @@ async function createMissingProfiles() {
 
     for (const user of usersWithoutProfiles) {
       try {
-        console.log(`  📝 생성 중: ${user.name || user.email} (${user.user_id})`)
+        const userName = user.name || user.email?.split('@')[0] || '사용자'
+        console.log(`  📝 생성 중: ${userName} (${user.user_id})`)
 
         const { error: createError } = await supabase
           .from('user_profiles')
           .insert({
             user_id: user.user_id,
-            name: user.name || user.email?.split('@')[0] || '사용자'
+            name: userName,
+            phone: user.phone || null
           })
 
         if (createError) {
           console.error(`    ❌ 실패: ${createError.message}`)
           failCount++
         } else {
-          console.log(`    ✅ 성공`)
+          console.log(`    ✅ 성공 - 이름: ${userName}, 전화번호: ${user.phone || '없음'}`)
           successCount++
         }
       } catch (error: any) {
