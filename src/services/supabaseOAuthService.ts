@@ -49,15 +49,19 @@ export class SupabaseOAuthService {
   static async signInWithGoogle(): Promise<{ user: OAuthUser; token: string }> {
     try {
       console.log('🔥 Supabase Google OAuth 로그인 시작...')
-      
-      // 🔥 개발 환경에서는 로컬 URL 사용, 프로덕션에서는 현재 도메인 사용
-      // 🔥 Supabase OAuth 콜백 URL 사용
-      const redirectTo = 'https://nwwwesxzlpotabtcvkgj.supabase.co/auth/v1/callback'
+
+      // 🔥 Google OAuth "보안 브라우저 사용" 정책 준수를 위해 앱의 실제 URL로 리다이렉트
+      // 개발 환경에서는 localhost, 프로덕션에서는 도메인 사용
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      const redirectTo = isDevelopment
+        ? `${window.location.origin}/`
+        : 'https://allthingbucket.com/'
 
       console.log('🔍 Supabase OAuth 설정:', {
         currentOrigin: window.location.origin,
         redirectTo,
-        hostname: window.location.hostname
+        hostname: window.location.hostname,
+        isDevelopment
       })
 
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -66,7 +70,7 @@ export class SupabaseOAuthService {
           redirectTo: redirectTo,
           queryParams: {
             access_type: 'offline',
-            prompt: 'select_account',  // 구글: 매번 계정 선택 화면 표시
+            prompt: 'consent',  // 구글: 매번 동의 화면 표시 (select_account보다 더 안전)
           },
           scopes: 'openid email profile'
         }
@@ -101,10 +105,12 @@ export class SupabaseOAuthService {
   static async signInWithKakao(): Promise<{ user: OAuthUser; token: string }> {
     try {
       console.log('🔥 Supabase Kakao OAuth 로그인 시작...')
-      
-      // 🔥 개발 환경에서는 로컬 URL 사용, 프로덕션에서는 현재 도메인 사용
-      // 🔥 Supabase OAuth 콜백 URL 사용
-      const redirectTo = 'https://nwwwesxzlpotabtcvkgj.supabase.co/auth/v1/callback'
+
+      // 개발 환경에서는 localhost, 프로덕션에서는 도메인 사용
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      const redirectTo = isDevelopment
+        ? `${window.location.origin}/`
+        : 'https://allthingbucket.com/'
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
@@ -361,17 +367,30 @@ export class SupabaseOAuthService {
         
         this.saveLog('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
 
-        // 사용자 포인트 초기화
-        await (dataService.entities as any).user_points.create({
-          user_id: oauthUser.id,
-          total_points: 0,
-          available_points: 0,
-          withdrawn_points: 0,
-          tax_amount: 0,
-          bank_account: {},
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        // 사용자 포인트 초기화 (실패해도 로그인은 계속 진행)
+        try {
+          this.saveLog('🔄 사용자 포인트 초기화 중...')
+
+          // users 테이블에 사용자가 존재하는지 한 번 더 확인
+          const usersCheck = await (dataService.entities as any).users.list()
+          const userExists = Array.isArray(usersCheck) && usersCheck.some((u: any) => u.user_id === oauthUser.id || u.email === oauthUser.email)
+
+          if (!userExists) {
+            this.saveLog('⚠️ users 테이블에 사용자가 없어서 user_points 생성 건너뜀')
+            console.log('⚠️ users 테이블에 사용자가 없어서 user_points 생성을 건너뜁니다.')
+          } else {
+            await (dataService.entities as any).user_points.create({
+              user_id: oauthUser.id,
+              points: 0,
+              earned_points: 0,
+              used_points: 0
+            })
+            this.saveLog('✅ 사용자 포인트 초기화 완료')
+          }
+        } catch (pointsError: any) {
+          this.saveLog('⚠️ 사용자 포인트 초기화 실패 (무시):', pointsError)
+          console.warn('⚠️ 사용자 포인트 초기화 실패 (무시):', pointsError?.message || pointsError)
+        }
 
         console.log('✅ 새 사용자 및 관련 데이터 생성 완료')
       }
