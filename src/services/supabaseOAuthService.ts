@@ -294,6 +294,7 @@ export class SupabaseOAuthService {
           email: oauthUser.email,
           name: oauthUser.name || null, // name이 비어있으면 null로 설정
           phone: null, // OAuth에서는 전화번호를 받지 않음
+          provider: oauthUser.provider, // 'google' 또는 'kakao'
           google_id: oauthUser.provider === 'google' ? oauthUser.id : null,
           profile_image_url: oauthUser.avatar_url || null,
           is_active: true
@@ -348,13 +349,25 @@ export class SupabaseOAuthService {
           throw createError
         }
 
-        // 사용자 프로필 생성
-        await (dataService.entities as any).user_profiles.create({
-          user_id: oauthUser.id,
-          name: oauthUser.name
-        })
-        
-        this.saveLog('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
+        // 사용자 프로필 생성 (명시적 에러 처리)
+        try {
+          this.saveLog('🔄 사용자 프로필 생성 시작...')
+          const profileCreateResult = await (dataService.entities as any).user_profiles.create({
+            user_id: oauthUser.id,
+            name: oauthUser.name
+          })
+          this.saveLog('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
+          this.saveLog('✅ 프로필 생성 결과:', profileCreateResult)
+        } catch (profileError: any) {
+          this.saveLog('❌ 사용자 프로필 생성 실패:', {
+            error: profileError,
+            message: profileError?.message,
+            user_id: oauthUser.id,
+            name: oauthUser.name
+          })
+          // 프로필 생성 실패 시 에러를 던져서 로그인이 실패하도록 함
+          throw new Error(`사용자 프로필 생성 실패: ${profileError?.message || profileError}`)
+        }
 
         // 사용자 포인트 초기화 (실패해도 로그인은 계속 진행)
         try {
@@ -385,8 +398,10 @@ export class SupabaseOAuthService {
       }
 
     } catch (error) {
+      this.saveLog('❌ syncUserToLocalDatabase 최종 실패:', error)
       console.error('❌ 사용자 정보 동기화 실패:', error)
-      // 동기화 실패해도 로그인은 계속 진행
+      // 프로필 생성 등 중요한 작업 실패 시 에러를 상위로 전파
+      throw error
     }
   }
 
@@ -464,46 +479,49 @@ export class SupabaseOAuthService {
 
   // 사용자 프로필 확인 및 생성
   private static async ensureUserProfile(oauthUser: OAuthUser): Promise<void> {
-    try {
-      console.log('🔍 사용자 프로필 확인 중...', oauthUser)
+    this.saveLog('🔍 사용자 프로필 확인 중...', oauthUser)
+    console.log('🔍 사용자 프로필 확인 중...', oauthUser)
 
-      // 기존 프로필 확인
-      const existingProfiles = await (dataService.entities as any).user_profiles.list()
-      const profiles = Array.isArray(existingProfiles) ? existingProfiles : []
-      const existingProfile = profiles.find((p: any) => p.user_id === oauthUser.id)
+    // 기존 프로필 확인
+    const existingProfiles = await (dataService.entities as any).user_profiles.list()
+    const profiles = Array.isArray(existingProfiles) ? existingProfiles : []
+    const existingProfile = profiles.find((p: any) => p.user_id === oauthUser.id)
 
-      if (!existingProfile) {
-        console.log('📝 새 사용자 프로필 생성 중...')
+    if (!existingProfile) {
+      this.saveLog('📝 새 사용자 프로필 생성 중...')
+      console.log('📝 새 사용자 프로필 생성 중...')
 
-        // 새 프로필 생성
-        await (dataService.entities as any).user_profiles.create({
-          user_id: oauthUser.id,
-          name: oauthUser.name
-        })
-        
-        console.log('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
+      // 새 프로필 생성 (에러 발생 시 상위로 전파)
+      const profileResult = await (dataService.entities as any).user_profiles.create({
+        user_id: oauthUser.id,
+        name: oauthUser.name
+      })
 
-        console.log('✅ 사용자 프로필 생성 완료')
-      } else {
-        console.log('✅ 기존 사용자 프로필 확인됨')
-        
-        // 기존 프로필의 이름이 없거나 비어있는 경우 업데이트
-        if (!existingProfile.name && oauthUser.name) {
-          console.log('🔄 기존 프로필 이름 업데이트 중...')
-          try {
-            await (dataService.entities as any).user_profiles.update(existingProfile.id, {
-              name: oauthUser.name,
-              updated_at: new Date().toISOString()
-            })
-            console.log('✅ 기존 프로필 이름 업데이트 완료:', oauthUser.name)
-          } catch (updateError) {
-            console.warn('⚠️ 기존 프로필 이름 업데이트 실패 (무시):', updateError)
-          }
+      this.saveLog('✅ ensureUserProfile: 사용자 프로필 생성 완료', {
+        user_id: oauthUser.id,
+        name: oauthUser.name,
+        result: profileResult
+      })
+      console.log('✅ 사용자 프로필 생성 완료 - 이름:', oauthUser.name)
+    } else {
+      this.saveLog('✅ 기존 사용자 프로필 확인됨')
+      console.log('✅ 기존 사용자 프로필 확인됨')
+
+      // 기존 프로필의 이름이 없거나 비어있는 경우 업데이트 (선택사항 - 실패해도 무시)
+      if (!existingProfile.name && oauthUser.name) {
+        console.log('🔄 기존 프로필 이름 업데이트 중...')
+        try {
+          await (dataService.entities as any).user_profiles.update(existingProfile.id, {
+            name: oauthUser.name,
+            updated_at: new Date().toISOString()
+          })
+          this.saveLog('✅ 기존 프로필 이름 업데이트 완료:', oauthUser.name)
+          console.log('✅ 기존 프로필 이름 업데이트 완료:', oauthUser.name)
+        } catch (updateError) {
+          this.saveLog('⚠️ 기존 프로필 이름 업데이트 실패 (무시):', updateError)
+          console.warn('⚠️ 기존 프로필 이름 업데이트 실패 (무시):', updateError)
         }
       }
-    } catch (error) {
-      console.error('❌ 사용자 프로필 생성 실패:', error)
-      // 프로필 생성 실패해도 로그인은 계속 진행
     }
   }
 

@@ -517,6 +517,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   email: session.user.email,
                   name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '사용자',
                   phone: null,
+                  provider: session.user.app_metadata?.provider || 'google',
                   google_id: session.user.app_metadata?.provider === 'google' ? session.user.id : null,
                   profile_image_url: session.user.user_metadata?.avatar_url || null,
                   is_active: true
