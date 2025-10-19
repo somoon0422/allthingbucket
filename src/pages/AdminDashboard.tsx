@@ -2219,23 +2219,8 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && isAdminUser()) {
       loadAllData()
-    } else if (isAuthenticated !== undefined) {
-      // 인증 체크가 완료된 후 관리자가 아니면 로그인 페이지로
-      navigate('/admin/login')
     }
-  }, [isAuthenticated, isAdminUser, navigate])
-
-  // 관리자 권한 체크 - 리다이렉트 중일 때는 로딩 표시
-  if (!loading && (!isAuthenticated || !isAdminUser())) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-vintage-200 border-t-vintage-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">관리자 로그인 페이지로 이동 중...</p>
-        </div>
-      </div>
-    )
-  }
+  }, [isAuthenticated, loadAllData])
 
   if (loading) {
     return (
