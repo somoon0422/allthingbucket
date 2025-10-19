@@ -62,7 +62,7 @@ class AlimtalkService {
       to: phoneNumber,
       templateCode: 'approvalnotification', // 카카오에 등록한 템플릿 코드
       variables: {
-        userName,
+        name: userName,  // 🔥 userName → name으로 변경
         campaignName,
         url: 'https://allthingbucket.com/my-applications'
       },
