@@ -70,9 +70,10 @@ export default async function handler(req, res) {
     const url = `/alimtalk/v2/services/${NCP_ALIMTALK_SERVICE_ID}/messages`;
     const signature = makeSignature(timestamp, method, url, NCP_SECRET_KEY);
 
+    // 알림톡 메시지 구성
     const message = {
       to: to.replace(/-/g, ''), // 하이픈 제거
-      content: variables, // variables 객체를 content로 전달
+      templateParameter: variables, // 템플릿 변수는 templateParameter로 전달
       countryCode: '82'
     };
 
