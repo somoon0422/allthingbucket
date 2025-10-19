@@ -2219,10 +2219,23 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && isAdminUser()) {
       loadAllData()
-        } else {
+    } else if (isAuthenticated !== undefined) {
+      // 인증 체크가 완료된 후에만 리다이렉트
       navigate('/')
     }
   }, [isAuthenticated, isAdminUser, navigate])
+
+  // 관리자 권한 체크
+  if (!isAuthenticated || !isAdminUser()) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">권한을 확인하는 중...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
