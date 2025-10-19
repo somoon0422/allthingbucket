@@ -21,6 +21,7 @@ import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
 import Consultation from './pages/Consultation'
 
 // 관리자 페이지
+import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminChat from './pages/AdminChat'
 
@@ -54,6 +55,7 @@ function App() {
 
           <Routes>
             {/* 관리자 라우트 */}
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/chat" element={<AdminChat />} />
             
