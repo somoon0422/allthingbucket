@@ -88,7 +88,7 @@ export default async function handler(req, res) {
       messages: [message]
     };
 
-    console.log('💬 알림톡 API 호출 데이터:', alimtalkData);
+    console.log('💬 알림톡 API 호출 데이터:', JSON.stringify(alimtalkData, null, 2));
 
     const response = await fetch(`https://sens.apigw.ntruss.com${url}`, {
       method: 'POST',
@@ -102,7 +102,8 @@ export default async function handler(req, res) {
     });
 
     const responseData = await response.json();
-    console.log('💬 알림톡 API 응답:', responseData);
+    console.log('💬 알림톡 API 응답:', JSON.stringify(responseData, null, 2));
+    console.log('📊 응답 상태:', response.status, response.statusText);
 
     if (response.ok) {
       return res.status(200).json({
@@ -112,7 +113,10 @@ export default async function handler(req, res) {
         data: responseData
       });
     } else {
-      throw new Error(`알림톡 API 오류: ${responseData.errorMessage || response.statusText}`);
+      // 더 자세한 오류 정보 반환
+      const errorDetail = responseData.errors ? JSON.stringify(responseData.errors) : responseData.errorMessage || response.statusText;
+      console.error('❌ 상세 오류:', errorDetail);
+      throw new Error(`알림톡 API 오류: ${errorDetail}`);
     }
 
   } catch (error) {
