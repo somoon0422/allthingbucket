@@ -15,9 +15,8 @@ class AlimtalkService {
   }): Promise<{ success: boolean; message: string }> {
     try {
       // 🔥 Vercel API를 통해 알림톡 발송 (CORS 문제 해결)
-      const apiUrl = import.meta.env.PROD
-        ? 'https://allthingbucket.vercel.app/api/naver-cloud/send-alimtalk'
-        : '/api/naver-cloud/send-alimtalk'
+      // 로컬 개발 환경에서도 배포된 API를 사용 (Vercel Functions는 로컬에서 작동 안함)
+      const apiUrl = 'https://allthingbucket.vercel.app/api/naver-cloud/send-alimtalk'
 
       const body = {
         to: params.to,
