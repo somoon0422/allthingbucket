@@ -744,6 +744,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
   }
 
   const content = (
+    <>
     <div className={embedded ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8'}>
         {/* 헤더 */}
         <div className="mb-6 sm:mb-8">
@@ -1537,7 +1538,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 
   if (embedded) {
