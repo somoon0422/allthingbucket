@@ -32,14 +32,14 @@ export default async function handler(req, res) {
 
   try {
     console.log('💬 알림톡 발송 요청 시작:', req.body);
-    
-    const { to, title, content, templateCode, buttons } = req.body;
 
-    if (!to || !content) {
-      console.log('❌ 필수 필드 누락:', { to, content });
-      return res.status(400).json({ 
-        success: false, 
-        message: '필수 필드가 누락되었습니다 (to, content)' 
+    const { to, templateCode, variables, failoverConfig } = req.body;
+
+    if (!to || !templateCode || !variables) {
+      console.log('❌ 필수 필드 누락:', { to, templateCode, variables });
+      return res.status(400).json({
+        success: false,
+        message: '필수 필드가 누락되었습니다 (to, templateCode, variables)'
       });
     }
 
@@ -70,22 +70,22 @@ export default async function handler(req, res) {
     const url = `/alimtalk/v2/services/${NCP_ALIMTALK_SERVICE_ID}/messages`;
     const signature = makeSignature(timestamp, method, url, NCP_SECRET_KEY);
 
-    const alimtalkData = {
-      plusFriendId: NCP_PLUS_FRIEND_ID,
-      templateCode: templateCode || 'APPROVAL_TEMPLATE',
-      messages: [
-        {
-          to: to.replace(/-/g, ''), // 하이픈 제거
-          content: content,
-          countryCode: '82'
-        }
-      ]
+    const message = {
+      to: to.replace(/-/g, ''), // 하이픈 제거
+      content: variables, // variables 객체를 content로 전달
+      countryCode: '82'
     };
 
-    // 버튼이 있는 경우 추가
-    if (buttons && buttons.length > 0) {
-      alimtalkData.messages[0].buttons = buttons;
+    // Failover 설정이 있는 경우 추가
+    if (failoverConfig) {
+      message.failoverConfig = failoverConfig;
     }
+
+    const alimtalkData = {
+      plusFriendId: NCP_PLUS_FRIEND_ID,
+      templateCode: templateCode,
+      messages: [message]
+    };
 
     console.log('💬 알림톡 API 호출 데이터:', alimtalkData);
 

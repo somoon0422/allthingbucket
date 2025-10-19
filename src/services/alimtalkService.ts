@@ -1,37 +1,8 @@
-import CryptoJS from 'crypto-js'
-
 // 네이버 클라우드 Biz Message (카카오 알림톡) 서비스
-class AlimtalkService {
-  private accessKey: string
-  private secretKey: string
-  private serviceId: string
-  private plusFriendId: string = '@올띵버킷' // 카카오 플러스친구 ID
+// Vercel API를 통해 알림톡 발송 (CORS 문제 해결)
+class AlimtalkService {}
 
-  constructor() {
-    this.accessKey = import.meta.env.VITE_SMS_ACCESS_KEY || ''
-    this.secretKey = import.meta.env.VITE_SMS_SECRET_KEY || ''
-    this.serviceId = import.meta.env.VITE_NCP_ALIMTALK_SERVICE_ID || ''
-  }
-
-  // HMAC SHA256 서명 생성
-  private makeSignature(method: string, url: string, timestamp: string): string {
-    const space = ' '
-    const newLine = '\n'
-
-    const hmac = CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA256, this.secretKey)
-    hmac.update(method)
-    hmac.update(space)
-    hmac.update(url)
-    hmac.update(newLine)
-    hmac.update(timestamp)
-    hmac.update(newLine)
-    hmac.update(this.accessKey)
-
-    const hash = hmac.finalize()
-    return hash.toString(CryptoJS.enc.Base64)
-  }
-
-  // 알림톡 발송 API 호출
+  // 알림톡 발송 API 호출 (Vercel API를 통해)
   private async sendAlimtalk(params: {
     to: string
     templateCode: string
@@ -44,42 +15,35 @@ class AlimtalkService {
     }
   }): Promise<{ success: boolean; message: string }> {
     try {
-      const timestamp = Date.now().toString()
-      const method = 'POST'
-      const url = `/alimtalk/v2/services/${this.serviceId}/messages`
-
-      const signature = this.makeSignature(method, url, timestamp)
+      // 🔥 Vercel API를 통해 알림톡 발송 (CORS 문제 해결)
+      const apiUrl = import.meta.env.PROD
+        ? 'https://allthingbucket.vercel.app/api/naver-cloud/send-alimtalk'
+        : '/api/naver-cloud/send-alimtalk'
 
       const body = {
-        plusFriendId: this.plusFriendId,
+        to: params.to,
         templateCode: params.templateCode,
-        messages: [
-          {
-            to: params.to.replace(/-/g, ''), // 하이픈 제거
-            content: params.variables,
-            ...(params.failoverConfig && {
-              failoverConfig: params.failoverConfig
-            })
-          }
-        ]
+        variables: params.variables,
+        ...(params.failoverConfig && {
+          failoverConfig: params.failoverConfig
+        })
       }
 
-      const response = await fetch(`https://sens.apigw.ntruss.com${url}`, {
+      console.log('💬 알림톡 발송 요청:', body)
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-ncp-apigw-timestamp': timestamp,
-          'x-ncp-iam-access-key': this.accessKey,
-          'x-ncp-apigw-signature-v2': signature
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
       })
 
       const result = await response.json()
 
-      if (response.ok) {
+      if (response.ok && result.success) {
         console.log('✅ 알림톡 발송 성공:', result)
-        return { success: true, message: '알림톡이 발송되었습니다.' }
+        return { success: true, message: result.message || '알림톡이 발송되었습니다.' }
       } else {
         console.error('❌ 알림톡 발송 실패:', result)
         return { success: false, message: result.message || '알림톡 발송에 실패했습니다.' }

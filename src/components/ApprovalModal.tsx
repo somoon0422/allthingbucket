@@ -607,7 +607,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
           toast.success('알림톡이 발송되었습니다')
         } else {
           failCount++
-          toast.warning(`알림톡 발송 실패: ${result.message}`)
+          toast.error(`알림톡 발송 실패: ${result.message}`)
         }
       }
 
