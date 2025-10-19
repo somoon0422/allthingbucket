@@ -1245,9 +1245,9 @@ const MyApplications: React.FC = () => {
       {showDetailModal && selectedApplication && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6 border-b">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg sm:text-xl font-bold">신청 상세 정보</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">신청 상세 정보</h3>
                 <button
                   onClick={() => setShowDetailModal(false)}
                   className="text-gray-400 hover:text-gray-600 p-1"
@@ -1260,32 +1260,34 @@ const MyApplications: React.FC = () => {
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* 체험단 정보 */}
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base">
-                  <Gift className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base text-gray-900">
+                  <Gift className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-gray-700" />
                   체험단 정보
                 </h4>
                 <div className="space-y-2">
-                  <div className="text-sm sm:text-base">
-                    <span className="font-medium">체험단명:</span>{' '}
-                    {safeObject(selectedApplication, 'experience') ? 
-                      (safeString(safeObject(selectedApplication, 'experience'), 'campaign_name') || 
-                       safeString(safeObject(selectedApplication, 'experience'), 'product_name') || 
-                       safeString(safeObject(selectedApplication, 'experience'), 'experience_name', '정보 없음')) :
-                      safeString(selectedApplication, 'experience_name', '정보 없음')}
+                  <div className="text-sm sm:text-base text-gray-900">
+                    <span className="font-medium text-gray-900">체험단명:</span>{' '}
+                    <span className="text-gray-700">
+                      {safeObject(selectedApplication, 'experience') ?
+                        (safeString(safeObject(selectedApplication, 'experience'), 'campaign_name') ||
+                         safeString(safeObject(selectedApplication, 'experience'), 'product_name') ||
+                         safeString(safeObject(selectedApplication, 'experience'), 'experience_name', '정보 없음')) :
+                        safeString(selectedApplication, 'experience_name', '정보 없음')}
+                    </span>
                   </div>
                   {safeObject(selectedApplication, 'experience') && safeString(safeObject(selectedApplication, 'experience'), 'brand_name') && (
-                    <div className="text-sm sm:text-base">
-                      <span className="font-medium">브랜드:</span>{' '}
-                      {safeString(safeObject(selectedApplication, 'experience'), 'brand_name')}
+                    <div className="text-sm sm:text-base text-gray-900">
+                      <span className="font-medium text-gray-900">브랜드:</span>{' '}
+                      <span className="text-gray-700">{safeString(safeObject(selectedApplication, 'experience'), 'brand_name')}</span>
                     </div>
                   )}
                   {safeObject(selectedApplication, 'experience') && (() => {
                     const exp = safeObject(selectedApplication, 'experience')
                     const points = exp?.rewards || exp?.reward_points || 0
                     return points > 0 ? (
-                      <div className="text-sm sm:text-base">
-                        <span className="font-medium">리워드:</span>{' '}
-                        {points}P
+                      <div className="text-sm sm:text-base text-gray-900">
+                        <span className="font-medium text-gray-900">리워드:</span>{' '}
+                        <span className="text-gray-700">{points}P</span>
                       </div>
                     ) : null
                   })()}
@@ -1294,18 +1296,18 @@ const MyApplications: React.FC = () => {
 
               {/* 신청자 정보 */}
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base">
-                  <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base text-gray-900">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-gray-700" />
                   신청자 정보
                 </h4>
                 <div className="space-y-2">
-                  <div className="text-sm sm:text-base"><span className="font-medium">이름:</span> {safeString(selectedApplication, 'name', user?.name || '정보 없음')}</div>
-                  <div className="text-sm sm:text-base"><span className="font-medium">이메일:</span> {safeString(selectedApplication, 'email', user?.email || '정보 없음')}</div>
+                  <div className="text-sm sm:text-base text-gray-900"><span className="font-medium text-gray-900">이름:</span> <span className="text-gray-700">{safeString(selectedApplication, 'name', user?.name || '정보 없음')}</span></div>
+                  <div className="text-sm sm:text-base text-gray-900"><span className="font-medium text-gray-900">이메일:</span> <span className="text-gray-700">{safeString(selectedApplication, 'email', user?.email || '정보 없음')}</span></div>
                   {safeString(selectedApplication, 'phone') && (
-                    <div className="text-sm sm:text-base"><span className="font-medium">연락처:</span> {safeString(selectedApplication, 'phone')}</div>
+                    <div className="text-sm sm:text-base text-gray-900"><span className="font-medium text-gray-900">연락처:</span> <span className="text-gray-700">{safeString(selectedApplication, 'phone')}</span></div>
                   )}
                   {safeString(selectedApplication, 'address') && (
-                    <div className="text-sm sm:text-base"><span className="font-medium">주소:</span> {safeString(selectedApplication, 'address')}</div>
+                    <div className="text-sm sm:text-base text-gray-900"><span className="font-medium text-gray-900">주소:</span> <span className="text-gray-700">{safeString(selectedApplication, 'address')}</span></div>
                   )}
                 </div>
               </div>
@@ -1313,20 +1315,20 @@ const MyApplications: React.FC = () => {
               {/* SNS 정보 */}
               {(safeString(selectedApplication, 'instagram_handle') || safeString(selectedApplication, 'blog_url') || safeString(selectedApplication, 'youtube_channel')) && (
                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <h4 className="font-bold mb-3 text-sm sm:text-base">SNS 정보</h4>
+                  <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">SNS 정보</h4>
                   <div className="space-y-2">
                     {safeString(selectedApplication, 'instagram_handle') && (
-                      <div className="flex items-center space-x-2 text-sm sm:text-base">
-                        <Instagram className="w-4 h-4" />
-                        <span>@{safeString(selectedApplication, 'instagram_handle')}</span>
+                      <div className="flex items-center space-x-2 text-sm sm:text-base text-gray-900">
+                        <Instagram className="w-4 h-4 text-gray-700" />
+                        <span className="text-gray-700">@{safeString(selectedApplication, 'instagram_handle')}</span>
                       </div>
                     )}
                     {safeString(selectedApplication, 'blog_url') && (
-                      <div className="flex items-center space-x-2 text-sm sm:text-base">
-                        <MessageSquare className="w-4 h-4" />
-                        <a 
-                          href={safeString(selectedApplication, 'blog_url')} 
-                          target="_blank" 
+                      <div className="flex items-center space-x-2 text-sm sm:text-base text-gray-900">
+                        <MessageSquare className="w-4 h-4 text-gray-700" />
+                        <a
+                          href={safeString(selectedApplication, 'blog_url')}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-vintage-600 hover:text-vintage-800 break-all"
                         >
@@ -1335,11 +1337,11 @@ const MyApplications: React.FC = () => {
                       </div>
                     )}
                     {safeString(selectedApplication, 'youtube_channel') && (
-                      <div className="flex items-center space-x-2 text-sm sm:text-base">
-                        <ExternalLink className="w-4 h-4" />
-                        <a 
-                          href={safeString(selectedApplication, 'youtube_channel')} 
-                          target="_blank" 
+                      <div className="flex items-center space-x-2 text-sm sm:text-base text-gray-900">
+                        <ExternalLink className="w-4 h-4 text-gray-700" />
+                        <a
+                          href={safeString(selectedApplication, 'youtube_channel')}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-vintage-600 hover:text-vintage-800 break-all"
                         >
@@ -1354,7 +1356,7 @@ const MyApplications: React.FC = () => {
               {/* 신청 사유 */}
               {safeString(selectedApplication, 'application_reason') && (
                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <h4 className="font-bold mb-3 text-sm sm:text-base">신청 사유</h4>
+                  <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">신청 사유</h4>
                   <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'application_reason')}
                   </p>
@@ -1364,7 +1366,7 @@ const MyApplications: React.FC = () => {
               {/* 체험 계획 */}
               {safeString(selectedApplication, 'experience_plan') && (
                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <h4 className="font-bold mb-3 text-sm sm:text-base">체험 계획</h4>
+                  <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">체험 계획</h4>
                   <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'experience_plan')}
                   </p>
@@ -1374,7 +1376,7 @@ const MyApplications: React.FC = () => {
               {/* 추가 정보 */}
               {safeString(selectedApplication, 'additional_info') && (
                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <h4 className="font-bold mb-3 text-sm sm:text-base">추가 정보</h4>
+                  <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">추가 정보</h4>
                   <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'additional_info')}
                   </p>
@@ -1383,35 +1385,39 @@ const MyApplications: React.FC = () => {
 
               {/* 신청 상태 */}
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <h4 className="font-bold mb-3 text-sm sm:text-base">신청 상태</h4>
+                <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">신청 상태</h4>
                 <div className="space-y-2">
-                  <div className="text-sm sm:text-base">
-                    <span className="font-medium">현재 상태:</span>{' '}
+                  <div className="text-sm sm:text-base text-gray-900">
+                    <span className="font-medium text-gray-900">현재 상태:</span>{' '}
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusInfo(safeString(selectedApplication, 'status', 'pending')).color}`}>
                       {getStatusInfo(safeString(selectedApplication, 'status', 'pending')).label}
                     </span>
                   </div>
-                  <div className="text-sm sm:text-base">
-                    <span className="font-medium">신청일:</span>{' '}
-                    {new Date(safeString(selectedApplication, 'applied_at') || safeString(selectedApplication, 'created_at') || Date.now()).toLocaleString('ko-KR')}
+                  <div className="text-sm sm:text-base text-gray-900">
+                    <span className="font-medium text-gray-900">신청일:</span>{' '}
+                    <span className="text-gray-700">
+                      {new Date(safeString(selectedApplication, 'applied_at') || safeString(selectedApplication, 'created_at') || Date.now()).toLocaleString('ko-KR')}
+                    </span>
                   </div>
                   {safeString(selectedApplication, 'processed_at') && (
-                    <div className="text-sm sm:text-base">
-                      <span className="font-medium">처리일:</span>{' '}
-                      {new Date(safeString(selectedApplication, 'processed_at')).toLocaleString('ko-KR')}
+                    <div className="text-sm sm:text-base text-gray-900">
+                      <span className="font-medium text-gray-900">처리일:</span>{' '}
+                      <span className="text-gray-700">
+                        {new Date(safeString(selectedApplication, 'processed_at')).toLocaleString('ko-KR')}
+                      </span>
                     </div>
                   )}
                   {safeString(selectedApplication, 'admin_message') && (
-                    <div className="text-sm sm:text-base">
-                      <span className="font-medium">관리자 메시지:</span>
+                    <div className="text-sm sm:text-base text-gray-900">
+                      <span className="font-medium text-gray-900">관리자 메시지:</span>
                       <p className="text-gray-700 bg-blue-50 p-3 rounded mt-1 text-sm sm:text-base">
                         {safeString(selectedApplication, 'admin_message')}
                       </p>
                     </div>
                   )}
                   {safeString(selectedApplication, 'rejection_reason') && (
-                    <div className="text-sm sm:text-base">
-                      <span className="font-medium">반려 사유:</span>
+                    <div className="text-sm sm:text-base text-gray-900">
+                      <span className="font-medium text-gray-900">반려 사유:</span>
                       <p className="text-red-700 bg-red-50 p-3 rounded mt-1 text-sm sm:text-base">
                         {safeString(selectedApplication, 'rejection_reason')}
                       </p>
