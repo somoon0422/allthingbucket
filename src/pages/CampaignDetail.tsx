@@ -570,10 +570,8 @@ const CampaignDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* 탭 컨텐츠 */}
-            {activeTab === 'info' && (
-              <div>
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            {/* 공통 컨텐츠: 메인 이미지 (모든 탭에서 보임) */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
               {/* 🔥 메인 이미지 갤러리 */}
               {displayMainImages.length > 0 && (
                 <div className="aspect-video bg-gray-200 relative overflow-hidden">
@@ -713,87 +711,87 @@ const CampaignDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* 상세 정보 섹션들 */}
-            <div className="space-y-6">
-              {/* 상세 이미지 갤러리 - 새로 작성 */}
-              <DetailImageGallery 
-                campaign={campaign} 
-                isExpanded={isDetailImagesExpanded} 
-                onToggle={toggleDetailImages} 
-              />
+            {/* 캠페인 정보 탭 */}
+            {activeTab === 'info' && (
+              <div className="space-y-6">
+                {/* 상세 이미지 갤러리 */}
+                <DetailImageGallery
+                  campaign={campaign}
+                  isExpanded={isDetailImagesExpanded}
+                  onToggle={toggleDetailImages}
+                />
 
-
-              {/* 제공내역 */}
-              {providedItems && providedItems !== '제품 제공' && (
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                    <Gift className="w-5 h-5 mr-2 text-green-600" />
-                    제공내역
-                  </h2>
-                  <p className="text-gray-700">{providedItems}</p>
-                </div>
-              )}
-
-              {/* 키워드 */}
-              {keywords.length > 0 && (
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                      <Hash className="w-5 h-5 mr-2 text-navy-600" />
-                      키워드
+                {/* 제공내역 */}
+                {providedItems && providedItems !== '제품 제공' && (
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                      <Gift className="w-5 h-5 mr-2 text-green-600" />
+                      제공내역
                     </h2>
-                    <button
-                      onClick={() => {
-                        const keywordText = keywords.map(keyword => `#${keyword}`).join(' ')
-                        navigator.clipboard.writeText(keywordText)
-                        toast.success('키워드가 복사되었습니다!')
-                      }}
-                      className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                      키워드복사
-                    </button>
+                    <p className="text-gray-700">{providedItems}</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {keywords.map((keyword, index) => (
-                      <span key={index} className="px-3 py-1 bg-purple-100 text-navy-800 rounded-full text-sm">
-                        #{keyword}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* 리뷰 작성시 안내사항 */}
-              {reviewGuidelines && (
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                    <Target className="w-5 h-5 mr-2 text-orange-600" />
-                    리뷰 작성시 안내사항
-                  </h2>
-                  <div className="prose prose-gray max-w-none">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                      {reviewGuidelines}
-                    </p>
+                {/* 키워드 */}
+                {keywords.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                        <Hash className="w-5 h-5 mr-2 text-navy-600" />
+                        키워드
+                      </h2>
+                      <button
+                        onClick={() => {
+                          const keywordText = keywords.map(keyword => `#${keyword}`).join(' ')
+                          navigator.clipboard.writeText(keywordText)
+                          toast.success('키워드가 복사되었습니다!')
+                        }}
+                        className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                      >
+                        키워드복사
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {keywords.map((keyword, index) => (
+                        <span key={index} className="px-3 py-1 bg-purple-100 text-navy-800 rounded-full text-sm">
+                          #{keyword}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* 추가 안내사항 */}
-              {additionalGuidelines && (
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
-                    추가 안내사항
-                  </h2>
-                  <div className="prose prose-gray max-w-none">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                      {additionalGuidelines}
-                    </p>
+                {/* 리뷰 작성시 안내사항 */}
+                {reviewGuidelines && (
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                      <Target className="w-5 h-5 mr-2 text-orange-600" />
+                      리뷰 작성시 안내사항
+                    </h2>
+                    <div className="prose prose-gray max-w-none">
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {reviewGuidelines}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-              )}
+                )}
+
+                {/* 추가 안내사항 */}
+                {additionalGuidelines && (
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                      <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
+                      추가 안내사항
+                    </h2>
+                    <div className="prose prose-gray max-w-none">
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {additionalGuidelines}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 신청자 한마디 탭 */}
             {activeTab === 'comments' && (
