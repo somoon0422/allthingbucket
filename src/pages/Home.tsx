@@ -252,13 +252,13 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-              <div className="text-center group">
+              <Link to="/experiences" className="text-center group cursor-pointer">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-vintage-500 to-vintage-700 rounded-2xl shadow-lg shadow-vintage-500/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Gift className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-4xl font-bold text-gray-900 mb-2">{stats.totalExperiences}</h3>
                 <p className="text-gray-600 font-medium">진행 중인 체험단</p>
-              </div>
+              </Link>
               <div className="text-center group">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-navy-500 to-navy-700 rounded-2xl shadow-lg shadow-navy-500/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Users className="w-8 h-8 text-white" />
