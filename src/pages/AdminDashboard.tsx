@@ -186,6 +186,13 @@ const AdminDashboard: React.FC = () => {
   const [userPointsHistory, setUserPointsHistory] = useState<any[]>([])
   const [showWithdrawalRejectionModal, setShowWithdrawalRejectionModal] = useState(false)
 
+  // 상담 접수 관리 상태
+  const [consultationRequests, setConsultationRequests] = useState<any[]>([])
+  const [consultationFilter, setConsultationFilter] = useState('all')
+  const [consultationSearch, setConsultationSearch] = useState('')
+  const [selectedConsultation, setSelectedConsultation] = useState<any>(null)
+  const [showConsultationDetailModal, setShowConsultationDetailModal] = useState(false)
+
   // 컬럼명 한글 번역 함수
   const translateFieldName = (fieldName: string): string => {
     const translations: { [key: string]: string } = {
@@ -1238,6 +1245,28 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
+  // 상담 접수 데이터 로드
+  const loadConsultationRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('consultation_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('상담 접수 조회 실패:', error)
+        setConsultationRequests([])
+        return
+      }
+
+      console.log('🔍 로드된 상담 접수:', data)
+      setConsultationRequests(data || [])
+    } catch (error) {
+      console.error('상담 접수 조회 실패:', error)
+      setConsultationRequests([])
+    }
+  }
+
   // 사용자 포인트 내역 조회 함수
   const handleViewUserPoints = async (userId: string, applicationId?: string) => {
     try {
@@ -1699,6 +1728,7 @@ const AdminDashboard: React.FC = () => {
         loadNotifications(),
         loadUsers(),
         loadWithdrawalRequests(),
+        loadConsultationRequests(),
         loadChatRooms(),
         loadChatNotifications(),
         loadOnlineUsers()
@@ -2563,6 +2593,24 @@ const AdminDashboard: React.FC = () => {
                     activeTab === 'withdrawal-requests' ? 'bg-white text-navy-600' : 'bg-gradient-to-r from-navy-100 to-navy-200 text-navy-800'
                   }`}>
                     {withdrawalRequests.filter(req => req.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('consultations')}
+                className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
+                  activeTab === 'consultations'
+                    ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span>5. 상담 접수</span>
+                {consultationRequests.filter(req => req.status === 'pending').length > 0 && (
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
+                    activeTab === 'consultations' ? 'bg-white text-purple-600' : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800'
+                  }`}>
+                    {consultationRequests.filter(req => req.status === 'pending').length}
                   </span>
                 )}
               </button>
@@ -5660,6 +5708,265 @@ const AdminDashboard: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 상담 접수 관리 섹션 */}
+      {activeTab === 'consultations' && (
+        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
+          <div className="px-8 py-6 border-b border-white/50">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">상담 접수 관리</h2>
+              <button
+                onClick={() => loadConsultationRequests()}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                새로고침
+              </button>
+            </div>
+
+            {/* 필터 및 검색 */}
+            <div className="mt-4 flex gap-4">
+              <select
+                value={consultationFilter}
+                onChange={(e) => setConsultationFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">전체</option>
+                <option value="pending">대기중</option>
+                <option value="in_progress">처리중</option>
+                <option value="completed">완료</option>
+                <option value="cancelled">취소</option>
+              </select>
+
+              <input
+                type="text"
+                placeholder="업체명, 연락처, 카테고리 검색..."
+                value={consultationSearch}
+                onChange={(e) => setConsultationSearch(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="p-8">
+            {consultationRequests.filter(req => {
+              if (consultationFilter !== 'all' && req.status !== consultationFilter) return false
+              if (consultationSearch) {
+                const searchLower = consultationSearch.toLowerCase()
+                return (
+                  req.company_name?.toLowerCase().includes(searchLower) ||
+                  req.contact_phone?.toLowerCase().includes(searchLower) ||
+                  req.category?.toLowerCase().includes(searchLower) ||
+                  req.contact_email?.toLowerCase().includes(searchLower)
+                )
+              }
+              return true
+            }).length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                <p>상담 접수 내역이 없습니다</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {consultationRequests.filter(req => {
+                  if (consultationFilter !== 'all' && req.status !== consultationFilter) return false
+                  if (consultationSearch) {
+                    const searchLower = consultationSearch.toLowerCase()
+                    return (
+                      req.company_name?.toLowerCase().includes(searchLower) ||
+                      req.contact_phone?.toLowerCase().includes(searchLower) ||
+                      req.category?.toLowerCase().includes(searchLower) ||
+                      req.contact_email?.toLowerCase().includes(searchLower)
+                    )
+                  }
+                  return true
+                }).map((consultation) => (
+                  <div
+                    key={consultation.id}
+                    className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{consultation.company_name}</h3>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            consultation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            consultation.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                            consultation.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {consultation.status === 'pending' ? '대기중' :
+                             consultation.status === 'in_progress' ? '처리중' :
+                             consultation.status === 'completed' ? '완료' :
+                             consultation.status === 'cancelled' ? '취소' : consultation.status}
+                          </span>
+                          {consultation.is_agency && (
+                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                              대행사
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4" />
+                            <span>{consultation.contact_phone}</span>
+                          </div>
+                          {consultation.contact_email && (
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4" />
+                              <span>{consultation.contact_email}</span>
+                            </div>
+                          )}
+                          {consultation.contact_person && (
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4" />
+                              <span>{consultation.contact_person}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Tag className="w-4 h-4" />
+                            <span>{
+                              consultation.category === 'food' ? '식품' :
+                              consultation.category === 'beauty' ? '뷰티/화장품' :
+                              consultation.category === 'fashion' ? '패션/의류' :
+                              consultation.category === 'lifestyle' ? '생활용품' :
+                              consultation.category === 'tech' ? '전자제품/IT' :
+                              consultation.category === 'health' ? '건강/헬스케어' :
+                              consultation.category === 'education' ? '교육/학습' :
+                              '기타'
+                            }</span>
+                          </div>
+                          {consultation.budget_range && (
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4" />
+                              <span>{
+                                consultation.budget_range === 'under_1m' ? '100만원 미만' :
+                                consultation.budget_range === '1m_5m' ? '100-500만원' :
+                                consultation.budget_range === '5m_10m' ? '500-1000만원' :
+                                consultation.budget_range === 'over_10m' ? '1000만원 이상' :
+                                '협의 가능'
+                              }</span>
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500">
+                            {new Date(consultation.created_at).toLocaleString('ko-KR')}
+                          </div>
+                        </div>
+                        {consultation.request_details && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded text-sm text-gray-700">
+                            <p className="font-medium mb-1">상담 내용:</p>
+                            <p className="whitespace-pre-wrap">{consultation.request_details}</p>
+                          </div>
+                        )}
+                        {consultation.admin_note && (
+                          <div className="mt-3 p-3 bg-blue-50 rounded text-sm text-blue-900">
+                            <p className="font-medium mb-1">관리자 메모:</p>
+                            <p className="whitespace-pre-wrap">{consultation.admin_note}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-4 pt-4 border-t">
+                      {consultation.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await supabase
+                                  .from('consultation_requests')
+                                  .update({ status: 'in_progress' })
+                                  .eq('id', consultation.id)
+                                toast.success('처리중으로 변경되었습니다')
+                                loadConsultationRequests()
+                              } catch (error) {
+                                console.error('상태 변경 실패:', error)
+                                toast.error('상태 변경에 실패했습니다')
+                              }
+                            }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                          >
+                            처리 시작
+                          </button>
+                          <button
+                            onClick={async () => {
+                              const note = prompt('관리자 메모를 입력하세요:')
+                              if (!note) return
+                              try {
+                                await supabase
+                                  .from('consultation_requests')
+                                  .update({
+                                    status: 'cancelled',
+                                    admin_note: note
+                                  })
+                                  .eq('id', consultation.id)
+                                toast.success('상담이 취소되었습니다')
+                                loadConsultationRequests()
+                              } catch (error) {
+                                console.error('취소 실패:', error)
+                                toast.error('취소에 실패했습니다')
+                              }
+                            }}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                          >
+                            취소
+                          </button>
+                        </>
+                      )}
+                      {consultation.status === 'in_progress' && (
+                        <button
+                          onClick={async () => {
+                            const note = prompt('완료 메모를 입력하세요:', consultation.admin_note || '')
+                            if (note === null) return
+                            try {
+                              await supabase
+                                .from('consultation_requests')
+                                .update({
+                                  status: 'completed',
+                                  admin_note: note,
+                                  processed_at: new Date().toISOString()
+                                })
+                                .eq('id', consultation.id)
+                              toast.success('상담이 완료되었습니다')
+                              loadConsultationRequests()
+                            } catch (error) {
+                              console.error('완료 처리 실패:', error)
+                              toast.error('완료 처리에 실패했습니다')
+                            }
+                          }}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                        >
+                          완료 처리
+                        </button>
+                      )}
+                      <button
+                        onClick={async () => {
+                          const note = prompt('관리자 메모를 입력/수정하세요:', consultation.admin_note || '')
+                          if (note === null) return
+                          try {
+                            await supabase
+                              .from('consultation_requests')
+                              .update({ admin_note: note })
+                              .eq('id', consultation.id)
+                            toast.success('메모가 저장되었습니다')
+                            loadConsultationRequests()
+                          } catch (error) {
+                            console.error('메모 저장 실패:', error)
+                            toast.error('메모 저장에 실패했습니다')
+                          }
+                        }}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                      >
+                        메모 {consultation.admin_note ? '수정' : '추가'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

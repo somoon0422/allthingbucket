@@ -10,12 +10,12 @@ interface EmailTemplate {
 interface EmailData {
   to: string
   toName: string
-  type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection' | 'custom'
+  type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection' | 'consultation_request' | 'custom'
   data: any
 }
 
 // 🔥 이메일 템플릿 생성
-const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection' | 'custom', data: any): EmailTemplate => {
+const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection' | 'consultation_request' | 'custom', data: any): EmailTemplate => {
   const baseUrl = window.location.origin
   const currentDate = new Date().toLocaleDateString('ko-KR')
 
@@ -435,6 +435,139 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 're
         text: `📝 리뷰 보완 요청\n\n안녕하세요, ${data.userName}님!\n\n${data.campaignName} 캠페인에 제출하신 리뷰에 대한 검토 의견을 전달드립니다.\n\n💡 걱정하지 마세요!\n리뷰 수정은 여러 번 가능합니다.\n아래 의견을 참고하여 보완해주시면 됩니다.\n\n📋 검토 의견:\n${data.rejectionReason || '리뷰 내용을 보완해주세요.'}\n\n✏️ 리뷰 수정 가이드:\n1. 검토 의견 확인 - 위 의견을 꼼꼼히 확인해주세요\n2. 리뷰 수정 - 마이페이지에서 "리뷰 수정하기" 버튼 클릭\n3. 재제출 - 수정 완료 후 재제출하면 즉시 재검토됩니다\n\n💬 궁금한 점이 있으신가요?\n리뷰 작성이 어렵거나 의견이 불분명하시다면 언제든 문의해주세요.\n친절히 도와드리겠습니다!\n\n👉 리뷰 수정하기: ${baseUrl}/my-applications\n\n문의: support@allthingbucket.com`
       }
 
+    case 'consultation_request':
+      return {
+        subject: `🔔 새로운 광고 상담 신청이 도착했습니다! - ${data.companyName}`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+                    <!-- 헤더 -->
+                    <tr>
+                      <td style="background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%); padding: 40px 30px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📞</div>
+                        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">새로운 상담 신청</h1>
+                        <p style="color: rgba(255, 255, 255, 0.95); margin: 10px 0 0 0; font-size: 16px;">New Consultation Request</p>
+                      </td>
+                    </tr>
+
+                    <!-- 본문 -->
+                    <tr>
+                      <td style="padding: 40px 30px;">
+                        <h2 style="color: #111827; margin: 0 0 20px 0; font-size: 22px; font-weight: 600;">안녕하세요, 관리자님! 👋</h2>
+
+                        <p style="color: #4b5563; line-height: 1.8; margin: 0 0 30px 0; font-size: 16px;">
+                          올띵버킷 체험단 플랫폼에 새로운 <strong style="color: #a855f7;">광고 상담 신청</strong>이 접수되었습니다.
+                        </p>
+
+                        <!-- 업체 정보 카드 -->
+                        <div style="background: linear-gradient(135deg, #faf5ff 0%, #fce7f3 100%); padding: 24px; border-radius: 12px; margin: 30px 0; border: 2px solid #a855f7;">
+                          <h3 style="color: #7c3aed; margin: 0 0 16px 0; font-size: 20px; font-weight: 700;">🏢 업체 정보</h3>
+                          <table width="100%" cellpadding="8" cellspacing="0">
+                            <tr>
+                              <td style="color: #6b7280; font-size: 14px; width: 100px; vertical-align: top;">업체명:</td>
+                              <td style="color: #111827; font-size: 15px; font-weight: 600;">${data.companyName}</td>
+                            </tr>
+                            <tr>
+                              <td style="color: #6b7280; font-size: 14px; width: 100px; vertical-align: top;">연락처:</td>
+                              <td style="color: #111827; font-size: 15px;">${data.contactPhone}</td>
+                            </tr>
+                            ${data.contactEmail ? `
+                            <tr>
+                              <td style="color: #6b7280; font-size: 14px; width: 100px; vertical-align: top;">이메일:</td>
+                              <td style="color: #111827; font-size: 15px;">${data.contactEmail}</td>
+                            </tr>
+                            ` : ''}
+                            ${data.contactPerson ? `
+                            <tr>
+                              <td style="color: #6b7280; font-size: 14px; width: 100px; vertical-align: top;">담당자:</td>
+                              <td style="color: #111827; font-size: 15px;">${data.contactPerson}</td>
+                            </tr>
+                            ` : ''}
+                            <tr>
+                              <td style="color: #6b7280; font-size: 14px; width: 100px; vertical-align: top;">카테고리:</td>
+                              <td style="color: #111827; font-size: 15px;">${data.categoryLabel}</td>
+                            </tr>
+                            ${data.budgetRangeLabel ? `
+                            <tr>
+                              <td style="color: #6b7280; font-size: 14px; width: 100px; vertical-align: top;">예산 범위:</td>
+                              <td style="color: #111827; font-size: 15px;">${data.budgetRangeLabel}</td>
+                            </tr>
+                            ` : ''}
+                            ${data.isAgency ? `
+                            <tr>
+                              <td style="color: #6b7280; font-size: 14px; width: 100px; vertical-align: top;">구분:</td>
+                              <td><span style="display: inline-block; background: #a855f7; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">대행사</span></td>
+                            </tr>
+                            ` : ''}
+                          </table>
+                        </div>
+
+                        ${data.requestDetails ? `
+                        <!-- 상담 내용 -->
+                        <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 30px 0; border-left: 4px solid #a855f7;">
+                          <h4 style="color: #374151; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">📝 상담 내용</h4>
+                          <p style="color: #4b5563; margin: 0; white-space: pre-wrap; line-height: 1.8; font-size: 14px;">
+                            ${data.requestDetails}
+                          </p>
+                        </div>
+                        ` : ''}
+
+                        <!-- 시간 정보 -->
+                        <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin: 30px 0;">
+                          <p style="color: #1e40af; margin: 0; font-size: 14px;">
+                            ⏰ <strong>접수 시간:</strong> ${currentDate} ${new Date().toLocaleTimeString('ko-KR')}
+                          </p>
+                        </div>
+
+                        <!-- CTA 버튼 -->
+                        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 40px 0;">
+                          <tr>
+                            <td align="center">
+                              <a href="${baseUrl}/admin" style="display: inline-block; background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%); color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 50px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);">
+                                📋 상담 접수 확인하기
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+
+                        <!-- 안내 -->
+                        <div style="background: #fef3c7; padding: 16px; border-radius: 8px; margin: 30px 0;">
+                          <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.6;">
+                            💡 <strong>알림:</strong> 빠른 응답이 고객 만족도를 높입니다. 가능한 빨리 연락해주세요!
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- 푸터 -->
+                    <tr>
+                      <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                        <p style="color: #6b7280; margin: 0 0 8px 0; font-size: 14px;">올띵버킷 관리자 알림</p>
+                        <p style="color: #9ca3af; margin: 0; font-size: 13px;">
+                          이메일: <a href="mailto:support@allthingbucket.com" style="color: #a855f7; text-decoration: none;">support@allthingbucket.com</a>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `,
+        text: `🔔 새로운 광고 상담 신청\n\n안녕하세요, 관리자님!\n\n올띵버킷 체험단 플랫폼에 새로운 광고 상담 신청이 접수되었습니다.\n\n🏢 업체 정보:\n- 업체명: ${data.companyName}\n- 연락처: ${data.contactPhone}\n${data.contactEmail ? `- 이메일: ${data.contactEmail}\n` : ''}${data.contactPerson ? `- 담당자: ${data.contactPerson}\n` : ''}- 카테고리: ${data.categoryLabel}\n${data.budgetRangeLabel ? `- 예산 범위: ${data.budgetRangeLabel}\n` : ''}${data.isAgency ? '- 구분: 대행사\n' : ''}\n${data.requestDetails ? `\n📝 상담 내용:\n${data.requestDetails}\n` : ''}\n⏰ 접수 시간: ${currentDate} ${new Date().toLocaleTimeString('ko-KR')}\n\n💡 빠른 응답이 고객 만족도를 높입니다. 가능한 빨리 연락해주세요!\n\n👉 상담 접수 확인: ${baseUrl}/admin\n\n올띵버킷 관리자 알림`
+      }
+
     case 'custom':
       // 커스텀 이메일 - data.subject와 data.content를 직접 사용
       return {
@@ -572,6 +705,53 @@ export class EmailNotificationService {
       toName: userName,
       type: 'review_rejection',
       data: { userName, campaignName, rejectionReason }
+    })
+  }
+
+  // 🔥 상담 접수 알림 이메일 (관리자에게 발송)
+  async sendConsultationRequestEmail(
+    adminEmail: string,
+    consultationData: {
+      companyName: string
+      contactPhone: string
+      contactEmail?: string
+      contactPerson?: string
+      category: string
+      budgetRange?: string
+      requestDetails?: string
+      isAgency: boolean
+    }
+  ): Promise<{ success: boolean; message: string }> {
+    // 카테고리 한글 변환
+    const categoryMap: { [key: string]: string } = {
+      food: '식품',
+      beauty: '뷰티/화장품',
+      fashion: '패션/의류',
+      lifestyle: '생활용품',
+      tech: '전자제품/IT',
+      health: '건강/헬스케어',
+      education: '교육/학습',
+      other: '기타'
+    }
+
+    // 예산 범위 한글 변환
+    const budgetMap: { [key: string]: string } = {
+      under_1m: '100만원 미만',
+      '1m_5m': '100만원 - 500만원',
+      '5m_10m': '500만원 - 1,000만원',
+      over_10m: '1,000만원 이상',
+      negotiable: '협의 가능'
+    }
+
+    return this.sendEmail({
+      to: adminEmail,
+      toName: '관리자',
+      type: 'consultation_request',
+      data: {
+        ...consultationData,
+        categoryLabel: categoryMap[consultationData.category] || consultationData.category,
+        budgetRangeLabel: consultationData.budgetRange ? budgetMap[consultationData.budgetRange] : null
+      }
     })
   }
 }

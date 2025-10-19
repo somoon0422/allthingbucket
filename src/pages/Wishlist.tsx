@@ -39,22 +39,26 @@ function safeArray(obj: any, field: string, fallback: any[] = []): any[] {
   }
 }
 
-const Wishlist: React.FC = () => {
+interface WishlistProps {
+  embedded?: boolean
+}
+
+const Wishlist: React.FC<WishlistProps> = ({ embedded = false }) => {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const { getWishlistWithCampaigns, removeFromWishlist, loading } = useWishlist()
-  
+
   const [wishlistItems, setWishlistItems] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !embedded) {
       navigate('/login')
       return
     }
 
     loadWishlist()
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate, embedded])
 
   const loadWishlist = async () => {
     const items = await getWishlistWithCampaigns()
@@ -87,23 +91,24 @@ const Wishlist: React.FC = () => {
     )
   })
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !embedded) {
     return null
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  const content = (
+    <div className={embedded ? '' : 'max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}>
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mr-4"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              뒤로가기
-            </button>
+            {!embedded && (
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mr-4"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                뒤로가기
+              </button>
+            )}
             <div>
               <h1 className="text-3xl font-bold text-gray-900">찜 목록</h1>
               <p className="text-gray-600 mt-1">관심있는 체험단을 모아보세요</p>
@@ -345,7 +350,16 @@ const Wishlist: React.FC = () => {
           </div>
         )}
       </div>
-      
+  )
+
+  if (embedded) {
+    return content
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {content}
+
       {/* 채팅봇 */}
       <ChatBot />
     </div>

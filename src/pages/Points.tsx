@@ -6,7 +6,11 @@ import { usePoints } from '../hooks/usePoints'
 import { DollarSign, TrendingUp, CreditCard, ArrowUpRight, ArrowDownLeft, ExternalLink, Calendar, FileText, Star, CheckCircle, AlertCircle } from 'lucide-react'
 import ChatBot from '../components/ChatBot'
 
-const Points: React.FC = () => {
+interface PointsProps {
+  embedded?: boolean
+}
+
+const Points: React.FC<PointsProps> = ({ embedded = false }) => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { fetchUserPoints, fetchPointsHistory, userPoints, refreshPointsData, setUserPoints } = usePoints()
@@ -391,7 +395,7 @@ const Points: React.FC = () => {
     }
   }
 
-  if (!user) {
+  if (!user && !embedded) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center py-12">
@@ -404,14 +408,14 @@ const Points: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className={embedded ? 'flex justify-center items-center py-12' : 'flex justify-center items-center min-h-screen'}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-600"></div>
       </div>
     )
   }
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  const content = (
+    <div className={embedded ? '' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}>
       <div className="mb-8">
         <div className="flex justify-between items-start">
           <div>
@@ -1249,8 +1253,16 @@ const Points: React.FC = () => {
           </p>
         </div>
       </div>
-      
-      {/* 채팅봇 */}
+    </div>
+  )
+
+  if (embedded) {
+    return content
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {content}
       <ChatBot />
     </div>
   )

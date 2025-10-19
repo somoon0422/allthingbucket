@@ -10,6 +10,9 @@ import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, Tr
 import { PhoneInput } from '../components/PhoneInput'
 import ProfileCompletionModal from '../components/ProfileCompletionModal'
 import ChatBot from '../components/ChatBot'
+import Wishlist from './Wishlist'
+import Points from './Points'
+import MyApplications from './MyApplications'
 
 const MyPage: React.FC = () => {
   const { user, updateUser } = useAuth()
@@ -79,21 +82,7 @@ const MyPage: React.FC = () => {
 
   // 사이드바 섹션 변경 핸들러
   const handleSectionChange = (section: string) => {
-    // 나의캠페인, 관심캠페인, 나의포인트는 각각의 페이지로 이동
-    if (section === 'applications') {
-      navigate('/my-applications')
-      return
-    }
-    if (section === 'wishlist') {
-      navigate('/wishlist')
-      return
-    }
-    if (section === 'points') {
-      navigate('/points')
-      return
-    }
-
-    // 프로필관리만 이 페이지에서 처리
+    // 모든 섹션을 이 페이지 내에서 처리
     setSidebarSection(section)
     setSearchParams({ section })
     setIsSidebarOpen(false) // 모바일에서 선택 후 사이드바 닫기
@@ -504,6 +493,21 @@ const MyPage: React.FC = () => {
 
           {/* 메인 콘텐츠 */}
           <main className="flex-1 min-w-0">
+            {/* 나의캠페인 (내신청) 섹션 */}
+            {sidebarSection === 'applications' && (
+              <MyApplications embedded={true} />
+            )}
+
+            {/* 관심캠페인 (찜목록) 섹션 */}
+            {sidebarSection === 'wishlist' && (
+              <Wishlist embedded={true} />
+            )}
+
+            {/* 나의포인트 섹션 */}
+            {sidebarSection === 'points' && (
+              <Points embedded={true} />
+            )}
+
             {/* 프로필 관리 섹션 */}
             {sidebarSection === 'profile' && (
               <div>

@@ -18,6 +18,7 @@ import WithdrawalRequest from './pages/WithdrawalRequest'
 import IdentityVerification from './pages/IdentityVerification'
 import AuthCallback from './pages/AuthCallback'
 import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
+import Consultation from './pages/Consultation'
 
 // 관리자 페이지
 import AdminDashboard from './pages/AdminDashboard'
@@ -76,6 +77,7 @@ function App() {
                   <Route path="/profile" element={<Navigate to="/mypage" replace />} />
                   <Route path="/withdrawal" element={<WithdrawalRequest />} />
                   <Route path="/identity-verification" element={<IdentityVerification />} />
+                  <Route path="/consultation" element={<Consultation />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield, Heart} from 'lucide-react'
+import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield, Heart, MessageSquare} from 'lucide-react'
 import LoginModal from './LoginModal'
 
 interface LayoutProps {
@@ -20,9 +20,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: '홈', href: '/', icon: Home },
     { name: '체험단', href: '/experiences', icon: Gift },
     ...(isAuthenticated ? [
-      { name: '찜목록', href: '/wishlist', icon: Heart },
-      { name: '내신청', href: '/my-applications', icon: FileText },
-      { name: '포인트', href: '/points', icon: Coins },
       { name: '마이페이지', href: '/mypage', icon: User },
     ] : [])
   ]
@@ -120,6 +117,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               })}
             </div>
 
+            {/* 광고문의 버튼 */}
+            <div className="hidden md:flex items-center">
+              <Link
+                to="/consultation"
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all shadow-sm"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>광고문의</span>
+              </Link>
+            </div>
+
             {/* 사용자 메뉴 */}
             <div className="hidden md:flex items-center space-x-4">
               {isAuthenticated ? (
@@ -204,7 +212,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                 )
               })}
-              
+
+              {/* 광고문의 버튼 (모바일) */}
+              <Link
+                to="/consultation"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm"
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span>광고문의</span>
+              </Link>
+
               {isAuthenticated ? (
                 <>
                   <div className="border-t pt-4 mt-4">

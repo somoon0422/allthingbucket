@@ -517,60 +517,62 @@ const CampaignDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* 탭 네비게이션 */}
-        <div className="bg-white rounded-xl shadow-sm mb-6">
-          <div className="flex border-b">
-            <button
-              onClick={() => handleTabChange('info')}
-              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
-                activeTab === 'info'
-                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Info className="w-5 h-5" />
-              <span>캠페인정보</span>
-            </button>
-            <button
-              onClick={() => handleTabChange('comments')}
-              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
-                activeTab === 'comments'
-                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <MessageSquare className="w-5 h-5" />
-              <span>신청자 한마디</span>
-              {applicantComments.length > 0 && (
-                <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
-                  {applicantComments.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => handleTabChange('reviews')}
-              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
-                activeTab === 'reviews'
-                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Star className="w-5 h-5" />
-              <span>리뷰</span>
-              {reviews.length > 0 && (
-                <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
-                  {reviews.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
+        {/* 전체 그리드 레이아웃 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 왼쪽 컬럼: 탭 네비게이션 + 탭 컨텐츠 */}
+          <div className="lg:col-span-2">
+            {/* 탭 네비게이션 */}
+            <div className="bg-white rounded-xl shadow-sm mb-6">
+              <div className="flex border-b">
+                <button
+                  onClick={() => handleTabChange('info')}
+                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                    activeTab === 'info'
+                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Info className="w-5 h-5" />
+                  <span>캠페인정보</span>
+                </button>
+                <button
+                  onClick={() => handleTabChange('comments')}
+                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                    activeTab === 'comments'
+                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  <span>신청자 한마디</span>
+                  {applicantComments.length > 0 && (
+                    <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
+                      {applicantComments.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => handleTabChange('reviews')}
+                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                    activeTab === 'reviews'
+                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Star className="w-5 h-5" />
+                  <span>리뷰</span>
+                  {reviews.length > 0 && (
+                    <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
+                      {reviews.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
 
-        {/* 탭 컨텐츠 */}
-        {activeTab === 'info' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* 왼쪽: 이미지 및 기본 정보 */}
-            <div className="lg:col-span-2">
+            {/* 탭 컨텐츠 */}
+            {activeTab === 'info' && (
+              <div>
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               {/* 🔥 메인 이미지 갤러리 */}
               {displayMainImages.length > 0 && (
@@ -791,230 +793,11 @@ const CampaignDetail: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
+              )}
 
-          {/* 오른쪽 사이드바 */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8 space-y-6">
-              {/* 캠페인 정보 */}
-              <div className="bg-white rounded-xl shadow-sm p-6 min-w-80">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Info className="w-5 h-5 mr-2 text-vintage-600" />
-                  캠페인 정보
-                </h3>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">신청</span>
-                    <span className="font-medium text-gray-900">{currentApplicants} / {recruitmentCount}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">리워드</span>
-                    <span className="font-medium text-navy-600">{rewards} P</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600 flex-shrink-0">캠페인 신청기간</span>
-                    <div className="text-right min-w-0 flex-1 ml-4">
-                      <div className="font-medium text-gray-900 whitespace-nowrap">
-                        {(() => {
-                          const startDate = safeString(campaign, 'application_start')
-                          const endDate = safeString(campaign, 'application_end')
-                          
-                          const formatDate = (dateStr: string) => {
-                            try {
-                              const date = new Date(dateStr)
-                              if (isNaN(date.getTime())) return '미정'
-                              return date.toLocaleDateString('ko-KR', {
-                                year: 'numeric',
-                                month: 'numeric',
-                                day: 'numeric'
-                              })
-                            } catch {
-                              return '미정'
-                            }
-                          }
-                          
-                          if (startDate && endDate) {
-                            return `${formatDate(startDate)} ~ ${formatDate(endDate)}`
-                          } else if (startDate) {
-                            return `${formatDate(startDate)} ~ 미정`
-                          } else if (endDate) {
-                            return `미정 ~ ${formatDate(endDate)}`
-                          }
-                          return '미정'
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">체험단 발표일</span>
-                    <span className="font-medium text-gray-900">
-                      {(() => {
-                        const dateStr = safeString(campaign, 'experience_announcement')
-                        if (!dateStr) return '미정'
-                        
-                        try {
-                          const date = new Date(dateStr)
-                          if (isNaN(date.getTime())) return '미정'
-                          return date.toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: 'numeric',
-                            day: 'numeric'
-                          })
-                        } catch {
-                          return '미정'
-                        }
-                      })()}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600 flex-shrink-0">캠페인 리뷰 기간</span>
-                    <div className="text-right min-w-0 flex-1 ml-4">
-                      <div className="font-medium text-gray-900 whitespace-nowrap">
-                        {(() => {
-                          const startDate = safeString(campaign, 'content_start')
-                          const endDate = safeString(campaign, 'content_end')
-                          
-                          const formatDate = (dateStr: string) => {
-                            try {
-                              const date = new Date(dateStr)
-                              if (isNaN(date.getTime())) return '미정'
-                              return date.toLocaleDateString('ko-KR', {
-                                year: 'numeric',
-                                month: 'numeric',
-                                day: 'numeric'
-                              })
-                            } catch {
-                              return '미정'
-                            }
-                          }
-                          
-                          if (startDate && endDate) {
-                            return `${formatDate(startDate)} ~ ${formatDate(endDate)}`
-                          } else if (startDate) {
-                            return `${formatDate(startDate)} ~ 미정`
-                          } else if (endDate) {
-                            return `미정 ~ ${formatDate(endDate)}`
-                          }
-                          return '미정'
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-gray-600">캠페인 평가 마감일</span>
-                    <span className="font-medium text-gray-900">
-                      {(() => {
-                        const dateStr = safeString(campaign, 'result_announcement')
-                        if (!dateStr) return '미정'
-                        
-                        try {
-                          const date = new Date(dateStr)
-                          if (isNaN(date.getTime())) return '미정'
-                          return date.toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: 'numeric',
-                            day: 'numeric'
-                          })
-                        } catch {
-                          return '미정'
-                        }
-                      })()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 리뷰 신청 */}
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">리뷰 신청하기</h3>
-                  <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
-                    <span>신청 {currentApplicants}</span>
-                    <span>/</span>
-                    <span>모집 {recruitmentCount}</span>
-                  </div>
-                </div>
-
-                {/* 신청 버튼 */}
-                <div className="space-y-3">
-                  {applicationStatus ? (
-                    <div className="text-center py-4">
-                      <div className="mb-4">
-                        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).color}`}>
-                          {React.createElement(getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).icon, { className: "w-4 h-4 mr-1" })}
-                          {getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).label}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 mb-4 text-sm">
-                        {(() => {
-                          const appliedAt = safeString(applicationStatus, 'applied_at') || safeString(applicationStatus, 'created_at')
-                          if (appliedAt) {
-                            try {
-                              const date = new Date(appliedAt)
-                              if (isNaN(date.getTime())) {
-                                return '신청하셨습니다'
-                              }
-                              return `${date.toLocaleDateString('ko-KR')}에 신청하셨습니다`
-                            } catch (error) {
-                              return '신청하셨습니다'
-                            }
-                          }
-                          return '신청하셨습니다'
-                        })()}
-                      </p>
-                      <button
-                        onClick={() => navigate('/my-applications')}
-                        className="w-full px-4 py-2 text-vintage-600 hover:text-vintage-700 font-medium text-sm"
-                      >
-                        내 신청 현황 보기
-                      </button>
-                    </div>
-                  ) : safeString(campaign, 'status') === 'active' ? (
-                    <button
-                      onClick={handleApplyClick}
-                      className="w-full px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                    >
-                      리뷰 신청하기
-                    </button>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-gray-600 mb-2 text-sm">현재 모집이 마감되었습니다</p>
-                      <button
-                        onClick={() => navigate('/experiences')}
-                        className="text-vintage-600 hover:text-vintage-700 font-medium text-sm"
-                      >
-                        다른 캠페인 보기
-                      </button>
-                    </div>
-                  )}
-                  
-                  <button
-                    onClick={handleWishlist}
-                    className={`w-full px-6 py-3 rounded-lg transition-colors font-medium ${
-                      isWishlisted(id || '') 
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Heart className={`w-4 h-4 inline mr-2 ${isWishlisted(id || '') ? 'fill-current' : ''}`} />
-                    찜하기
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
-
-        {/* 신청자 한마디 탭 */}
-        {activeTab === 'comments' && (
-          <div className="max-w-4xl mx-auto">
+            {/* 신청자 한마디 탭 */}
+            {activeTab === 'comments' && (
+              <div>
             {loadingComments ? (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
@@ -1087,12 +870,12 @@ const CampaignDetail: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* 리뷰 탭 */}
-        {activeTab === 'reviews' && (
-          <div className="max-w-4xl mx-auto">
+            {/* 리뷰 탭 */}
+            {activeTab === 'reviews' && (
+              <div>
             {loadingReviews ? (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
@@ -1211,9 +994,227 @@ const CampaignDetail: React.FC = () => {
                 ))}
               </div>
             )}
+              </div>
+            )}
           </div>
-        )}
 
+          {/* 오른쪽 사이드바 - 항상 표시 */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8 space-y-6">
+              {/* 캠페인 정보 */}
+              <div className="bg-white rounded-xl shadow-sm p-6 min-w-80">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                  <Info className="w-5 h-5 mr-2 text-vintage-600" />
+                  캠페인 정보
+                </h3>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">신청</span>
+                    <span className="font-medium text-gray-900">{currentApplicants} / {recruitmentCount}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">리워드</span>
+                    <span className="font-medium text-navy-600">{rewards} P</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600 flex-shrink-0">캠페인 신청기간</span>
+                    <div className="text-right min-w-0 flex-1 ml-4">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
+                        {(() => {
+                          const startDate = safeString(campaign, 'application_start')
+                          const endDate = safeString(campaign, 'application_end')
+
+                          const formatDate = (dateStr: string) => {
+                            try {
+                              const date = new Date(dateStr)
+                              if (isNaN(date.getTime())) return '미정'
+                              return date.toLocaleDateString('ko-KR', {
+                                year: 'numeric',
+                                month: 'numeric',
+                                day: 'numeric'
+                              })
+                            } catch {
+                              return '미정'
+                            }
+                          }
+
+                          if (startDate && endDate) {
+                            return `${formatDate(startDate)} ~ ${formatDate(endDate)}`
+                          } else if (startDate) {
+                            return `${formatDate(startDate)} ~ 미정`
+                          } else if (endDate) {
+                            return `미정 ~ ${formatDate(endDate)}`
+                          }
+                          return '미정'
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">체험단 발표일</span>
+                    <span className="font-medium text-gray-900">
+                      {(() => {
+                        const dateStr = safeString(campaign, 'experience_announcement')
+                        if (!dateStr) return '미정'
+
+                        try {
+                          const date = new Date(dateStr)
+                          if (isNaN(date.getTime())) return '미정'
+                          return date.toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric'
+                          })
+                        } catch {
+                          return '미정'
+                        }
+                      })()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600 flex-shrink-0">캠페인 리뷰 기간</span>
+                    <div className="text-right min-w-0 flex-1 ml-4">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
+                        {(() => {
+                          const startDate = safeString(campaign, 'content_start')
+                          const endDate = safeString(campaign, 'content_end')
+
+                          const formatDate = (dateStr: string) => {
+                            try {
+                              const date = new Date(dateStr)
+                              if (isNaN(date.getTime())) return '미정'
+                              return date.toLocaleDateString('ko-KR', {
+                                year: 'numeric',
+                                month: 'numeric',
+                                day: 'numeric'
+                              })
+                            } catch {
+                              return '미정'
+                            }
+                          }
+
+                          if (startDate && endDate) {
+                            return `${formatDate(startDate)} ~ ${formatDate(endDate)}`
+                          } else if (startDate) {
+                            return `${formatDate(startDate)} ~ 미정`
+                          } else if (endDate) {
+                            return `미정 ~ ${formatDate(endDate)}`
+                          }
+                          return '미정'
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-600">캠페인 평가 마감일</span>
+                    <span className="font-medium text-gray-900">
+                      {(() => {
+                        const dateStr = safeString(campaign, 'result_announcement')
+                        if (!dateStr) return '미정'
+
+                        try {
+                          const date = new Date(dateStr)
+                          if (isNaN(date.getTime())) return '미정'
+                          return date.toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric'
+                          })
+                        } catch {
+                          return '미정'
+                        }
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 리뷰 신청 */}
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">리뷰 신청하기</h3>
+                  <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
+                    <span>신청 {currentApplicants}</span>
+                    <span>/</span>
+                    <span>모집 {recruitmentCount}</span>
+                  </div>
+                </div>
+
+                {/* 신청 버튼 */}
+                <div className="space-y-3">
+                  {applicationStatus ? (
+                    <div className="text-center py-4">
+                      <div className="mb-4">
+                        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).color}`}>
+                          {React.createElement(getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).icon, { className: "w-4 h-4 mr-1" })}
+                          {getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).label}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-4 text-sm">
+                        {(() => {
+                          const appliedAt = safeString(applicationStatus, 'applied_at') || safeString(applicationStatus, 'created_at')
+                          if (appliedAt) {
+                            try {
+                              const date = new Date(appliedAt)
+                              if (isNaN(date.getTime())) {
+                                return '신청하셨습니다'
+                              }
+                              return `${date.toLocaleDateString('ko-KR')}에 신청하셨습니다`
+                            } catch (error) {
+                              return '신청하셨습니다'
+                            }
+                          }
+                          return '신청하셨습니다'
+                        })()}
+                      </p>
+                      <button
+                        onClick={() => navigate('/my-applications')}
+                        className="w-full px-4 py-2 text-vintage-600 hover:text-vintage-700 font-medium text-sm"
+                      >
+                        내 신청 현황 보기
+                      </button>
+                    </div>
+                  ) : safeString(campaign, 'status') === 'active' ? (
+                    <button
+                      onClick={handleApplyClick}
+                      className="w-full px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      리뷰 신청하기
+                    </button>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-600 mb-2 text-sm">현재 모집이 마감되었습니다</p>
+                      <button
+                        onClick={() => navigate('/experiences')}
+                        className="text-vintage-600 hover:text-vintage-700 font-medium text-sm"
+                      >
+                        다른 캠페인 보기
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleWishlist}
+                    className={`w-full px-6 py-3 rounded-lg transition-colors font-medium ${
+                      isWishlisted(id || '')
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 inline mr-2 ${isWishlisted(id || '') ? 'fill-current' : ''}`} />
+                    찜하기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 신청서 작성 모달 */}

@@ -105,7 +105,11 @@ function safeObject(obj: any, field: string): any {
   }
 }
 
-const MyApplications: React.FC = () => {
+interface MyApplicationsProps {
+  embedded?: boolean
+}
+
+const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => {
   const navigate = useNavigate()
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const { getUserApplications, cancelApplication } = useExperiences()
@@ -716,7 +720,7 @@ const MyApplications: React.FC = () => {
     }
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !embedded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -730,7 +734,7 @@ const MyApplications: React.FC = () => {
 
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={embedded ? 'flex justify-center items-center py-12' : 'min-h-screen bg-gray-50 flex items-center justify-center'}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
           <p className="text-gray-600">신청 내역을 불러오는 중...</p>
@@ -739,9 +743,8 @@ const MyApplications: React.FC = () => {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+  const content = (
+    <div className={embedded ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8'}>
         {/* 헤더 */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
@@ -1534,7 +1537,16 @@ const MyApplications: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  )
 
+  if (embedded) {
+    return content
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {content}
       {/* 채팅봇 */}
       <ChatBot />
     </div>
