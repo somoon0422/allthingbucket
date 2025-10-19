@@ -372,21 +372,28 @@ const AdminDashboard: React.FC = () => {
       
       // 타임아웃 방지를 위해 순차적으로 로드
       let allUsers = []
+      let allUserProfiles = []
       let allCampaigns = []
       let allReviewSubmissions = []
-      
+
       try {
         allUsers = await (dataService.entities as any).users.list()
       } catch (error) {
         console.warn('⚠️ users 로드 실패:', error)
       }
-      
+
+      try {
+        allUserProfiles = await (dataService.entities as any).user_profiles.list()
+      } catch (error) {
+        console.warn('⚠️ user_profiles 로드 실패:', error)
+      }
+
       try {
         allCampaigns = await (dataService.entities as any).campaigns.list()
       } catch (error) {
         console.warn('⚠️ campaigns 로드 실패:', error)
       }
-      
+
       try {
         allReviewSubmissions = await (dataService.entities as any).review_submissions.list()
       } catch (error) {
@@ -397,12 +404,14 @@ const AdminDashboard: React.FC = () => {
       const enrichedApplications = (applicationsData || []).map((app: any) => {
         try {
           let userInfo = null
+          let userProfile = null
           let campaignInfo = null
           let reviewSubmissionInfo = null
-          
+
           // 사용자 정보 찾기
           if (app.user_id) {
             userInfo = allUsers.find((user: any) => user.user_id === app.user_id || user.id === app.user_id)
+            userProfile = allUserProfiles.find((profile: any) => profile.user_id === app.user_id)
           }
           
           // 캠페인 정보 찾기
@@ -422,12 +431,12 @@ const AdminDashboard: React.FC = () => {
             
             return {
               ...app,
-              // 사용자 정보 매핑 (application_data 우선, 그 다음 userInfo, 마지막으로 app 필드)
-              name: appData.name || userInfo?.name || userInfo?.user_name || app.name || '이름 없음',
-              email: appData.email || userInfo?.email || userInfo?.user_email || app.email || '이메일 없음',
-              phone: appData.phone || userInfo?.phone || userInfo?.user_phone || app.phone || '',
-              address: appData.address || userInfo?.address || app.address || '',
-              detailed_address: appData.detailed_address || userInfo?.detailed_address || app.detailed_address || '',
+              // 사용자 정보 매핑 (userProfile 우선, 그 다음 application_data, userInfo, 마지막으로 app 필드)
+              name: userProfile?.name || appData.name || userInfo?.name || userInfo?.user_name || app.name || '이름 없음',
+              email: userProfile?.email || appData.email || userInfo?.email || userInfo?.user_email || app.email || '이메일 없음',
+              phone: userProfile?.phone || appData.phone || userInfo?.phone || userInfo?.user_phone || app.phone || '',
+              address: userProfile?.address || appData.address || userInfo?.address || app.address || '',
+              detailed_address: userProfile?.detailed_address || appData.detailed_address || userInfo?.detailed_address || app.detailed_address || '',
               // 날짜 정보 매핑
               applied_at: appData.applied_at || app.applied_at || app.created_at,
               review_submitted_at: reviewSubmissionInfo?.submitted_at || appData.review_submitted_at || app.review_submitted_at,
@@ -439,6 +448,8 @@ const AdminDashboard: React.FC = () => {
                    experience_name: campaignInfo?.campaign_name || campaignInfo?.product_name || '체험단 정보 없음',
               // 원본 데이터 보존
               userInfo,
+              userProfile,
+              user_profile: userProfile,
               campaignInfo,
               reviewSubmissionInfo,
               application_data: appData

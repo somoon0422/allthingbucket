@@ -78,7 +78,7 @@ const SafeData = {
   getNumber: (obj: any, field: string, fallback = 0): number => {
     try {
       if (!obj) return fallback
-      
+
       // 여러 필드에서 숫자 찾기
       const fields = [field, 'rewards', 'reward_points', 'points']
       for (const f of fields) {
@@ -90,7 +90,7 @@ const SafeData = {
           }
         }
       }
-      
+
       // campaignInfo에서도 찾기
       if (obj.campaignInfo) {
         for (const f of fields) {
@@ -103,7 +103,7 @@ const SafeData = {
           }
         }
       }
-      
+
       // experience에서도 찾기
       if (obj.experience) {
         for (const f of fields) {
@@ -116,10 +116,36 @@ const SafeData = {
           }
         }
       }
-      
+
       return fallback
     } catch {
       return fallback
+    }
+  },
+
+  getPhone: (obj: any): string => {
+    try {
+      if (!obj) return ''
+      const phoneFields = ['phone', 'user_phone', 'userPhone', 'contact_phone', 'contactPhone']
+      for (const field of phoneFields) {
+        const value = obj?.[field]
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim()
+        }
+      }
+      // user_profile이나 userProfile에서도 찾기
+      if (obj.user_profile || obj.userProfile) {
+        const profile = obj.user_profile || obj.userProfile
+        for (const field of phoneFields) {
+          const value = profile?.[field]
+          if (typeof value === 'string' && value.trim()) {
+            return value.trim()
+          }
+        }
+      }
+      return ''
+    } catch {
+      return ''
     }
   }
 }
@@ -142,6 +168,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   // 🔥 완전히 안전한 데이터 추출
   const userName = SafeData.getString(application)
   const userEmail = SafeData.getEmail(application)
+  const userPhone = SafeData.getPhone(application)
   const experienceName = SafeData.getExperienceName(application)
   const brandName = SafeData.getBrandName(application)
   const rewardPoints = SafeData.getNumber(application, 'reward_points', 0)
@@ -178,7 +205,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   const [editableRecipient, setEditableRecipient] = useState({
     name: userName,
     email: userEmail,
-    phone: application?.user_phone || application?.phone || ''
+    phone: userPhone
   })
   
   // 수신자 정보 편집 모드
