@@ -160,10 +160,25 @@ export const useExperiences = () => {
         throw new Error('데이터베이스 테이블 구조를 확인할 수 없습니다')
       }
 
-      // 실제 존재하는 컬럼만 사용하여 신청 데이터 생성
+      // 🔥 additionalData에서 전달된 모든 데이터를 포함하여 신청 데이터 생성
       const applicationData: any = {}
-      
-      // user_id가 존재하는지 확인
+
+      // 🔥 1. additionalData의 모든 필드를 먼저 복사 (name, email, phone, address 등)
+      if (additionalData && typeof additionalData === 'object') {
+        // application_data 필드가 존재하면 그 안에 저장
+        if (actualColumns.includes('application_data')) {
+          applicationData.application_data = { ...additionalData }
+        } else {
+          // application_data 필드가 없으면 루트 레벨에 모든 필드 저장
+          Object.keys(additionalData).forEach(key => {
+            if (actualColumns.includes(key)) {
+              applicationData[key] = additionalData[key]
+            }
+          })
+        }
+      }
+
+      // 🔥 2. user_id 확인 및 추가 (덮어쓰기)
       if (actualColumns.includes('user_id')) {
         applicationData.user_id = userId
       } else if (actualColumns.includes('userid')) {
@@ -171,8 +186,8 @@ export const useExperiences = () => {
       } else if (actualColumns.includes('user')) {
         applicationData.user = userId
       }
-      
-      // experience_id가 존재하는지 확인
+
+      // 🔥 3. experience_id/campaign_id 확인 및 추가 (덮어쓰기)
       if (actualColumns.includes('experience_id')) {
         applicationData.experience_id = experienceId
       } else if (actualColumns.includes('campaign_id')) {
@@ -181,7 +196,7 @@ export const useExperiences = () => {
         applicationData.experienceid = experienceId
       }
 
-      // 날짜 필드 추가 (존재하는 경우에만)
+      // 🔥 4. 날짜 필드 추가 (존재하는 경우에만)
       const currentDate = new Date().toISOString()
       if (actualColumns.includes('applied_at')) {
         applicationData.applied_at = currentDate
@@ -196,7 +211,8 @@ export const useExperiences = () => {
         applicationData.application_date = currentDate
       }
 
-      console.log('🔍 최종 신청 데이터:', applicationData)
+      console.log('🔍 최종 신청 데이터 (additionalData 포함):', applicationData)
+      console.log('📦 원본 additionalData:', additionalData)
 
       // Supabase API로 신청 생성
       const result = await (dataService.entities as any).user_applications.create(applicationData)
