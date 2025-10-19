@@ -71,10 +71,12 @@ export default async function handler(req, res) {
     const signature = makeSignature(timestamp, method, url, NCP_SECRET_KEY);
 
     // 알림톡 메시지 구성
+    // content: 템플릿 내용의 기본값 (변수 치환 전 텍스트)
+    // templateParameter: 템플릿 변수 값들
     const message = {
       to: to.replace(/-/g, ''), // 하이픈 제거
-      templateParameter: variables // 템플릿 변수는 templateParameter로 전달
-      // countryCode는 선택사항이므로 제거
+      content: '최종 선정 안내',  // 템플릿 내용 요약 (필수)
+      templateParameter: variables // 템플릿 변수 값들
     };
 
     // Failover 설정이 있는 경우 추가
