@@ -71,15 +71,15 @@ export default async function handler(req, res) {
     const signature = makeSignature(timestamp, method, url, NCP_SECRET_KEY);
 
     // 알림톡 메시지 구성
-    // content: 템플릿에 등록된 실제 내용 (변수는 #{변수명} 형식으로)
-    // templateParameter: 변수 값들
-    const content = `🎉 '#{campaignName}' 최종 선정 안내
+    // content: 변수가 치환된 실제 메시지 내용
+    // templateParameter는 사용하지 않음 (content에 이미 치환된 값 포함)
+    const content = `🎉 '${variables.campaignName}' 최종 선정 안내
 
-안녕하세요, #{userName}님.
+안녕하세요, ${variables.userName}님.
 
 더 나은 체험, 더 진실한 리뷰 올띵버킷 입니다.
 
-'#{campaignName}'에 #{userName}님이 최종 선정 되셨음을 진심으로 축하드립니다! 🎉
+'${variables.campaignName}'에 ${variables.userName}님이 최종 선정 되셨음을 진심으로 축하드립니다! 🎉
 
 이메일을 통해 체험단 가이드를 발송해 드렸습니다. 확인 하시고 다음 단계를 진행해주세요.
 
@@ -99,8 +99,8 @@ export default async function handler(req, res) {
 
     const message = {
       to: to.replace(/-/g, ''), // 하이픈 제거
-      content: content,  // 템플릿과 정확히 일치하는 내용
-      templateParameter: variables // 변수 값들
+      content: content  // 변수가 이미 치환된 실제 메시지
+      // templateParameter는 제거 (content에 이미 포함됨)
     };
 
     // Failover 설정이 있는 경우 추가
