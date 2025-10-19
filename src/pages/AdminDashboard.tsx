@@ -1722,17 +1722,16 @@ const AdminDashboard: React.FC = () => {
   const loadAllData = async () => {
     try {
       setLoading(true)
-      await Promise.all([
-        loadApplications(),
-        loadExperiences(),
-        loadNotifications(),
-        loadUsers(),
-        loadWithdrawalRequests(),
-        loadConsultationRequests(),
-        loadChatRooms(),
-        loadChatNotifications(),
-        loadOnlineUsers()
-      ])
+      // 순차적으로 로드하여 브라우저 리소스 부족 방지
+      await loadApplications()
+      await loadExperiences()
+      await loadNotifications()
+      await loadUsers()
+      await loadWithdrawalRequests()
+      await loadConsultationRequests()
+      await loadChatRooms()
+      await loadChatNotifications()
+      await loadOnlineUsers()
     } catch (error) {
       console.error('데이터 로드 실패:', error)
       toast.error('데이터를 불러오는데 실패했습니다')
@@ -1753,7 +1752,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       loadOnlineUsers()
-    }, 5000) // 5초마다 업데이트
+    }, 30000) // 30초마다 업데이트 (브라우저 리소스 절약)
 
     return () => clearInterval(interval)
   }, [])
