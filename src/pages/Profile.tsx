@@ -2,16 +2,19 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../lib/dataService'
+import { useSearchParams } from 'react-router-dom'
 
 // Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
-import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield} from 'lucide-react'
+import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Tag, FileText} from 'lucide-react'
 import { PhoneInput } from '../components/PhoneInput'
 import ProfileCompletionModal from '../components/ProfileCompletionModal'
 import ChatBot from '../components/ChatBot'
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'basic')
   const [profile, setProfile] = useState<any>(null)
   const [userCode, setUserCode] = useState<string>('')
   const [editMode, setEditMode] = useState(false)
@@ -58,6 +61,14 @@ const Profile: React.FC = () => {
   useEffect(() => {
     loadProfile()
   }, [user])
+
+  // URL 파라미터 변경 시 탭 업데이트
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   const loadProfile = async () => {
     if (!user) return
@@ -353,6 +364,12 @@ const Profile: React.FC = () => {
     return labels[category] || category
   }
 
+  // 탭 변경 핸들러
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    setSearchParams({ tab })
+  }
+
 
   if (loading) {
     return (
@@ -394,8 +411,47 @@ const Profile: React.FC = () => {
         </div>
       </div>
 
+      {/* 탭 네비게이션 */}
+      <div className="bg-white rounded-xl shadow-sm border mb-6">
+        <div className="flex border-b">
+          <button
+            onClick={() => handleTabChange('basic')}
+            className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+              activeTab === 'basic'
+                ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <User className="w-5 h-5" />
+            <span>기본정보</span>
+          </button>
+          <button
+            onClick={() => handleTabChange('channels')}
+            className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+              activeTab === 'channels'
+                ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <Globe className="w-5 h-5" />
+            <span>운영채널</span>
+          </button>
+          <button
+            onClick={() => handleTabChange('categories')}
+            className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+              activeTab === 'categories'
+                ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <Tag className="w-5 h-5" />
+            <span>관심카테고리</span>
+          </button>
+        </div>
+      </div>
+
       {/* 🔔 프로필 정보 채우기 공지 */}
-      {(!user?.name || !profile?.phone) && (
+      {(!user?.name || !profile?.phone) && activeTab === 'basic' && (
         <div className="bg-gradient-to-r from-vintage-50 to-navy-50 border-l-4 border-vintage-400 p-4 mb-6 rounded-r-lg">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -452,9 +508,10 @@ const Profile: React.FC = () => {
         </div>
       )}
 
-      {/* 🔹 기본 정보 */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">기본 정보</h2>
+      {/* 🔹 기본 정보 탭 */}
+      {activeTab === 'basic' && (
+        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">기본 정보</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -654,11 +711,14 @@ const Profile: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* 🔹 SNS 정보 */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">SNS 정보</h2>
+      {/* 🔹 운영채널 (SNS) 탭 */}
+      {activeTab === 'channels' && (
+        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">운영채널 등록</h2>
+          <p className="text-gray-600 mb-6">네이버 블로그, 인스타그램, 유튜브, 틱톡, 페이스북 중 최소 1개 이상 등록해주세요.</p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -872,11 +932,14 @@ const Profile: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* 🔹 관심 카테고리 */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">관심 카테고리</h2>
+      {/* 🔹 관심 카테고리 탭 */}
+      {activeTab === 'categories' && (
+        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">관심 카테고리</h2>
+          <p className="text-gray-600 mb-6">관심 있는 카테고리를 선택해주세요. 선택한 카테고리에 맞는 체험단을 추천해드립니다.</p>
         
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {availableCategories.map(category => (
@@ -903,11 +966,12 @@ const Profile: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
+        </div>
+      )}
 
 
-      {/* 🔹 활동 통계 */}
-      {profile && (
+      {/* 🔹 활동 통계 - 기본정보 탭에서만 표시 */}
+      {profile && activeTab === 'basic' && (
         <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">활동 통계</h2>
           

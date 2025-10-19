@@ -196,6 +196,37 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       return
     }
 
+    // 🔥 운영채널 (SNS) 등록 여부 체크
+    try {
+      const userId = user.id || user.user_id || (user as any)._id
+
+      // user_profiles에서 SNS 정보 확인
+      const userProfiles = await (dataService.entities as any).user_profiles.list()
+      const userProfile = Array.isArray(userProfiles)
+        ? userProfiles.find((p: any) => p && p.user_id === userId)
+        : null
+
+      // SNS 채널이 하나라도 등록되어 있는지 확인
+      const hasSNS = userProfile && (
+        userProfile.naver_blog ||
+        userProfile.instagram_id ||
+        userProfile.youtube_channel ||
+        userProfile.tiktok_id ||
+        userProfile.facebook_page
+      )
+
+      if (!hasSNS) {
+        // SNS 미등록 시 안내 모달 표시
+        if (confirm('운영채널을 등록해 주세요!\n\n네이버 블로그, 인스타그램, 유튜브, 틱톡, 페이스북 중\n최소 1개 이상의 운영채널을 등록해야 신청할 수 있습니다.\n\n프로필 페이지의 운영채널 탭으로 이동하시겠습니까?')) {
+          window.location.href = '/profile?tab=channels'
+        }
+        return
+      }
+    } catch (error) {
+      console.error('❌ SNS 채널 확인 실패:', error)
+      // 에러가 발생해도 신청은 계속 진행
+    }
+
     if (!targetCampaign?.id) {
       toast.error('캠페인 정보가 없습니다')
       return
