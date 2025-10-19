@@ -64,13 +64,13 @@ class AlimtalkService {
       variables: {
         userName: userName,  // 카카오 템플릿: #{userName}
         campaignName: campaignName  // 카카오 템플릿: #{campaignName}
-        // url 변수는 템플릿에 없으므로 제거
       },
       failoverConfig: {
         type: 'SMS',
         from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
         content: `[올띵버킷]\n${userName}님, ${campaignName} 체험단 신청이 승인되었습니다!\n\n마이페이지에서 자세한 내용을 확인해주세요.\nhttps://allthingbucket.com/my-applications`
       }
+      // 버튼 정보는 템플릿에 저장되어 있으므로 API 요청에 포함하지 않음
     })
   }
 

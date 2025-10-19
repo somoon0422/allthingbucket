@@ -73,8 +73,8 @@ export default async function handler(req, res) {
     // 알림톡 메시지 구성
     const message = {
       to: to.replace(/-/g, ''), // 하이픈 제거
-      templateParameter: variables, // 템플릿 변수는 templateParameter로 전달
-      countryCode: '82'
+      templateParameter: variables // 템플릿 변수는 templateParameter로 전달
+      // countryCode는 선택사항이므로 제거
     };
 
     // Failover 설정이 있는 경우 추가
