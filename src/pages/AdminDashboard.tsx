@@ -2226,12 +2226,24 @@ const AdminDashboard: React.FC = () => {
   }, [isAuthenticated, isAdminUser, navigate])
 
   // 관리자 권한 체크
-  if (!isAuthenticated || !isAdminUser()) {
+  if (!loading && (!isAuthenticated || !isAdminUser())) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">권한을 확인하는 중...</p>
+        <div className="text-center max-w-md px-6">
+          <AlertCircle className="w-20 h-20 text-red-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">관리자 권한이 필요합니다</h2>
+          <p className="text-gray-600 mb-8">
+            이 페이지는 관리자만 접근할 수 있습니다.<br />
+            홈페이지로 이동합니다...
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-vintage-700 transition-colors font-medium"
+            >
+              홈으로 이동
+            </button>
+          </div>
         </div>
       </div>
     )
