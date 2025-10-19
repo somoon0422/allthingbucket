@@ -289,7 +289,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       try {
         const existingUsers = await (dataService.entities as any).users.list()
         const userExists = existingUsers.some((u: any) => u.user_id === userId)
-        
+
         if (!userExists) {
           console.log('🔍 사용자를 users 테이블에 생성합니다:', userId)
           await (dataService.entities as any).users.create({
@@ -303,6 +303,48 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         }
       } catch (userCreateError) {
         console.warn('⚠️ 사용자 생성 실패, 신청은 계속 진행합니다:', userCreateError)
+      }
+
+      // 🔥 user_profiles 테이블에 휴대폰번호 및 신청 정보 업데이트
+      try {
+        const existingProfiles = await (dataService.entities as any).user_profiles.list()
+        const userProfile = existingProfiles.find((p: any) => p.user_id === userId)
+
+        if (userProfile) {
+          // 프로필이 이미 있으면 업데이트
+          console.log('📝 user_profiles 업데이트:', userId)
+          await (dataService.entities as any).user_profiles.update(userProfile.id, {
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email,
+            address: formData.address,
+            detailed_address: formData.detailed_address,
+            instagram_handle: formData.instagram_handle || userProfile.instagram_handle,
+            blog_url: formData.blog_url || userProfile.blog_url,
+            youtube_channel: formData.youtube_channel || userProfile.youtube_channel,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ user_profiles 업데이트 완료')
+        } else {
+          // 프로필이 없으면 새로 생성
+          console.log('🔍 user_profiles 생성:', userId)
+          await (dataService.entities as any).user_profiles.create({
+            user_id: userId,
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email,
+            address: formData.address,
+            detailed_address: formData.detailed_address,
+            instagram_handle: formData.instagram_handle,
+            blog_url: formData.blog_url,
+            youtube_channel: formData.youtube_channel,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ user_profiles 생성 완료')
+        }
+      } catch (profileError) {
+        console.warn('⚠️ user_profiles 업데이트 실패, 신청은 계속 진행합니다:', profileError)
       }
 
       // 🔥 신청 데이터에 정확한 사용자 ID 포함
