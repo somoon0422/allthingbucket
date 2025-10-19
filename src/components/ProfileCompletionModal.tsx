@@ -4,11 +4,19 @@ import { AlertCircle, X, CheckCircle2, User, Phone, Instagram } from 'lucide-rea
 interface ProfileCompletionModalProps {
   isOpen: boolean
   onClose: () => void
+  onConfirm?: () => void
   missingFields: string[]
 }
 
-const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({ isOpen, onClose, missingFields }) => {
+const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({ isOpen, onClose, onConfirm, missingFields }) => {
   if (!isOpen) return null
+
+  const handleConfirm = () => {
+    onClose()
+    if (onConfirm) {
+      onConfirm()
+    }
+  }
 
   // 필드명을 한글로 변환
   const getFieldLabel = (field: string) => {
@@ -82,7 +90,7 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({ isOpen,
 
           {/* 확인 버튼 */}
           <button
-            onClick={onClose}
+            onClick={handleConfirm}
             className="w-full bg-gradient-to-r from-navy-600 to-pink-600 text-white py-3.5 rounded-xl font-semibold hover:from-navy-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             지금 입력하기

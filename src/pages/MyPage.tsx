@@ -1151,6 +1151,11 @@ const MyPage: React.FC = () => {
       <ProfileCompletionModal
         isOpen={showCompletionModal}
         onClose={() => setShowCompletionModal(false)}
+        onConfirm={() => {
+          setSidebarSection('profile')
+          setSearchParams({ section: 'profile', tab: 'basic' })
+          setEditMode(true)
+        }}
         missingFields={missingFields}
       />
 

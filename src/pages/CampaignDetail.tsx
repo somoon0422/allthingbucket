@@ -517,62 +517,60 @@ const CampaignDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* 메인 컨텐츠 그리드: 왼쪽 탭 영역 + 오른쪽 사이드바 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 왼쪽: 탭 + 컨텐츠 영역 (lg:col-span-2) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* 탭 네비게이션 */}
-            <div className="bg-white rounded-xl shadow-sm">
-              <div className="flex border-b">
-                <button
-                  onClick={() => handleTabChange('info')}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
-                    activeTab === 'info'
-                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Info className="w-5 h-5" />
-                  <span>캠페인정보</span>
-                </button>
-                <button
-                  onClick={() => handleTabChange('comments')}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
-                    activeTab === 'comments'
-                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  <span>신청자 한마디</span>
-                  {applicantComments.length > 0 && (
-                    <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
-                      {applicantComments.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleTabChange('reviews')}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
-                    activeTab === 'reviews'
-                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Star className="w-5 h-5" />
-                  <span>리뷰</span>
-                  {reviews.length > 0 && (
-                    <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
-                      {reviews.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
+        {/* 탭 네비게이션 */}
+        <div className="bg-white rounded-xl shadow-sm mb-6">
+          <div className="flex border-b">
+            <button
+              onClick={() => handleTabChange('info')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                activeTab === 'info'
+                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Info className="w-5 h-5" />
+              <span>캠페인정보</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('comments')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                activeTab === 'comments'
+                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <MessageSquare className="w-5 h-5" />
+              <span>신청자 한마디</span>
+              {applicantComments.length > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
+                  {applicantComments.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => handleTabChange('reviews')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                activeTab === 'reviews'
+                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Star className="w-5 h-5" />
+              <span>리뷰</span>
+              {reviews.length > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
+                  {reviews.length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
 
-            {/* 탭 컨텐츠 */}
-            {activeTab === 'info' && (
-              <div>
+        {/* 탭 컨텐츠 */}
+        {activeTab === 'info' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* 왼쪽: 이미지 및 기본 정보 */}
+            <div className="lg:col-span-2">
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               {/* 🔥 메인 이미지 갤러리 */}
               {displayMainImages.length > 0 && (
@@ -713,266 +711,89 @@ const CampaignDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* 상세 이미지 갤러리 */}
-            <DetailImageGallery
-              campaign={campaign}
-              isExpanded={isDetailImagesExpanded}
-              onToggle={toggleDetailImages}
-            />
+            {/* 상세 정보 섹션들 */}
+            <div className="space-y-6">
+              {/* 상세 이미지 갤러리 - 새로 작성 */}
+              <DetailImageGallery 
+                campaign={campaign} 
+                isExpanded={isDetailImagesExpanded} 
+                onToggle={toggleDetailImages} 
+              />
 
-            {/* 제공내역 */}
-            {providedItems && providedItems !== '제품 제공' && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                  <Gift className="w-5 h-5 mr-2 text-green-600" />
-                  제공내역
-                </h2>
-                <p className="text-gray-700">{providedItems}</p>
-              </div>
-            )}
 
-            {/* 키워드 */}
-            {keywords.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                    <Hash className="w-5 h-5 mr-2 text-navy-600" />
-                    키워드
+              {/* 제공내역 */}
+              {providedItems && providedItems !== '제품 제공' && (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <Gift className="w-5 h-5 mr-2 text-green-600" />
+                    제공내역
                   </h2>
-                  <button
-                    onClick={() => {
-                      const keywordText = keywords.map(keyword => `#${keyword}`).join(' ')
-                      navigator.clipboard.writeText(keywordText)
-                      toast.success('키워드가 복사되었습니다!')
-                    }}
-                    className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    키워드복사
-                  </button>
+                  <p className="text-gray-700">{providedItems}</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {keywords.map((keyword, index) => (
-                    <span key={index} className="px-3 py-1 bg-purple-100 text-navy-800 rounded-full text-sm">
-                      #{keyword}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+              )}
 
-            {/* 리뷰 작성시 안내사항 */}
-            {reviewGuidelines && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                  <Target className="w-5 h-5 mr-2 text-orange-600" />
-                  리뷰 작성시 안내사항
-                </h2>
-                <div className="prose prose-gray max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {reviewGuidelines}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* 추가 안내사항 */}
-            {additionalGuidelines && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                  <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
-                  추가 안내사항
-                </h2>
-                <div className="prose prose-gray max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {additionalGuidelines}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-            )}
-
-            {/* 신청자 한마디 탭 */}
-            {activeTab === 'comments' && (
-              <div>
-                {loadingComments ? (
-                  <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">신청자 한마디를 불러오는 중...</p>
+              {/* 키워드 */}
+              {keywords.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                      <Hash className="w-5 h-5 mr-2 text-navy-600" />
+                      키워드
+                    </h2>
+                    <button
+                      onClick={() => {
+                        const keywordText = keywords.map(keyword => `#${keyword}`).join(' ')
+                        navigator.clipboard.writeText(keywordText)
+                        toast.success('키워드가 복사되었습니다!')
+                      }}
+                      className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      키워드복사
+                    </button>
                   </div>
-                ) : applicantComments.length === 0 ? (
-                  <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                    <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">아직 신청자 한마디가 없습니다</h3>
-                    <p className="text-gray-600">첫 번째로 캠페인에 신청하고 한마디를 남겨보세요!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {applicantComments.map((comment: any) => (
-                      <div key={comment.application_id} className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex items-start space-x-4">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                              {(comment.applicant_name || comment.user_name || 'U').charAt(0).toUpperCase()}
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <h4 className="text-sm font-semibold text-gray-900">
-                                  {comment.applicant_name || comment.user_name || '익명'}
-                                </h4>
-                                <span className="text-xs text-gray-500">
-                                  {(() => {
-                                    const dateStr = comment.comment_created_at || comment.created_at
-                                    if (!dateStr) return '방금 전'
-                                    try {
-                                      const date = new Date(dateStr)
-                                      if (isNaN(date.getTime())) return '방금 전'
-                                      const now = new Date()
-                                      const diffMs = now.getTime() - date.getTime()
-                                      const diffMins = Math.floor(diffMs / 60000)
-                                      const diffHours = Math.floor(diffMs / 3600000)
-                                      const diffDays = Math.floor(diffMs / 86400000)
-                                      if (diffMins < 1) return '방금 전'
-                                      if (diffMins < 60) return `${diffMins}분 전`
-                                      if (diffHours < 24) return `${diffHours}시간 전`
-                                      if (diffDays < 7) return `${diffDays}일 전`
-                                      return date.toLocaleDateString('ko-KR', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                      })
-                                    } catch {
-                                      return '방금 전'
-                                    }
-                                  })()}
-                                </span>
-                              </div>
-                            </div>
-                            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                              {comment.applicant_comment}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                  <div className="flex flex-wrap gap-2">
+                    {keywords.map((keyword, index) => (
+                      <span key={index} className="px-3 py-1 bg-purple-100 text-navy-800 rounded-full text-sm">
+                        #{keyword}
+                      </span>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* 리뷰 탭 */}
-            {activeTab === 'reviews' && (
-              <div>
-                {loadingReviews ? (
-                  <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">리뷰를 불러오는 중...</p>
+              {/* 리뷰 작성시 안내사항 */}
+              {reviewGuidelines && (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <Target className="w-5 h-5 mr-2 text-orange-600" />
+                    리뷰 작성시 안내사항
+                  </h2>
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {reviewGuidelines}
+                    </p>
                   </div>
-                ) : reviews.length === 0 ? (
-                  <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                    <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">아직 작성된 리뷰가 없습니다</h3>
-                    <p className="text-gray-600">캠페인 승인 후 리뷰를 작성하면 이곳에 표시됩니다</p>
+                </div>
+              )}
+
+              {/* 추가 안내사항 */}
+              {additionalGuidelines && (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
+                    추가 안내사항
+                  </h2>
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {additionalGuidelines}
+                    </p>
                   </div>
-                ) : (
-                  <div className="space-y-6">
-                    {reviews.map((review: any) => (
-                      <div key={review.review_id} className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex items-start space-x-4">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                              {(review.user_name || 'U').charAt(0).toUpperCase()}
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-2">
-                                <h4 className="text-sm font-semibold text-gray-900">
-                                  {review.user_name || '익명'}
-                                </h4>
-                                <span className="text-xs text-gray-500">
-                                  {(() => {
-                                    const dateStr = review.created_at
-                                    if (!dateStr) return '방금 전'
-                                    try {
-                                      const date = new Date(dateStr)
-                                      if (isNaN(date.getTime())) return '방금 전'
-                                      return date.toLocaleDateString('ko-KR', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                      })
-                                    } catch {
-                                      return '방금 전'
-                                    }
-                                  })()}
-                                </span>
-                              </div>
-                              {review.rating && (
-                                <div className="flex items-center space-x-1">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star
-                                      key={star}
-                                      className={`w-4 h-4 ${
-                                        star <= review.rating
-                                          ? 'text-yellow-400 fill-current'
-                                          : 'text-gray-300'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            {review.title && (
-                              <h5 className="text-base font-semibold text-gray-900 mb-2">
-                                {review.title}
-                              </h5>
-                            )}
-                            <p className="text-gray-700 leading-relaxed whitespace-pre-line mb-4">
-                              {review.content || review.review_content}
-                            </p>
-                            {review.images && review.images.length > 0 && (
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-                                {review.images.map((imageUrl: string, index: number) => (
-                                  <div key={index} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                                    <img
-                                      src={imageUrl}
-                                      alt={`리뷰 이미지 ${index + 1}`}
-                                      className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=이미지+로딩+실패'
-                                      }}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {review.sns_url && (
-                              <div className="mt-4 pt-4 border-t border-gray-100">
-                                <a
-                                  href={review.sns_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center space-x-2 text-sm text-vintage-600 hover:text-vintage-700 font-medium"
-                                >
-                                  <FileText className="w-4 h-4" />
-                                  <span>SNS에서 전체 리뷰 보기</span>
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* 오른쪽 사이드바 (항상 고정) */}
+          {/* 오른쪽 사이드바 */}
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
               {/* 캠페인 정보 */}
@@ -1189,24 +1010,12 @@ const CampaignDetail: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
 
-      </div>
-
-      {/* 신청서 작성 모달 */}
-      <ApplicationFormModal
-        isOpen={showApplicationModal}
-        onClose={() => setShowApplicationModal(false)}
-        campaign={campaign}
-        onSuccess={() => {
-          setShowApplicationModal(false)
-          setApplicationStatus({ status: 'submitted' })
-        }}
-      />
-    </div>
-  )
-}
-
-export default CampaignDetail
+        {/* 신청자 한마디 탭 */}
+        {activeTab === 'comments' && (
+          <div className="max-w-4xl mx-auto">
+            {loadingComments ? (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
                 <p className="text-gray-600">신청자 한마디를 불러오는 중...</p>
