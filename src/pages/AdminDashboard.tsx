@@ -2220,7 +2220,8 @@ const AdminDashboard: React.FC = () => {
     if (isAuthenticated && isAdminUser()) {
       loadAllData()
     }
-  }, [isAuthenticated, loadAllData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated])
 
   if (loading) {
     return (
