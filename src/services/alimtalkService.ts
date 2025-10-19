@@ -1,7 +1,6 @@
 // 네이버 클라우드 Biz Message (카카오 알림톡) 서비스
 // Vercel API를 통해 알림톡 발송 (CORS 문제 해결)
-class AlimtalkService {}
-
+class AlimtalkService {
   // 알림톡 발송 API 호출 (Vercel API를 통해)
   private async sendAlimtalk(params: {
     to: string
