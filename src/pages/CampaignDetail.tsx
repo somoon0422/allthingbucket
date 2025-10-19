@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import { useWishlist } from '../hooks/useWishlist'
 import { ApplicationFormModal } from '../components/ApplicationFormModal'
 import { setCampaignOGTags } from '../utils/ogTags'
-import {Clock, ArrowLeft, CheckCircle, XCircle, AlertCircle, Share2, ChevronLeft, ChevronRight, ChevronUp, Heart, Hash, Info, Gift, Target} from 'lucide-react'
+import {Clock, ArrowLeft, CheckCircle, XCircle, AlertCircle, Share2, ChevronLeft, ChevronRight, ChevronUp, Heart, Hash, Info, Gift, Target, MessageSquare, Star, FileText, User} from 'lucide-react'
 import toast from 'react-hot-toast'
+import { dataService } from '../lib/dataService'
 
 // 🔥 안전한 문자열 추출
 function safeString(obj: any, field: string, fallback = ''): string {
@@ -101,25 +102,108 @@ function safeNumber(obj: any, field: string, fallback = 0): number {
 const CampaignDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user, isAuthenticated } = useAuth()
   const { getCampaignById, checkDuplicateApplication, loading } = useExperiences()
   const { wishlist, toggleWishlist, isWishlisted } = useWishlist()
-  
+
   const [campaign, setCampaign] = useState<any>(null)
   const [showApplicationModal, setShowApplicationModal] = useState(false)
   const [applicationStatus, setApplicationStatus] = useState<any>(null)
   const [currentMainImageIndex, setCurrentMainImageIndex] = useState(0)
   const [isDetailImagesExpanded, setIsDetailImagesExpanded] = useState(false)
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'info')
+  const [applicantComments, setApplicantComments] = useState<any[]>([])
+  const [reviews, setReviews] = useState<any[]>([])
+  const [loadingComments, setLoadingComments] = useState(false)
+  const [loadingReviews, setLoadingReviews] = useState(false)
   
   // 🔥 웹에서 찾은 방법: 토글 함수
   const toggleDetailImages = () => {
-    console.log('🖼️ 토글 함수 호출:', { 
-      before: isDetailImagesExpanded, 
-      after: !isDetailImagesExpanded 
+    console.log('🖼️ 토글 함수 호출:', {
+      before: isDetailImagesExpanded,
+      after: !isDetailImagesExpanded
     })
     setIsDetailImagesExpanded(!isDetailImagesExpanded)
   }
-  
+
+  // 탭 변경 핸들러
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    setSearchParams({ tab })
+
+    // 탭 변경 시 데이터 로드
+    if (tab === 'comments' && applicantComments.length === 0) {
+      loadApplicantComments()
+    } else if (tab === 'reviews' && reviews.length === 0) {
+      loadReviews()
+    }
+  }
+
+  // 신청자 한마디 로드
+  const loadApplicantComments = async () => {
+    if (!id) return
+
+    try {
+      setLoadingComments(true)
+      const applications = await dataService.entities.user_applications.list()
+
+      // 이 캠페인에 대한 신청 중 코멘트가 있는 것만 필터링
+      const commentsWithApplicants = applications
+        .filter((app: any) =>
+          app.campaign_id === id &&
+          app.applicant_comment &&
+          app.applicant_comment.trim() !== ''
+        )
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.comment_created_at || a.created_at).getTime()
+          const dateB = new Date(b.comment_created_at || b.created_at).getTime()
+          return dateB - dateA
+        })
+
+      setApplicantComments(commentsWithApplicants)
+    } catch (error) {
+      console.error('❌ 신청자 한마디 로드 실패:', error)
+      toast.error('신청자 한마디를 불러오는데 실패했습니다')
+    } finally {
+      setLoadingComments(false)
+    }
+  }
+
+  // 리뷰 로드
+  const loadReviews = async () => {
+    if (!id) return
+
+    try {
+      setLoadingReviews(true)
+      const allReviews = await dataService.entities.user_reviews.list()
+
+      // 이 캠페인에 대한 리뷰만 필터링
+      const campaignReviews = allReviews
+        .filter((review: any) => review.campaign_id === id || review.experience_id === id)
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.created_at).getTime()
+          const dateB = new Date(b.created_at).getTime()
+          return dateB - dateA
+        })
+
+      setReviews(campaignReviews)
+    } catch (error) {
+      console.error('❌ 리뷰 로드 실패:', error)
+      toast.error('리뷰를 불러오는데 실패했습니다')
+    } finally {
+      setLoadingReviews(false)
+    }
+  }
+
+  // URL 파라미터 변경 시 탭 업데이트
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
+
   // 🔥 디버깅: 상태 변화 추적
   useEffect(() => {
     console.log('🖼️ isDetailImagesExpanded 상태 변화:', isDetailImagesExpanded)
@@ -433,11 +517,61 @@ const CampaignDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* 댕댕뷰 스타일 메인 레이아웃 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 왼쪽: 이미지 및 기본 정보 */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {/* 탭 네비게이션 */}
+        <div className="bg-white rounded-xl shadow-sm mb-6">
+          <div className="flex border-b">
+            <button
+              onClick={() => handleTabChange('info')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                activeTab === 'info'
+                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Info className="w-5 h-5" />
+              <span>캠페인정보</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('comments')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                activeTab === 'comments'
+                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <MessageSquare className="w-5 h-5" />
+              <span>신청자 한마디</span>
+              {applicantComments.length > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
+                  {applicantComments.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => handleTabChange('reviews')}
+              className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                activeTab === 'reviews'
+                  ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Star className="w-5 h-5" />
+              <span>리뷰</span>
+              {reviews.length > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
+                  {reviews.length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 탭 컨텐츠 */}
+        {activeTab === 'info' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* 왼쪽: 이미지 및 기본 정보 */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               {/* 🔥 메인 이미지 갤러리 */}
               {displayMainImages.length > 0 && (
                 <div className="aspect-video bg-gray-200 relative overflow-hidden">
@@ -876,6 +1010,209 @@ const CampaignDetail: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
+
+        {/* 신청자 한마디 탭 */}
+        {activeTab === 'comments' && (
+          <div className="max-w-4xl mx-auto">
+            {loadingComments ? (
+              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">신청자 한마디를 불러오는 중...</p>
+              </div>
+            ) : applicantComments.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">아직 신청자 한마디가 없습니다</h3>
+                <p className="text-gray-600">첫 번째로 캠페인에 신청하고 한마디를 남겨보세요!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {applicantComments.map((comment: any) => (
+                  <div key={comment.application_id} className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-start space-x-4">
+                      {/* 사용자 아바타 */}
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          {(comment.applicant_name || comment.user_name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* 코멘트 내용 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="text-sm font-semibold text-gray-900">
+                              {comment.applicant_name || comment.user_name || '익명'}
+                            </h4>
+                            <span className="text-xs text-gray-500">
+                              {(() => {
+                                const dateStr = comment.comment_created_at || comment.created_at
+                                if (!dateStr) return '방금 전'
+
+                                try {
+                                  const date = new Date(dateStr)
+                                  if (isNaN(date.getTime())) return '방금 전'
+
+                                  const now = new Date()
+                                  const diffMs = now.getTime() - date.getTime()
+                                  const diffMins = Math.floor(diffMs / 60000)
+                                  const diffHours = Math.floor(diffMs / 3600000)
+                                  const diffDays = Math.floor(diffMs / 86400000)
+
+                                  if (diffMins < 1) return '방금 전'
+                                  if (diffMins < 60) return `${diffMins}분 전`
+                                  if (diffHours < 24) return `${diffHours}시간 전`
+                                  if (diffDays < 7) return `${diffDays}일 전`
+
+                                  return date.toLocaleDateString('ko-KR', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })
+                                } catch {
+                                  return '방금 전'
+                                }
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                          {comment.applicant_comment}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 리뷰 탭 */}
+        {activeTab === 'reviews' && (
+          <div className="max-w-4xl mx-auto">
+            {loadingReviews ? (
+              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">리뷰를 불러오는 중...</p>
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+                <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">아직 작성된 리뷰가 없습니다</h3>
+                <p className="text-gray-600">캠페인 승인 후 리뷰를 작성하면 이곳에 표시됩니다</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {reviews.map((review: any) => (
+                  <div key={review.review_id} className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-start space-x-4">
+                      {/* 사용자 아바타 */}
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          {(review.user_name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* 리뷰 내용 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="text-sm font-semibold text-gray-900">
+                              {review.user_name || '익명'}
+                            </h4>
+                            <span className="text-xs text-gray-500">
+                              {(() => {
+                                const dateStr = review.created_at
+                                if (!dateStr) return '방금 전'
+
+                                try {
+                                  const date = new Date(dateStr)
+                                  if (isNaN(date.getTime())) return '방금 전'
+
+                                  return date.toLocaleDateString('ko-KR', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })
+                                } catch {
+                                  return '방금 전'
+                                }
+                              })()}
+                            </span>
+                          </div>
+
+                          {/* 별점 */}
+                          {review.rating && (
+                            <div className="flex items-center space-x-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-4 h-4 ${
+                                    star <= review.rating
+                                      ? 'text-yellow-400 fill-current'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 리뷰 제목 */}
+                        {review.title && (
+                          <h5 className="text-base font-semibold text-gray-900 mb-2">
+                            {review.title}
+                          </h5>
+                        )}
+
+                        {/* 리뷰 내용 */}
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-line mb-4">
+                          {review.content || review.review_content}
+                        </p>
+
+                        {/* 리뷰 이미지들 */}
+                        {review.images && review.images.length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+                            {review.images.map((imageUrl: string, index: number) => (
+                              <div key={index} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                <img
+                                  src={imageUrl}
+                                  alt={`리뷰 이미지 ${index + 1}`}
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=이미지+로딩+실패'
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* SNS 링크 */}
+                        {review.sns_url && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <a
+                              href={review.sns_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center space-x-2 text-sm text-vintage-600 hover:text-vintage-700 font-medium"
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span>SNS에서 전체 리뷰 보기</span>
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
 

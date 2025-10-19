@@ -2,19 +2,22 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../lib/dataService'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 
 // Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
-import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Tag, FileText} from 'lucide-react'
+import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Tag, FileText, Heart, Coins, Menu} from 'lucide-react'
 import { PhoneInput } from '../components/PhoneInput'
 import ProfileCompletionModal from '../components/ProfileCompletionModal'
 import ChatBot from '../components/ChatBot'
 
 const MyPage: React.FC = () => {
   const { user, updateUser } = useAuth()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [sidebarSection, setSidebarSection] = useState(searchParams.get('section') || 'applications')
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'basic')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [userCode, setUserCode] = useState<string>('')
   const [editMode, setEditMode] = useState(false)
@@ -62,13 +65,39 @@ const MyPage: React.FC = () => {
     loadProfile()
   }, [user])
 
-  // URL 파라미터 변경 시 탭 업데이트
+  // URL 파라미터 변경 시 섹션/탭 업데이트
   useEffect(() => {
+    const section = searchParams.get('section')
     const tab = searchParams.get('tab')
+    if (section) {
+      setSidebarSection(section)
+    }
     if (tab) {
       setActiveTab(tab)
     }
   }, [searchParams])
+
+  // 사이드바 섹션 변경 핸들러
+  const handleSectionChange = (section: string) => {
+    // 나의캠페인, 관심캠페인, 나의포인트는 각각의 페이지로 이동
+    if (section === 'applications') {
+      navigate('/my-applications')
+      return
+    }
+    if (section === 'wishlist') {
+      navigate('/wishlist')
+      return
+    }
+    if (section === 'points') {
+      navigate('/points')
+      return
+    }
+
+    // 프로필관리만 이 페이지에서 처리
+    setSidebarSection(section)
+    setSearchParams({ section })
+    setIsSidebarOpen(false) // 모바일에서 선택 후 사이드바 닫기
+  }
 
   const loadProfile = async () => {
     if (!user) return
@@ -376,44 +405,133 @@ const MyPage: React.FC = () => {
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">프로필 정보를 불러오는 중...</p>
+          <p className="text-gray-600">정보를 불러오는 중...</p>
         </div>
       </div>
     )
   }
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {/* 🎨 새로운 로고 적용 */}
-            <img src="/logo.png" alt="올띵버킷 로고" className="w-12 h-12" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">프로필 관리</h1>
-              <p className="text-gray-600">
-                개인정보, SNS 정보를 관리하세요
-              </p>
-            </div>
-          </div>
+  // 사이드바 메뉴 항목
+  const sidebarMenuItems = [
+    { id: 'applications', label: '나의캠페인', sublabel: '내신청', icon: FileText },
+    { id: 'wishlist', label: '관심캠페인', sublabel: '찜목록', icon: Heart },
+    { id: 'points', label: '나의포인트', icon: Coins },
+    { id: 'profile', label: '프로필관리', icon: User },
+  ]
 
-          <div className="flex items-center space-x-3">
-            {!editMode && (
-              <button
-                onClick={() => setEditMode(true)}
-                className="flex items-center space-x-2 text-navy-600 hover:text-navy-700 bg-purple-50 px-4 py-2 rounded-lg hover:bg-purple-100 transition-colors"
-              >
-                <Edit3 className="w-4 h-4" />
-                <span>수정</span>
-              </button>
-            )}
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* 페이지 헤더 */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img src="/logo.png" alt="올띵버킷 로고" className="w-10 h-10" />
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">마이페이지</h1>
+                <p className="text-sm text-gray-600">
+                  내 활동과 정보를 관리하세요
+                </p>
+              </div>
+            </div>
+
+            {/* 모바일 메뉴 버튼 */}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* 탭 네비게이션 */}
-      <div className="bg-white rounded-xl shadow-sm border mb-6">
-        <div className="flex border-b">
+        <div className="flex gap-6">
+          {/* 사이드바 */}
+          <aside className={`
+            lg:block lg:w-64 flex-shrink-0
+            ${isSidebarOpen ? 'fixed inset-0 z-50 bg-black bg-opacity-50 lg:bg-transparent' : 'hidden'}
+          `}
+          onClick={() => setIsSidebarOpen(false)}
+          >
+            <div
+              className="lg:sticky lg:top-6 bg-white rounded-xl shadow-sm border p-4 lg:p-6 h-fit lg:max-h-[calc(100vh-120px)] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <nav className="space-y-2">
+                {sidebarMenuItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = sidebarSection === item.id
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSectionChange(item.id)}
+                      className={`
+                        w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all
+                        ${isActive
+                          ? 'bg-gradient-to-r from-vintage-50 to-navy-50 text-navy-700 border-l-4 border-navy-600 font-semibold shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        }
+                      `}
+                    >
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-navy-600' : 'text-gray-500'}`} />
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium">{item.label}</div>
+                        {item.sublabel && (
+                          <div className="text-xs text-gray-500">{item.sublabel}</div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </nav>
+
+              {/* 회원코드 표시 (사이드바 하단) */}
+              {userCode && (
+                <div className="mt-6 pt-6 border-t">
+                  <div className="bg-gradient-to-r from-navy-50 to-pink-50 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Shield className="w-4 h-4 text-navy-600" />
+                      <p className="text-xs font-semibold text-navy-900">회원코드</p>
+                    </div>
+                    <p className="text-lg font-bold text-navy-600">{userCode}</p>
+                    <p className="text-xs text-navy-600 mt-1">수정 불가</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* 메인 콘텐츠 */}
+          <main className="flex-1 min-w-0">
+            {/* 프로필 관리 섹션 */}
+            {sidebarSection === 'profile' && (
+              <div>
+                {/* 프로필 헤더 */}
+                <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">프로필 관리</h2>
+                      <p className="text-gray-600">개인정보, SNS 정보를 관리하세요</p>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      {!editMode && (
+                        <button
+                          onClick={() => setEditMode(true)}
+                          className="flex items-center space-x-2 text-navy-600 hover:text-navy-700 bg-purple-50 px-4 py-2 rounded-lg hover:bg-purple-100 transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          <span>수정</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 탭 네비게이션 */}
+                <div className="bg-white rounded-xl shadow-sm border mb-6">
+                  <div className="flex border-b">
           <button
             onClick={() => handleTabChange('basic')}
             className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
@@ -999,30 +1117,35 @@ const MyPage: React.FC = () => {
         </div>
       )}
 
-      {/* 🔹 수정 버튼 */}
-      {editMode && (
-        <div className="flex space-x-3 mt-6">
-          <button
-            onClick={handleCancel}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <X className="w-4 h-4" />
-            <span>취소</span>
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center space-x-2 px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {saving ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            ) : (
-              <Save className="w-4 h-4" />
+                {/* 🔹 수정 버튼 */}
+                {editMode && (
+                  <div className="flex space-x-3 mt-6">
+                    <button
+                      onClick={handleCancel}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>취소</span>
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex items-center space-x-2 px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {saving ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      <span>저장</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
-            <span>저장</span>
-          </button>
+          </main>
         </div>
-      )}
+      </div>
 
       {/* 프로필 완성 안내 모달 */}
       <ProfileCompletionModal

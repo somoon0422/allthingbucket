@@ -81,7 +81,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     platform_type: '', // 새로 추가: 플랫폼 타입
     application_reason: '',
     experience_plan: '',
-    additional_info: ''
+    additional_info: '',
+    applicant_comment: '' // 신청자 한마디
   })
 
   // 🔥 campaign 또는 experience 둘 다 지원
@@ -305,6 +306,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       }
 
       // 🔥 신청 데이터에 정확한 사용자 ID 포함
+      const now = new Date().toISOString()
       const applicationData = {
         ...formData,
         // 🔥 다중 사용자 ID 보장 (우선순위: id > user_id > _id)
@@ -312,6 +314,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         // 🔥 연락처 정보 명시적 저장
         user_phone: formData.phone,
         phone: formData.phone,
+        // 🔥 신청자 한마디 타임스탬프 추가
+        ...(formData.applicant_comment && formData.applicant_comment.trim() !== '' && {
+          comment_created_at: now,
+          comment_updated_at: now
+        }),
         // 🔥 추가 사용자 정보 (디버깅용)
         original_user_object: user,
         submitted_by_role: user.role,
@@ -320,7 +327,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           login_id: user.id,
           user_id: user.user_id,
           _id: (user as any)._id,
-          submission_timestamp: new Date().toISOString()
+          submission_timestamp: now
         }
       }
 
@@ -705,7 +712,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   placeholder="제품 체험 후 어떤 활동을 할 계획인지 작성해주세요"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   추가 정보
@@ -718,6 +725,37 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
                   placeholder="추가로 전달하고 싶은 내용이 있다면 작성해주세요"
                 />
+              </div>
+            </div>
+
+            {/* 신청자 한마디 */}
+            <div className="space-y-4 bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
+                신청자 한마디
+              </h3>
+              <p className="text-sm text-gray-600">
+                다른 신청자들과 공유하고 싶은 메시지를 남겨보세요! (선택사항)
+              </p>
+
+              <div>
+                <textarea
+                  name="applicant_comment"
+                  value={formData.applicant_comment}
+                  onChange={handleInputChange}
+                  rows={3}
+                  maxLength={200}
+                  className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none bg-white"
+                  placeholder="예: 이 제품이 너무 궁금해서 신청합니다! 좋은 리뷰 남기겠습니다 😊 (최대 200자)"
+                />
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-xs text-gray-500">
+                    💡 작성하시면 캠페인 상세페이지의 '신청자 한마디' 탭에 표시됩니다
+                  </p>
+                  <span className="text-xs text-gray-500">
+                    {formData.applicant_comment.length} / 200
+                  </span>
+                </div>
               </div>
             </div>
 
