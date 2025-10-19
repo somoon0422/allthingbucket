@@ -13,7 +13,7 @@ import CampaignDetail from './pages/CampaignDetail'
 import MyApplications from './pages/MyApplications'
 import Wishlist from './pages/Wishlist'
 import Points from './pages/Points'
-import Profile from './pages/Profile'
+import MyPage from './pages/MyPage'
 import WithdrawalRequest from './pages/WithdrawalRequest'
 import IdentityVerification from './pages/IdentityVerification'
 import AuthCallback from './pages/AuthCallback'
@@ -72,7 +72,8 @@ function App() {
                   <Route path="/my-applications" element={<MyApplications />} />
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/points" element={<Points />} />
-                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/mypage" element={<MyPage />} />
+                  <Route path="/profile" element={<Navigate to="/mypage" replace />} />
                   <Route path="/withdrawal" element={<WithdrawalRequest />} />
                   <Route path="/identity-verification" element={<IdentityVerification />} />
                   <Route path="*" element={<Navigate to="/" replace />} />

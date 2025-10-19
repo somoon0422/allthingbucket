@@ -23,7 +23,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       { name: '찜목록', href: '/wishlist', icon: Heart },
       { name: '내신청', href: '/my-applications', icon: FileText },
       { name: '포인트', href: '/points', icon: Coins },
-      { name: '프로필', href: '/profile', icon: User },
+      { name: '마이페이지', href: '/mypage', icon: User },
     ] : [])
   ]
 
@@ -71,10 +71,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // 프로필 미완성 사용자 자동 리디렉션
   useEffect(() => {
     if (isAuthenticated && user && !isAdminUser()) {
-      // 필수 정보(실명)가 없는 경우, 프로필 페이지가 아니면 리디렉션
-      if (!user.name && location.pathname !== '/profile') {
-        console.log('🔄 프로필 미완성 감지 - /profile로 리디렉션')
-        navigate('/profile')
+      // 필수 정보(실명)가 없는 경우, 마이페이지가 아니면 리디렉션
+      if (!user.name && location.pathname !== '/mypage' && location.pathname !== '/profile') {
+        console.log('🔄 프로필 미완성 감지 - /mypage로 리디렉션')
+        navigate('/mypage')
       }
     }
   }, [isAuthenticated, user, location.pathname, navigate, isAdminUser])

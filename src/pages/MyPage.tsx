@@ -11,7 +11,7 @@ import { PhoneInput } from '../components/PhoneInput'
 import ProfileCompletionModal from '../components/ProfileCompletionModal'
 import ChatBot from '../components/ChatBot'
 
-const Profile: React.FC = () => {
+const MyPage: React.FC = () => {
   const { user, updateUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'basic')
@@ -1037,4 +1037,4 @@ const Profile: React.FC = () => {
   )
 }
 
-export default Profile
+export default MyPage
