@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import {X, Mail, CheckCircle, Edit} from 'lucide-react'
 import { emailNotificationService } from '../services/emailNotificationService'
+import { alimtalkService } from '../services/alimtalkService'
 import { campaignService } from '../services/campaignService'
 import toast from 'react-hot-toast'
 
@@ -522,35 +523,73 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         }
       }
 
-      console.log('🚀 Gmail 이메일 발송 시작:', {
-        to: editableRecipient.email,
-        toName: editableRecipient.name,
-        campaignName: experienceName
-      })
-
-      // 🔥 Gmail SMTP 이메일 발송 (emailNotificationService 사용)
-      // 변수 치환된 제목과 내용
+      // 🔥 변수 치환된 제목과 내용
       const replacedSubject = replaceVariables(subject)
       const replacedContent = replaceVariables(emailContent)
 
-      // 커스텀 이메일 발송
-      const result = await emailNotificationService.sendEmail({
-        to: editableRecipient.email,
-        toName: editableRecipient.name,
-        type: 'custom',
-        data: {
-          subject: replacedSubject,
-          content: replacedContent
+      let successCount = 0
+      let failCount = 0
+
+      // 🔥 이메일 발송
+      if (sendMethod === 'email' || sendMethod === 'all') {
+        console.log('📧 이메일 발송 시작:', {
+          to: editableRecipient.email,
+          toName: editableRecipient.name,
+          campaignName: experienceName
+        })
+
+        const result = await emailNotificationService.sendEmail({
+          to: editableRecipient.email,
+          toName: editableRecipient.name,
+          type: 'custom',
+          data: {
+            subject: replacedSubject,
+            content: replacedContent
+          }
+        })
+
+        console.log('📧 이메일 발송 결과:', result)
+
+        if (result.success) {
+          successCount++
+          toast.success('이메일이 발송되었습니다')
+        } else {
+          failCount++
+          toast.error(`이메일 발송 실패: ${result.message}`)
         }
-      })
+      }
 
-      console.log('📧 Gmail 이메일 발송 결과:', result)
+      // 🔥 카카오 알림톡 발송
+      if (sendMethod === 'alimtalk' || sendMethod === 'all') {
+        console.log('💬 알림톡 발송 시작:', {
+          phone: editableRecipient.phone,
+          name: editableRecipient.name,
+          campaignName: experienceName
+        })
 
-      if (result.success) {
-        toast.success(`${editableRecipient.name}님에게 승인 안내 이메일을 전송했습니다.`)
+        const result = await alimtalkService.sendApprovalAlimtalk(
+          editableRecipient.phone,
+          editableRecipient.name,
+          experienceName
+        )
+
+        console.log('💬 알림톡 발송 결과:', result)
+
+        if (result.success) {
+          successCount++
+          toast.success('알림톡이 발송되었습니다')
+        } else {
+          failCount++
+          toast.warning(`알림톡 발송 실패: ${result.message}`)
+        }
+      }
+
+      // 최종 결과 확인
+      if (successCount > 0) {
+        toast.success(`${editableRecipient.name}님에게 승인 안내가 전송되었습니다 (성공: ${successCount}, 실패: ${failCount})`)
         onApprovalComplete()
       } else {
-        toast.error(`이메일 발송 실패: ${result.message}`)
+        toast.error('모든 알림 발송에 실패했습니다')
       }
 
     } catch (error) {
