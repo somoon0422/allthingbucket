@@ -7,7 +7,7 @@ import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
 import ShippingModal from '../components/ShippingModal'
-import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, User, Calculator, Truck, Package, Edit} from 'lucide-react'
+import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, MessageSquare, User, Calculator, Truck, Package, Edit} from 'lucide-react'
 import toast from 'react-hot-toast'
 // 카카오 알림톡은 사용하지 않음 - 이메일만 사용
 import { emailNotificationService } from '../services/emailNotificationService'
