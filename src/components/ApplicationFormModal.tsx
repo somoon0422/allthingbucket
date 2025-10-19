@@ -6,6 +6,7 @@ import { useExperiences } from '../hooks/useExperiences'
 import { AddressInput } from './AddressInput'
 import { PhoneInput } from './PhoneInput'
 import { dataService } from '../lib/dataService'
+import { alimtalkService } from '../services/alimtalkService'
 import toast from 'react-hot-toast'
 
 interface ApplicationFormModalProps {
@@ -383,6 +384,26 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
       if (result && result.success) {
         console.log('✅ 신청 성공!')
+
+        // 신청 완료 알림톡 자동 발송
+        try {
+          const campaignName = targetCampaign.campaign_name || targetCampaign.experience_name || targetCampaign.title
+          const brandName = targetCampaign.brand_name || targetCampaign.company || ''
+          const applicationDate = new Date().toLocaleDateString('ko-KR')
+
+          await alimtalkService.sendApplicationSubmittedAlimtalk(
+            formData.phone,
+            formData.name,
+            campaignName,
+            brandName,
+            applicationDate
+          )
+          console.log('✅ 신청 완료 알림톡 발송 완료')
+        } catch (alimtalkError) {
+          console.error('⚠️ 신청 완료 알림톡 발송 실패:', alimtalkError)
+          // 알림톡 실패해도 신청은 완료된 것으로 처리
+        }
+
         onClose()
         if (onSuccess) onSuccess()
       } else {

@@ -623,22 +623,86 @@ const AdminDashboard: React.FC = () => {
 
     try {
       const applicationId = selectedReviewApplication.id || selectedReviewApplication._id
+      const userId = selectedReviewApplication.user_id
+      const campaignId = selectedReviewApplication.campaign_id || selectedReviewApplication.experience_id
 
-      // 🔥 user_applications 상태 업데이트
+      // 🔥 포인트 금액 가져오기
+      const pointAmount = selectedReviewApplication.campaignInfo?.rewards ||
+                         selectedReviewApplication.experience?.rewards ||
+                         selectedReviewApplication.rewards ||
+                         0
+
+      console.log('💰 리뷰 승인 및 포인트 자동 지급 시작:', {
+        applicationId,
+        userId,
+        campaignId,
+        pointAmount
+      })
+
+      // 🔥 1. user_applications 상태를 point_completed로 직접 업데이트 (중간 단계 건너뛰기)
       await dataService.entities.user_applications.update(applicationId, {
-        status: 'review_completed',
+        status: 'point_completed',
         updated_at: new Date().toISOString()
       })
 
-      console.log('✅ 리뷰 승인 완료 - user_applications 업데이트됨')
+      console.log('✅ user_applications 상태 업데이트 완료: point_completed')
 
-      // 🔥 이메일 발송
-      const userEmail = selectedReviewApplication.email
+      // 🔥 2. 포인트 지급 처리 (points_history에 레코드 생성)
+      if (pointAmount > 0 && userId) {
+        try {
+          await (dataService.entities as any).points_history.create({
+            user_id: userId,
+            campaign_id: campaignId,
+            application_id: applicationId,
+            points: pointAmount,
+            points_amount: pointAmount,
+            type: 'earned',
+            points_type: 'earned',
+            status: 'success',
+            payment_status: '지급완료',
+            description: `리뷰 승인 - 포인트 자동 지급`,
+            transaction_date: new Date().toISOString(),
+            created_at: new Date().toISOString()
+          })
+          console.log('✅ 포인트 지급 완료 레코드 생성 완료:', pointAmount)
+        } catch (pointError) {
+          console.error('⚠️ 포인트 지급 실패:', pointError)
+          // 포인트 지급 실패해도 리뷰 승인은 유지
+        }
+      }
+
+      // 🔥 3. 알림톡 발송 (리뷰 승인 + 포인트 지급 완료)
+      const userPhone = selectedReviewApplication.phone || selectedReviewApplication.user_profile?.phone
       const userName = selectedReviewApplication.name || '회원'
       const campaignName = selectedReviewApplication.experience?.campaign_name ||
                           selectedReviewApplication.campaign_name ||
                           '캠페인'
 
+      if (userPhone && pointAmount > 0) {
+        try {
+          // 현재 포인트 잔액 조회
+          const userPointsRecords = await (dataService.entities as any).user_points.list()
+          const userPointRecord = userPointsRecords.find((p: any) => p.user_id === userId)
+          const totalPoints = userPointRecord?.total_points || pointAmount
+
+          const paymentDate = new Date().toLocaleDateString('ko-KR')
+
+          await alimtalkService.sendReviewApprovedWithPointsAlimtalk(
+            userPhone,
+            userName,
+            campaignName,
+            pointAmount,
+            totalPoints,
+            paymentDate
+          )
+          console.log('✅ 리뷰 승인 + 포인트 지급 알림톡 발송 완료')
+        } catch (alimtalkError) {
+          console.error('⚠️ 알림톡 발송 실패 (승인/지급은 완료됨):', alimtalkError)
+        }
+      }
+
+      // 🔥 4. 이메일 발송 (기존 리뷰 승인 이메일)
+      const userEmail = selectedReviewApplication.email
       if (userEmail) {
         try {
           await emailNotificationService.sendReviewApprovalEmail(userEmail, userName, campaignName)
@@ -648,7 +712,7 @@ const AdminDashboard: React.FC = () => {
         }
       }
 
-      toast.success('리뷰가 승인되었습니다.')
+      toast.success(`리뷰가 승인되고 ${pointAmount.toLocaleString()}P가 지급되었습니다! 🎉`)
       setShowReviewApprovalModal(false)
       setSelectedReviewApplication(null)
       loadAllData()
@@ -689,13 +753,29 @@ const AdminDashboard: React.FC = () => {
 
       console.log('✅ 리뷰 반려 완료 - user_applications 업데이트됨')
 
-      // 🔥 이메일 발송
+      const userPhone = selectedReviewApplication.phone || selectedReviewApplication.user_profile?.phone
       const userEmail = selectedReviewApplication.email
       const userName = selectedReviewApplication.name || '회원'
       const campaignName = selectedReviewApplication.experience?.campaign_name ||
                           selectedReviewApplication.campaign_name ||
                           '캠페인'
 
+      // 🔥 알림톡 발송 (리뷰 반려)
+      if (userPhone) {
+        try {
+          await alimtalkService.sendReviewRejectedDetailAlimtalk(
+            userPhone,
+            userName,
+            campaignName,
+            reviewRejectionReason.trim()
+          )
+          console.log('✅ 리뷰 반려 알림톡 발송 완료')
+        } catch (alimtalkError) {
+          console.error('⚠️ 알림톡 발송 실패 (반려는 완료됨):', alimtalkError)
+        }
+      }
+
+      // 🔥 이메일 발송
       if (userEmail) {
         try {
           await emailNotificationService.sendReviewRejectionEmail(
