@@ -190,7 +190,13 @@ const CampaignDetail: React.FC = () => {
         await navigator.clipboard.writeText(window.location.href)
         toast.success('링크가 클립보드에 복사되었습니다')
       }
-    } catch (error) {
+    } catch (error: any) {
+      // 사용자가 공유를 취소한 경우 (AbortError)는 에러 메시지를 띄우지 않음
+      if (error.name === 'AbortError') {
+        console.log('공유가 취소되었습니다')
+        return
+      }
+
       console.error('공유 실패:', error)
       toast.error('공유에 실패했습니다')
     }
