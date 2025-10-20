@@ -7,6 +7,7 @@ import RejectionModal from '../components/RejectionModal'
 import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
 import ShippingModal from '../components/ShippingModal'
+import ConsultationManager from '../components/ConsultationManager'
 import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, MessageSquare, User, Calculator, Truck, Package, Edit, Phone, Mail, Tag, DollarSign} from 'lucide-react'
 import toast from 'react-hot-toast'
 // 이메일 및 카카오 알림톡 서비스
@@ -280,7 +281,10 @@ const AdminDashboard: React.FC = () => {
   const [consultationFilter, setConsultationFilter] = useState('all')
   const [consultationSearch, setConsultationSearch] = useState('')
   const [selectedConsultation, setSelectedConsultation] = useState<any>(null)
-  const [showConsultationDetailModal, setShowConsultationDetailModal] = useState(false)
+  const [showConsultationDetail, setShowConsultationDetail] = useState(false)
+  const [selectedConsultationIds, setSelectedConsultationIds] = useState<string[]>([])
+  const [editingConsultationMemo, setEditingConsultationMemo] = useState<string | null>(null)
+  const [tempMemo, setTempMemo] = useState('')
 
   // 컬럼명 한글 번역 함수
   const translateFieldName = (fieldName: string): string => {
@@ -2414,26 +2418,81 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-vintage-50 to-navy-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="backdrop-blur-sm bg-white/90 shadow-xl border-b border-white/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">관리자 대시보드</h1>
-              <p className="text-gray-600 mt-1">올띵버킷 체험단 관리 시스템</p>
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center gap-8">
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">관리자 대시보드</h1>
+              </div>
+
+              {/* 네비게이션 탭 */}
+              <nav className="flex gap-1">
+                <button
+                  onClick={() => setActiveTab('users')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    activeTab === 'users'
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  회원
+                </button>
+                <button
+                  onClick={() => setActiveTab('campaigns')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    activeTab === 'campaigns'
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  캠페인
+                </button>
+                <button
+                  onClick={() => setActiveTab('consultations')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    activeTab === 'consultations'
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  상담 접수
+                </button>
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    activeTab === 'chat'
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  실시간 채팅
+                </button>
+                <button
+                  onClick={() => setActiveTab('withdrawals')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    activeTab === 'withdrawals'
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  출금 관리
+                </button>
+              </nav>
             </div>
-            <div className="flex gap-3">
+
+            <div className="flex gap-2">
               {/* 알림 아이콘 */}
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:scale-105 hover:shadow-lg transition-all duration-200"
+                  className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
                 >
-                  <Bell className="w-5 h-5" />
-                  <span className="font-medium">알림</span>
+                  <Bell className="w-4 h-4" />
                   {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-lg">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                       {unreadNotifications}
                     </span>
                   )}
@@ -2443,17 +2502,17 @@ const AdminDashboard: React.FC = () => {
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-vintage-600 to-navy-600 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
+                className="flex items-center gap-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 text-sm"
               >
-                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-                <span className="font-medium">새로고침</span>
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                새로고침
               </button>
               <button
                 onClick={() => navigate('/')}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200"
+                className="flex items-center gap-1 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
               >
-                <Home className="w-5 h-5" />
-                <span className="font-medium">홈으로</span>
+                <Home className="w-4 h-4" />
+                홈
               </button>
             </div>
           </div>
@@ -2542,174 +2601,127 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Stats */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('all')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-vintage-500 to-vintage-600 rounded-xl shadow-lg">
-                <FileText className="w-6 h-6 text-white" />
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('all')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <FileText className="w-4 h-4 text-purple-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">총 신청</p>
+              <div>
+                <p className="text-xs text-gray-500">총 신청</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('pending')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg">
-                <Clock className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('pending')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Clock className="w-4 h-4 text-yellow-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">대기중</p>
+              <div>
+                <p className="text-xs text-gray-500">대기중</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.pendingApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('approved')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
-                <UserCheck className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('approved')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <UserCheck className="w-4 h-4 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">승인됨</p>
+              <div>
+                <p className="text-xs text-gray-500">승인됨</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.approvedApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('product_purchased')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-vintage-500 to-vintage-600 rounded-xl shadow-lg">
-                <Package className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('product_purchased')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-vintage-100 rounded-lg">
+                <Package className="w-4 h-4 text-vintage-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">제품구매완료</p>
+              <div>
+                <p className="text-xs text-gray-500">제품구매완료</p>
                 <p className="text-2xl font-bold text-gray-900">{applications.filter(app => app.status === 'product_purchased').length}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('shipping')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-navy-500 to-navy-600 rounded-xl shadow-lg">
-                <Truck className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('shipping')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-navy-100 rounded-lg">
+                <Truck className="w-4 h-4 text-navy-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">배송중</p>
+              <div>
+                <p className="text-xs text-gray-500">배송중</p>
                 <p className="text-2xl font-bold text-gray-900">{applications.filter(app => app.status === 'shipping').length}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('review_in_progress')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-navy-500 to-navy-600 rounded-xl shadow-lg">
-                <FileText className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('review_in_progress')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-navy-100 rounded-lg">
+                <FileText className="w-4 h-4 text-navy-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">리뷰제출완료</p>
+              <div>
+                <p className="text-xs text-gray-500">리뷰제출완료</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.reviewInProgressApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('review_completed')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
-                <CheckCircle className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('review_completed')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">리뷰승인완료</p>
+              <div>
+                <p className="text-xs text-gray-500">리뷰승인완료</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.reviewCompletedApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('point_requested')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
-                <Gift className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('point_requested')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Gift className="w-4 h-4 text-orange-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">포인트지급요청</p>
+              <div>
+                <p className="text-xs text-gray-500">포인트지급요청</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.pointRequestedApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('point_completed')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                <CheckCircle className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('point_completed')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">포인트지급완료</p>
+              <div>
+                <p className="text-xs text-gray-500">포인트지급완료</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.pointCompletedApplications}</p>
               </div>
             </div>
           </div>
 
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl p-6 cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-200" onClick={() => setApplicationFilter('rejected')}>
-            <div className="flex items-center">
-              <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
-                <XCircle className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setApplicationFilter('rejected')}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <XCircle className="w-4 h-4 text-red-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600">거절됨</p>
+              <div>
+                <p className="text-xs text-gray-500">거절됨</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.rejectedApplications}</p>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* 상단 관리 메뉴 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <button
-            onClick={() => setActiveTab('campaigns')}
-            className="backdrop-blur-sm bg-gradient-to-br from-green-500 to-green-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(34,197,94,0.3)] transition-all duration-200 hover:scale-105"
-          >
-            <div className="flex items-center justify-between">
-              <div className="text-left">
-                <h3 className="text-2xl font-bold">캠페인 관리</h3>
-                <p className="text-sm text-green-100 mt-2">체험단 캠페인 생성 및 관리</p>
-              </div>
-              <Package className="w-12 h-12 opacity-90" />
-            </div>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('users')}
-            className="backdrop-blur-sm bg-gradient-to-br from-navy-500 to-navy-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(168,85,247,0.3)] transition-all duration-200 hover:scale-105"
-          >
-            <div className="flex items-center justify-between">
-              <div className="text-left">
-                <h3 className="text-2xl font-bold">회원 관리</h3>
-                <p className="text-sm text-navy-100 mt-2">회원 정보 조회 및 관리</p>
-              </div>
-              <User className="w-12 h-12 opacity-90" />
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/admin/chat')}
-            className="backdrop-blur-sm bg-gradient-to-br from-vintage-500 to-vintage-600 text-white p-8 rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all duration-200 hover:scale-105"
-          >
-            <div className="flex items-center justify-between">
-              <div className="text-left">
-                <h3 className="text-2xl font-bold">실시간 채팅</h3>
-                <p className="text-sm text-vintage-100 mt-2">고객 문의 실시간 응대</p>
-                {unreadChatCount > 0 && (
-                  <span className="inline-block mt-2 px-4 py-1.5 bg-white text-vintage-600 text-xs font-bold rounded-full shadow-lg">
-                    {unreadChatCount}개의 새 메시지
-                  </span>
-                )}
-              </div>
-              <MessageCircle className="w-12 h-12 opacity-90" />
-            </div>
-          </button>
         </div>
 
         {/* 메인 탭 메뉴 (업무 흐름 순서) */}
@@ -2775,24 +2787,6 @@ const AdminDashboard: React.FC = () => {
                 )}
               </button>
               <button
-                onClick={() => setActiveTab('consultations')}
-                className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
-                  activeTab === 'consultations'
-                    ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg scale-105'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <MessageSquare className="w-5 h-5" />
-                <span>5. 상담 접수</span>
-                {consultationRequests.filter(req => req.status === 'pending').length > 0 && (
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
-                    activeTab === 'consultations' ? 'bg-white text-purple-600' : 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800'
-                  }`}>
-                    {consultationRequests.filter(req => req.status === 'pending').length}
-                  </span>
-                )}
-              </button>
-              <button
                 onClick={() => setActiveTab('settings')}
                 className={`py-4 px-6 rounded-t-2xl font-semibold text-sm flex items-center gap-3 transition-all duration-200 ${
                   activeTab === 'settings'
@@ -2801,7 +2795,7 @@ const AdminDashboard: React.FC = () => {
                 }`}
               >
                 <Settings className="w-5 h-5" />
-                <span>설정</span>
+                <span>5. 설정</span>
               </button>
             </nav>
           </div>
@@ -3653,27 +3647,27 @@ const AdminDashboard: React.FC = () => {
 
         {/* 환급 요청 관리 Section */}
         {activeTab === 'withdrawal-requests' && (
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
+          <div className="px-8 py-6 border-b border-white/50">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">출금 요청 관리</h2>
+              <h2 className="text-2xl font-bold text-gray-900">출금 요청 관리</h2>
               <div className="flex items-center gap-4">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm font-medium text-gray-600">
                   총 {withdrawalRequests.length}개의 요청
                 </div>
                 <button
                   onClick={exportWithdrawalRequestsToExcel}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-navy-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-navy-500"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-navy-600 to-navy-700 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 font-medium"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="w-5 h-5" />
                   엑셀 다운로드
                 </button>
               </div>
             </div>
           </div>
-          
-          <div className="p-6">
-            <div className="flex gap-4 mb-4">
+
+          <div className="p-8">
+            <div className="flex gap-4 mb-6">
               <select
                 value={withdrawalFilter}
                 onChange={(e) => setWithdrawalFilter(e.target.value)}
@@ -3899,15 +3893,15 @@ const AdminDashboard: React.FC = () => {
 
         {/* 리뷰 검수 관리 Section */}
         {activeTab === 'reviews' && (
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
+          <div className="px-8 py-6 border-b border-white/50">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">리뷰 검수 관리</h2>
+              <h2 className="text-2xl font-bold text-gray-900">리뷰 검수 관리</h2>
             </div>
           </div>
-          
-          <div className="p-6">
-            <div className="flex gap-4 mb-4">
+
+          <div className="p-8">
+            <div className="flex gap-4 mb-6">
               <select
                 value={reviewFilter}
                 onChange={(e) => setReviewFilter(e.target.value)}
@@ -5892,261 +5886,10 @@ const AdminDashboard: React.FC = () => {
 
       {/* 상담 접수 관리 섹션 */}
       {activeTab === 'consultations' && (
-        <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
-          <div className="px-8 py-6 border-b border-white/50">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">상담 접수 관리</h2>
-              <button
-                onClick={() => loadConsultationRequests()}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <RefreshCw className="w-4 h-4" />
-                새로고침
-              </button>
-            </div>
-
-            {/* 필터 및 검색 */}
-            <div className="mt-4 flex gap-4">
-              <select
-                value={consultationFilter}
-                onChange={(e) => setConsultationFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="all">전체</option>
-                <option value="pending">대기중</option>
-                <option value="in_progress">처리중</option>
-                <option value="completed">완료</option>
-                <option value="cancelled">취소</option>
-              </select>
-
-              <input
-                type="text"
-                placeholder="업체명, 연락처, 카테고리 검색..."
-                value={consultationSearch}
-                onChange={(e) => setConsultationSearch(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="p-8">
-            {consultationRequests.filter(req => {
-              if (consultationFilter !== 'all' && req.status !== consultationFilter) return false
-              if (consultationSearch) {
-                const searchLower = consultationSearch.toLowerCase()
-                return (
-                  req.company_name?.toLowerCase().includes(searchLower) ||
-                  req.contact_phone?.toLowerCase().includes(searchLower) ||
-                  req.category?.toLowerCase().includes(searchLower) ||
-                  req.contact_email?.toLowerCase().includes(searchLower)
-                )
-              }
-              return true
-            }).length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                <p>상담 접수 내역이 없습니다</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {consultationRequests.filter(req => {
-                  if (consultationFilter !== 'all' && req.status !== consultationFilter) return false
-                  if (consultationSearch) {
-                    const searchLower = consultationSearch.toLowerCase()
-                    return (
-                      req.company_name?.toLowerCase().includes(searchLower) ||
-                      req.contact_phone?.toLowerCase().includes(searchLower) ||
-                      req.category?.toLowerCase().includes(searchLower) ||
-                      req.contact_email?.toLowerCase().includes(searchLower)
-                    )
-                  }
-                  return true
-                }).map((consultation) => (
-                  <div
-                    key={consultation.id}
-                    className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">{consultation.company_name}</h3>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            consultation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            consultation.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                            consultation.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {consultation.status === 'pending' ? '대기중' :
-                             consultation.status === 'in_progress' ? '처리중' :
-                             consultation.status === 'completed' ? '완료' :
-                             consultation.status === 'cancelled' ? '취소' : consultation.status}
-                          </span>
-                          {consultation.is_agency && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                              대행사
-                            </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4" />
-                            <span>{consultation.contact_phone}</span>
-                          </div>
-                          {consultation.contact_email && (
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4" />
-                              <span>{consultation.contact_email}</span>
-                            </div>
-                          )}
-                          {consultation.contact_person && (
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4" />
-                              <span>{consultation.contact_person}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <Tag className="w-4 h-4" />
-                            <span>{
-                              consultation.category === 'food' ? '식품' :
-                              consultation.category === 'beauty' ? '뷰티/화장품' :
-                              consultation.category === 'fashion' ? '패션/의류' :
-                              consultation.category === 'lifestyle' ? '생활용품' :
-                              consultation.category === 'tech' ? '전자제품/IT' :
-                              consultation.category === 'health' ? '건강/헬스케어' :
-                              consultation.category === 'education' ? '교육/학습' :
-                              '기타'
-                            }</span>
-                          </div>
-                          {consultation.budget_range && (
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4" />
-                              <span>{
-                                consultation.budget_range === 'under_1m' ? '100만원 미만' :
-                                consultation.budget_range === '1m_5m' ? '100-500만원' :
-                                consultation.budget_range === '5m_10m' ? '500-1000만원' :
-                                consultation.budget_range === 'over_10m' ? '1000만원 이상' :
-                                '협의 가능'
-                              }</span>
-                            </div>
-                          )}
-                          <div className="text-xs text-gray-500">
-                            {new Date(consultation.created_at).toLocaleString('ko-KR')}
-                          </div>
-                        </div>
-                        {consultation.request_details && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded text-sm text-gray-700">
-                            <p className="font-medium mb-1">상담 내용:</p>
-                            <p className="whitespace-pre-wrap">{consultation.request_details}</p>
-                          </div>
-                        )}
-                        {consultation.admin_note && (
-                          <div className="mt-3 p-3 bg-blue-50 rounded text-sm text-blue-900">
-                            <p className="font-medium mb-1">관리자 메모:</p>
-                            <p className="whitespace-pre-wrap">{consultation.admin_note}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 mt-4 pt-4 border-t">
-                      {consultation.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={async () => {
-                              try {
-                                await supabase
-                                  .from('consultation_requests')
-                                  .update({ status: 'in_progress' })
-                                  .eq('id', consultation.id)
-                                toast.success('처리중으로 변경되었습니다')
-                                loadConsultationRequests()
-                              } catch (error) {
-                                console.error('상태 변경 실패:', error)
-                                toast.error('상태 변경에 실패했습니다')
-                              }
-                            }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                          >
-                            처리 시작
-                          </button>
-                          <button
-                            onClick={async () => {
-                              const note = prompt('관리자 메모를 입력하세요:')
-                              if (!note) return
-                              try {
-                                await supabase
-                                  .from('consultation_requests')
-                                  .update({
-                                    status: 'cancelled',
-                                    admin_note: note
-                                  })
-                                  .eq('id', consultation.id)
-                                toast.success('상담이 취소되었습니다')
-                                loadConsultationRequests()
-                              } catch (error) {
-                                console.error('취소 실패:', error)
-                                toast.error('취소에 실패했습니다')
-                              }
-                            }}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                          >
-                            취소
-                          </button>
-                        </>
-                      )}
-                      {consultation.status === 'in_progress' && (
-                        <button
-                          onClick={async () => {
-                            const note = prompt('완료 메모를 입력하세요:', consultation.admin_note || '')
-                            if (note === null) return
-                            try {
-                              await supabase
-                                .from('consultation_requests')
-                                .update({
-                                  status: 'completed',
-                                  admin_note: note,
-                                  processed_at: new Date().toISOString()
-                                })
-                                .eq('id', consultation.id)
-                              toast.success('상담이 완료되었습니다')
-                              loadConsultationRequests()
-                            } catch (error) {
-                              console.error('완료 처리 실패:', error)
-                              toast.error('완료 처리에 실패했습니다')
-                            }
-                          }}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                        >
-                          완료 처리
-                        </button>
-                      )}
-                      <button
-                        onClick={async () => {
-                          const note = prompt('관리자 메모를 입력/수정하세요:', consultation.admin_note || '')
-                          if (note === null) return
-                          try {
-                            await supabase
-                              .from('consultation_requests')
-                              .update({ admin_note: note })
-                              .eq('id', consultation.id)
-                            toast.success('메모가 저장되었습니다')
-                            loadConsultationRequests()
-                          } catch (error) {
-                            console.error('메모 저장 실패:', error)
-                            toast.error('메모 저장에 실패했습니다')
-                          }
-                        }}
-                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                      >
-                        메모 {consultation.admin_note ? '수정' : '추가'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <ConsultationManager
+          consultationRequests={consultationRequests}
+          onRefresh={loadConsultationRequests}
+        />
       )}
 
       {/* 🔥 설정 탭 */}
