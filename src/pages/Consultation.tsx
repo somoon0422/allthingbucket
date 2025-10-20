@@ -62,7 +62,14 @@ const Consultation: React.FC = () => {
       const checked = (e.target as HTMLInputElement).checked
       setFormData(prev => ({ ...prev, [name]: checked }))
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }))
+      // 연락처 필드는 숫자만 입력 가능하고 11자리로 제한
+      if (name === 'contactPhone') {
+        const digitsOnly = value.replace(/\D/g, '')
+        const limitedDigits = digitsOnly.slice(0, 11)
+        setFormData(prev => ({ ...prev, [name]: limitedDigits }))
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }))
+      }
     }
   }
 
@@ -78,6 +85,18 @@ const Consultation: React.FC = () => {
 
     if (!formData.contactPhone.trim()) {
       setError('연락처를 입력해주세요.')
+      return
+    }
+
+    // 연락처 11자리 검증
+    if (formData.contactPhone.length !== 11) {
+      setError('연락처는 11자리 숫자로 입력해주세요.')
+      return
+    }
+
+    // 연락처가 숫자로만 구성되어 있는지 검증
+    if (!/^[0-9]{11}$/.test(formData.contactPhone)) {
+      setError('연락처는 숫자만 입력 가능합니다.')
       return
     }
 
@@ -248,10 +267,13 @@ const Consultation: React.FC = () => {
                 name="contactPhone"
                 value={formData.contactPhone}
                 onChange={handleChange}
-                placeholder="010-0000-0000"
+                placeholder="01012345678 (숫자 11자리)"
+                maxLength={11}
+                pattern="[0-9]{11}"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">숫자만 입력해주세요 (하이픈 없이 11자리)</p>
             </div>
 
             {/* 이메일 */}
