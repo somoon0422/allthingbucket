@@ -62,7 +62,7 @@ const Consultation: React.FC = () => {
       const checked = (e.target as HTMLInputElement).checked
       setFormData(prev => ({ ...prev, [name]: checked }))
     } else {
-      // 연락처 필드는 숫자만 입력 가능하고 11자리로 제한
+      // 연락처 필드는 숫자만 입력 가능하고 11자리로 제한, 자동 하이픈 추가
       if (name === 'contactPhone') {
         const digitsOnly = value.replace(/\D/g, '')
         const limitedDigits = digitsOnly.slice(0, 11)
@@ -71,6 +71,14 @@ const Consultation: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }))
       }
     }
+  }
+
+  // 전화번호 포맷팅 함수 (010-1234-5678)
+  const formatPhoneNumber = (phone: string) => {
+    if (!phone) return ''
+    if (phone.length <= 3) return phone
+    if (phone.length <= 7) return `${phone.slice(0, 3)}-${phone.slice(3)}`
+    return `${phone.slice(0, 3)}-${phone.slice(3, 7)}-${phone.slice(7, 11)}`
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -265,15 +273,13 @@ const Consultation: React.FC = () => {
                 type="tel"
                 id="contactPhone"
                 name="contactPhone"
-                value={formData.contactPhone}
+                value={formatPhoneNumber(formData.contactPhone)}
                 onChange={handleChange}
-                placeholder="01012345678 (숫자 11자리)"
-                maxLength={11}
-                pattern="[0-9]{11}"
+                placeholder="010-1234-5678"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">숫자만 입력해주세요 (하이픈 없이 11자리)</p>
+              <p className="text-xs text-gray-500 mt-1">숫자 11자리 입력 시 자동으로 하이픈이 추가됩니다</p>
             </div>
 
             {/* 이메일 */}
