@@ -2461,12 +2461,8 @@ const AdminDashboard: React.FC = () => {
                   상담 접수
                 </button>
                 <button
-                  onClick={() => setActiveTab('chat')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === 'chat'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                  onClick={() => navigate('/admin/chat')}
+                  className="px-4 py-2 text-sm font-medium rounded-lg transition-colors text-gray-600 hover:bg-gray-100"
                 >
                   실시간 채팅
                 </button>
@@ -4788,37 +4784,37 @@ const AdminDashboard: React.FC = () => {
       )}
 
         {/* 중복 제거: 출금 요청 관리는 withdrawal-requests 탭으로 통합됨 */}
-        {false && activeTab === 'withdrawals' && (
-          <div className="bg-white rounded-lg shadow mb-8">
-            <div className="px-6 py-4 border-b border-gray-200">
+        {activeTab === 'withdrawals' && (
+          <div className="backdrop-blur-sm bg-white/90 rounded-3xl shadow-2xl mb-8">
+            <div className="px-8 py-6 border-b border-white/50">
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Banknote className="w-5 h-5 mr-2" />
-                  출금 요청 관리
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <Banknote className="w-6 h-6" />
+                  출금 관리
                 </h2>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm font-medium text-gray-600">
                   총 {withdrawalRequests.length}개의 요청
                 </div>
               </div>
             </div>
 
-            {/* 필터 및 검색 */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row gap-4">
+            <div className="p-8">
+              {/* 필터 및 검색 */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="flex-1">
                   <input
                     type="text"
                     placeholder="사용자명, 계좌번호로 검색..."
                     value={withdrawalSearch}
                     onChange={(e) => setWithdrawalSearch(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div className="flex gap-2">
                   <select
                     value={withdrawalFilter}
                     onChange={(e) => setWithdrawalFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="all">전체</option>
                     <option value="pending">대기중</option>
@@ -4829,10 +4825,9 @@ const AdminDashboard: React.FC = () => {
                   </select>
                 </div>
               </div>
-            </div>
 
-            {/* 출금 요청 목록 */}
-            <div className="overflow-x-auto">
+              {/* 출금 요청 목록 */}
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -4984,15 +4979,16 @@ const AdminDashboard: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-            </div>
 
-            {withdrawalRequests.length === 0 && (
-              <div className="text-center py-12">
-                <Banknote className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">출금 요청이 없습니다</h3>
-                <p className="text-gray-500">사용자들이 출금을 요청하면 여기에 표시됩니다.</p>
-              </div>
-            )}
+              {withdrawalRequests.length === 0 && (
+                <div className="text-center py-12">
+                  <Banknote className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">출금 요청이 없습니다</h3>
+                  <p className="text-gray-500">사용자들이 출금을 요청하면 여기에 표시됩니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
           </div>
         )}
 
@@ -5056,21 +5052,50 @@ const AdminDashboard: React.FC = () => {
                   )}
                 </div>
 
-                {/* 계좌 정보 */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">계좌 정보</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="font-medium">은행:</span> {selectedWithdrawalRequest.bank_account?.bank_name || '은행 정보 없음'}</div>
-                    <div><span className="font-medium">계좌번호:</span> {selectedWithdrawalRequest.bank_account?.account_number || '계좌번호 없음'}</div>
-                    <div><span className="font-medium">예금주:</span> {selectedWithdrawalRequest.bank_account?.account_holder || '예금주 없음'}</div>
-                    <div><span className="font-medium">인증 상태:</span> 
-                      <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                {/* 계좌 정보 및 개인정보 (보안) */}
+                <div className="bg-yellow-50 rounded-lg p-4 border-2 border-yellow-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <h4 className="font-bold text-gray-900">계좌 정보 및 개인정보 (보안)</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-white p-2 rounded">
+                      <span className="font-medium text-gray-700">은행:</span>
+                      <p className="text-gray-900 mt-1">{selectedWithdrawalRequest.bank_account?.bank_name || '은행 정보 없음'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded">
+                      <span className="font-medium text-gray-700">계좌번호:</span>
+                      <p className="text-gray-900 mt-1 font-mono">{selectedWithdrawalRequest.bank_account?.account_number || '계좌번호 없음'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded">
+                      <span className="font-medium text-gray-700">예금주:</span>
+                      <p className="text-gray-900 mt-1">{selectedWithdrawalRequest.bank_account?.account_holder || '예금주 없음'}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded">
+                      <span className="font-medium text-gray-700">주민등록번호:</span>
+                      <p className="text-gray-900 mt-1 font-mono">
+                        {selectedWithdrawalRequest.user_profile?.resident_number ?
+                          `${selectedWithdrawalRequest.user_profile.resident_number.slice(0, 6)}-${selectedWithdrawalRequest.user_profile.resident_number.slice(6)}` :
+                          '정보 없음'}
+                      </p>
+                    </div>
+                    <div className="bg-white p-2 rounded col-span-2">
+                      <span className="font-medium text-gray-700">인증 상태:</span>
+                      <span className={`ml-2 px-3 py-1 rounded-full text-xs font-medium ${
                         selectedWithdrawalRequest.bank_account?.is_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {selectedWithdrawalRequest.bank_account?.is_verified ? '인증됨' : '미인증'}
+                        {selectedWithdrawalRequest.bank_account?.is_verified ? '✓ 인증완료' : '⚠ 미인증'}
                       </span>
                     </div>
                   </div>
+                  <p className="text-xs text-yellow-700 mt-3 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    개인정보는 출금 처리 목적으로만 사용되며 엄격히 보호됩니다.
+                  </p>
                 </div>
 
                 {/* 처리 정보 */}
