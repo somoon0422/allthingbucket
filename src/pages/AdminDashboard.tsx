@@ -269,7 +269,16 @@ const AdminDashboard: React.FC = () => {
   const [showWithdrawalApprovalModal, setShowWithdrawalApprovalModal] = useState(false)
   const [showCompletedWithdrawals, setShowCompletedWithdrawals] = useState(true) // 완료된 내역 표시 여부
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null) // 특정 사용자 필터
-  
+
+  // 은행 정보 및 주민등록번호 편집 상태
+  const [isEditingBankInfo, setIsEditingBankInfo] = useState(false)
+  const [editBankInfo, setEditBankInfo] = useState({
+    bank_name: '',
+    account_number: '',
+    account_holder: '',
+    resident_number: ''
+  })
+
   // 사용자 포인트 내역 모달 상태
   const [showUserPointsModal, setShowUserPointsModal] = useState(false)
   const [selectedUserPoints, setSelectedUserPoints] = useState<any>(null)
@@ -2264,6 +2273,54 @@ const AdminDashboard: React.FC = () => {
   }
 
   // 출금 요청 완료 처리
+  // 은행 정보 및 주민등록번호 저장
+  const handleSaveBankInfo = async () => {
+    if (!selectedWithdrawalRequest) return
+
+    try {
+      const userId = selectedWithdrawalRequest.user_id
+
+      // 은행 계좌 정보 업데이트 또는 생성
+      if (editBankInfo.bank_name || editBankInfo.account_number || editBankInfo.account_holder) {
+        const bankData = {
+          user_id: userId,
+          bank_name: editBankInfo.bank_name,
+          account_number: editBankInfo.account_number,
+          account_holder: editBankInfo.account_holder,
+          is_verified: false
+        }
+
+        // 기존 계좌가 있으면 업데이트, 없으면 생성
+        if (selectedWithdrawalRequest.bank_account?.id) {
+          await supabase
+            .from('bank_accounts')
+            .update(bankData)
+            .eq('id', selectedWithdrawalRequest.bank_account.id)
+        } else {
+          await supabase
+            .from('bank_accounts')
+            .insert(bankData)
+        }
+      }
+
+      // 주민등록번호 업데이트 (influencer_profiles 테이블)
+      if (editBankInfo.resident_number) {
+        await supabase
+          .from('influencer_profiles')
+          .update({ resident_number: editBankInfo.resident_number.replace(/-/g, '') })
+          .eq('user_id', userId)
+      }
+
+      toast.success('정보가 저장되었습니다.')
+      setIsEditingBankInfo(false)
+      await loadWithdrawalRequests()
+      setShowWithdrawalDetailModal(false)
+    } catch (error) {
+      console.error('저장 실패:', error)
+      toast.error('정보 저장에 실패했습니다.')
+    }
+  }
+
   const handleCompleteWithdrawal = async (requestId: string, adminNotes?: string) => {
     try {
       const result = await dataService.entities.withdrawal_requests.update(requestId, {
@@ -5054,42 +5111,135 @@ const AdminDashboard: React.FC = () => {
 
                 {/* 계좌 정보 및 개인정보 (보안) */}
                 <div className="bg-yellow-50 rounded-lg p-4 border-2 border-yellow-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    <h4 className="font-bold text-gray-900">계좌 정보 및 개인정보 (보안)</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <h4 className="font-bold text-gray-900">계좌 정보 및 개인정보 (보안)</h4>
+                    </div>
+                    {!isEditingBankInfo ? (
+                      <button
+                        onClick={() => {
+                          setIsEditingBankInfo(true)
+                          setEditBankInfo({
+                            bank_name: selectedWithdrawalRequest.bank_account?.bank_name || '',
+                            account_number: selectedWithdrawalRequest.bank_account?.account_number || '',
+                            account_holder: selectedWithdrawalRequest.bank_account?.account_holder || '',
+                            resident_number: selectedWithdrawalRequest.user_profile?.resident_number || ''
+                          })
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                        수정
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveBankInfo}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          저장
+                        </button>
+                        <button
+                          onClick={() => setIsEditingBankInfo(false)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          취소
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="bg-white p-2 rounded">
-                      <span className="font-medium text-gray-700">은행:</span>
-                      <p className="text-gray-900 mt-1">{selectedWithdrawalRequest.bank_account?.bank_name || '은행 정보 없음'}</p>
+
+                  {!isEditingBankInfo ? (
+                    // 읽기 모드
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-white p-2 rounded">
+                        <span className="font-medium text-gray-700">은행:</span>
+                        <p className="text-gray-900 mt-1">{selectedWithdrawalRequest.bank_account?.bank_name || '은행 정보 없음'}</p>
+                      </div>
+                      <div className="bg-white p-2 rounded">
+                        <span className="font-medium text-gray-700">계좌번호:</span>
+                        <p className="text-gray-900 mt-1 font-mono">{selectedWithdrawalRequest.bank_account?.account_number || '계좌번호 없음'}</p>
+                      </div>
+                      <div className="bg-white p-2 rounded">
+                        <span className="font-medium text-gray-700">예금주:</span>
+                        <p className="text-gray-900 mt-1">{selectedWithdrawalRequest.bank_account?.account_holder || '예금주 없음'}</p>
+                      </div>
+                      <div className="bg-white p-2 rounded">
+                        <span className="font-medium text-gray-700">주민등록번호:</span>
+                        <p className="text-gray-900 mt-1 font-mono">
+                          {selectedWithdrawalRequest.user_profile?.resident_number ?
+                            `${selectedWithdrawalRequest.user_profile.resident_number.slice(0, 6)}-${selectedWithdrawalRequest.user_profile.resident_number.slice(6)}` :
+                            '정보 없음'}
+                        </p>
+                      </div>
+                      <div className="bg-white p-2 rounded col-span-2">
+                        <span className="font-medium text-gray-700">인증 상태:</span>
+                        <span className={`ml-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          selectedWithdrawalRequest.bank_account?.is_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {selectedWithdrawalRequest.bank_account?.is_verified ? '✓ 인증완료' : '⚠ 미인증'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="bg-white p-2 rounded">
-                      <span className="font-medium text-gray-700">계좌번호:</span>
-                      <p className="text-gray-900 mt-1 font-mono">{selectedWithdrawalRequest.bank_account?.account_number || '계좌번호 없음'}</p>
+                  ) : (
+                    // 편집 모드
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-white p-2 rounded">
+                        <label className="font-medium text-gray-700 block mb-1">은행:</label>
+                        <input
+                          type="text"
+                          value={editBankInfo.bank_name}
+                          onChange={(e) => setEditBankInfo({...editBankInfo, bank_name: e.target.value})}
+                          className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="예: 국민은행"
+                        />
+                      </div>
+                      <div className="bg-white p-2 rounded">
+                        <label className="font-medium text-gray-700 block mb-1">계좌번호:</label>
+                        <input
+                          type="text"
+                          value={editBankInfo.account_number}
+                          onChange={(e) => setEditBankInfo({...editBankInfo, account_number: e.target.value})}
+                          className="w-full px-2 py-1 border border-gray-300 rounded font-mono focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="123456-78-901234"
+                        />
+                      </div>
+                      <div className="bg-white p-2 rounded">
+                        <label className="font-medium text-gray-700 block mb-1">예금주:</label>
+                        <input
+                          type="text"
+                          value={editBankInfo.account_holder}
+                          onChange={(e) => setEditBankInfo({...editBankInfo, account_holder: e.target.value})}
+                          className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="홍길동"
+                        />
+                      </div>
+                      <div className="bg-white p-2 rounded">
+                        <label className="font-medium text-gray-700 block mb-1">주민등록번호:</label>
+                        <input
+                          type="text"
+                          value={editBankInfo.resident_number}
+                          onChange={(e) => {
+                            let value = e.target.value.replace(/[^0-9]/g, '')
+                            if (value.length > 13) value = value.slice(0, 13)
+                            if (value.length > 6) {
+                              value = value.slice(0, 6) + '-' + value.slice(6)
+                            }
+                            setEditBankInfo({...editBankInfo, resident_number: value})
+                          }}
+                          className="w-full px-2 py-1 border border-gray-300 rounded font-mono focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="123456-1234567"
+                          maxLength={14}
+                        />
+                      </div>
                     </div>
-                    <div className="bg-white p-2 rounded">
-                      <span className="font-medium text-gray-700">예금주:</span>
-                      <p className="text-gray-900 mt-1">{selectedWithdrawalRequest.bank_account?.account_holder || '예금주 없음'}</p>
-                    </div>
-                    <div className="bg-white p-2 rounded">
-                      <span className="font-medium text-gray-700">주민등록번호:</span>
-                      <p className="text-gray-900 mt-1 font-mono">
-                        {selectedWithdrawalRequest.user_profile?.resident_number ?
-                          `${selectedWithdrawalRequest.user_profile.resident_number.slice(0, 6)}-${selectedWithdrawalRequest.user_profile.resident_number.slice(6)}` :
-                          '정보 없음'}
-                      </p>
-                    </div>
-                    <div className="bg-white p-2 rounded col-span-2">
-                      <span className="font-medium text-gray-700">인증 상태:</span>
-                      <span className={`ml-2 px-3 py-1 rounded-full text-xs font-medium ${
-                        selectedWithdrawalRequest.bank_account?.is_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {selectedWithdrawalRequest.bank_account?.is_verified ? '✓ 인증완료' : '⚠ 미인증'}
-                      </span>
-                    </div>
-                  </div>
+                  )}
+
                   <p className="text-xs text-yellow-700 mt-3 flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
