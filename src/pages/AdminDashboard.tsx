@@ -4703,9 +4703,17 @@ const AdminDashboard: React.FC = () => {
                         총 {userApplications.length}개의 신청이 있습니다.
                       </div>
                       {userApplications.map((app, index) => (
-                        <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div
+                          key={index}
+                          onClick={() => {
+                            if (app.campaign_id || app.experience_id) {
+                              navigate(`/campaign/${app.campaign_id || app.experience_id}`)
+                            }
+                          }}
+                          className="bg-white rounded-lg p-4 border border-gray-200 cursor-pointer hover:border-vintage-500 hover:shadow-md transition-all duration-200"
+                        >
                           <div className="flex justify-between items-start mb-3">
-                            <h5 className="font-semibold text-gray-900">{app.campaign_name}</h5>
+                            <h5 className="font-semibold text-gray-900 hover:text-vintage-600 transition-colors">{app.campaign_name}</h5>
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                               app.status === 'approved' ? 'bg-green-100 text-green-800' :
                               app.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
