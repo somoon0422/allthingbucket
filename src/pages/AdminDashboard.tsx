@@ -279,6 +279,16 @@ const AdminDashboard: React.FC = () => {
     resident_number: ''
   })
 
+  // 출금 정보 편집 상태
+  const [isEditingWithdrawalInfo, setIsEditingWithdrawalInfo] = useState(false)
+  const [editWithdrawalInfo, setEditWithdrawalInfo] = useState({
+    points_amount: 0,
+    withdrawal_amount: 0,
+    exchange_rate: 1,
+    status: '',
+    request_reason: ''
+  })
+
   // 사용자 포인트 내역 모달 상태
   const [showUserPointsModal, setShowUserPointsModal] = useState(false)
   const [selectedUserPoints, setSelectedUserPoints] = useState<any>(null)
@@ -2273,6 +2283,42 @@ const AdminDashboard: React.FC = () => {
   }
 
   // 출금 요청 완료 처리
+  // 출금 정보 저장
+  const handleSaveWithdrawalInfo = async () => {
+    if (!selectedWithdrawalRequest) return
+
+    try {
+      const updateData = {
+        points_amount: editWithdrawalInfo.points_amount,
+        withdrawal_amount: editWithdrawalInfo.withdrawal_amount,
+        exchange_rate: editWithdrawalInfo.exchange_rate,
+        status: editWithdrawalInfo.status,
+        request_reason: editWithdrawalInfo.request_reason
+      }
+
+      const { error } = await supabase
+        .from('withdrawal_requests')
+        .update(updateData)
+        .eq('id', selectedWithdrawalRequest.id)
+
+      if (error) throw error
+
+      toast.success('출금 정보가 저장되었습니다.')
+      setIsEditingWithdrawalInfo(false)
+      await loadWithdrawalRequests()
+
+      // 모달 업데이트를 위해 선택된 요청 다시 가져오기
+      const updatedRequests = await (dataService.entities as any).withdrawal_requests.list()
+      const updatedRequest = updatedRequests.find((r: any) => r.id === selectedWithdrawalRequest.id)
+      if (updatedRequest) {
+        setSelectedWithdrawalRequest({...selectedWithdrawalRequest, ...updateData})
+      }
+    } catch (error) {
+      console.error('저장 실패:', error)
+      toast.error('출금 정보 저장에 실패했습니다.')
+    }
+  }
+
   // 은행 정보 및 주민등록번호 저장
   const handleSaveBankInfo = async () => {
     if (!selectedWithdrawalRequest) return
@@ -2314,7 +2360,6 @@ const AdminDashboard: React.FC = () => {
       toast.success('정보가 저장되었습니다.')
       setIsEditingBankInfo(false)
       await loadWithdrawalRequests()
-      setShowWithdrawalDetailModal(false)
     } catch (error) {
       console.error('저장 실패:', error)
       toast.error('정보 저장에 실패했습니다.')
@@ -5080,31 +5125,132 @@ const AdminDashboard: React.FC = () => {
 
                 {/* 출금 정보 */}
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">출금 정보</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="font-medium">포인트:</span> {selectedWithdrawalRequest.points_amount.toLocaleString()}P</div>
-                    <div><span className="font-medium">출금 금액:</span> {selectedWithdrawalRequest.withdrawal_amount.toLocaleString()}원</div>
-                    <div><span className="font-medium">환율:</span> {selectedWithdrawalRequest.exchange_rate}</div>
-                    <div><span className="font-medium">상태:</span> 
-                      <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                        selectedWithdrawalRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-vintage-800' :
-                        selectedWithdrawalRequest.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        selectedWithdrawalRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {selectedWithdrawalRequest.status === 'pending' ? '대기중' :
-                         selectedWithdrawalRequest.status === 'approved' ? '승인됨' :
-                         selectedWithdrawalRequest.status === 'rejected' ? '거절됨' :
-                         selectedWithdrawalRequest.status === 'completed' ? '완료됨' :
-                         '알 수 없음'}
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">출금 정보</h4>
+                    {!isEditingWithdrawalInfo ? (
+                      <button
+                        onClick={() => {
+                          setIsEditingWithdrawalInfo(true)
+                          setEditWithdrawalInfo({
+                            points_amount: selectedWithdrawalRequest.points_amount,
+                            withdrawal_amount: selectedWithdrawalRequest.withdrawal_amount,
+                            exchange_rate: selectedWithdrawalRequest.exchange_rate,
+                            status: selectedWithdrawalRequest.status,
+                            request_reason: selectedWithdrawalRequest.request_reason || ''
+                          })
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                        수정
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveWithdrawalInfo}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          저장
+                        </button>
+                        <button
+                          onClick={() => setIsEditingWithdrawalInfo(false)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          취소
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  {selectedWithdrawalRequest.request_reason && (
-                    <div className="mt-2">
-                      <span className="font-medium">출금 사유:</span>
-                      <p className="text-sm text-gray-600 mt-1">{selectedWithdrawalRequest.request_reason}</p>
+
+                  {!isEditingWithdrawalInfo ? (
+                    // 읽기 모드
+                    <>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><span className="font-medium">포인트:</span> {selectedWithdrawalRequest.points_amount.toLocaleString()}P</div>
+                        <div><span className="font-medium">출금 금액:</span> {selectedWithdrawalRequest.withdrawal_amount.toLocaleString()}원</div>
+                        <div><span className="font-medium">환율:</span> {selectedWithdrawalRequest.exchange_rate}</div>
+                        <div><span className="font-medium">상태:</span>
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                            selectedWithdrawalRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-vintage-800' :
+                            selectedWithdrawalRequest.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            selectedWithdrawalRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {selectedWithdrawalRequest.status === 'pending' ? '대기중' :
+                             selectedWithdrawalRequest.status === 'approved' ? '승인됨' :
+                             selectedWithdrawalRequest.status === 'rejected' ? '거절됨' :
+                             selectedWithdrawalRequest.status === 'completed' ? '완료됨' :
+                             '알 수 없음'}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedWithdrawalRequest.request_reason && (
+                        <div className="mt-2">
+                          <span className="font-medium">출금 사유:</span>
+                          <p className="text-sm text-gray-600 mt-1">{selectedWithdrawalRequest.request_reason}</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    // 편집 모드
+                    <div className="space-y-3 text-sm">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="font-medium text-gray-700 block mb-1">포인트:</label>
+                          <input
+                            type="number"
+                            value={editWithdrawalInfo.points_amount}
+                            onChange={(e) => setEditWithdrawalInfo({...editWithdrawalInfo, points_amount: parseInt(e.target.value) || 0})}
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-medium text-gray-700 block mb-1">출금 금액 (원):</label>
+                          <input
+                            type="number"
+                            value={editWithdrawalInfo.withdrawal_amount}
+                            onChange={(e) => setEditWithdrawalInfo({...editWithdrawalInfo, withdrawal_amount: parseInt(e.target.value) || 0})}
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-medium text-gray-700 block mb-1">환율:</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={editWithdrawalInfo.exchange_rate}
+                            onChange={(e) => setEditWithdrawalInfo({...editWithdrawalInfo, exchange_rate: parseFloat(e.target.value) || 1})}
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-medium text-gray-700 block mb-1">상태:</label>
+                          <select
+                            value={editWithdrawalInfo.status}
+                            onChange={(e) => setEditWithdrawalInfo({...editWithdrawalInfo, status: e.target.value})}
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="pending">대기중</option>
+                            <option value="approved">승인됨</option>
+                            <option value="rejected">거절됨</option>
+                            <option value="completed">완료됨</option>
+                            <option value="failed">실패</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="font-medium text-gray-700 block mb-1">출금 사유:</label>
+                        <textarea
+                          value={editWithdrawalInfo.request_reason}
+                          onChange={(e) => setEditWithdrawalInfo({...editWithdrawalInfo, request_reason: e.target.value})}
+                          className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          rows={2}
+                          placeholder="출금 사유를 입력하세요..."
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
