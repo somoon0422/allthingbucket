@@ -261,7 +261,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 429 Too Many Requests 에러 처리
       if (error.status === 429) {
-        toast.error('잠시 후 다시 시도해주세요 (너무 많은 요청)', { duration: 5000 })
+        if (error.message?.includes('email rate limit')) {
+          toast.error('같은 이메일로 너무 많이 시도했습니다. 5분 후 다시 시도하거나 다른 이메일을 사용해주세요', { duration: 7000 })
+        } else {
+          toast.error('잠시 후 다시 시도해주세요 (너무 많은 요청)', { duration: 5000 })
+        }
       } else if (error.status === 500) {
         toast.error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요', { duration: 5000 })
       } else if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
