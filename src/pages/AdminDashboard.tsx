@@ -289,6 +289,33 @@ const AdminDashboard: React.FC = () => {
     request_reason: ''
   })
 
+  // 출금 요청 상세 모달 편집 상태 (4개 섹션)
+  const [isEditingUserInfo, setIsEditingUserInfo] = useState(false)
+  const [editUserInfo, setEditUserInfo] = useState({
+    name: '',
+    phone: '',
+    address: ''
+  })
+
+  const [isEditingAccountInfo, setIsEditingAccountInfo] = useState(false)
+  const [editWithdrawalAccountInfo, setEditWithdrawalAccountInfo] = useState({
+    bank_name: '',
+    account_number: '',
+    account_holder: '',
+    is_verified: false
+  })
+
+  const [isEditingRefundInfo, setIsEditingRefundInfo] = useState(false)
+  const [editRefundInfo, setEditRefundInfo] = useState({
+    points_amount: 0
+  })
+
+  const [isEditingRequestInfo, setIsEditingRequestInfo] = useState(false)
+  const [editRequestInfo, setEditRequestInfo] = useState({
+    status: '',
+    request_reason: ''
+  })
+
   // 사용자 포인트 내역 모달 상태
   const [showUserPointsModal, setShowUserPointsModal] = useState(false)
   const [selectedUserPoints, setSelectedUserPoints] = useState<any>(null)
@@ -2363,6 +2390,116 @@ const AdminDashboard: React.FC = () => {
     } catch (error) {
       console.error('저장 실패:', error)
       toast.error('정보 저장에 실패했습니다.')
+    }
+  }
+
+  // 출금 요청 상세 모달 - 사용자 정보 저장
+  const handleSaveUserInfo = async () => {
+    if (!selectedWithdrawalRequest) return
+    try {
+      const userId = selectedWithdrawalRequest.user_id
+
+      // users 테이블 업데이트
+      await supabase
+        .from('users')
+        .update({
+          name: editUserInfo.name,
+          phone: editUserInfo.phone,
+          address: editUserInfo.address
+        })
+        .eq('user_id', userId)
+
+      // user_profiles 테이블도 업데이트
+      await supabase
+        .from('user_profiles')
+        .update({
+          name: editUserInfo.name,
+          phone: editUserInfo.phone,
+          address: editUserInfo.address
+        })
+        .eq('user_id', userId)
+
+      toast.success('사용자 정보가 저장되었습니다.')
+      setIsEditingUserInfo(false)
+      await loadWithdrawalRequests()
+    } catch (error) {
+      console.error('사용자 정보 저장 실패:', error)
+      toast.error('사용자 정보 저장에 실패했습니다.')
+    }
+  }
+
+  // 출금 요청 상세 모달 - 계좌 정보 저장
+  const handleSaveAccountInfo = async () => {
+    if (!selectedWithdrawalRequest) return
+    try {
+      const userId = selectedWithdrawalRequest.user_id
+      const bankData = {
+        user_id: userId,
+        bank_name: editWithdrawalAccountInfo.bank_name,
+        account_number: editWithdrawalAccountInfo.account_number,
+        account_holder: editWithdrawalAccountInfo.account_holder,
+        is_verified: editWithdrawalAccountInfo.is_verified
+      }
+
+      if (selectedWithdrawalRequest.bank_account?.id) {
+        await supabase
+          .from('bank_accounts')
+          .update(bankData)
+          .eq('id', selectedWithdrawalRequest.bank_account.id)
+      } else {
+        await supabase
+          .from('bank_accounts')
+          .insert(bankData)
+      }
+
+      toast.success('계좌 정보가 저장되었습니다.')
+      setIsEditingAccountInfo(false)
+      await loadWithdrawalRequests()
+    } catch (error) {
+      console.error('계좌 정보 저장 실패:', error)
+      toast.error('계좌 정보 저장에 실패했습니다.')
+    }
+  }
+
+  // 출금 요청 상세 모달 - 환급 정보 저장
+  const handleSaveRefundInfo = async () => {
+    if (!selectedWithdrawalRequest) return
+    try {
+      await supabase
+        .from('withdrawal_requests')
+        .update({
+          points_amount: editRefundInfo.points_amount,
+          withdrawal_amount: editRefundInfo.points_amount - Math.floor(editRefundInfo.points_amount * 0.033)
+        })
+        .eq('id', selectedWithdrawalRequest.id)
+
+      toast.success('환급 정보가 저장되었습니다.')
+      setIsEditingRefundInfo(false)
+      await loadWithdrawalRequests()
+    } catch (error) {
+      console.error('환급 정보 저장 실패:', error)
+      toast.error('환급 정보 저장에 실패했습니다.')
+    }
+  }
+
+  // 출금 요청 상세 모달 - 요청 정보 저장
+  const handleSaveRequestInfo = async () => {
+    if (!selectedWithdrawalRequest) return
+    try {
+      await supabase
+        .from('withdrawal_requests')
+        .update({
+          status: editRequestInfo.status,
+          request_reason: editRequestInfo.request_reason
+        })
+        .eq('id', selectedWithdrawalRequest.id)
+
+      toast.success('요청 정보가 저장되었습니다.')
+      setIsEditingRequestInfo(false)
+      await loadWithdrawalRequests()
+    } catch (error) {
+      console.error('요청 정보 저장 실패:', error)
+      toast.error('요청 정보 저장에 실패했습니다.')
     }
   }
 
@@ -5679,153 +5816,458 @@ const AdminDashboard: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* 사용자 정보 */}
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">사용자 정보</h3>
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">이름:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {selectedWithdrawalRequest.user_data?.name || selectedWithdrawalRequest.user_profile?.name || '정보 없음'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">USER_ID:</span>
-                        <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.user_id}</span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">전화번호:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {selectedWithdrawalRequest.user_data?.phone || selectedWithdrawalRequest.user_profile?.phone || '정보 없음'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">주소:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {selectedWithdrawalRequest.user_data?.address || selectedWithdrawalRequest.user_profile?.address || '정보 없음'}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">사용자 정보</h3>
+                      {!isEditingUserInfo ? (
+                        <button
+                          onClick={() => {
+                            setIsEditingUserInfo(true)
+                            setEditUserInfo({
+                              name: selectedWithdrawalRequest.user_data?.name || selectedWithdrawalRequest.user_profile?.name || '',
+                              phone: selectedWithdrawalRequest.user_data?.phone || selectedWithdrawalRequest.user_profile?.phone || '',
+                              address: selectedWithdrawalRequest.user_data?.address || selectedWithdrawalRequest.user_profile?.address || ''
+                            })
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                        >
+                          <Edit className="w-3 h-3" />
+                          수정
+                        </button>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={handleSaveUserInfo}
+                            className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setIsEditingUserInfo(false)}
+                            className="flex items-center gap-1 px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition-colors"
+                          >
+                            <XCircle className="w-3 h-3" />
+                            취소
+                          </button>
+                        </div>
+                      )}
                     </div>
+                    {!isEditingUserInfo ? (
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">이름:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.user_data?.name || selectedWithdrawalRequest.user_profile?.name || '정보 없음'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">USER_ID:</span>
+                          <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.user_id}</span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">전화번호:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.user_data?.phone || selectedWithdrawalRequest.user_profile?.phone || '정보 없음'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">주소:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.user_data?.address || selectedWithdrawalRequest.user_profile?.address || '정보 없음'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">이름:</label>
+                          <input
+                            type="text"
+                            value={editUserInfo.name}
+                            onChange={(e) => setEditUserInfo({...editUserInfo, name: e.target.value})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">USER_ID:</span>
+                          <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.user_id}</span>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">전화번호:</label>
+                          <input
+                            type="text"
+                            value={editUserInfo.phone}
+                            onChange={(e) => setEditUserInfo({...editUserInfo, phone: e.target.value})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">주소:</label>
+                          <input
+                            type="text"
+                            value={editUserInfo.address}
+                            onChange={(e) => setEditUserInfo({...editUserInfo, address: e.target.value})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 계좌 정보 */}
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">계좌 정보</h3>
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">은행:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {selectedWithdrawalRequest.bank_account?.bank_name || '정보 없음'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">계좌번호:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {selectedWithdrawalRequest.bank_account?.account_number || '정보 없음'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">예금주:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {selectedWithdrawalRequest.bank_account?.account_holder || '정보 없음'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">인증 상태:</span>
-                        <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          selectedWithdrawalRequest.bank_account?.is_verified 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {selectedWithdrawalRequest.bank_account?.is_verified ? '인증됨' : '미인증'}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">계좌 정보</h3>
+                      {!isEditingAccountInfo ? (
+                        <button
+                          onClick={() => {
+                            setIsEditingAccountInfo(true)
+                            setEditWithdrawalAccountInfo({
+                              bank_name: selectedWithdrawalRequest.bank_account?.bank_name || '',
+                              account_number: selectedWithdrawalRequest.bank_account?.account_number || '',
+                              account_holder: selectedWithdrawalRequest.bank_account?.account_holder || '',
+                              is_verified: selectedWithdrawalRequest.bank_account?.is_verified || false
+                            })
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors"
+                        >
+                          <Edit className="w-3 h-3" />
+                          수정
+                        </button>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={handleSaveAccountInfo}
+                            className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setIsEditingAccountInfo(false)}
+                            className="flex items-center gap-1 px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition-colors"
+                          >
+                            <XCircle className="w-3 h-3" />
+                            취소
+                          </button>
+                        </div>
+                      )}
                     </div>
+                    {!isEditingAccountInfo ? (
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">은행:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.bank_account?.bank_name || '정보 없음'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">계좌번호:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.bank_account?.account_number || '정보 없음'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">예금주:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.bank_account?.account_holder || '정보 없음'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">인증 상태:</span>
+                          <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            selectedWithdrawalRequest.bank_account?.is_verified
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {selectedWithdrawalRequest.bank_account?.is_verified ? '인증됨' : '미인증'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">은행:</label>
+                          <input
+                            type="text"
+                            value={editWithdrawalAccountInfo.bank_name}
+                            onChange={(e) => setEditWithdrawalAccountInfo({...editWithdrawalAccountInfo, bank_name: e.target.value})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">계좌번호:</label>
+                          <input
+                            type="text"
+                            value={editWithdrawalAccountInfo.account_number}
+                            onChange={(e) => setEditWithdrawalAccountInfo({...editWithdrawalAccountInfo, account_number: e.target.value})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">예금주:</label>
+                          <input
+                            type="text"
+                            value={editWithdrawalAccountInfo.account_holder}
+                            onChange={(e) => setEditWithdrawalAccountInfo({...editWithdrawalAccountInfo, account_holder: e.target.value})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">인증 상태:</label>
+                          <select
+                            value={editWithdrawalAccountInfo.is_verified ? 'true' : 'false'}
+                            onChange={(e) => setEditWithdrawalAccountInfo({...editWithdrawalAccountInfo, is_verified: e.target.value === 'true'})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          >
+                            <option value="false">미인증</option>
+                            <option value="true">인증됨</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 환급 정보 */}
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">환급 정보</h3>
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">포인트:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {selectedWithdrawalRequest.points_amount.toLocaleString()}P
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">세금 (3.3%):</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {Math.floor(selectedWithdrawalRequest.points_amount * 0.033).toLocaleString()}원
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">실지급액:</span>
-                        <span className="ml-2 text-sm font-bold text-green-600">
-                          {(selectedWithdrawalRequest.points_amount - Math.floor(selectedWithdrawalRequest.points_amount * 0.033)).toLocaleString()}원
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">환급 횟수:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {selectedWithdrawalRequest.withdrawal_count}회
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">환급 정보</h3>
+                      {!isEditingRefundInfo ? (
+                        <button
+                          onClick={() => {
+                            setIsEditingRefundInfo(true)
+                            setEditRefundInfo({
+                              points_amount: selectedWithdrawalRequest.points_amount
+                            })
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 transition-colors"
+                        >
+                          <Edit className="w-3 h-3" />
+                          수정
+                        </button>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={handleSaveRefundInfo}
+                            className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setIsEditingRefundInfo(false)}
+                            className="flex items-center gap-1 px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition-colors"
+                          >
+                            <XCircle className="w-3 h-3" />
+                            취소
+                          </button>
+                        </div>
+                      )}
                     </div>
+                    {!isEditingRefundInfo ? (
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">포인트:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.points_amount.toLocaleString()}P
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">세금 (3.3%):</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {Math.floor(selectedWithdrawalRequest.points_amount * 0.033).toLocaleString()}원
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">실지급액:</span>
+                          <span className="ml-2 text-sm font-bold text-green-600">
+                            {(selectedWithdrawalRequest.points_amount - Math.floor(selectedWithdrawalRequest.points_amount * 0.033)).toLocaleString()}원
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">환급 횟수:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.withdrawal_count}회
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">포인트:</label>
+                          <input
+                            type="number"
+                            value={editRefundInfo.points_amount}
+                            onChange={(e) => setEditRefundInfo({...editRefundInfo, points_amount: parseInt(e.target.value) || 0})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">세금 (3.3%):</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {Math.floor(editRefundInfo.points_amount * 0.033).toLocaleString()}원
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">실지급액:</span>
+                          <span className="ml-2 text-sm font-bold text-green-600">
+                            {(editRefundInfo.points_amount - Math.floor(editRefundInfo.points_amount * 0.033)).toLocaleString()}원
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">환급 횟수:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {selectedWithdrawalRequest.withdrawal_count}회
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 요청 정보 */}
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">요청 정보</h3>
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">상태:</span>
-                        <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          selectedWithdrawalRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-vintage-800' :
-                          selectedWithdrawalRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          selectedWithdrawalRequest.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {selectedWithdrawalRequest.status === 'pending' ? '대기' : 
-                           selectedWithdrawalRequest.status === 'approved' ? '승인' :
-                           selectedWithdrawalRequest.status === 'completed' ? '완료' :
-                           selectedWithdrawalRequest.status === 'rejected' ? '거부' : selectedWithdrawalRequest.status}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">요청일:</span>
-                        <span className="ml-2 text-sm text-gray-900">
-                          {new Date(selectedWithdrawalRequest.created_at).toLocaleString('ko-KR')}
-                        </span>
-                      </div>
-                      {selectedWithdrawalRequest.processed_at && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-500">처리일:</span>
-                          <span className="ml-2 text-sm text-gray-900">
-                            {new Date(selectedWithdrawalRequest.processed_at).toLocaleString('ko-KR')}
-                          </span>
-                        </div>
-                      )}
-                      {selectedWithdrawalRequest.completed_at && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-500">완료일:</span>
-                          <span className="ml-2 text-sm text-gray-900">
-                            {new Date(selectedWithdrawalRequest.completed_at).toLocaleString('ko-KR')}
-                          </span>
-                        </div>
-                      )}
-                      {selectedWithdrawalRequest.request_reason && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-500">요청 사유:</span>
-                          <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.request_reason}</span>
-                        </div>
-                      )}
-                      {selectedWithdrawalRequest.admin_notes && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-500">관리자 메모:</span>
-                          <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.admin_notes}</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">요청 정보</h3>
+                      {!isEditingRequestInfo ? (
+                        <button
+                          onClick={() => {
+                            setIsEditingRequestInfo(true)
+                            setEditRequestInfo({
+                              status: selectedWithdrawalRequest.status,
+                              request_reason: selectedWithdrawalRequest.request_reason || ''
+                            })
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                        >
+                          <Edit className="w-3 h-3" />
+                          수정
+                        </button>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={handleSaveRequestInfo}
+                            className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setIsEditingRequestInfo(false)}
+                            className="flex items-center gap-1 px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition-colors"
+                          >
+                            <XCircle className="w-3 h-3" />
+                            취소
+                          </button>
                         </div>
                       )}
                     </div>
+                    {!isEditingRequestInfo ? (
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">상태:</span>
+                          <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            selectedWithdrawalRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            selectedWithdrawalRequest.status === 'approved' ? 'bg-blue-100 text-vintage-800' :
+                            selectedWithdrawalRequest.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            selectedWithdrawalRequest.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {selectedWithdrawalRequest.status === 'pending' ? '대기' :
+                             selectedWithdrawalRequest.status === 'approved' ? '승인' :
+                             selectedWithdrawalRequest.status === 'completed' ? '완료' :
+                             selectedWithdrawalRequest.status === 'rejected' ? '거부' : selectedWithdrawalRequest.status}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">요청일:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {new Date(selectedWithdrawalRequest.created_at).toLocaleString('ko-KR')}
+                          </span>
+                        </div>
+                        {selectedWithdrawalRequest.processed_at && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">처리일:</span>
+                            <span className="ml-2 text-sm text-gray-900">
+                              {new Date(selectedWithdrawalRequest.processed_at).toLocaleString('ko-KR')}
+                            </span>
+                          </div>
+                        )}
+                        {selectedWithdrawalRequest.completed_at && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">완료일:</span>
+                            <span className="ml-2 text-sm text-gray-900">
+                              {new Date(selectedWithdrawalRequest.completed_at).toLocaleString('ko-KR')}
+                            </span>
+                          </div>
+                        )}
+                        {selectedWithdrawalRequest.request_reason && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">요청 사유:</span>
+                            <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.request_reason}</span>
+                          </div>
+                        )}
+                        {selectedWithdrawalRequest.admin_notes && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">관리자 메모:</span>
+                            <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.admin_notes}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">상태:</label>
+                          <select
+                            value={editRequestInfo.status}
+                            onChange={(e) => setEditRequestInfo({...editRequestInfo, status: e.target.value})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                          >
+                            <option value="pending">대기</option>
+                            <option value="approved">승인</option>
+                            <option value="completed">완료</option>
+                            <option value="rejected">거부</option>
+                          </select>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">요청일:</span>
+                          <span className="ml-2 text-sm text-gray-900">
+                            {new Date(selectedWithdrawalRequest.created_at).toLocaleString('ko-KR')}
+                          </span>
+                        </div>
+                        {selectedWithdrawalRequest.processed_at && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">처리일:</span>
+                            <span className="ml-2 text-sm text-gray-900">
+                              {new Date(selectedWithdrawalRequest.processed_at).toLocaleString('ko-KR')}
+                            </span>
+                          </div>
+                        )}
+                        {selectedWithdrawalRequest.completed_at && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">완료일:</span>
+                            <span className="ml-2 text-sm text-gray-900">
+                              {new Date(selectedWithdrawalRequest.completed_at).toLocaleString('ko-KR')}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">요청 사유:</label>
+                          <textarea
+                            value={editRequestInfo.request_reason}
+                            onChange={(e) => setEditRequestInfo({...editRequestInfo, request_reason: e.target.value})}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm w-full mt-1"
+                            rows={2}
+                            placeholder="요청 사유를 입력하세요..."
+                          />
+                        </div>
+                        {selectedWithdrawalRequest.admin_notes && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">관리자 메모:</span>
+                            <span className="ml-2 text-sm text-gray-900">{selectedWithdrawalRequest.admin_notes}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
