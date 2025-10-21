@@ -41,25 +41,53 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
   // Daum 우편번호 서비스 스크립트 로드
   useEffect(() => {
+    // 이미 로드되어 있으면 스킵
+    if (window.daum && window.daum.Postcode) {
+      console.log('✅ 다음 주소 API 이미 로드됨')
+      return
+    }
+
+    // 이미 스크립트 태그가 있는지 확인
+    const existingScript = document.querySelector('script[src*="postcode.v2.js"]')
+    if (existingScript) {
+      console.log('✅ 다음 주소 API 스크립트 태그 존재')
+      return
+    }
+
+    console.log('📦 다음 주소 API 로드 시작')
     const script = document.createElement('script')
     script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js'
     script.async = true
-    document.head.appendChild(script)
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script)
-      }
+    script.onload = () => {
+      console.log('✅ 다음 주소 API 로드 완료')
     }
+    script.onerror = () => {
+      console.error('❌ 다음 주소 API 로드 실패')
+    }
+    document.head.appendChild(script)
   }, [])
 
   const handleAddressSearch = () => {
-    if (!window.daum) {
-      console.warn('다음 우편번호 API가 로드되지 않았습니다')
+    console.log('🔍 주소 검색 버튼 클릭됨')
+    console.log('window.daum 상태:', window.daum)
+
+    if (!window.daum || !window.daum.Postcode) {
+      console.error('❌ 다음 우편번호 API가 로드되지 않았습니다')
+      alert('주소 검색 기능을 불러오는 중입니다. 잠시 후 다시 시도해주세요.')
+
+      // 스크립트 재로드 시도
+      const script = document.createElement('script')
+      script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js'
+      script.onload = () => {
+        console.log('✅ 다음 주소 API 재로드 완료')
+        alert('주소 검색이 준비되었습니다. 다시 클릭해주세요.')
+      }
+      document.head.appendChild(script)
       return
     }
 
     setIsSearching(true)
+    console.log('✅ 다음 주소 팝업 열기 시작')
 
     const postcode = new window.daum.Postcode({
       oncomplete: (data) => {
