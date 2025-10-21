@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
-import { User, Phone, MapPin, Calendar } from 'lucide-react'
+import { User, Phone, Calendar } from 'lucide-react'
 
 interface UserCodeSignupProps {
   onSuccess: () => void
@@ -28,7 +28,6 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
     name: '',
     phone: '',
     birth_date: '',
-    address: '',
   })
 
   // 🔍 회원 코드 검증 및 로그인
@@ -102,7 +101,6 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
         name: profileData.name,
         phone: profileData.phone,
         birth_date: profileData.birth_date || null,
-        address: profileData.address || null,
         current_balance: 0,
         total_earned: 0,
         total_withdrawn: 0,
@@ -228,32 +226,17 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Calendar className="w-4 h-4 inline mr-1" />
-              생년월일
-            </label>
-            <input
-              type="date"
-              value={profileData.birth_date}
-              onChange={(e) => setProfileData(prev => ({ ...prev, birth_date: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <MapPin className="w-4 h-4 inline mr-1" />
-              주소
-            </label>
-            <input
-              type="text"
-              value={profileData.address}
-              onChange={(e) => setProfileData(prev => ({ ...prev, address: e.target.value }))}
-              placeholder="서울시 강남구..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <Calendar className="w-4 h-4 inline mr-1" />
+            생년월일
+          </label>
+          <input
+            type="date"
+            value={profileData.birth_date}
+            onChange={(e) => setProfileData(prev => ({ ...prev, birth_date: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
+          />
         </div>
 
 
