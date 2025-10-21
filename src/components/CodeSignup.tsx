@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
-import {Gift, User, Phone, Mail, Instagram, Youtube, CheckCircle} from 'lucide-react'
+import {Gift, User, Phone, Mail, Instagram, Youtube, CheckCircle, MapPin, Calendar} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { AddressInput } from './AddressInput'
 
@@ -26,6 +26,8 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
     phone: '', // 필수 필드
     address: '',
     detailed_address: '',
+    birth_date: '',
+    gender: '',
     instagram: '',
     youtube: '',
     followers: ''
@@ -106,6 +108,8 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
         phone: formData.phone.trim(),
         address: formData.address.trim(),
         detailed_address: formData.detailed_address.trim(),
+        birth_date: formData.birth_date,
+        gender: formData.gender,
         instagram: formData.instagram.trim(),
         youtube: formData.youtube.trim(),
         followers: formData.followers ? parseInt(formData.followers) : 0,
@@ -128,6 +132,8 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
           phone: '',
           address: '',
           detailed_address: '',
+          birth_date: '',
+          gender: '',
           instagram: '',
           youtube: '',
           followers: ''
@@ -271,6 +277,38 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
               }
               required={false}
             />
+
+            <div>
+              <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                생년월일
+              </label>
+              <input
+                id="birth_date"
+                type="date"
+                value={formData.birth_date}
+                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
+                <User className="w-4 h-4 inline mr-1" />
+                성별
+              </label>
+              <select
+                id="gender"
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+              >
+                <option value="">선택하세요</option>
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+                <option value="other">기타</option>
+              </select>
+            </div>
 
             <div>
               <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 mb-2">
