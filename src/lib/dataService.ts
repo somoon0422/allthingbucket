@@ -2021,6 +2021,153 @@ export const dataService = {
       }
     },
 
+    // 캠페인 제품
+    campaign_products: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase campaign_products.list 호출됨', options)
+
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+
+          let query = supabase.from('campaign_products').select('*')
+
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+
+          const { data, error } = await query.order('created_at', { ascending: false })
+
+          if (error) {
+            console.error('❌ campaign_products 조회 실패:', error)
+            return []
+          }
+
+          console.log('✅ Supabase campaign_products.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ campaign_products 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('campaign_products')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle()
+
+          if (error) {
+            console.error('❌ campaign_products 조회 실패:', error)
+            return null
+          }
+
+          return data
+        } catch (error) {
+          console.error('❌ campaign_products 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('campaign_products')
+            .insert([data])
+            .select()
+            .maybeSingle()
+
+          if (error) {
+            console.error('❌ campaign_products 생성 실패:', error)
+            return null
+          }
+
+          return result
+        } catch (error) {
+          console.error('❌ campaign_products 생성 실패:', error)
+          return null
+        }
+      },
+      createMany: async (dataArray: any[]) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('campaign_products')
+            .insert(dataArray)
+            .select()
+
+          if (error) {
+            console.error('❌ campaign_products 대량 생성 실패:', error)
+            return []
+          }
+
+          return result || []
+        } catch (error) {
+          console.error('❌ campaign_products 대량 생성 실패:', error)
+          return []
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('campaign_products')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .maybeSingle()
+
+          if (error) {
+            console.error('❌ campaign_products 업데이트 실패:', error)
+            return null
+          }
+
+          return result
+        } catch (error) {
+          console.error('❌ campaign_products 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('campaign_products')
+            .delete()
+            .eq('id', id)
+
+          if (error) {
+            console.error('❌ campaign_products 삭제 실패:', error)
+            return false
+          }
+
+          return true
+        } catch (error) {
+          console.error('❌ campaign_products 삭제 실패:', error)
+          return false
+        }
+      },
+      deleteByCampaignId: async (campaignId: string) => {
+        try {
+          const { error } = await supabase
+            .from('campaign_products')
+            .delete()
+            .eq('campaign_id', campaignId)
+
+          if (error) {
+            console.error('❌ campaign_products 삭제 실패:', error)
+            return false
+          }
+
+          return true
+        } catch (error) {
+          console.error('❌ campaign_products 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
     // 온라인 상태 관리
     user_online_status: {
       async list() {

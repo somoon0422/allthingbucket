@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react'
-import {X, User, MessageSquare, Star} from 'lucide-react'
+import {X, User, MessageSquare, Star, Package} from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import { AddressInput } from './AddressInput'
@@ -70,6 +70,10 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
   }, [isOpen, onClose])
 
 
+  // 🔥 캠페인 제품 및 선택된 제품 상태
+  const [campaignProducts, setCampaignProducts] = useState<any[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -80,6 +84,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     blog_url: '',
     youtube_channel: '',
     platform_type: '', // 새로 추가: 플랫폼 타입
+    selected_product_id: '', // 선택한 제품 ID
     application_reason: '',
     experience_plan: '',
     additional_info: '',
@@ -88,6 +93,35 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
   // 🔥 campaign 또는 experience 둘 다 지원
   const targetCampaign = campaign || experience
+
+  // 🔥 캠페인의 제품 목록 로드
+  useEffect(() => {
+    const loadCampaignProducts = async () => {
+      if (!targetCampaign?.id) return
+
+      try {
+        const products = await (dataService.entities as any).campaign_products.list({
+          filter: { campaign_id: targetCampaign.id }
+        })
+
+        console.log('📦 캠페인 제품 목록:', products)
+        setCampaignProducts(products || [])
+
+        // 제품이 1개면 자동 선택
+        if (products && products.length === 1) {
+          setSelectedProduct(products[0])
+          setFormData(prev => ({
+            ...prev,
+            selected_product_id: products[0].id
+          }))
+        }
+      } catch (error) {
+        console.error('❌ 캠페인 제품 로드 실패:', error)
+      }
+    }
+
+    loadCampaignProducts()
+  }, [targetCampaign])
   
   // 🔥 디버그: 캠페인 타입 정보 로깅
   useEffect(() => {
@@ -551,148 +585,160 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
               />
             </div>
 
+            {/* 🔥 제품 선택 섹션 (제품이 2개 이상일 때만 표시) */}
+            {campaignProducts.length > 1 && (
+              <div className="space-y-4 bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border-2 border-purple-200">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Package className="w-5 h-5 mr-2 text-purple-600" />
+                  체험 제품 선택 <span className="text-red-500 ml-1">*</span>
+                </h3>
+                <p className="text-sm text-gray-600">
+                  체험하고 싶은 제품을 선택해주세요.
+                </p>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {campaignProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => {
+                        setSelectedProduct(product)
+                        setFormData(prev => ({
+                          ...prev,
+                          selected_product_id: product.id,
+                          platform_type: '' // 제품 변경 시 플랫폼 선택 초기화
+                        }))
+                      }}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        selectedProduct?.id === product.id
+                          ? 'border-purple-500 bg-white shadow-md'
+                          : 'border-gray-300 hover:border-purple-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{product.product_name}</h4>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {product.allowed_platforms?.map((platform: string) => {
+                              const platformInfo: { [key: string]: { icon: string; label: string } } = {
+                                review: { icon: '⭐', label: '구매후기' },
+                                blog: { icon: '📝', label: '블로그' },
+                                naver: { icon: '🟢', label: '네이버' },
+                                instagram: { icon: '📸', label: '인스타그램' },
+                                youtube: { icon: '🎥', label: '유튜브' },
+                                tiktok: { icon: '🎵', label: '틱톡' },
+                                product: { icon: '🧪', label: '제품 체험' },
+                                press: { icon: '📰', label: '기자단' },
+                                local: { icon: '🏘️', label: '지역 체험' },
+                                other: { icon: '🔧', label: '기타' }
+                              }
+                              const info = platformInfo[platform] || { icon: '🔧', label: platform }
+                              return (
+                                <span key={platform} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                                  {info.icon} {info.label}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                        {selectedProduct?.id === product.id && (
+                          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center ml-3">
+                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {!selectedProduct && (
+                  <p className="text-red-500 text-sm">제품을 선택해주세요.</p>
+                )}
+              </div>
+            )}
+
             {/* SNS 정보 */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">SNS 정보</h3>
-              
+
               {/* 플랫폼 타입 선택 - 리뷰넷 스타일 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   참여 플랫폼 <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {/* 구매평 카드 */}
-                  <div 
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.platform_type === 'review' 
-                        ? 'border-vintage-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setFormData(prev => ({ ...prev, platform_type: 'review' }))}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-gray-900">구매후기</h4>
-                        <div className="flex items-center mt-1">
-                          <Star className="w-3 h-3 text-yellow-500 mr-1" />
-                          <span className="text-xs text-gray-600">5.0</span>
+                {/* 🔥 제품이 선택되지 않았을 때 안내 메시지 */}
+                {campaignProducts.length > 1 && !selectedProduct ? (
+                  <p className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    먼저 체험 제품을 선택해주세요.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* 🔥 선택된 제품의 플랫폼만 표시 */}
+                  {(() => {
+                    // 제품이 1개면 자동 선택된 제품, 여러 개면 사용자가 선택한 제품
+                    const availablePlatforms = selectedProduct?.allowed_platforms || []
+
+                    const allPlatforms = [
+                      { value: 'review', label: '구매후기', icon: '⭐', color: 'vintage', bgColor: 'bg-blue-50', borderColor: 'border-vintage-500' },
+                      { value: 'blog', label: 'Blog', labelKo: '블로그 포스트', icon: '📝', color: 'green', bgColor: 'bg-green-50', borderColor: 'border-green-500' },
+                      { value: 'naver', label: 'Naver', labelKo: '네이버', icon: '🟢', color: 'green', bgColor: 'bg-green-50', borderColor: 'border-green-500' },
+                      { value: 'instagram', label: 'Instagram', labelKo: '인스타그램 포스트', icon: '📸', color: 'pink', bgColor: 'bg-pink-50', borderColor: 'border-pink-500' },
+                      { value: 'youtube', label: 'YouTube', labelKo: '유튜브 영상', icon: '🎥', color: 'red', bgColor: 'bg-red-50', borderColor: 'border-red-500' },
+                      { value: 'tiktok', label: 'TikTok', labelKo: '틱톡', icon: '🎵', color: 'purple', bgColor: 'bg-purple-50', borderColor: 'border-purple-500' },
+                      { value: 'product', label: 'Product', labelKo: '제품 체험', icon: '🧪', color: 'orange', bgColor: 'bg-orange-50', borderColor: 'border-orange-500' },
+                      { value: 'press', label: 'Press', labelKo: '기자단', icon: '📰', color: 'gray', bgColor: 'bg-gray-50', borderColor: 'border-gray-500' },
+                      { value: 'local', label: 'Local', labelKo: '지역 체험', icon: '🏘️', color: 'yellow', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-500' },
+                      { value: 'other', label: 'Other', labelKo: '기타', icon: '🔧', color: 'gray', bgColor: 'bg-gray-50', borderColor: 'border-gray-500' }
+                    ]
+
+                    return allPlatforms
+                      .filter(platform => availablePlatforms.includes(platform.value))
+                      .map(platform => (
+                        <div
+                          key={platform.value}
+                          className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            formData.platform_type === platform.value
+                              ? `${platform.borderColor} ${platform.bgColor}`
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setFormData(prev => ({ ...prev, platform_type: platform.value }))}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{platform.label}</h4>
+                              {platform.labelKo && (
+                                <p className="text-xs text-gray-600 mt-1">{platform.labelKo}</p>
+                              )}
+                              {platform.value === 'review' && (
+                                <div className="flex items-center mt-1">
+                                  <Star className="w-3 h-3 text-yellow-500 mr-1" />
+                                  <span className="text-xs text-gray-600">5.0</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className={`w-8 h-8 ${platform.bgColor.replace('bg-', 'bg-').replace('-50', '-100')} rounded-full flex items-center justify-center`}>
+                              <span className="font-bold text-xs">{platform.icon}</span>
+                            </div>
+                          </div>
+                          <div className="mt-2">
+                            <div className={`${platform.value === 'review' ? 'w-12 h-8' : platform.value === 'blog' || platform.value === 'naver' ? 'w-16 h-10' : platform.value === 'instagram' ? 'w-12 h-12' : 'w-16 h-9'} bg-gray-200 rounded`}></div>
+                            <div className="mt-1 space-y-1">
+                              <div className="h-1 bg-gray-200 rounded"></div>
+                              <div className="h-1 bg-gray-200 rounded w-3/4"></div>
+                              {(platform.value === 'blog' || platform.value === 'naver') && (
+                                <div className="h-1 bg-gray-200 rounded w-1/2"></div>
+                              )}
+                            </div>
+                          </div>
+                          {formData.platform_type === platform.value && (
+                            <div className={`absolute top-2 right-2 w-4 h-4 ${platform.borderColor.replace('border-', 'bg-')} rounded-full flex items-center justify-center`}>
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-vintage-600 font-bold text-xs">R</span>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <div className="w-12 h-8 bg-gray-200 rounded"></div>
-                      <div className="mt-1 space-y-1">
-                        <div className="h-1 bg-gray-200 rounded"></div>
-                        <div className="h-1 bg-gray-200 rounded w-3/4"></div>
-                      </div>
-                    </div>
-                    {formData.platform_type === 'review' && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-vintage-500 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 블로그 카드 */}
-                  <div 
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.platform_type === 'blog' 
-                        ? 'border-green-500 bg-green-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setFormData(prev => ({ ...prev, platform_type: 'blog' }))}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-gray-900">Blog</h4>
-                        <p className="text-xs text-gray-600 mt-1">블로그 포스트</p>
-                      </div>
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-600 font-bold text-xs">B</span>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <div className="w-16 h-10 bg-gray-200 rounded"></div>
-                      <div className="mt-1 space-y-1">
-                        <div className="h-1 bg-gray-200 rounded"></div>
-                        <div className="h-1 bg-gray-200 rounded w-2/3"></div>
-                        <div className="h-1 bg-gray-200 rounded w-1/2"></div>
-                      </div>
-                    </div>
-                    {formData.platform_type === 'blog' && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 인스타그램 카드 */}
-                  <div 
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.platform_type === 'instagram' 
-                        ? 'border-pink-500 bg-pink-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setFormData(prev => ({ ...prev, platform_type: 'instagram' }))}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-gray-900">Instagram</h4>
-                        <p className="text-xs text-gray-600 mt-1">인스타그램 포스트</p>
-                      </div>
-                      <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
-                        <span className="text-pink-600 font-bold text-xs">I</span>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <div className="w-12 h-12 bg-gray-200 rounded"></div>
-                      <div className="mt-1 space-y-1">
-                        <div className="h-1 bg-gray-200 rounded"></div>
-                        <div className="h-1 bg-gray-200 rounded w-3/4"></div>
-                      </div>
-                    </div>
-                    {formData.platform_type === 'instagram' && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 유튜브 카드 */}
-                  <div 
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.platform_type === 'youtube' 
-                        ? 'border-red-500 bg-red-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => setFormData(prev => ({ ...prev, platform_type: 'youtube' }))}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-gray-900">YouTube</h4>
-                        <p className="text-xs text-gray-600 mt-1">유튜브 영상</p>
-                      </div>
-                      <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                        <span className="text-red-600 font-bold text-xs">Y</span>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <div className="w-16 h-9 bg-gray-200 rounded"></div>
-                      <div className="mt-1 space-y-1">
-                        <div className="h-1 bg-gray-200 rounded"></div>
-                        <div className="h-1 bg-gray-200 rounded w-2/3"></div>
-                      </div>
-                    </div>
-                    {formData.platform_type === 'youtube' && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
+                      ))
+                  })()}
                 </div>
+                )}
               </div>
               
               <div className="space-y-4">

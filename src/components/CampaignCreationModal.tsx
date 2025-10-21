@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { dataService } from '../lib/dataService'
 import ImageUploadManager from './ImageUploadManager'
-import {X, Calendar, Users, Coins, FileText, Phone, Mail, Image, Code, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
+import {X, Calendar, Users, Coins, FileText, Phone, Mail, Image, Code, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone, Plus, Trash2, Package} from 'lucide-react'
 import toast from 'react-hot-toast'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -71,11 +71,27 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     }
   }
   
+  // 🔥 제품 상태 관리
+  interface Product {
+    id: string
+    name: string
+    allowed_platforms: string[]
+  }
+
+  const [products, setProducts] = useState<Product[]>([
+    {
+      id: Date.now().toString(),
+      name: '',
+      allowed_platforms: []
+    }
+  ])
+
   const [formData, setFormData] = useState({
     experience_name: '',
     brand_name: '',
     description: '',
-    experience_type: ['purchase_review'], // 새로 추가: 체험단 타입 (배열로 변경)
+    platform: '인스타그램', // 플랫폼
+    delivery_type: '배송형', // 배송형
     reward_points: '',
     max_participants: '30',
     requirements: '',
@@ -103,6 +119,44 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     approval_email_content: '', // 승인 이메일 내용
     approval_sms_content: '' // 승인 SMS 내용
   })
+
+  // 🔥 제품 추가
+  const addProduct = () => {
+    setProducts([...products, {
+      id: Date.now().toString(),
+      name: '',
+      allowed_platforms: []
+    }])
+  }
+
+  // 🔥 제품 삭제
+  const removeProduct = (id: string) => {
+    if (products.length === 1) {
+      toast.error('최소 1개의 제품은 등록해야 합니다')
+      return
+    }
+    setProducts(products.filter(p => p.id !== id))
+  }
+
+  // 🔥 제품명 변경
+  const updateProductName = (id: string, name: string) => {
+    setProducts(products.map(p =>
+      p.id === id ? { ...p, name } : p
+    ))
+  }
+
+  // 🔥 제품의 플랫폼 변경
+  const toggleProductPlatform = (productId: string, platform: string) => {
+    setProducts(products.map(p => {
+      if (p.id === productId) {
+        const platforms = p.allowed_platforms.includes(platform)
+          ? p.allowed_platforms.filter(pl => pl !== platform)
+          : [...p.allowed_platforms, platform]
+        return { ...p, allowed_platforms: platforms }
+      }
+      return p
+    }))
+  }
 
   // 🔥 메인 이미지 변경 처리
   const handleMainImagesChange = (images: string[]) => {
@@ -146,8 +200,16 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         return
       }
 
-      if (formData.experience_type.length === 0) {
-        toast.error('최소 하나의 체험단 타입을 선택해주세요')
+      // 제품 검증
+      const invalidProduct = products.find(p => !p.name.trim())
+      if (invalidProduct) {
+        toast.error('모든 제품의 이름을 입력해주세요')
+        return
+      }
+
+      const productWithoutPlatform = products.find(p => p.allowed_platforms.length === 0)
+      if (productWithoutPlatform) {
+        toast.error('모든 제품에 최소 하나의 플랫폼을 선택해주세요')
         return
       }
 
@@ -157,7 +219,9 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         product_name: formData.brand_name.trim(),
         brand_name: formData.brand_name.trim(),
         description: formData.description.trim(),
-        type: formData.experience_type.join(', '), // 배열을 쉼표로 구분된 문자열로 변환
+        type: 'campaign', // 기본값
+        platform: formData.platform, // 플랫폼
+        delivery_type: formData.delivery_type, // 배송형
         status: 'active',
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : 0,
         current_participants: 0,
@@ -193,7 +257,23 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
       })
 
       // 캠페인 생성 (campaigns 테이블에 저장)
-      await (dataService.entities as any).campaigns.create(campaignData)
+      const createdCampaign = await (dataService.entities as any).campaigns.create(campaignData)
+
+      if (!createdCampaign || !createdCampaign.id) {
+        throw new Error('캠페인 생성 실패')
+      }
+
+      // 🔥 제품 데이터 저장 (campaign_products 테이블)
+      const productData = products.map(product => ({
+        campaign_id: createdCampaign.id,
+        product_name: product.name.trim(),
+        allowed_platforms: product.allowed_platforms, // JSON 배열
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }))
+
+      console.log('📦 제품 데이터 저장:', productData)
+      await (dataService.entities as any).campaign_products.createMany(productData)
       
       toast.success('캠페인이 성공적으로 등록되었습니다!')
       onSuccess()
@@ -204,9 +284,8 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         experience_name: '',
         brand_name: '',
         description: '',
-        experience_type: 'purchase_review',
         reward_points: '',
-        max_participants: '',
+        max_participants: '30',
         requirements: '',
         additional_info: '',
         contact_email: '',
@@ -325,60 +404,142 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
             </div>
           </div>
 
-          {/* 체험단 타입 선택 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              체험단 타입 * (여러 개 선택 가능)
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                { value: 'purchase_review', label: '구매평', icon: '🛒' },
-                { value: 'blog_review', label: '블로그 리뷰', icon: '📝' },
-                { value: 'instagram', label: '인스타그램', icon: '📸' },
-                { value: 'youtube', label: '유튜브', icon: '🎥' },
-                { value: 'product', label: '제품 체험', icon: '🧪' },
-                { value: 'press', label: '기자단', icon: '📰' },
-                { value: 'local', label: '지역 체험', icon: '🏘️' },
-                { value: 'other', label: '기타', icon: '🔧' }
-              ].map((type) => (
-                <label
-                  key={type.value}
-                  className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
-                    formData.experience_type.includes(type.value)
-                      ? 'border-vintage-500 bg-blue-50 text-vintage-700'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    value={type.value}
-                    checked={formData.experience_type.includes(type.value)}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      if (e.target.checked) {
-                        setFormData(prev => ({
-                          ...prev,
-                          experience_type: [...prev.experience_type, value]
-                        }))
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          experience_type: prev.experience_type.filter(t => t !== value)
-                        }))
-                      }
-                    }}
-                    className="w-4 h-4 text-vintage-600 border-gray-300 rounded focus:ring-vintage-500"
-                  />
-                  <span className="text-sm font-medium">
-                    <span className="mr-1">{type.icon}</span>
-                    {type.label}
-                  </span>
-                </label>
+          {/* 🔥 제품 관리 섹션 */}
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl border-2 border-purple-200">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Package className="w-5 h-5 mr-2 text-purple-600" />
+                  제품 관리 *
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  각 제품별로 참여 가능한 플랫폼을 지정하세요. 신청자는 원하는 제품을 선택하여 신청합니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addProduct}
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                제품 추가
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {products.map((product, index) => (
+                <div key={product.id} className="bg-white p-5 rounded-lg border-2 border-gray-200 hover:border-purple-300 transition-all">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        제품 {index + 1} 이름 *
+                      </label>
+                      <input
+                        type="text"
+                        value={product.name}
+                        onChange={(e) => updateProductName(product.id, e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="예: 프리미엄 스킨케어 세트"
+                      />
+                    </div>
+                    {products.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeProduct(product.id)}
+                        className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="제품 삭제"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      📱 참여 가능한 플랫폼 * (여러 개 선택 가능)
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { value: 'review', label: '구매후기', icon: '⭐', color: 'blue' },
+                        { value: 'blog', label: '블로그', icon: '📝', color: 'green' },
+                        { value: 'naver', label: '네이버', icon: '🟢', color: 'green' },
+                        { value: 'instagram', label: '인스타그램', icon: '📸', color: 'pink' },
+                        { value: 'youtube', label: '유튜브', icon: '🎥', color: 'red' },
+                        { value: 'tiktok', label: '틱톡', icon: '🎵', color: 'purple' },
+                        { value: 'product', label: '제품 체험', icon: '🧪', color: 'orange' },
+                        { value: 'press', label: '기자단', icon: '📰', color: 'gray' },
+                        { value: 'local', label: '지역 체험', icon: '🏘️', color: 'yellow' },
+                        { value: 'other', label: '기타', icon: '🔧', color: 'gray' }
+                      ].map((platform) => (
+                        <label
+                          key={platform.value}
+                          className={`flex items-center space-x-2 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                            product.allowed_platforms.includes(platform.value)
+                              ? `border-${platform.color}-500 bg-${platform.color}-50`
+                              : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={product.allowed_platforms.includes(platform.value)}
+                            onChange={() => toggleProductPlatform(product.id, platform.value)}
+                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <span className="text-xs font-medium flex-1">
+                            <span className="mr-1">{platform.icon}</span>
+                            {platform.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {product.allowed_platforms.length === 0 && (
+                      <p className="text-red-500 text-xs mt-2">최소 하나의 플랫폼을 선택해주세요.</p>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
-            {formData.experience_type.length === 0 && (
-              <p className="text-red-500 text-sm mt-2">최소 하나의 타입을 선택해주세요.</p>
-            )}
+          </div>
+
+          {/* 플랫폼과 배송형 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                플랫폼 *
+              </label>
+              <select
+                name="platform"
+                value={formData.platform}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                required
+              >
+                <option value="인스타그램">인스타그램</option>
+                <option value="유튜브">유튜브</option>
+                <option value="블로그">블로그</option>
+                <option value="네이버">네이버</option>
+                <option value="틱톡">틱톡</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                배송형 *
+              </label>
+              <select
+                name="delivery_type"
+                value={formData.delivery_type}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                required
+              >
+                <option value="배송형">배송형</option>
+                <option value="방문형">방문형</option>
+                <option value="온라인">온라인</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
           </div>
 
           {/* 설명 */}
