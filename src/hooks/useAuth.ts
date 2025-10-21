@@ -209,6 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: userData.name,
           phone: userData.phone,
           address: userData.address,
+          detailed_address: userData.detailed_address,
           birth_date: userData.birth_date,
           gender: userData.gender
         }

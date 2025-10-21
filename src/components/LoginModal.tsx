@@ -91,6 +91,29 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     }))
   }
 
+  // 전화번호 자동 포맷팅 (010-1234-5678)
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // 숫자만 추출
+    const numbers = value.replace(/[^0-9]/g, '')
+
+    // 최대 11자리까지만
+    const limitedNumbers = numbers.slice(0, 11)
+
+    // 포맷팅
+    let formatted = limitedNumbers
+    if (limitedNumbers.length > 3 && limitedNumbers.length <= 7) {
+      formatted = `${limitedNumbers.slice(0, 3)}-${limitedNumbers.slice(3)}`
+    } else if (limitedNumbers.length > 7) {
+      formatted = `${limitedNumbers.slice(0, 3)}-${limitedNumbers.slice(3, 7)}-${limitedNumbers.slice(7)}`
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      phone: formatted
+    }))
+  }
+
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose()
@@ -277,9 +300,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     name="phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={handleInputChange}
+                    onChange={handlePhoneChange}
                     className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                     placeholder="010-1234-5678"
+                    maxLength={13}
                   />
                 </div>
               </div>
