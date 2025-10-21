@@ -93,7 +93,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
       oncomplete: (data) => {
         // 선택된 주소 정보 처리
         let fullAddress = data.address
-        
+
         // 건물명이 있으면 추가
         if (data.buildingName !== '') {
           fullAddress += ` (${data.buildingName})`
@@ -101,7 +101,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
 
         onAddressChange(fullAddress, detailedAddress)
         setIsSearching(false)
-        
+
         // 상세주소 입력 필드로 포커스 이동
         setTimeout(() => {
           const detailInput = document.getElementById('detailed-address-input')
@@ -110,11 +110,8 @@ const AddressInput: React.FC<AddressInputProps> = ({
           }
         }, 100)
       },
-      onresize: () => {
-        // 팝업 크기 조정 시 처리
-      },
-      width: '100%',
-      height: '100%'
+      width: 500,
+      height: 600
     })
 
     postcode.open()
