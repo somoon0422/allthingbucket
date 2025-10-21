@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../lib/dataService'
 import toast from 'react-hot-toast'
 import { User, Phone, Calendar } from 'lucide-react'
+import { AddressInput } from './AddressInput'
 
 interface UserCodeSignupProps {
   onSuccess: () => void
@@ -28,6 +29,8 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
     name: '',
     phone: '',
     birth_date: '',
+    address: '',
+    detailed_address: '',
   })
 
   // 🔍 회원 코드 검증 및 로그인
@@ -101,6 +104,8 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
         name: profileData.name,
         phone: profileData.phone,
         birth_date: profileData.birth_date || null,
+        address: profileData.address || null,
+        detailed_address: profileData.detailed_address || null,
         current_balance: 0,
         total_earned: 0,
         total_withdrawn: 0,
@@ -239,6 +244,14 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
           />
         </div>
 
+        <AddressInput
+          address={profileData.address}
+          detailedAddress={profileData.detailed_address}
+          onAddressChange={(address, detailedAddress) =>
+            setProfileData(prev => ({ ...prev, address, detailed_address: detailedAddress }))
+          }
+          required={false}
+        />
 
         <button
           type="submit"
