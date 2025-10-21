@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { Mail, Lock, Eye, EyeOff, User, Phone, MapPin, Calendar, Users, X } from 'lucide-react'
 import { GoogleLoginButton } from './GoogleLoginButton'
 import { KakaoLoginButton } from './KakaoLoginButton'
+import { AddressInput } from './AddressInput'
 import toast from 'react-hot-toast'
 
 interface LoginModalProps {
@@ -20,6 +21,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     name: '',
     phone: '',
     address: '',
+    detailed_address: '',
     birth_date: '',
     gender: ''
   })
@@ -70,6 +72,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           name: formData.name,
           phone: formData.phone,
           address: formData.address,
+          detailed_address: formData.detailed_address,
           birth_date: formData.birth_date,
           gender: formData.gender as 'male' | 'female' | 'other'
         })
@@ -282,23 +285,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               {/* 주소 */}
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                  주소
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    id="address"
-                    name="address"
-                    type="text"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
-                    placeholder="주소를 입력하세요"
-                  />
-                </div>
-              </div>
+              <AddressInput
+                address={formData.address}
+                detailedAddress={formData.detailed_address}
+                onAddressChange={(address, detailedAddress) =>
+                  setFormData(prev => ({ ...prev, address, detailed_address: detailedAddress }))
+                }
+                required={false}
+              />
 
               {/* 생년월일 */}
               <div>
