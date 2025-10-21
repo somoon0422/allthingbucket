@@ -570,7 +570,8 @@ const CampaignDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* 공통 컨텐츠: 메인 이미지 (모든 탭에서 보임) */}
+            {/* 캠페인정보 탭에서만 보이는 메인 이미지 및 제품 정보 */}
+            {activeTab === 'info' && (
             <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
               {/* 🔥 메인 이미지 갤러리 */}
               {displayMainImages.length > 0 && (
@@ -710,6 +711,7 @@ const CampaignDetail: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* 캠페인 정보 탭 */}
             {activeTab === 'info' && (

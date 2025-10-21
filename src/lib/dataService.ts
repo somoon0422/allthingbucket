@@ -831,13 +831,12 @@ export const dataService = {
           const { data, error } = await supabase
             .from('user_reviews')
             .select('*')
-            .order('created_at', { ascending: false })
-          
+
           if (error) {
             console.error('❌ user_reviews 조회 실패:', error)
             return []
           }
-          
+
           console.log('✅ Supabase user_reviews.list 결과:', data)
           return data || []
         } catch (error) {
