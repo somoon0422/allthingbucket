@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react'
-import {MapPin, Search} from 'lucide-react'
+import {MapPin, Search, X} from 'lucide-react'
 
 interface AddressInputProps {
   address: string
@@ -21,11 +21,12 @@ declare global {
           bname: string
           buildingName: string
         }) => void
-        onresize?: (size: { width: number; height: number }) => void
+        onclose?: () => void
         width?: string | number
         height?: string | number
       }) => {
         open: () => void
+        embed: (container: HTMLElement) => void
       }
     }
   }
@@ -38,6 +39,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
   required = false
 }) => {
   const [isSearching, setIsSearching] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Daum 우편번호 서비스 스크립트 로드
   useEffect(() => {
@@ -87,38 +89,53 @@ const AddressInput: React.FC<AddressInputProps> = ({
     }
 
     setIsSearching(true)
-    console.log('✅ 다음 주소 팝업 열기 시작')
-
-    const postcode = new window.daum.Postcode({
-      oncomplete: (data) => {
-        // 선택된 주소 정보 처리
-        let fullAddress = data.address
-
-        // 건물명이 있으면 추가
-        if (data.buildingName !== '') {
-          fullAddress += ` (${data.buildingName})`
-        }
-
-        onAddressChange(fullAddress, detailedAddress)
-        setIsSearching(false)
-
-        // 상세주소 입력 필드로 포커스 이동
-        setTimeout(() => {
-          const detailInput = document.getElementById('detailed-address-input')
-          if (detailInput) {
-            detailInput.focus()
-          }
-        }, 100)
-      },
-      width: 500,
-      height: 600
-    })
-
-    postcode.open()
+    setIsModalOpen(true)
+    console.log('✅ 다음 주소 모달 열기')
   }
+
+  // 모달이 열렸을 때 다음 주소 API 실행
+  useEffect(() => {
+    if (isModalOpen && window.daum && window.daum.Postcode) {
+      const container = document.getElementById('daum-postcode-container')
+      if (!container) return
+
+      const postcode = new window.daum.Postcode({
+        oncomplete: (data) => {
+          // 선택된 주소 정보 처리
+          let fullAddress = data.address
+
+          // 건물명이 있으면 추가
+          if (data.buildingName !== '') {
+            fullAddress += ` (${data.buildingName})`
+          }
+
+          onAddressChange(fullAddress, detailedAddress)
+          setIsSearching(false)
+          setIsModalOpen(false)
+
+          // 상세주소 입력 필드로 포커스 이동
+          setTimeout(() => {
+            const detailInput = document.getElementById('detailed-address-input')
+            if (detailInput) {
+              detailInput.focus()
+            }
+          }, 100)
+        },
+        width: '100%',
+        height: '100%'
+      })
+
+      postcode.embed(container)
+    }
+  }, [isModalOpen, detailedAddress, onAddressChange])
 
   const handleDetailedAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onAddressChange(address, e.target.value)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setIsSearching(false)
   }
 
   return (
@@ -127,7 +144,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
         <MapPin className="w-4 h-4 mr-2" />
         배송 주소 {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      
+
       <div className="space-y-3">
         {/* 기본 주소 검색 */}
         <div className="relative">
@@ -164,6 +181,30 @@ const AddressInput: React.FC<AddressInputProps> = ({
         <p>💡 주소 검색을 통해 정확한 주소를 입력해주세요</p>
         <p>📦 정확한 배송을 위해 상세 주소(동호수 등)까지 입력해주세요</p>
       </div>
+
+      {/* 주소 검색 모달 */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden">
+            {/* 모달 헤더 */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">주소 검색</h3>
+              <button
+                onClick={handleCloseModal}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* 다음 주소 검색 컨테이너 */}
+            <div
+              id="daum-postcode-container"
+              className="w-full h-[500px]"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
