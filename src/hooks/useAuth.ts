@@ -181,11 +181,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
 
+      console.log('📝 회원가입 시도:', { email: userData.email })
+
       // Supabase Auth를 사용한 회원가입
       const result = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password
       })
+
+      console.log('🔍 Supabase Auth 응답:', result)
 
       if (result.data?.user) {
         // users 테이블에 사용자 생성
@@ -238,15 +242,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('회원가입에 실패했습니다')
       }
     } catch (error: any) {
-      console.error('회원가입 실패:', error)
+      console.error('❌ 회원가입 실패 - 전체 에러:', error)
+      console.error('❌ 에러 상태:', error.status)
+      console.error('❌ 에러 메시지:', error.message)
+      console.error('❌ 에러 상세:', error.error_description || error.msg || error.error)
 
       // 429 Too Many Requests 에러 처리
       if (error.status === 429) {
         toast.error('잠시 후 다시 시도해주세요 (너무 많은 요청)', { duration: 5000 })
+      } else if (error.status === 500) {
+        toast.error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요', { duration: 5000 })
       } else if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
         toast.error('이미 가입된 이메일입니다', { duration: 3000 })
+      } else if (error.message?.includes('Invalid email')) {
+        toast.error('올바른 이메일 주소를 입력해주세요', { duration: 3000 })
+      } else if (error.message?.includes('Password should be')) {
+        toast.error('비밀번호는 최소 6자 이상이어야 합니다', { duration: 3000 })
       } else {
-        toast.error(error.message || '회원가입에 실패했습니다', { duration: 3000 })
+        const errorMsg = error.error_description || error.message || '회원가입에 실패했습니다'
+        toast.error(errorMsg, { duration: 3000 })
       }
     } finally {
       setLoading(false)
