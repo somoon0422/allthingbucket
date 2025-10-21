@@ -157,6 +157,7 @@ const CampaignDetail: React.FC = () => {
     try {
       setLoadingComments(true)
       const applications = await dataService.entities.user_applications.list()
+      const users = await dataService.entities.users.list()
 
       // 이 캠페인에 대한 신청 중 코멘트가 있는 것만 필터링
       const commentsWithApplicants = applications
@@ -165,6 +166,14 @@ const CampaignDetail: React.FC = () => {
           app.applicant_comment &&
           app.applicant_comment.trim() !== ''
         )
+        .map((app: any) => {
+          // user_id로 사용자 정보 찾기
+          const user = users.find((u: any) => u.user_id === app.user_id)
+          return {
+            ...app,
+            user_email: user?.email || null
+          }
+        })
         .sort((a: any, b: any) => {
           const dateA = new Date(a.comment_created_at || a.created_at).getTime()
           const dateB = new Date(b.comment_created_at || b.created_at).getTime()
@@ -187,13 +196,23 @@ const CampaignDetail: React.FC = () => {
     try {
       setLoadingReviews(true)
       const allReviews = await dataService.entities.user_reviews.list()
+      const users = await dataService.entities.users.list()
 
       // 이 캠페인에 대한 리뷰만 필터링
       const campaignReviews = allReviews
         .filter((review: any) => review.campaign_id === id || review.experience_id === id)
+        .map((review: any) => {
+          // user_id로 사용자 정보 찾기
+          const user = users.find((u: any) => u.user_id === review.user_id)
+          return {
+            ...review,
+            user_email: user?.email || null
+          }
+        })
         .sort((a: any, b: any) => {
-          const dateA = new Date(a.created_at).getTime()
-          const dateB = new Date(b.created_at).getTime()
+          // submitted_at 또는 updated_at 또는 created_at 사용
+          const dateA = new Date(a.submitted_at || a.updated_at || a.created_at || 0).getTime()
+          const dateB = new Date(b.submitted_at || b.updated_at || b.created_at || 0).getTime()
           return dateB - dateA
         })
 
@@ -821,13 +840,15 @@ const CampaignDetail: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {applicantComments.map((comment: any) => (
+                {applicantComments.map((comment: any) => {
+                  const displayName = extractUsername(comment.user_email)
+                  return (
                   <div key={comment.application_id} className="bg-white rounded-xl shadow-sm p-6">
                     <div className="flex items-start space-x-4">
                       {/* 사용자 아바타 */}
                       <div className="flex-shrink-0">
                         <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                          {(comment.applicant_name || comment.user_name || 'U').charAt(0).toUpperCase()}
+                          {displayName.charAt(0).toUpperCase()}
                         </div>
                       </div>
 
@@ -836,7 +857,7 @@ const CampaignDetail: React.FC = () => {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
                             <h4 className="text-sm font-semibold text-gray-900">
-                              {comment.applicant_name || comment.user_name || '익명'}
+                              {displayName}
                             </h4>
                             <span className="text-xs text-gray-500">
                               {(() => {
@@ -877,7 +898,8 @@ const CampaignDetail: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
               </div>
