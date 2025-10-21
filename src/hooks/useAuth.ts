@@ -183,13 +183,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       console.log('📝 회원가입 시도:', { email: userData.email })
 
-      // Supabase Auth를 사용한 회원가입
+      // Supabase Auth를 사용한 회원가입 (이메일 확인 비활성화)
       const result = await supabase.auth.signUp({
         email: userData.email,
-        password: userData.password
+        password: userData.password,
+        options: {
+          emailRedirectTo: undefined,
+          data: {
+            full_name: userData.name
+          }
+        }
       })
 
       console.log('🔍 Supabase Auth 응답:', result)
+      console.log('🔍 응답 에러:', result.error)
+
+      // 이메일 확인 에러는 무시하고 사용자가 생성되었으면 진행
+      if (result.error && !result.error.message?.includes('confirmation email')) {
+        throw result.error
+      }
 
       if (result.data?.user) {
         // users 테이블에 사용자 생성
