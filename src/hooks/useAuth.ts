@@ -239,7 +239,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error: any) {
       console.error('회원가입 실패:', error)
-      toast.error(error.message || '회원가입에 실패했습니다')
+
+      // 429 Too Many Requests 에러 처리
+      if (error.status === 429) {
+        toast.error('잠시 후 다시 시도해주세요 (너무 많은 요청)', { duration: 5000 })
+      } else if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
+        toast.error('이미 가입된 이메일입니다', { duration: 3000 })
+      } else {
+        toast.error(error.message || '회원가입에 실패했습니다', { duration: 3000 })
+      }
     } finally {
       setLoading(false)
     }
