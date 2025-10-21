@@ -114,6 +114,31 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     }))
   }
 
+  // 생년월일 자동 포맷팅 (YYYY-MM-DD)
+  const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // 숫자만 추출
+    const numbers = value.replace(/[^0-9]/g, '')
+
+    // 최대 8자리까지만 (YYYYMMDD)
+    const limitedNumbers = numbers.slice(0, 8)
+
+    // 포맷팅
+    let formatted = limitedNumbers
+    if (limitedNumbers.length > 4 && limitedNumbers.length <= 6) {
+      // YYYY-MM 형식
+      formatted = `${limitedNumbers.slice(0, 4)}-${limitedNumbers.slice(4)}`
+    } else if (limitedNumbers.length > 6) {
+      // YYYY-MM-DD 형식
+      formatted = `${limitedNumbers.slice(0, 4)}-${limitedNumbers.slice(4, 6)}-${limitedNumbers.slice(6)}`
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      birth_date: formatted
+    }))
+  }
+
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose()
@@ -328,10 +353,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   <input
                     id="birth_date"
                     name="birth_date"
-                    type="date"
+                    type="text"
                     value={formData.birth_date}
-                    onChange={handleInputChange}
+                    onChange={handleBirthDateChange}
                     className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
+                    placeholder="YYYY-MM-DD (예: 1990-01-01)"
+                    maxLength={10}
                   />
                 </div>
               </div>
