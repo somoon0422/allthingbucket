@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import {Gift, User, Phone, Mail, Instagram, Youtube, CheckCircle} from 'lucide-react'
 import toast from 'react-hot-toast'
+import { AddressInput } from './AddressInput'
 
 interface CodeSignupProps {
   code?: string
@@ -23,6 +24,8 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
     name: '',
     email: '',
     phone: '', // 필수 필드
+    address: '',
+    detailed_address: '',
     instagram: '',
     youtube: '',
     followers: ''
@@ -101,6 +104,8 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
+        address: formData.address.trim(),
+        detailed_address: formData.detailed_address.trim(),
         instagram: formData.instagram.trim(),
         youtube: formData.youtube.trim(),
         followers: formData.followers ? parseInt(formData.followers) : 0,
@@ -121,6 +126,8 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
           name: '',
           email: '',
           phone: '',
+          address: '',
+          detailed_address: '',
           instagram: '',
           youtube: '',
           followers: ''
@@ -255,6 +262,15 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                 포인트 지급 및 세무 처리를 위해 필수로 입력해주세요
               </p>
             </div>
+
+            <AddressInput
+              address={formData.address}
+              detailedAddress={formData.detailed_address}
+              onAddressChange={(address, detailedAddress) =>
+                setFormData({ ...formData, address, detailed_address: detailedAddress })
+              }
+              required={false}
+            />
 
             <div>
               <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 mb-2">
