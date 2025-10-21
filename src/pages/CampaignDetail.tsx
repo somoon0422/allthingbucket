@@ -117,6 +117,16 @@ const CampaignDetail: React.FC = () => {
   const [reviews, setReviews] = useState<any[]>([])
   const [loadingComments, setLoadingComments] = useState(false)
   const [loadingReviews, setLoadingReviews] = useState(false)
+  const [currentReviewPage, setCurrentReviewPage] = useState(1)
+  const reviewsPerPage = 5
+
+  // 이메일에서 사용자명 추출 헬퍼 함수
+  const extractUsername = (email: string | null | undefined): string => {
+    if (!email || typeof email !== 'string') return '익명'
+    const atIndex = email.indexOf('@')
+    if (atIndex === -1) return email
+    return email.substring(0, atIndex)
+  }
   
   // 🔥 웹에서 찾은 방법: 토글 함수
   const toggleDetailImages = () => {
@@ -888,24 +898,29 @@ const CampaignDetail: React.FC = () => {
                 <p className="text-gray-600">캠페인 승인 후 리뷰를 작성하면 이곳에 표시됩니다</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {reviews.map((review: any) => (
-                  <div key={review.review_id} className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-start space-x-4">
-                      {/* 사용자 아바타 */}
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                          {(review.user_name || 'U').charAt(0).toUpperCase()}
+              <>
+                <div className="space-y-4">
+                  {reviews
+                    .slice((currentReviewPage - 1) * reviewsPerPage, currentReviewPage * reviewsPerPage)
+                    .map((review: any) => {
+                      const displayName = extractUsername(review.user_email || review.email)
+                      return (
+                    <div key={review.review_id} className="bg-white rounded-xl shadow-sm p-6">
+                      <div className="flex items-start space-x-4">
+                        {/* 사용자 아바타 */}
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            {displayName.charAt(0).toUpperCase()}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* 리뷰 내용 */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="text-sm font-semibold text-gray-900">
-                              {review.user_name || '익명'}
-                            </h4>
+                        {/* 리뷰 내용 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="text-sm font-semibold text-gray-900">
+                                {displayName}
+                              </h4>
                             <span className="text-xs text-gray-500">
                               {(() => {
                                 const dateStr = review.created_at
@@ -975,24 +990,50 @@ const CampaignDetail: React.FC = () => {
                         )}
 
                         {/* SNS 링크 */}
-                        {review.sns_url && (
+                        {review.social_media_links && review.social_media_links.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-gray-100">
-                            <a
-                              href={review.sns_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center space-x-2 text-sm text-vintage-600 hover:text-vintage-700 font-medium"
-                            >
-                              <FileText className="w-4 h-4" />
-                              <span>SNS에서 전체 리뷰 보기</span>
-                            </a>
+                            <div className="space-y-2">
+                              {review.social_media_links.map((link: string, index: number) => (
+                                <a
+                                  key={index}
+                                  href={link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center space-x-2 text-sm text-vintage-600 hover:text-vintage-700 font-medium"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  <span>SNS에서 전체 리뷰 보기 {review.social_media_links.length > 1 ? `(${index + 1})` : ''}</span>
+                                </a>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                    )
+                  })}
+                </div>
+
+                {/* 페이지네이션 */}
+                {reviews.length > reviewsPerPage && (
+                  <div className="flex justify-center items-center space-x-2 mt-8">
+                    {Array.from({ length: Math.ceil(reviews.length / reviewsPerPage) }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentReviewPage(pageNum)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          currentReviewPage === pageNum
+                            ? 'bg-vintage-600 text-white'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
               </div>
             )}
