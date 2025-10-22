@@ -483,12 +483,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         const userProfile = existingProfiles.find((p: any) => p.user_id === userId)
 
         if (userProfile) {
-          // 프로필이 이미 있으면 업데이트
+          // 프로필이 이미 있으면 업데이트 (email 필드 제거)
           console.log('📝 user_profiles 업데이트:', userId)
           await (dataService.entities as any).user_profiles.update(userProfile.id, {
             name: formData.name,
             phone: formData.phone,
-            email: formData.email,
             address: formData.address,
             detailed_address: formData.detailed_address,
             instagram_handle: formData.instagram_handle || userProfile.instagram_handle,
@@ -498,13 +497,12 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           })
           console.log('✅ user_profiles 업데이트 완료')
         } else {
-          // 프로필이 없으면 새로 생성
+          // 프로필이 없으면 새로 생성 (email 필드 제거)
           console.log('🔍 user_profiles 생성:', userId)
           await (dataService.entities as any).user_profiles.create({
             user_id: userId,
             name: formData.name,
             phone: formData.phone,
-            email: formData.email,
             address: formData.address,
             detailed_address: formData.detailed_address,
             instagram_handle: formData.instagram_handle,
