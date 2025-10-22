@@ -3621,7 +3621,7 @@ const AdminDashboard: React.FC = () => {
                           {user.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : '날짜 없음'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('ko-KR') : '로그인 없음'}
+                          {user.last_login ? new Date(user.last_login).toLocaleDateString('ko-KR') : '로그인 없음'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
@@ -4748,7 +4748,7 @@ const AdminDashboard: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700">마지막 로그인</label>
                       <p className="mt-1 text-sm text-gray-900">
-                        {selectedUser.last_sign_in_at ? new Date(selectedUser.last_sign_in_at).toLocaleDateString('ko-KR') : '로그인 없음'}
+                        {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleDateString('ko-KR') : '로그인 없음'}
                       </p>
                     </div>
                     <div>
