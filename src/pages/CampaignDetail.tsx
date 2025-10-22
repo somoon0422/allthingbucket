@@ -45,32 +45,37 @@ const DetailImageGallery: React.FC<{
   }
   
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">상세 이미지</h2>
+    <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-200/60 transform transition-all duration-300 hover:shadow-xl">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-slate-900 mb-3 flex items-center">
+          <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg mr-3 shadow-md">
+            <FileText className="w-5 h-5 text-white" />
+          </div>
+          상세 이미지
+        </h2>
         {detailImages.length > 0 && (
           <button
             onClick={onToggle}
-            className="flex items-center text-vintage-600 hover:text-vintage-700 font-medium text-sm"
+            className="flex items-center text-blue-600 hover:text-blue-700 font-semibold text-sm transition-colors duration-200 hover:translate-x-1"
           >
             {isExpanded ? (
               <>
-                <ChevronUp className="w-4 h-4 mr-1" />
+                <ChevronUp className="w-5 h-5 mr-1.5" />
                 상세이미지 접기
               </>
             ) : (
               <>
-                <span className="mr-1">+</span>
+                <span className="text-lg mr-1.5">+</span>
                 상세이미지 더보기
               </>
             )}
           </button>
         )}
       </div>
-      
-      <div className="space-y-4">
+
+      <div className="space-y-5">
         {detailImages.map((image: string, index: number) => (
-          <div key={index} className="bg-gray-100 rounded-lg overflow-hidden">
+          <div key={index} className="bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl overflow-hidden shadow-md">
             <img
               src={image}
               alt={`상세 이미지 ${index + 1}`}
@@ -352,10 +357,13 @@ const CampaignDetail: React.FC = () => {
 
   if (loading || !campaign) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">캠페인 정보를 불러오는 중...</p>
+          <div className="relative">
+            <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-blue-600 mx-auto mb-6"></div>
+            <div className="absolute inset-0 rounded-full h-20 w-20 border-t-4 border-indigo-400 mx-auto animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          <p className="text-slate-700 font-semibold text-lg">캠페인 정보를 불러오는 중...</p>
         </div>
       </div>
     )
@@ -538,36 +546,36 @@ const CampaignDetail: React.FC = () => {
   const displayMainImages = mainImages.length > 0 ? mainImages : (fallbackImage ? [fallbackImage] : [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* 뒤로가기 버튼 */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            className="group flex items-center text-slate-600 hover:text-slate-900 transition-all duration-200 hover:-translate-x-1"
           >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            뒤로가기
+            <ArrowLeft className="w-5 h-5 mr-2 group-hover:animate-pulse" />
+            <span className="font-medium">뒤로가기</span>
           </button>
-          
-          <div className="flex space-x-2">
+
+          <div className="flex space-x-3">
             <button
               onClick={handleWishlist}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                isWishlisted(id || '') 
-                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`group flex items-center space-x-2 px-5 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg ${
+                isWishlisted(id || '')
+                  ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white hover:from-rose-600 hover:to-pink-600'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
               }`}
             >
-              <Heart className={`w-4 h-4 ${isWishlisted(id || '') ? 'fill-current' : ''}`} />
-              <span>찜하기</span>
+              <Heart className={`w-4 h-4 transition-transform group-hover:scale-110 ${isWishlisted(id || '') ? 'fill-current' : ''}`} />
+              <span className="font-medium">찜하기</span>
             </button>
             <button
               onClick={handleShare}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="group flex items-center space-x-2 px-5 py-2.5 bg-white text-slate-700 rounded-xl hover:bg-slate-50 transition-all duration-300 shadow-md hover:shadow-lg border border-slate-200"
             >
-              <Share2 className="w-4 h-4" />
-              <span>공유하기</span>
+              <Share2 className="w-4 h-4 transition-transform group-hover:scale-110" />
+              <span className="font-medium">공유하기</span>
             </button>
           </div>
         </div>
@@ -577,47 +585,56 @@ const CampaignDetail: React.FC = () => {
           {/* 왼쪽 컬럼: 탭 네비게이션 + 탭 컨텐츠 */}
           <div className="lg:col-span-2">
             {/* 탭 네비게이션 */}
-            <div className="bg-white rounded-xl shadow-sm mb-6">
-              <div className="flex border-b">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200/60 mb-8 overflow-hidden backdrop-blur-sm bg-white/95">
+              <div className="flex border-b border-slate-200">
                 <button
                   onClick={() => handleTabChange('info')}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                  className={`group flex-1 flex items-center justify-center space-x-2 px-6 py-5 font-semibold transition-all duration-300 relative ${
                     activeTab === 'info'
-                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'text-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  <Info className="w-5 h-5" />
-                  <span>캠페인정보</span>
+                  {activeTab === 'info' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-full" />
+                  )}
+                  <Info className={`w-5 h-5 transition-transform group-hover:scale-110 ${activeTab === 'info' ? 'text-blue-600' : ''}`} />
+                  <span className="text-sm">캠페인정보</span>
                 </button>
                 <button
                   onClick={() => handleTabChange('comments')}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                  className={`group flex-1 flex items-center justify-center space-x-2 px-6 py-5 font-semibold transition-all duration-300 relative ${
                     activeTab === 'comments'
-                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'text-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  <MessageSquare className="w-5 h-5" />
-                  <span>신청자 한마디</span>
+                  {activeTab === 'comments' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-full" />
+                  )}
+                  <MessageSquare className={`w-5 h-5 transition-transform group-hover:scale-110 ${activeTab === 'comments' ? 'text-blue-600' : ''}`} />
+                  <span className="text-sm">신청 한줄평</span>
                   {applicantComments.length > 0 && (
-                    <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
+                    <span className="ml-1 px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full text-xs font-bold shadow-sm">
                       {applicantComments.length}
                     </span>
                   )}
                 </button>
                 <button
                   onClick={() => handleTabChange('reviews')}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-colors ${
+                  className={`group flex-1 flex items-center justify-center space-x-2 px-6 py-5 font-semibold transition-all duration-300 relative ${
                     activeTab === 'reviews'
-                      ? 'text-navy-600 border-b-2 border-navy-600 bg-purple-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'text-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  <Star className="w-5 h-5" />
-                  <span>리뷰</span>
+                  {activeTab === 'reviews' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-full" />
+                  )}
+                  <Star className={`w-5 h-5 transition-transform group-hover:scale-110 ${activeTab === 'reviews' ? 'text-blue-600' : ''}`} />
+                  <span className="text-sm">리뷰</span>
                   {reviews.length > 0 && (
-                    <span className="ml-1 px-2 py-0.5 bg-navy-100 text-navy-700 rounded-full text-xs">
+                    <span className="ml-1 px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full text-xs font-bold shadow-sm">
                       {reviews.length}
                     </span>
                   )}
@@ -627,67 +644,67 @@ const CampaignDetail: React.FC = () => {
 
             {/* 캠페인정보 탭에서만 보이는 메인 이미지 및 제품 정보 */}
             {activeTab === 'info' && (
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-slate-200/60 transform transition-all duration-300 hover:shadow-2xl">
               {/* 🔥 메인 이미지 갤러리 */}
               {displayMainImages.length > 0 && (
-                <div className="aspect-video bg-gray-200 relative overflow-hidden">
+                <div className="aspect-video bg-gradient-to-br from-slate-200 to-slate-300 relative overflow-hidden group">
                   <img
                     src={displayMainImages[currentMainImageIndex] || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'}
                     alt={`${productName} 메인 이미지 ${currentMainImageIndex + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
                     }}
                   />
-                  
+
                   {/* 이미지 네비게이션 */}
                   {displayMainImages.length > 1 && (
                     <>
                       <button
-                        onClick={() => setCurrentMainImageIndex(prev => 
+                        onClick={() => setCurrentMainImageIndex(prev =>
                           prev === 0 ? displayMainImages.length - 1 : prev - 1
                         )}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm text-slate-800 p-3 rounded-full hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110"
                       >
                         <ChevronLeft className="w-6 h-6" />
                       </button>
                       <button
-                        onClick={() => setCurrentMainImageIndex(prev => 
+                        onClick={() => setCurrentMainImageIndex(prev =>
                           prev === displayMainImages.length - 1 ? 0 : prev + 1
                         )}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70"
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm text-slate-800 p-3 rounded-full hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110"
                       >
                         <ChevronRight className="w-6 h-6" />
                       </button>
-                      
+
                       {/* 이미지 카운터 */}
-                      <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                      <div className="absolute top-6 right-6 bg-slate-900/75 backdrop-blur-md text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg">
                         {currentMainImageIndex + 1} / {displayMainImages.length}
                       </div>
                     </>
                   )}
-                  
+
                   {/* 상태 배지 */}
-                  <div className="absolute top-4 left-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      applicationDeadline && getDeadlineDisplay(applicationDeadline) !== '마감일 미정' 
-                        ? getDeadlineDisplay(applicationDeadline) === '마감됨' 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-green-100 text-green-800'
+                  <div className="absolute top-6 left-6">
+                    <span className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold shadow-lg backdrop-blur-sm ${
+                      applicationDeadline && getDeadlineDisplay(applicationDeadline) !== '마감일 미정'
+                        ? getDeadlineDisplay(applicationDeadline) === '마감됨'
+                          ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
+                          : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white'
                         : statusInfo.color
                     }`}>
-                      <StatusIcon className="w-4 h-4 mr-1" />
-                      {applicationDeadline && getDeadlineDisplay(applicationDeadline) !== '마감일 미정' 
+                      <StatusIcon className="w-4 h-4 mr-1.5" />
+                      {applicationDeadline && getDeadlineDisplay(applicationDeadline) !== '마감일 미정'
                         ? getDeadlineDisplay(applicationDeadline)
                         : 'D-7'}
                     </span>
                   </div>
-                  
+
                   {/* 🔥 신청 상태 표시 */}
                   {applicationStatus && (
-                    <div className="absolute bottom-4 right-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).color}`}>
-                        {React.createElement(getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).icon, { className: "w-4 h-4 mr-1" })}
+                    <div className="absolute bottom-6 right-6">
+                      <span className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold shadow-lg backdrop-blur-sm ${getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).color}`}>
+                        {React.createElement(getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).icon, { className: "w-4 h-4 mr-1.5" })}
                         {getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).label}
                       </span>
                     </div>
@@ -697,16 +714,16 @@ const CampaignDetail: React.FC = () => {
 
               {/* 썸네일 갤러리 */}
               {displayMainImages.length > 1 && (
-                <div className="bg-gray-50 p-4 border-t">
-                  <div className="flex space-x-2 overflow-x-auto pb-2">
+                <div className="bg-gradient-to-r from-slate-50 to-blue-50 p-5 border-t border-slate-200">
+                  <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
                     {displayMainImages.map((imageUrl, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentMainImageIndex(index)}
-                        className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                          index === currentMainImageIndex 
-                            ? 'border-vintage-500 ring-2 ring-blue-200' 
-                            : 'border-gray-200 hover:border-gray-300'
+                        className={`flex-shrink-0 w-24 h-20 rounded-xl overflow-hidden transition-all duration-300 ${
+                          index === currentMainImageIndex
+                            ? 'ring-4 ring-blue-500 shadow-xl scale-105'
+                            : 'ring-2 ring-slate-200 hover:ring-slate-300 hover:scale-105 shadow-md'
                         }`}
                       >
                         <img
@@ -723,44 +740,44 @@ const CampaignDetail: React.FC = () => {
                 </div>
               )}
 
-              <div className="p-6">
+              <div className="p-8">
                 {/* 브랜드 정보 */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
-                    <span className="text-lg font-medium text-gray-700">{brandName}</span>
+                    <span className="text-xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">{brandName}</span>
                   </div>
                   {isAuthenticated && (
                     <button
                       onClick={() => toggleWishlist(id || '')}
-                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                      className="p-2.5 rounded-full hover:bg-slate-100 transition-all duration-300 hover:scale-110"
                     >
-                      <Heart 
-                        className={`w-5 h-5 ${
-                          wishlist.some(item => item.campaign_id === id) 
-                            ? 'text-red-500 fill-current' 
-                            : 'text-gray-400'
-                        }`} 
+                      <Heart
+                        className={`w-6 h-6 ${
+                          wishlist.some(item => item.campaign_id === id)
+                            ? 'text-red-500 fill-current'
+                            : 'text-slate-400'
+                        }`}
                       />
                     </button>
                   )}
                 </div>
 
                 {/* 제품명 */}
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                <h1 className="text-3xl font-extrabold text-slate-900 mb-3 leading-tight">
                   {productName}
                 </h1>
 
                 {/* 캠페인 설명 */}
-                <p className="text-lg text-gray-600 mb-4">
+                <p className="text-lg text-slate-600 mb-6 leading-relaxed">
                   {description}
                 </p>
 
                 {/* 플랫폼 및 배송 정보 */}
-                <div className="flex items-center space-x-4 mb-4">
-                  <span className="px-3 py-1 bg-blue-100 text-vintage-800 rounded-full text-sm font-medium">
+                <div className="flex items-center space-x-3 mb-4">
+                  <span className="px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 rounded-xl text-sm font-bold shadow-sm">
                     {platform}
                   </span>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                  <span className="px-4 py-2 bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 rounded-xl text-sm font-bold shadow-sm">
                     {deliveryType}
                   </span>
                 </div>
@@ -780,13 +797,15 @@ const CampaignDetail: React.FC = () => {
 
                 {/* 제공내역 */}
                 {providedItems && providedItems !== '제품 제공' && (
-                  <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                      <Gift className="w-5 h-5 mr-2 text-green-600" />
+                  <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-200/60 transform transition-all duration-300 hover:shadow-xl">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                      <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg mr-3 shadow-md">
+                        <Gift className="w-5 h-5 text-white" />
+                      </div>
                       제공내역
                     </h2>
                     <div
-                      className="prose prose-gray max-w-none text-gray-700"
+                      className="prose prose-slate max-w-none text-slate-700 leading-relaxed"
                       dangerouslySetInnerHTML={{
                         __html: providedItems.includes('<p>') || providedItems.includes('<br>')
                           ? providedItems
@@ -798,10 +817,12 @@ const CampaignDetail: React.FC = () => {
 
                 {/* 키워드 */}
                 {keywords.length > 0 && (
-                  <div className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                        <Hash className="w-5 h-5 mr-2 text-navy-600" />
+                  <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-200/60 transform transition-all duration-300 hover:shadow-xl">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-slate-900 flex items-center">
+                        <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg mr-3 shadow-md">
+                          <Hash className="w-5 h-5 text-white" />
+                        </div>
                         키워드
                       </h2>
                       <button
@@ -810,14 +831,14 @@ const CampaignDetail: React.FC = () => {
                           navigator.clipboard.writeText(keywordText)
                           toast.success('키워드가 복사되었습니다!')
                         }}
-                        className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                        className="px-5 py-2.5 bg-gradient-to-r from-slate-700 to-slate-800 text-white text-sm font-bold rounded-xl hover:from-slate-800 hover:to-slate-900 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
                       >
                         키워드복사
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-3">
                       {keywords.map((keyword, index) => (
-                        <span key={index} className="px-3 py-1 bg-purple-100 text-navy-800 rounded-full text-sm">
+                        <span key={index} className="px-4 py-2 bg-gradient-to-r from-purple-100 to-indigo-100 text-indigo-800 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-default">
                           #{keyword}
                         </span>
                       ))}
@@ -827,13 +848,15 @@ const CampaignDetail: React.FC = () => {
 
                 {/* 리뷰 작성시 안내사항 */}
                 {reviewGuidelines && (
-                  <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                      <Target className="w-5 h-5 mr-2 text-orange-600" />
+                  <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-200/60 transform transition-all duration-300 hover:shadow-xl">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                      <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg mr-3 shadow-md">
+                        <Target className="w-5 h-5 text-white" />
+                      </div>
                       리뷰 작성시 안내사항
                     </h2>
-                    <div className="prose prose-gray max-w-none">
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    <div className="prose prose-slate max-w-none">
+                      <p className="text-slate-700 leading-relaxed whitespace-pre-line text-base">
                         {reviewGuidelines}
                       </p>
                     </div>
@@ -842,13 +865,15 @@ const CampaignDetail: React.FC = () => {
 
                 {/* 추가 안내사항 */}
                 {additionalGuidelines && (
-                  <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                      <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-lg p-8 border border-amber-200/60 transform transition-all duration-300 hover:shadow-xl">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                      <div className="p-2 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg mr-3 shadow-md">
+                        <AlertCircle className="w-5 h-5 text-white" />
+                      </div>
                       추가 안내사항
                     </h2>
-                    <div className="prose prose-gray max-w-none">
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    <div className="prose prose-slate max-w-none">
+                      <p className="text-slate-700 leading-relaxed whitespace-pre-line text-base font-medium">
                         {additionalGuidelines}
                       </p>
                     </div>
@@ -857,42 +882,44 @@ const CampaignDetail: React.FC = () => {
               </div>
             )}
 
-            {/* 신청자 한마디 탭 */}
+            {/* 신청 한줄평 탭 */}
             {activeTab === 'comments' && (
               <div>
             {loadingComments ? (
-              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">신청자 한마디를 불러오는 중...</p>
+              <div className="bg-white rounded-2xl shadow-xl p-16 text-center border border-slate-200/60">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+                <p className="text-slate-600 font-medium text-lg">신청 한줄평을 불러오는 중...</p>
               </div>
             ) : applicantComments.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">아직 신청자 한마디가 없습니다</h3>
-                <p className="text-gray-600">첫 번째로 캠페인에 신청하고 한마디를 남겨보세요!</p>
+              <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-xl p-16 text-center border border-slate-200/60">
+                <div className="bg-gradient-to-br from-blue-100 to-indigo-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <MessageSquare className="w-12 h-12 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">아직 신청 한줄평이 없습니다</h3>
+                <p className="text-slate-600 text-lg">첫 번째로 캠페인에 신청하고 한줄평을 남겨보세요!</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {applicantComments.map((comment: any) => {
                   const displayName = extractUsername(comment.user_email)
                   return (
-                  <div key={comment.application_id} className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-start space-x-4">
+                  <div key={comment.application_id} className="bg-white rounded-2xl shadow-lg p-7 border border-slate-200/60 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div className="flex items-start space-x-5">
                       {/* 사용자 아바타 */}
                       <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
                       </div>
 
                       {/* 코멘트 내용 */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="text-sm font-semibold text-gray-900">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <h4 className="text-base font-bold text-slate-900">
                               {displayName}
                             </h4>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-sm text-slate-500 font-medium">
                               {(() => {
                                 const dateStr = comment.comment_created_at || comment.created_at
                                 if (!dateStr) return '방금 전'
@@ -925,7 +952,7 @@ const CampaignDetail: React.FC = () => {
                           </div>
                         </div>
 
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-line text-base">
                           {comment.applicant_comment}
                         </p>
                       </div>
@@ -942,41 +969,43 @@ const CampaignDetail: React.FC = () => {
             {activeTab === 'reviews' && (
               <div>
             {loadingReviews ? (
-              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">리뷰를 불러오는 중...</p>
+              <div className="bg-white rounded-2xl shadow-xl p-16 text-center border border-slate-200/60">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-amber-500 mx-auto mb-6"></div>
+                <p className="text-slate-600 font-medium text-lg">리뷰를 불러오는 중...</p>
               </div>
             ) : reviews.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">아직 작성된 리뷰가 없습니다</h3>
-                <p className="text-gray-600">캠페인 승인 후 리뷰를 작성하면 이곳에 표시됩니다</p>
+              <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-xl p-16 text-center border border-slate-200/60">
+                <div className="bg-gradient-to-br from-amber-100 to-yellow-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Star className="w-12 h-12 text-amber-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">아직 작성된 리뷰가 없습니다</h3>
+                <p className="text-slate-600 text-lg">캠페인 승인 후 리뷰를 작성하면 이곳에 표시됩니다</p>
               </div>
             ) : (
               <>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {reviews
                     .slice((currentReviewPage - 1) * reviewsPerPage, currentReviewPage * reviewsPerPage)
                     .map((review: any) => {
                       const displayName = extractUsername(review.user_email || review.email)
                       return (
-                    <div key={review.review_id} className="bg-white rounded-xl shadow-sm p-6">
-                      <div className="flex items-start space-x-4">
+                    <div key={review.review_id} className="bg-white rounded-2xl shadow-lg p-7 border border-slate-200/60 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                      <div className="flex items-start space-x-5">
                         {/* 사용자 아바타 */}
                         <div className="flex-shrink-0">
-                          <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md">
                             {displayName.charAt(0).toUpperCase()}
                           </div>
                         </div>
 
                         {/* 리뷰 내용 */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="text-sm font-semibold text-gray-900">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <h4 className="text-base font-bold text-slate-900">
                                 {displayName}
                               </h4>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-sm text-slate-500 font-medium">
                               {(() => {
                                 const dateStr = review.created_at
                                 if (!dateStr) return '방금 전'
@@ -999,14 +1028,14 @@ const CampaignDetail: React.FC = () => {
 
                           {/* 별점 */}
                           {review.rating && (
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center space-x-1 mb-3">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
-                                  className={`w-4 h-4 ${
+                                  className={`w-5 h-5 ${
                                     star <= review.rating
-                                      ? 'text-yellow-400 fill-current'
-                                      : 'text-gray-300'
+                                      ? 'text-amber-400 fill-current drop-shadow-sm'
+                                      : 'text-slate-300'
                                   }`}
                                 />
                               ))}
@@ -1016,25 +1045,25 @@ const CampaignDetail: React.FC = () => {
 
                         {/* 리뷰 제목 */}
                         {review.title && (
-                          <h5 className="text-base font-semibold text-gray-900 mb-2">
+                          <h5 className="text-lg font-bold text-slate-900 mb-3">
                             {review.title}
                           </h5>
                         )}
 
                         {/* 리뷰 내용 */}
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-line mb-4">
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-line mb-5 text-base">
                           {review.content || review.review_content}
                         </p>
 
                         {/* 리뷰 이미지들 */}
                         {review.images && review.images.length > 0 && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-5">
                             {review.images.map((imageUrl: string, index: number) => (
-                              <div key={index} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                              <div key={index} className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 shadow-md hover:shadow-xl transition-all duration-300">
                                 <img
                                   src={imageUrl}
                                   alt={`리뷰 이미지 ${index + 1}`}
-                                  className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 cursor-pointer"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=이미지+로딩+실패'
                                   }}
@@ -1046,17 +1075,17 @@ const CampaignDetail: React.FC = () => {
 
                         {/* SNS 링크 */}
                         {review.social_media_links && review.social_media_links.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-gray-100">
-                            <div className="space-y-2">
+                          <div className="mt-6 pt-5 border-t border-slate-200">
+                            <div className="space-y-3">
                               {review.social_media_links.map((link: string, index: number) => (
                                 <a
                                   key={index}
                                   href={link}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center space-x-2 text-sm text-vintage-600 hover:text-vintage-700 font-medium"
+                                  className="inline-flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700 font-bold hover:translate-x-2 transition-all duration-200"
                                 >
-                                  <FileText className="w-4 h-4" />
+                                  <FileText className="w-5 h-5" />
                                   <span>SNS에서 전체 리뷰 보기 {review.social_media_links.length > 1 ? `(${index + 1})` : ''}</span>
                                 </a>
                               ))}
@@ -1072,15 +1101,15 @@ const CampaignDetail: React.FC = () => {
 
                 {/* 페이지네이션 */}
                 {reviews.length > reviewsPerPage && (
-                  <div className="flex justify-center items-center space-x-2 mt-8">
+                  <div className="flex justify-center items-center space-x-3 mt-10">
                     {Array.from({ length: Math.ceil(reviews.length / reviewsPerPage) }, (_, i) => i + 1).map((pageNum) => (
                       <button
                         key={pageNum}
                         onClick={() => setCurrentReviewPage(pageNum)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        className={`px-5 py-3 rounded-xl font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 ${
                           currentReviewPage === pageNum
-                            ? 'bg-vintage-600 text-white'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
+                            : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
                         }`}
                       >
                         {pageNum}
@@ -1098,27 +1127,29 @@ const CampaignDetail: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
               {/* 캠페인 정보 */}
-              <div className="bg-white rounded-xl shadow-sm p-6 min-w-80">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Info className="w-5 h-5 mr-2 text-vintage-600" />
+              <div className="bg-white rounded-2xl shadow-xl p-7 min-w-80 border border-slate-200/60 backdrop-blur-sm bg-white/95 transform transition-all duration-300 hover:shadow-2xl">
+                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg mr-3 shadow-md">
+                    <Info className="w-5 h-5 text-white" />
+                  </div>
                   캠페인 정보
                 </h3>
 
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">신청</span>
-                    <span className="font-medium text-gray-900">{currentApplicants} / {recruitmentCount}</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium">신청</span>
+                    <span className="font-bold text-lg bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">{currentApplicants} / {recruitmentCount}</span>
                   </div>
 
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">리워드</span>
-                    <span className="font-medium text-navy-600">{rewards} P</span>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium">리워드</span>
+                    <span className="font-bold text-lg text-amber-600">{rewards} P</span>
                   </div>
 
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600 flex-shrink-0">캠페인 신청기간</span>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium flex-shrink-0">캠페인 신청기간</span>
                     <div className="text-right min-w-0 flex-1 ml-4">
-                      <div className="font-medium text-gray-900 whitespace-nowrap">
+                      <div className="font-semibold text-slate-900 whitespace-nowrap text-sm">
                         {(() => {
                           const startDate = safeString(campaign, 'application_start')
                           const endDate = safeString(campaign, 'application_end')
@@ -1150,9 +1181,9 @@ const CampaignDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">체험단 발표일</span>
-                    <span className="font-medium text-gray-900">
+                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium">체험단 발표일</span>
+                    <span className="font-semibold text-slate-900 text-sm">
                       {(() => {
                         const dateStr = safeString(campaign, 'experience_announcement')
                         if (!dateStr) return '미정'
@@ -1172,10 +1203,10 @@ const CampaignDetail: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600 flex-shrink-0">캠페인 리뷰 기간</span>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium flex-shrink-0">캠페인 리뷰 기간</span>
                     <div className="text-right min-w-0 flex-1 ml-4">
-                      <div className="font-medium text-gray-900 whitespace-nowrap">
+                      <div className="font-semibold text-slate-900 whitespace-nowrap text-sm">
                         {(() => {
                           const startDate = safeString(campaign, 'content_start')
                           const endDate = safeString(campaign, 'content_end')
@@ -1207,9 +1238,9 @@ const CampaignDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-gray-600">캠페인 평가 마감일</span>
-                    <span className="font-medium text-gray-900">
+                  <div className="flex justify-between items-center py-3">
+                    <span className="text-slate-600 font-medium">캠페인 평가 마감일</span>
+                    <span className="font-semibold text-slate-900 text-sm">
                       {(() => {
                         const dateStr = safeString(campaign, 'result_announcement')
                         if (!dateStr) return '미정'
@@ -1232,27 +1263,27 @@ const CampaignDetail: React.FC = () => {
               </div>
 
               {/* 리뷰 신청 */}
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">리뷰 신청하기</h3>
-                  <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
-                    <span>신청 {currentApplicants}</span>
-                    <span>/</span>
-                    <span>모집 {recruitmentCount}</span>
+              <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-2xl shadow-xl p-8 border border-slate-200/60 backdrop-blur-sm transform transition-all duration-300 hover:shadow-2xl">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent mb-3">리뷰 신청하기</h3>
+                  <div className="flex items-center justify-center space-x-4 text-sm font-semibold">
+                    <span className="text-slate-600">신청 <span className="text-blue-600 text-lg">{currentApplicants}</span></span>
+                    <span className="text-slate-400">/</span>
+                    <span className="text-slate-600">모집 <span className="text-indigo-600 text-lg">{recruitmentCount}</span></span>
                   </div>
                 </div>
 
                 {/* 신청 버튼 */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {applicationStatus ? (
-                    <div className="text-center py-4">
-                      <div className="mb-4">
-                        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).color}`}>
-                          {React.createElement(getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).icon, { className: "w-4 h-4 mr-1" })}
+                    <div className="text-center py-6">
+                      <div className="mb-5">
+                        <span className={`inline-flex items-center px-5 py-3 rounded-xl text-sm font-bold shadow-lg ${getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).color}`}>
+                          {React.createElement(getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).icon, { className: "w-5 h-5 mr-2" })}
                           {getApplicationStatusInfo(safeString(applicationStatus, 'status', 'pending')).label}
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-4 text-sm">
+                      <p className="text-slate-600 mb-5 text-sm font-medium">
                         {(() => {
                           const appliedAt = safeString(applicationStatus, 'applied_at') || safeString(applicationStatus, 'created_at')
                           if (appliedAt) {
@@ -1271,7 +1302,7 @@ const CampaignDetail: React.FC = () => {
                       </p>
                       <button
                         onClick={() => navigate('/my-applications')}
-                        className="w-full px-4 py-2 text-vintage-600 hover:text-vintage-700 font-medium text-sm"
+                        className="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105"
                       >
                         내 신청 현황 보기
                       </button>
@@ -1279,16 +1310,16 @@ const CampaignDetail: React.FC = () => {
                   ) : safeString(campaign, 'status') === 'active' ? (
                     <button
                       onClick={handleApplyClick}
-                      className="w-full px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-bold text-lg shadow-lg hover:shadow-xl hover:scale-105 transform"
                     >
                       리뷰 신청하기
                     </button>
                   ) : (
-                    <div className="text-center py-4">
-                      <p className="text-gray-600 mb-2 text-sm">현재 모집이 마감되었습니다</p>
+                    <div className="text-center py-6">
+                      <p className="text-slate-600 mb-4 text-sm font-medium">현재 모집이 마감되었습니다</p>
                       <button
                         onClick={() => navigate('/experiences')}
-                        className="text-vintage-600 hover:text-vintage-700 font-medium text-sm"
+                        className="px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl hover:from-slate-700 hover:to-slate-800 transition-all duration-300 font-bold shadow-md hover:shadow-lg"
                       >
                         다른 캠페인 보기
                       </button>
@@ -1297,13 +1328,13 @@ const CampaignDetail: React.FC = () => {
 
                   <button
                     onClick={handleWishlist}
-                    className={`w-full px-6 py-3 rounded-lg transition-colors font-medium ${
+                    className={`w-full px-6 py-3.5 rounded-xl transition-all duration-300 font-bold shadow-md hover:shadow-lg hover:scale-105 ${
                       isWishlisted(id || '')
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white hover:from-rose-600 hover:to-pink-600'
+                        : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
                     }`}
                   >
-                    <Heart className={`w-4 h-4 inline mr-2 ${isWishlisted(id || '') ? 'fill-current' : ''}`} />
+                    <Heart className={`w-5 h-5 inline mr-2 ${isWishlisted(id || '') ? 'fill-current' : ''}`} />
                     찜하기
                   </button>
                 </div>
