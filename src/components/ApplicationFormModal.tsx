@@ -70,9 +70,9 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
   }, [isOpen, onClose])
 
 
-  // 🔥 캠페인 제품 및 선택된 제품 상태
+  // 🔥 캠페인 제품 및 선택된 제품 상태 (복수 선택 가능)
   const [campaignProducts, setCampaignProducts] = useState<any[]>([])
-  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([])
 
   const [formData, setFormData] = useState({
     name: '',
@@ -109,7 +109,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
         // 제품이 1개면 자동 선택
         if (products && products.length === 1) {
-          setSelectedProduct(products[0])
+          setSelectedProducts([products[0]])
           setFormData(prev => ({
             ...prev,
             selected_product_id: products[0].id
@@ -465,7 +465,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           {/* 헤더 */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-6 rounded-t-2xl">
+          <div className="bg-white border-b border-gray-200 px-6 py-6 rounded-t-2xl">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 {/* 캠페인 타입 표시 */}
@@ -593,65 +593,88 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   체험 제품 선택 <span className="text-red-500 ml-1">*</span>
                 </h3>
                 <p className="text-sm text-gray-600">
-                  체험하고 싶은 제품을 선택해주세요.
+                  체험하고 싶은 제품을 복수 선택할 수 있습니다.
                 </p>
 
                 <div className="grid grid-cols-1 gap-3">
-                  {campaignProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => {
-                        setSelectedProduct(product)
-                        setFormData(prev => ({
-                          ...prev,
-                          selected_product_id: product.id,
-                          platform_type: '' // 제품 변경 시 플랫폼 선택 초기화
-                        }))
-                      }}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedProduct?.id === product.id
-                          ? 'border-purple-500 bg-white shadow-md'
-                          : 'border-gray-300 hover:border-purple-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{product.product_name}</h4>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {product.allowed_platforms?.map((platform: string) => {
-                              const platformInfo: { [key: string]: { icon: string; label: string } } = {
-                                review: { icon: '⭐', label: '구매후기' },
-                                blog: { icon: '📝', label: '블로그' },
-                                naver: { icon: '🟢', label: '네이버' },
-                                instagram: { icon: '📸', label: '인스타그램' },
-                                youtube: { icon: '🎥', label: '유튜브' },
-                                tiktok: { icon: '🎵', label: '틱톡' },
-                                product: { icon: '🧪', label: '제품 체험' },
-                                press: { icon: '📰', label: '기자단' },
-                                local: { icon: '🏘️', label: '지역 체험' },
-                                other: { icon: '🔧', label: '기타' }
-                              }
-                              const info = platformInfo[platform] || { icon: '🔧', label: platform }
-                              return (
-                                <span key={platform} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
-                                  {info.icon} {info.label}
-                                </span>
-                              )
-                            })}
+                  {campaignProducts.map((product) => {
+                    const isSelected = selectedProducts.some(p => p.id === product.id)
+                    return (
+                      <div
+                        key={product.id}
+                        onClick={() => {
+                          if (isSelected) {
+                            // 이미 선택된 제품이면 제거
+                            setSelectedProducts(prev => prev.filter(p => p.id !== product.id))
+                          } else {
+                            // 선택되지 않은 제품이면 추가
+                            setSelectedProducts(prev => [...prev, product])
+                          }
+                          // selected_product_id는 첫 번째 선택된 제품의 ID로 설정
+                          setFormData(prev => ({
+                            ...prev,
+                            selected_product_id: isSelected
+                              ? (selectedProducts.filter(p => p.id !== product.id)[0]?.id || '')
+                              : (selectedProducts[0]?.id || product.id)
+                          }))
+                        }}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-purple-500 bg-white shadow-md'
+                            : 'border-gray-300 hover:border-purple-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">{product.product_name}</h4>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {product.allowed_platforms?.map((platform: string) => {
+                                const platformInfo: { [key: string]: { icon: string; label: string } } = {
+                                  review: { icon: '⭐', label: '구매후기' },
+                                  blog: { icon: '📝', label: '블로그' },
+                                  naver: { icon: '🟢', label: '네이버' },
+                                  instagram: { icon: '📸', label: '인스타그램' },
+                                  youtube: { icon: '🎥', label: '유튜브' },
+                                  tiktok: { icon: '🎵', label: '틱톡' },
+                                  product: { icon: '🧪', label: '제품 체험' },
+                                  press: { icon: '📰', label: '기자단' },
+                                  local: { icon: '🏘️', label: '지역 체험' },
+                                  other: { icon: '🔧', label: '기타' }
+                                }
+                                const info = platformInfo[platform] || { icon: '🔧', label: platform }
+                                return (
+                                  <span key={platform} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                                    {info.icon} {info.label}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          </div>
+                          <div className={`w-6 h-6 border-2 rounded flex items-center justify-center ml-3 transition-all ${
+                            isSelected
+                              ? 'bg-purple-500 border-purple-500'
+                              : 'border-gray-300'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            )}
                           </div>
                         </div>
-                        {selectedProduct?.id === product.id && (
-                          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center ml-3">
-                            <div className="w-3 h-3 bg-white rounded-full"></div>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
-                {!selectedProduct && (
-                  <p className="text-red-500 text-sm">제품을 선택해주세요.</p>
+                {selectedProducts.length > 0 && (
+                  <p className="text-sm text-purple-600 font-medium">
+                    ✓ {selectedProducts.length}개 제품 선택됨
+                  </p>
+                )}
+
+                {selectedProducts.length === 0 && (
+                  <p className="text-red-500 text-sm">최소 1개 이상의 제품을 선택해주세요.</p>
                 )}
               </div>
             )}
@@ -666,16 +689,18 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   참여 플랫폼 <span className="text-red-500">*</span>
                 </label>
                 {/* 🔥 제품이 선택되지 않았을 때 안내 메시지 */}
-                {campaignProducts.length > 1 && !selectedProduct ? (
+                {campaignProducts.length > 1 && selectedProducts.length === 0 ? (
                   <p className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg border border-gray-200">
                     먼저 체험 제품을 선택해주세요.
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {/* 🔥 선택된 제품의 플랫폼만 표시 */}
+                  {/* 🔥 선택된 제품들의 플랫폼을 합쳐서 표시 */}
                   {(() => {
-                    // 제품이 1개면 자동 선택된 제품, 여러 개면 사용자가 선택한 제품
-                    const availablePlatforms = selectedProduct?.allowed_platforms || []
+                    // 선택된 모든 제품의 플랫폼을 합침 (중복 제거)
+                    const availablePlatforms = Array.from(new Set(
+                      selectedProducts.flatMap(product => product.allowed_platforms || [])
+                    ))
 
                     const allPlatforms = [
                       { value: 'review', label: '구매후기', icon: '⭐', color: 'vintage', bgColor: 'bg-blue-50', borderColor: 'border-vintage-500' },

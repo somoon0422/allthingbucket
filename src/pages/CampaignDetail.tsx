@@ -759,7 +759,14 @@ const CampaignDetail: React.FC = () => {
                       <Gift className="w-5 h-5 mr-2 text-green-600" />
                       제공내역
                     </h2>
-                    <p className="text-gray-700">{providedItems}</p>
+                    <div
+                      className="prose prose-gray max-w-none text-gray-700"
+                      dangerouslySetInnerHTML={{
+                        __html: providedItems.includes('<p>') || providedItems.includes('<br>')
+                          ? providedItems
+                          : providedItems.replace(/\n/g, '<br>')
+                      }}
+                    />
                   </div>
                 )}
 

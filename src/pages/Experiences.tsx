@@ -205,62 +205,60 @@ const Experiences: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-4 sm:p-6">
-          <div className="flex flex-col gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-white/20 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-2">
             {/* 검색 */}
-            <div className="w-full">
+            <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="체험단 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm sm:text-base transition-all duration-200"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm transition-all duration-200"
                 />
               </div>
             </div>
 
             {/* 필터 및 정렬 */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm sm:text-base transition-all duration-200"
-              >
-                <option value="all">전체</option>
-                <option value="beauty">뷰티</option>
-                <option value="food">푸드</option>
-                <option value="lifestyle">라이프스타일</option>
-                <option value="tech">테크</option>
-              </select>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm transition-all duration-200"
+            >
+              <option value="all">전체</option>
+              <option value="beauty">뷰티</option>
+              <option value="food">푸드</option>
+              <option value="lifestyle">라이프스타일</option>
+              <option value="tech">테크</option>
+            </select>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'newest' | 'deadline' | 'points')}
-                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm sm:text-base transition-all duration-200"
-              >
-                <option value="newest">최신순</option>
-                <option value="deadline">마감임박순</option>
-                <option value="points">포인트순</option>
-              </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'newest' | 'deadline' | 'points')}
+              className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm transition-all duration-200"
+            >
+              <option value="newest">최신순</option>
+              <option value="deadline">마감임박순</option>
+              <option value="points">포인트순</option>
+            </select>
 
-              {/* 뷰 모드 */}
-              <div className="flex border-2 border-gray-200 rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2.5 sm:p-3 transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-vintage-600 to-navy-600 text-white shadow-lg' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <Grid className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2.5 sm:p-3 transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-vintage-600 to-navy-600 text-white shadow-lg' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <List className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-              </div>
+            {/* 뷰 모드 */}
+            <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-vintage-600 to-navy-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-vintage-600 to-navy-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                <List className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -269,20 +267,21 @@ const Experiences: React.FC = () => {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {filteredExperiences.length > 0 ? (
-          <div className={`grid gap-4 sm:gap-6 ${
-            viewMode === 'grid' 
-              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
+          <div className={`grid gap-6 ${
+            viewMode === 'grid'
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
               : 'grid-cols-1'
           }`}>
             {filteredExperiences.map((experience, index) => (
-              <div
+              <Link
                 key={experience.id || index}
-                className={`bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden border border-white/20 ${
+                to={`/campaign/${experience.id}`}
+                className={`bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden border border-white/20 cursor-pointer ${
                   viewMode === 'list' ? 'flex' : ''
                 }`}
               >
                 {/* 이미지 */}
-                <div className={`${viewMode === 'grid' ? 'h-48 sm:h-56' : 'w-32 sm:w-48 h-32 sm:h-48 flex-shrink-0'} bg-gradient-to-br from-vintage-400 to-navy-400 relative overflow-hidden`}>
+                <div className={`${viewMode === 'grid' ? 'aspect-[4/3]' : 'w-48 h-48 flex-shrink-0'} bg-gradient-to-br from-vintage-400 to-navy-400 relative overflow-hidden`}>
                   {(() => {
                     // 🔥 실제 DB 필드명 기반 이미지 소스 확인 (main_images, detail_images)
                     const imageSources = [
@@ -426,89 +425,68 @@ const Experiences: React.FC = () => {
                 </div>
 
                 {/* 내용 */}
-                <div className={`p-4 sm:p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                  <div className="flex items-start justify-between mb-2 sm:mb-3">
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 line-clamp-2 flex-1">
+                <div className={`p-4 sm:p-5 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 line-clamp-2 flex-1 leading-snug">
                       {experience.campaign_name || experience.title || experience.experience_name || experience.name || '제목 없음'}
                     </h3>
-                    <button 
-                      onClick={() => toggleWishlist(experience.id)}
-                      className={`ml-2 p-1.5 sm:p-2 transition-colors ${
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        toggleWishlist(experience.id)
+                      }}
+                      className={`ml-2 p-1.5 transition-colors flex-shrink-0 ${
                         wishlist.some(item => item.campaign_id === experience.id)
-                          ? 'text-red-500' 
+                          ? 'text-red-500'
                           : 'text-gray-400 hover:text-red-500'
                       }`}
                     >
-                      <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${wishlist.some(item => item.campaign_id === experience.id) ? 'fill-current' : ''}`} />
+                      <Heart className={`w-5 h-5 ${wishlist.some(item => item.campaign_id === experience.id) ? 'fill-current' : ''}`} />
                     </button>
                   </div>
 
-                  <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 line-clamp-3">
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-3 leading-relaxed">
                     {experience.description || '설명이 없습니다.'}
                   </p>
 
                   {/* 브랜드 정보 */}
-                  <div className="flex items-center mb-3 sm:mb-4">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-vintage-600 to-navy-600 rounded-2xl flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-vintage-600 to-navy-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
                       {(experience.brand || experience.brand_name || 'B').charAt(0)}
                     </div>
-                    <span className="ml-3 text-xs sm:text-sm font-semibold text-gray-700">
+                    <span className="ml-3 text-sm font-semibold text-gray-700 truncate">
                       {experience.brand || experience.brand_name || '브랜드'}
                     </span>
                   </div>
 
                   {/* 상세 정보 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
-                    <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      {experience.experience_location || '전국'}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 mr-2 text-vintage-600" />
+                        <span>모집인원</span>
+                      </div>
+                      <span className="font-semibold">{experience.current_applicants || 0}/{experience.max_participants || experience.recruitment_count || 0}명</span>
                     </div>
-                    <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      {experience.experience_period || '2주'}
-                    </div>
-                    <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                      <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      {experience.current_applicants || 0}/{experience.max_participants || experience.recruitment_count || 0}명
-                    </div>
-                    <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      {getDeadlineDisplay(experience)}
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-2 text-vintage-600" />
+                        <span>마감일</span>
+                      </div>
+                      <span className="font-semibold text-vintage-600">{getDeadlineDisplay(experience)}</span>
                     </div>
                   </div>
 
-                  {/* 포인트 및 버튼 */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                    <div className="flex items-center text-vintage-600 font-bold text-base sm:text-lg">
-                      <Coins className="w-5 h-5 sm:w-6 sm:h-6 mr-1 sm:mr-2" />
+                  {/* 포인트 */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div className="flex items-center text-vintage-600 font-bold text-lg">
+                      <Coins className="w-5 h-5 mr-2" />
                       {experience.rewards || 0} P
                     </div>
-
-                    {/* 마감된 캠페인인지 확인 */}
-                    {(() => {
-                      const status = experience.status || experience.campaign_status
-                      const maxParticipants = experience.max_participants
-                      const currentParticipants = experience.current_participants || 0
-                      const isClosed = status === 'closed' || status === 'inactive' ||
-                                     (maxParticipants && currentParticipants >= maxParticipants)
-
-                      return isClosed ? (
-                        <div className="bg-gray-400 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-sm sm:text-base opacity-60 cursor-not-allowed flex items-center justify-center">
-                          마감된 캠페인
-                        </div>
-                      ) : (
-                        <Link
-                          to={`/campaign/${experience.id}`}
-                          className="bg-gradient-to-r from-vintage-600 to-navy-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center justify-center text-sm sm:text-base shadow-lg"
-                        >
-                          자세히 보기
-                          <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
-                        </Link>
-                      )
-                    })()}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (
