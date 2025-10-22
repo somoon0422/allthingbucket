@@ -161,16 +161,27 @@ const CampaignDetail: React.FC = () => {
 
       // 이 캠페인에 대한 신청 중 코멘트가 있는 것만 필터링
       const commentsWithApplicants = applications
-        .filter((app: any) =>
-          app.campaign_id === id &&
-          app.applicant_comment &&
-          app.applicant_comment.trim() !== ''
-        )
+        .filter((app: any) => {
+          if (app.campaign_id !== id) return false
+
+          // 루트 레벨과 application_data 둘 다 체크
+          const rootComment = app.applicant_comment
+          const dataComment = app.application_data?.applicant_comment
+
+          const comment = rootComment || dataComment
+          return comment && comment.trim() !== ''
+        })
         .map((app: any) => {
           // user_id로 사용자 정보 찾기
           const user = users.find((u: any) => u.user_id === app.user_id)
+
+          // applicant_comment를 루트 레벨 또는 application_data에서 가져오기
+          const rootComment = app.applicant_comment
+          const dataComment = app.application_data?.applicant_comment
+
           return {
             ...app,
+            applicant_comment: rootComment || dataComment,
             user_email: user?.email || null
           }
         })
