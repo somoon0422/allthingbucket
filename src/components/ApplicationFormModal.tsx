@@ -136,13 +136,14 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     }
   }, [targetCampaign])
 
-  // 사용자 정보 초기화
+  // 사용자 정보 초기화 - 모달이 열릴 때마다 실행
   useEffect(() => {
-    if (user && isAuthenticated) {
+    if (isOpen && user && isAuthenticated) {
+      console.log('🔄 모달 열림 - 프로필 로드 시작')
       // 사용자 프로필 정보 불러오기
       loadUserProfile()
     }
-  }, [user, isAuthenticated])
+  }, [isOpen, user, isAuthenticated])
 
   // 사용자 프로필 정보 불러오기
   const loadUserProfile = async () => {
