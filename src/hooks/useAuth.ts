@@ -93,18 +93,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithCredentials = async (email: string, password: string) => {
     try {
       setLoading(true)
-      
+
       // Supabase Auth를 사용한 로그인
       const result = await supabase.auth.signInWithPassword({
         email,
         password
       })
-      
+
       if (result.data?.user) {
+        // 🔥 users 테이블의 last_login 업데이트
+        try {
+          const usersResponse = await (dataService.entities as any).users.list()
+          const users = Array.isArray(usersResponse) ? usersResponse : []
+          const dbUser = users.find((u: any) => u.email === result.data.user.email || u.user_id === result.data.user.id)
+
+          if (dbUser) {
+            await (dataService.entities as any).users.update(dbUser.id, {
+              last_login: new Date().toISOString()
+            })
+            console.log('✅ last_login 업데이트 완료:', dbUser.email)
+          }
+        } catch (updateError) {
+          console.warn('⚠️ last_login 업데이트 실패 (무시):', updateError)
+        }
+
         // 사용자 프로필 정보 가져오기
         try {
           const profile = await (dataService.entities as any).user_profiles.get(result.data.user.id)
-          
+
           const processedUser = processUserData({
             id: result.data.user.id,
             email: result.data.user.email || '',
@@ -112,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             role: 'user',
             profile: profile
           })
-          
+
           if (processedUser) {
             setUser(processedUser)
             return
@@ -509,6 +525,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               console.log('✅ users 테이블에서 사용자 확인됨:', dbUser)
               console.log('✅ 사용자 이메일:', dbUser.email)
               console.log('✅ 사용자 이름:', dbUser.name)
+
+              // 🔥 last_login 업데이트
+              try {
+                await (dataService.entities as any).users.update(dbUser.id, {
+                  last_login: new Date().toISOString()
+                })
+                console.log('✅ last_login 업데이트 완료:', dbUser.email)
+              } catch (updateError) {
+                console.warn('⚠️ last_login 업데이트 실패 (무시):', updateError)
+              }
 
               // users 테이블의 이름이 없거나 비어있는 경우 업데이트
               if (!dbUser.name && (session.user.user_metadata?.full_name || session.user.user_metadata?.name)) {
