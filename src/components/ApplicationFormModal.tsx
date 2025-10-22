@@ -152,16 +152,39 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     try {
       const userId = user.id || user.user_id || (user as any)._id
 
-      // 🔥 influencer_profiles에서 운영채널 정보 우선 조회
+      // 🔥 influencer_profiles에서 운영채널 및 전화번호 정보 우선 조회
       let influencerProfile: any = null
       try {
         const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
         influencerProfile = Array.isArray(influencerProfiles)
           ? influencerProfiles.find((p: any) => p && p.user_id === userId)
           : null
-        console.log('📋 influencer_profiles 데이터:', influencerProfile)
+        console.log('📋 influencer_profiles 전체 데이터:', influencerProfile)
+        if (influencerProfile) {
+          console.log('📞 influencer_profiles 전화번호 필드들:', {
+            phone: influencerProfile.phone,
+            user_phone: influencerProfile.user_phone,
+            phoneNumber: influencerProfile.phoneNumber,
+            phone_number: influencerProfile.phone_number
+          })
+        }
       } catch (influencerError) {
         console.log('⚠️ influencer_profiles 조회 실패 (무시):', influencerError)
+      }
+
+      // users 테이블에서도 전화번호 확인
+      let usersPhone = ''
+      try {
+        const usersResponse = await (dataService.entities as any).users.list()
+        const usersData = Array.isArray(usersResponse) ? usersResponse : []
+        const userData = usersData.find((u: any) => u.user_id === userId || u.id === userId)
+        if (userData) {
+          usersPhone = userData.phone || userData.user_phone || userData.phoneNumber || userData.phone_number || ''
+          console.log('📋 users 테이블 데이터:', userData)
+          console.log('📞 users 테이블 전화번호:', usersPhone)
+        }
+      } catch (usersError) {
+        console.log('⚠️ users 테이블 조회 실패 (무시):', usersError)
       }
 
       // user_profiles에서 사용자 기본 정보 검색
@@ -173,15 +196,30 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         const profile = profileResponse[0]
 
         console.log('📋 user_profiles 데이터:', profile)
-        console.log('📞 전화번호 필드들:', {
+        console.log('📞 user_profiles 전화번호 필드들:', {
           phone: profile.phone,
           user_phone: profile.user_phone,
           phoneNumber: profile.phoneNumber,
           phone_number: profile.phone_number
         })
 
-        // 프로필 정보로 폼 데이터 초기화 (여러 필드명 시도)
-        const phoneNumber = profile.phone || profile.user_phone || profile.phoneNumber || profile.phone_number || ''
+        // 🔥 전화번호 우선순위: influencer_profiles > users > user_profiles > user 객체
+        const phoneNumber = (
+          influencerProfile?.phone ||
+          influencerProfile?.user_phone ||
+          influencerProfile?.phoneNumber ||
+          influencerProfile?.phone_number ||
+          usersPhone ||
+          profile.phone ||
+          profile.user_phone ||
+          profile.phoneNumber ||
+          profile.phone_number ||
+          user.phone ||
+          user.user_phone ||
+          ''
+        )
+
+        console.log('🔍 최종 선택된 전화번호:', phoneNumber)
 
         // 🔥 운영채널 정보는 influencer_profiles 우선, 없으면 user_profiles
         const instagramHandle = (influencerProfile?.instagram_id || profile.instagram_handle || profile.instagram_id || '').replace('@', '')
@@ -208,6 +246,17 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         })
       } else {
         // 프로필이 없어도 influencer_profiles의 운영채널 정보는 가져오기
+        const phoneNumber = (
+          influencerProfile?.phone ||
+          influencerProfile?.user_phone ||
+          influencerProfile?.phoneNumber ||
+          influencerProfile?.phone_number ||
+          usersPhone ||
+          user.phone ||
+          user.user_phone ||
+          ''
+        )
+
         if (influencerProfile) {
           const instagramHandle = (influencerProfile.instagram_id || '').replace('@', '')
           const blogUrl = influencerProfile.naver_blog || ''
@@ -217,11 +266,13 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
             ...prev,
             name: user.name || user.admin_name || '',
             email: user.email || '',
+            phone: phoneNumber,
             instagram_handle: instagramHandle,
             blog_url: blogUrl,
             youtube_channel: youtubeChannel
           }))
-          console.log('✅ influencer_profiles에서 운영채널 정보만 로드:', {
+          console.log('✅ influencer_profiles에서 운영채널 정보 및 전화번호 로드:', {
+            phone: phoneNumber,
             instagram: instagramHandle,
             blog: blogUrl,
             youtube: youtubeChannel
@@ -231,8 +282,12 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           setFormData(prev => ({
             ...prev,
             name: user.name || user.admin_name || '',
-            email: user.email || ''
+            email: user.email || '',
+            phone: phoneNumber
           }))
+          console.log('✅ 기본 사용자 정보로 초기화:', {
+            phone: phoneNumber
+          })
         }
       }
     } catch (error) {
