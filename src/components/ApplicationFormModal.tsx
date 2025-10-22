@@ -236,20 +236,46 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     try {
       const userId = user.id || user.user_id || (user as any)._id
 
-      // user_profiles에서 SNS 정보 확인
-      const userProfiles = await (dataService.entities as any).user_profiles.list()
-      const userProfile = Array.isArray(userProfiles)
-        ? userProfiles.find((p: any) => p && p.user_id === userId)
-        : null
+      // influencer_profiles에서 SNS 정보 확인 (우선)
+      let hasSNS = false
+      try {
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+        const influencerProfile = Array.isArray(influencerProfiles)
+          ? influencerProfiles.find((p: any) => p && p.user_id === userId)
+          : null
 
-      // SNS 채널이 하나라도 등록되어 있는지 확인
-      const hasSNS = userProfile && (
-        userProfile.naver_blog ||
-        userProfile.instagram_id ||
-        userProfile.youtube_channel ||
-        userProfile.tiktok_id ||
-        userProfile.facebook_page
-      )
+        if (influencerProfile) {
+          hasSNS = !!(
+            influencerProfile.naver_blog ||
+            influencerProfile.instagram_id ||
+            influencerProfile.youtube_channel ||
+            influencerProfile.tiktok_id ||
+            influencerProfile.facebook_page
+          )
+          console.log('✅ influencer_profiles SNS 체크:', hasSNS, influencerProfile)
+        }
+      } catch (influencerError) {
+        console.log('⚠️ influencer_profiles 조회 실패 (무시):', influencerError)
+      }
+
+      // influencer_profiles에 없으면 user_profiles에서 확인
+      if (!hasSNS) {
+        const userProfiles = await (dataService.entities as any).user_profiles.list()
+        const userProfile = Array.isArray(userProfiles)
+          ? userProfiles.find((p: any) => p && p.user_id === userId)
+          : null
+
+        if (userProfile) {
+          hasSNS = !!(
+            userProfile.naver_blog ||
+            userProfile.instagram_id ||
+            userProfile.youtube_channel ||
+            userProfile.tiktok_id ||
+            userProfile.facebook_page
+          )
+          console.log('✅ user_profiles SNS 체크:', hasSNS, userProfile)
+        }
+      }
 
       if (!hasSNS) {
         // SNS 미등록 시 안내 모달 표시
