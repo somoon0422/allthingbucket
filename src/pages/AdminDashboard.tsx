@@ -1279,7 +1279,7 @@ const AdminDashboard: React.FC = () => {
           display_name: user.display_name || user.name || '이름 없음',
           created_at: user.created_at,
           email_confirmed_at: user.email_confirmed_at,
-          last_sign_in_at: user.last_sign_in_at,
+          last_login: user.last_login,
           phone: user.phone,
           avatar_url: user.avatar_url,
           provider: user.provider
