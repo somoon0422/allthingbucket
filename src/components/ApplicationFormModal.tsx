@@ -151,7 +151,19 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
     try {
       const userId = user.id || user.user_id || (user as any)._id
 
-      // user_profiles에서 사용자 정보 검색
+      // 🔥 influencer_profiles에서 운영채널 정보 우선 조회
+      let influencerProfile: any = null
+      try {
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+        influencerProfile = Array.isArray(influencerProfiles)
+          ? influencerProfiles.find((p: any) => p && p.user_id === userId)
+          : null
+        console.log('📋 influencer_profiles 데이터:', influencerProfile)
+      } catch (influencerError) {
+        console.log('⚠️ influencer_profiles 조회 실패 (무시):', influencerError)
+      }
+
+      // user_profiles에서 사용자 기본 정보 검색
       const profileResponse = await (dataService.entities as any).user_profiles.list({
         filter: { user_id: userId }
       })
@@ -159,25 +171,68 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       if (profileResponse && Array.isArray(profileResponse) && profileResponse.length > 0) {
         const profile = profileResponse[0]
 
-        // 프로필 정보로 폼 데이터 초기화
+        console.log('📋 user_profiles 데이터:', profile)
+        console.log('📞 전화번호 필드들:', {
+          phone: profile.phone,
+          user_phone: profile.user_phone,
+          phoneNumber: profile.phoneNumber,
+          phone_number: profile.phone_number
+        })
+
+        // 프로필 정보로 폼 데이터 초기화 (여러 필드명 시도)
+        const phoneNumber = profile.phone || profile.user_phone || profile.phoneNumber || profile.phone_number || ''
+
+        // 🔥 운영채널 정보는 influencer_profiles 우선, 없으면 user_profiles
+        const instagramHandle = (influencerProfile?.instagram_id || profile.instagram_handle || profile.instagram_id || '').replace('@', '')
+        const blogUrl = influencerProfile?.naver_blog || profile.blog_url || profile.naver_blog || ''
+        const youtubeChannel = influencerProfile?.youtube_channel || profile.youtube_channel || ''
+
         setFormData(prev => ({
           ...prev,
           name: profile.name || user.name || user.admin_name || '',
           email: profile.email || user.email || '',
-          phone: profile.phone || '',
+          phone: phoneNumber,
           address: profile.address || '',
           detailed_address: profile.detailed_address || '',
-          instagram_handle: profile.instagram_handle || '',
-          blog_url: profile.blog_url || '',
-          youtube_channel: profile.youtube_channel || ''
+          instagram_handle: instagramHandle,
+          blog_url: blogUrl,
+          youtube_channel: youtubeChannel
         }))
+
+        console.log('✅ 폼 데이터 초기화 완료:', {
+          phone: phoneNumber,
+          instagram: instagramHandle,
+          blog: blogUrl,
+          youtube: youtubeChannel
+        })
       } else {
-        // 프로필이 없으면 기본 사용자 정보로만 초기화
-        setFormData(prev => ({
-          ...prev,
-          name: user.name || user.admin_name || '',
-          email: user.email || ''
-        }))
+        // 프로필이 없어도 influencer_profiles의 운영채널 정보는 가져오기
+        if (influencerProfile) {
+          const instagramHandle = (influencerProfile.instagram_id || '').replace('@', '')
+          const blogUrl = influencerProfile.naver_blog || ''
+          const youtubeChannel = influencerProfile.youtube_channel || ''
+
+          setFormData(prev => ({
+            ...prev,
+            name: user.name || user.admin_name || '',
+            email: user.email || '',
+            instagram_handle: instagramHandle,
+            blog_url: blogUrl,
+            youtube_channel: youtubeChannel
+          }))
+          console.log('✅ influencer_profiles에서 운영채널 정보만 로드:', {
+            instagram: instagramHandle,
+            blog: blogUrl,
+            youtube: youtubeChannel
+          })
+        } else {
+          // 프로필이 없으면 기본 사용자 정보로만 초기화
+          setFormData(prev => ({
+            ...prev,
+            name: user.name || user.admin_name || '',
+            email: user.email || ''
+          }))
+        }
       }
     } catch (error) {
       console.error('❌ 사용자 프로필 불러오기 실패:', error)
