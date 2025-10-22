@@ -817,7 +817,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                 <MessageSquare className="w-5 h-5 mr-2" />
                 신청 정보
               </h3>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   신청 사유 <span className="text-red-500">*</span>
@@ -830,34 +830,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
                   placeholder="이 체험단에 신청하는 이유를 자세히 작성해주세요"
                   required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  체험 계획
-                </label>
-                <textarea
-                  name="experience_plan"
-                  value={formData.experience_plan}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
-                  placeholder="제품 체험 후 어떤 활동을 할 계획인지 작성해주세요"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  추가 정보
-                </label>
-                <textarea
-                  name="additional_info"
-                  value={formData.additional_info}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
-                  placeholder="추가로 전달하고 싶은 내용이 있다면 작성해주세요"
                 />
               </div>
             </div>
