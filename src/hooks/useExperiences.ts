@@ -216,8 +216,22 @@ export const useExperiences = () => {
 
       // Supabase API로 신청 생성
       const result = await (dataService.entities as any).user_applications.create(applicationData)
-      
+
       if (result && result.success) {
+        // 🔥 신청 성공 후 캠페인의 current_participants 카운트 업데이트
+        try {
+          const experience = await (dataService.entities as any).campaigns.get(experienceId)
+          if (experience) {
+            const currentCount = experience.current_participants || 0
+            await (dataService.entities as any).campaigns.update(experienceId, {
+              current_participants: currentCount + 1
+            })
+            console.log('✅ 캠페인 신청자 수 업데이트 완료:', currentCount + 1)
+          }
+        } catch (updateError) {
+          console.error('⚠️ 신청자 수 업데이트 실패 (신청은 완료됨):', updateError)
+        }
+
         toast.success('체험단 신청이 완료되었습니다!')
         return { success: true, application: result.data }
       } else {
@@ -383,6 +397,28 @@ export const useExperiences = () => {
     return colorMap[status] || 'bg-gray-100 text-gray-800'
   }, [])
 
+  // 🔥 캠페인의 실제 신청자 수를 계산하여 업데이트
+  const syncCampaignParticipants = useCallback(async (campaignId: string) => {
+    try {
+      const applications = await (dataService.entities as any).user_applications.list()
+      const campaignApplications = applications.filter((app: any) =>
+        app.campaign_id === campaignId
+      )
+
+      const actualCount = campaignApplications.length
+
+      await (dataService.entities as any).campaigns.update(campaignId, {
+        current_participants: actualCount
+      })
+
+      console.log(`✅ 캠페인 ${campaignId} 신청자 수 동기화 완료:`, actualCount)
+      return actualCount
+    } catch (error) {
+      console.error('❌ 신청자 수 동기화 실패:', error)
+      return null
+    }
+  }, [])
+
   return {
     loading,
     getExperiences,
@@ -393,6 +429,7 @@ export const useExperiences = () => {
     getStatusLabel,
     getStatusColor,
     checkDuplicateApplication,
-    cancelApplication
+    cancelApplication,
+    syncCampaignParticipants
   }
 }

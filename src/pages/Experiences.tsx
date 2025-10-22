@@ -76,27 +76,46 @@ const Experiences: React.FC = () => {
       setLoading(true)
       setError(null)
       console.log('🔥 체험단 로딩 시작...')
-      
+
       // Supabase 데이터 확인
       await checkSupabaseData()
-      
+
       const campaigns = await dataService.entities.campaigns.list()
       console.log('✅ Supabase 체험단 데이터 성공:', campaigns)
-      
+
+      // 🔥 각 캠페인의 실제 신청자 수 계산
+      const applications = await (dataService.entities as any).user_applications.list()
+      console.log('✅ 전체 신청 내역:', applications.length)
+
+      // 캠페인별 신청자 수 계산
+      const campaignsWithCount = campaigns.map((campaign: any) => {
+        const campaignApplications = applications.filter((app: any) =>
+          app.campaign_id === campaign.id
+        )
+        const actualCount = campaignApplications.length
+
+        // 실제 신청자 수로 업데이트
+        return {
+          ...campaign,
+          current_participants: actualCount,
+          current_applicants: actualCount // 호환성을 위해 둘 다 설정
+        }
+      })
+
       // 🔥 디버깅: 각 캠페인의 필드 확인
-      if (Array.isArray(campaigns) && campaigns.length > 0) {
-        const firstCampaign = campaigns[0] as any
-        console.log('🔍 첫 번째 캠페인 상세 데이터:', {
-          campaign: firstCampaign,
+      if (Array.isArray(campaignsWithCount) && campaignsWithCount.length > 0) {
+        const firstCampaign = campaignsWithCount[0] as any
+        console.log('🔍 첫 번째 캠페인 상세 데이터 (신청자 수 포함):', {
           campaign_name: firstCampaign?.campaign_name,
           status: firstCampaign?.status,
-          main_images: firstCampaign?.main_images,
-          detail_images: firstCampaign?.detail_images,
+          current_participants: firstCampaign?.current_participants,
+          current_applicants: firstCampaign?.current_applicants,
+          max_participants: firstCampaign?.max_participants,
           allFields: Object.keys(firstCampaign || {})
         })
       }
-      
-      const safeCampaigns = Array.isArray(campaigns) ? campaigns : []
+
+      const safeCampaigns = Array.isArray(campaignsWithCount) ? campaignsWithCount : []
       setExperiences(safeCampaigns)
       setFilteredExperiences(safeCampaigns)
     } catch (error) {
