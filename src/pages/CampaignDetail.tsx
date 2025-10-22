@@ -241,19 +241,34 @@ const CampaignDetail: React.FC = () => {
   useEffect(() => {
     const loadCampaign = async () => {
       if (!id) return
-      
+
       try {
         console.log('🔍 캠페인 상세 정보 로딩:', id)
         const campaignData = await getCampaignById(id)
-        setCampaign(campaignData)
-        
-        // 🔥 OG 태그 설정 (카카오톡 링크 공유용)
-        if (campaignData) {
-          setCampaignOGTags(campaignData)
+
+        // 🔥 실제 신청자 수 계산
+        const applications = await (dataService.entities as any).user_applications.list()
+        const campaignApplications = applications.filter((app: any) =>
+          app.campaign_id === id
+        )
+        const actualCount = campaignApplications.length
+
+        // 캠페인 데이터에 실제 신청자 수 추가
+        const campaignWithCount = {
+          ...campaignData,
+          current_participants: actualCount,
+          current_applicants: actualCount
         }
-        
+
+        setCampaign(campaignWithCount)
+
+        // 🔥 OG 태그 설정 (카카오톡 링크 공유용)
+        if (campaignWithCount) {
+          setCampaignOGTags(campaignWithCount)
+        }
+
         // 🔥 신청 상태 체크
-        if (isAuthenticated && user?.user_id && campaignData) {
+        if (isAuthenticated && user?.user_id && campaignWithCount) {
           const duplicateCheck = await checkDuplicateApplication(id, user.user_id)
           if (duplicateCheck.isDuplicate) {
             setApplicationStatus(duplicateCheck.existingApplication)
