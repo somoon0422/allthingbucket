@@ -71,12 +71,20 @@ export default async function handler(req, res) {
     const signature = makeSignature(timestamp, method, url, NCP_SECRET_KEY);
 
     // 알림톡 메시지 구성
-    // content: 템플릿 형식 그대로 작성 (변수는 #{변수명} 형태로)
+    // content: 템플릿과 정확히 일치해야 함 (이모지 포함)
     // templateParameter: 실제 변수 값 전달
     const message = {
       to: to.replace(/-/g, ''), // 하이픈 제거
       content: '[올띵버킷]\n#{name}님, 축하드립니다! 🎉\n\n#{campaignName} 체험단에 선정되셨습니다!\n\n📦 다음 단계\n1. 체험단 가이드 확인 (제품 구매 or 배송 대기)\n2. 체험 진행 및 리뷰 작성\n3. 리뷰 승인 후 포인트 지급 (#{rewardPoints}P)\n4. 포인트 출금 요청\n\n⛳️ 체험단 상세 페이지에서 체험 가이드를 확인해 주세요.\n혹은 이메일로 체험 가이드를 발송드렸으니 확인 후 진행해 주세요.\n\n(*확인이 안 되실 경우 스팸함도 확인해 주세요.)',
-      templateParameter: variables  // 템플릿 변수 전달
+      templateParameter: variables,  // 템플릿 변수 전달
+      buttons: [
+        {
+          type: 'WL',
+          name: '내 신청 보기',
+          linkMobile: 'https://allthingbucket.com/my-applications',
+          linkPc: 'https://allthingbucket.com/my-applications'
+        }
+      ]
     };
 
     // Failover 설정이 있는 경우 추가
