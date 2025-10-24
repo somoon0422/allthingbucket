@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAccessToken, getCommonHeaders, NICE_API_BASE_URL } from './lib/niceAuth'
+import { getAccessToken, getCommonHeaders, NICE_API_BASE_URL } from './_lib/niceAuth'
 
 const PRODUCT_ID = process.env.VITE_NICE_PRODUCT_ID_ACCOUNT || '2001988003' // 계좌확인 상품코드
 

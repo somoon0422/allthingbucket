@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getAccessToken, getCommonHeaders, NICE_API_BASE_URL } from './lib/niceAuth'
-import { generateCryptoKeys, encryptAES, generateIntegrityValue } from './lib/niceCrypto'
+import { getAccessToken, getCommonHeaders, NICE_API_BASE_URL } from './_lib/niceAuth'
+import { generateCryptoKeys, encryptAES, generateIntegrityValue } from './_lib/niceCrypto'
 import iconv from 'iconv-lite'
 
 const PRODUCT_ID = process.env.VITE_NICE_PRODUCT_ID_REALNAME || '2101290037' // 개인실명확인 상품코드
