@@ -162,6 +162,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   onApprovalComplete
 }) => {
   const [loading, setLoading] = useState(false)
+  const [emailLoading, setEmailLoading] = useState(false)
 
   // 🔥 완전히 안전한 데이터 추출
   const userName = SafeData.getString(application)
@@ -170,6 +171,40 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   const experienceName = SafeData.getExperienceName(application)
   const brandName = SafeData.getBrandName(application)
   const rewardPoints = SafeData.getNumber(application, 'reward_points', 0)
+
+  // 📧 이메일 가이드 상태
+  const [emailSubject, setEmailSubject] = useState(`[올띵버킷] ${experienceName} 체험 가이드 안내`)
+  const [emailContent, setEmailContent] = useState(`안녕하세요, ${userName}님!
+
+${experienceName} 체험단에 선정되신 것을 축하드립니다! 🎉
+
+아래 체험 가이드를 확인하시고 진행해 주세요.
+
+📦 체험 가이드
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. 제품 구매 or 배송 대기
+   - 제품 구매형: 지정된 쇼핑몰에서 제품을 구매해 주세요
+   - 제품 배송형: 입력하신 주소로 제품이 배송될 예정입니다
+
+2. 체험 진행
+   - 제품을 직접 사용해보시고 솔직한 경험을 기록해 주세요
+   - 사진 촬영 (최소 3장 이상 권장)
+
+3. 리뷰 작성 및 제출
+   - 체험 후 마이페이지 > 내 신청 > 리뷰 작성 버튼 클릭
+   - 블로그 링크, 사진, 체험 후기를 작성해 주세요
+
+4. 리뷰 승인 후 포인트 지급
+   - 리뷰 검수 완료 시 ${rewardPoints}P 지급
+   - 포인트 출금 요청 가능
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ 문의사항이 있으시면 언제든지 연락주세요!
+
+감사합니다.
+올띵버킷 드림`)
 
   // 🔥 상태에 따른 제목 결정
   const getModalTitle = () => {
@@ -186,6 +221,43 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
     return '✅ 체험단 신청 승인'
   }
 
+
+  // 📧 이메일 가이드 발송
+  const handleSendEmailGuide = async () => {
+    if (!userEmail) {
+      toast.error('이메일 주소가 없습니다')
+      return
+    }
+
+    if (!emailContent.trim()) {
+      toast.error('이메일 내용을 입력해주세요')
+      return
+    }
+
+    setEmailLoading(true)
+    try {
+      const result = await emailNotificationService.sendEmail({
+        to: userEmail,
+        toName: userName,
+        type: 'custom',
+        data: {
+          subject: emailSubject,
+          content: emailContent
+        }
+      })
+
+      if (result.success) {
+        toast.success('이메일 가이드가 발송되었습니다')
+      } else {
+        toast.error(result.message || '이메일 발송에 실패했습니다')
+      }
+    } catch (error) {
+      console.error('❌ 이메일 발송 실패:', error)
+      toast.error('이메일 발송 중 오류가 발생했습니다')
+    } finally {
+      setEmailLoading(false)
+    }
+  }
 
   // 🔥 승인 처리 (알림톡은 AdminDashboard에서 자동 발송)
   const handleSendApproval = async () => {
@@ -385,6 +457,81 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* 📧 이메일 체험 가이드 발송 */}
+            {application?.status !== 'point_completed' && application?.status !== 'review_in_progress' && application?.status !== 'review_resubmitted' && (
+              <div className="bg-white border-2 border-blue-300 rounded-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 flex items-center">
+                  <Mail className="w-5 h-5 text-white mr-2" />
+                  <div className="font-bold text-white">체험 가이드 이메일 발송</div>
+                </div>
+
+                <div className="p-4 space-y-4">
+                  {/* 이메일 제목 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      이메일 제목
+                    </label>
+                    <input
+                      type="text"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="이메일 제목"
+                    />
+                  </div>
+
+                  {/* 이메일 내용 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      체험 가이드 내용
+                    </label>
+                    <textarea
+                      value={emailContent}
+                      onChange={(e) => setEmailContent(e.target.value)}
+                      rows={12}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                      placeholder="체험 가이드를 작성하세요..."
+                    />
+                  </div>
+
+                  {/* 수신자 정보 */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center text-sm text-gray-700">
+                      <Mail className="w-4 h-4 mr-2" />
+                      <span className="font-medium">수신자:</span>
+                      <span className="ml-2">{userName}</span>
+                      <span className={`ml-2 ${userEmail ? 'text-blue-600' : 'text-red-600'}`}>
+                        ({userEmail || '❌ 이메일 없음'})
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 발송 버튼 */}
+                  <button
+                    onClick={handleSendEmailGuide}
+                    disabled={emailLoading || !userEmail}
+                    className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-colors"
+                  >
+                    {emailLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>발송 중...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>이메일 가이드 발송</span>
+                      </>
+                    )}
+                  </button>
+
+                  <p className="text-xs text-gray-500 text-center">
+                    💡 승인과 별개로 체험 가이드를 이메일로 발송할 수 있습니다
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* 액션 버튼 */}
             <div className="flex space-x-3 pt-4 border-t">
