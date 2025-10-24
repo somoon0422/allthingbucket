@@ -1,8 +1,6 @@
 
-import React, { useState, useEffect } from 'react'
-import {X, Mail, CheckCircle, Edit} from 'lucide-react'
-import { emailNotificationService } from '../services/emailNotificationService'
-import { campaignService } from '../services/campaignService'
+import React, { useState } from 'react'
+import { X, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 // 🔥 완전히 안전한 데이터 접근
@@ -163,7 +161,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   onApprovalComplete
 }) => {
   const [loading, setLoading] = useState(false)
-  
+
   // 🔥 완전히 안전한 데이터 추출
   const userName = SafeData.getString(application)
   const userEmail = SafeData.getEmail(application)
@@ -171,8 +169,8 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   const experienceName = SafeData.getExperienceName(application)
   const brandName = SafeData.getBrandName(application)
   const rewardPoints = SafeData.getNumber(application, 'reward_points', 0)
-  
-  // 🔥 상태에 따른 제목과 템플릿 결정
+
+  // 🔥 상태에 따른 제목 결정
   const getModalTitle = () => {
     const status = application?.status
     if (status === 'point_completed') {
@@ -186,423 +184,21 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
     }
     return '✅ 체험단 신청 승인'
   }
-  
-  const getDefaultTemplate = () => {
-    const status = application?.status
-    if (status === 'point_completed') {
-      return 'point_completed'
-    }
-    return 'approval'
-  }
-  
-  const [emailContent, setEmailContent] = useState('')
-  const [subject, setSubject] = useState('')
-  const [selectedTemplate, setSelectedTemplate] = useState(getDefaultTemplate())
-  const [sendMethod, setSendMethod] = useState<'email' | 'sms'>('email')
-  
-  // 🔥 수신자 정보 상태 (직접 수정 가능)
-  const [editableRecipient, setEditableRecipient] = useState({
-    name: userName,
-    email: userEmail,
-    phone: userPhone
-  })
-  
-  // 수신자 정보 편집 모드
-  const [editingRecipient, setEditingRecipient] = useState(false)
-  
-  // 변수 도움말 표시 상태
-  const [showVariableHelp, setShowVariableHelp] = useState(false)
 
-  // 캠페인 정보 상태
-  const [campaignInfo, setCampaignInfo] = useState<any>(null)
 
-  // 🔥 캠페인 정보 로드 및 커스텀 승인 안내 내용 적용
-  useEffect(() => {
-    const loadCampaignInfo = async () => {
-      try {
-        const campaignId = application?.campaign_id || application?.experience_id
-        if (!campaignId) return
-
-        const campaign = await campaignService.getCampaignById(campaignId)
-        setCampaignInfo(campaign)
-
-        // 캠페인에 저장된 커스텀 승인 안내가 있으면 적용
-        if (campaign.approval_email_subject || campaign.approval_email_content) {
-          const customSubject = campaign.approval_email_subject || subject
-          const customContent = campaign.approval_email_content || emailContent
-
-          // 변수 치환
-          const replacedSubject = replaceVariables(customSubject)
-          const replacedContent = replaceVariables(customContent)
-
-          setSubject(replacedSubject)
-          setEmailContent(replacedContent)
-        }
-      } catch (error) {
-        console.error('캠페인 정보 로드 실패:', error)
-      }
-    }
-
-    if (isOpen && application) {
-      loadCampaignInfo()
-    }
-  }, [isOpen, application])
-
-  // 🔥 이메일 템플릿
-  const emailTemplates = {
-    'approval': {
-      subject: `🎉 {campaign_name} 체험단 선정 안내`,
-      content: `안녕하세요 {name}님!
-
-🎉 축하드립니다! {campaign_name} 체험단에 선정되었습니다!
-
-📋 체험단 선정 안내:
-- 체험단: {campaign_name}
-- 브랜드: {brand_name}
-- 리워드: {reward_points}P
-- 선정일: {approval_date}
-
-🎁 체험 진행 안내:
-1. 체험 제품이 발송됩니다 (배송형인 경우)
-2. 체험 기간 동안 제품을 사용해보세요
-3. 체험 완료 후 리뷰를 작성해주세요
-
-💰 포인트 지급 안내:
-리뷰 작성 및 검수 완료 후 {reward_points}P가 지급됩니다.
-포인트 지급을 원하시면 "내 신청" 페이지에서 "포인트 지급 요청" 버튼을 클릭해주세요.
-
-📝 다음 단계:
-1. 체험 제품 수령 및 체험 진행
-2. 리뷰 작성 및 제출
-3. 관리자 리뷰 검수 대기
-4. 검수 완료 후 "포인트 지급 요청" 버튼 클릭
-5. 관리자 최종 승인 후 포인트 지급
-
-📞 문의사항이 있으시면 고객센터로 연락주세요:
-- 이메일: support@allthingbucket.com
-- 전화: 01022129245
-
-감사합니다.
-올띵버킷 체험단 팀`
-    },
-    'simple': {
-      subject: `✅ {campaign_name} 체험단 선정`,
-      content: `안녕하세요 {name}님!
-
-{campaign_name} 체험단에 선정되었습니다!
-
-체험 진행 및 리뷰 작성에 대한 자세한 안내는 추후 별도로 연락드리겠습니다.
-
-리뷰 작성 완료 후 포인트 지급 요청을 해주세요.
-
-📞 문의사항: support@allthingbucket.com / 01022129245
-
-감사합니다.
-올띵버킷 체험단 팀`
-    },
-    'point_requested': {
-      subject: `💰 {campaign_name} 포인트 지급 승인 안내`,
-      content: `안녕하세요 {name}님!
-
-💰 포인트 지급 요청이 승인되었습니다!
-
-📋 포인트 지급 승인 안내:
-- 체험단: {campaign_name}
-- 브랜드: {brand_name}
-- 지급 포인트: {reward_points}P
-- 승인일: {approval_date}
-
-🎉 리뷰 검수 완료:
-{name}님의 {campaign_name} 리뷰가 성공적으로 검수 완료되었습니다.
-포인트 지급 요청이 승인되어 곧 포인트가 지급됩니다.
-
-💳 포인트 지급:
-- 지급 예정 포인트: {reward_points}P
-- 지급 완료 후 "포인트" 탭에서 확인 가능
-- 포인트 출금은 1,000P 이상부터 가능
-
-📝 포인트 사용 안내:
-- 포인트 내역: 포인트 탭에서 상세 내역 확인 가능
-- 출금 요청: 1,000P 이상 시 출금 신청 가능
-- 포인트 유효기간: 영구 유효
-
-📞 문의사항이 있으시면 고객센터로 연락주세요:
-- 이메일: support@allthingbucket.com
-- 전화: 01022129245
-
-감사합니다.
-올띵버킷 팀`
-    },
-    'point_completed': {
-      subject: `💰 {campaign_name} 포인트 지급 완료 안내`,
-      content: `안녕하세요 {name}님!
-
-💰 포인트 지급이 완료되었습니다!
-
-📋 포인트 지급 안내:
-- 체험단: {campaign_name}
-- 브랜드: {brand_name}
-- 지급 포인트: {reward_points}P
-- 지급일: {approval_date}
-
-🎉 체험단 참여 완료:
-{name}님의 {campaign_name} 체험단 참여가 성공적으로 완료되었습니다.
-리뷰 작성과 포인트 지급까지 모든 과정이 완료되었습니다.
-
-💳 포인트 확인:
-지급된 포인트는 "포인트" 탭에서 확인하실 수 있습니다.
-- 현재 잔액: {reward_points}P
-- 총 적립 포인트: 누적 포인트에서 확인 가능
-
-🔄 포인트 사용:
-- 포인트 출금: 1,000P 이상부터 출금 가능
-- 포인트 내역: 포인트 탭에서 상세 내역 확인 가능
-
-📝 다음 체험단 참여:
-더 많은 체험단에 참여하여 포인트를 적립해보세요!
-새로운 체험단이 업로드되면 알림을 받으실 수 있습니다.
-
-📞 문의사항이 있으시면 고객센터로 연락주세요:
-- 이메일: support@allthingbucket.com
-- 전화: 01022129245
-
-감사합니다.
-올띵버킷 팀`
-    },
-    'review_approval': {
-      subject: `✨ {campaign_name} 리뷰 승인 완료!`,
-      content: `안녕하세요 {name}님!
-
-✨ {campaign_name} 리뷰가 승인되었습니다!
-
-📋 리뷰 승인 안내:
-- 체험단: {campaign_name}
-- 브랜드: {brand_name}
-- 리워드: {reward_points}P
-- 승인일: {approval_date}
-
-🎉 리뷰 검수 완료:
-{name}님께서 작성해주신 {campaign_name} 리뷰가 성공적으로 검수되었습니다.
-정성스러운 리뷰 작성 감사드립니다!
-
-💰 다음 단계 - 포인트 지급 요청:
-리뷰 승인이 완료되었으니 이제 포인트 지급을 요청하실 수 있습니다.
-
-📝 포인트 지급 요청 방법:
-1. 올띵버킷 사이트 접속
-2. "내 신청" 페이지로 이동
-3. 해당 캠페인에서 "포인트 지급 요청" 버튼 클릭
-4. 관리자 승인 후 포인트 지급 완료
-
-💳 포인트 안내:
-- 지급 예정 포인트: {reward_points}P
-- 포인트 출금: 1,000P 이상부터 가능
-- 포인트 유효기간: 영구 유효
-
-📞 문의사항이 있으시면 고객센터로 연락주세요:
-- 이메일: support@allthingbucket.com
-- 전화: 01022129245
-
-감사합니다.
-올띵버킷 팀`
-    },
-    'custom': {
-      subject: '',
-      content: ''
-    }
-  }
-
-  // 🔥 초기 템플릿 설정
-  React.useEffect(() => {
-    // status에 따라 자동으로 템플릿 선택
-    let templateKey = selectedTemplate
-    if (application?.status === 'point_requested') {
-      templateKey = 'point_requested'
-    } else if (application?.status === 'point_completed') {
-      templateKey = 'point_completed'
-    } else if (application?.status === 'review_in_progress' || application?.status === 'review_resubmitted') {
-      templateKey = 'review_approval'
-    } else if (application?.status === 'approved') {
-      templateKey = 'approval'
-    }
-
-    if (templateKey && emailTemplates[templateKey as keyof typeof emailTemplates]) {
-      const template = emailTemplates[templateKey as keyof typeof emailTemplates]
-      setSubject(template.subject)
-      setEmailContent(template.content)
-      setSelectedTemplate(templateKey)
-    }
-  }, [selectedTemplate, experienceName, application?.status])
-
-  // 🔥 수신자 정보 업데이트
-  const handleRecipientChange = (field: string, value: string) => {
-    setEditableRecipient(prev => ({
-      ...prev,
-      [field]: value
-    }))
-  }
-
-  // 🔥 휴대폰 번호 포맷팅 함수
-  const formatPhoneNumber = (value: string) => {
-    // 숫자만 추출
-    const numbers = value.replace(/\D/g, '')
-    
-    // 11자리 제한
-    const limitedNumbers = numbers.slice(0, 11)
-    
-    // 자동 대시 추가
-    if (limitedNumbers.length <= 3) {
-      return limitedNumbers
-    } else if (limitedNumbers.length <= 7) {
-      return `${limitedNumbers.slice(0, 3)}-${limitedNumbers.slice(3)}`
-    } else {
-      return `${limitedNumbers.slice(0, 3)}-${limitedNumbers.slice(3, 7)}-${limitedNumbers.slice(7)}`
-    }
-  }
-
-  // 🔥 휴대폰 번호 변경 처리
-  const handlePhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value)
-    handleRecipientChange('phone', formatted)
-  }
-
-  // 🔥 스마트 변수 치환 함수
-  const replaceVariables = (text: string) => {
-    const today = new Date()
-    const todayStr = today.toLocaleDateString('ko-KR')
-    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-    const nextWeekStr = nextWeek.toLocaleDateString('ko-KR')
-    
-    // 🔥 자동 변수 매핑
-    const variables = {
-      // 수신자 정보
-      '{name}': editableRecipient.name || '고객',
-      '{user_name}': editableRecipient.name || '고객',
-      '{recipient_name}': editableRecipient.name || '고객',
-      '{email}': editableRecipient.email || '',
-      '{phone}': editableRecipient.phone || '',
-      '{user_phone}': editableRecipient.phone || '',
-      
-      // 체험단/캠페인 정보
-      '{experience_name}': experienceName,
-      '{campaign_name}': experienceName,
-      '{experience_title}': experienceName,
-      '{brand_name}': brandName,
-      '{company_name}': brandName,
-      '{reward_points}': rewardPoints.toString(),
-      '{points}': rewardPoints.toString(),
-      
-      // 날짜 정보
-      '{today}': todayStr,
-      '{approval_date}': todayStr,
-      '{review_date}': todayStr,
-      '{deadline}': nextWeekStr,
-      '{submission_deadline}': nextWeekStr,
-      
-      // 기타
-      '{admin_name}': '올띵버킷 체험단 팀',
-      '{team_name}': '올띵버킷 체험단 팀'
-    }
-    
-    // 모든 변수를 한 번에 치환
-    let result = text
-    Object.entries(variables).forEach(([variable, value]) => {
-      result = result.replace(new RegExp(variable.replace(/[{}]/g, '\\$&'), 'g'), value)
-    })
-    
-    return result
-  }
-
+  // 🔥 승인 처리 (알림톡은 AdminDashboard에서 자동 발송)
   const handleSendApproval = async () => {
     try {
       setLoading(true)
 
-      // 🔥 기본 정보 검증
-      if (!editableRecipient.name.trim()) {
-        toast.error('수신자 이름을 입력해주세요')
-        setLoading(false)
-        return
-      }
+      // 모달을 닫고 승인 완료 콜백 실행
+      // 실제 알림톡 발송은 AdminDashboard의 approval handler에서 처리됨
+      onApprovalComplete()
 
-      // 🔥 발송 방식별 필수 정보 검증
-      if (sendMethod === 'email') {
-        if (!editableRecipient.email.trim() || !editableRecipient.email.includes('@')) {
-          toast.error('올바른 이메일 주소를 입력해주세요')
-          setLoading(false)
-          return
-        }
-      }
-
-      if (sendMethod === 'sms') {
-        if (!editableRecipient.phone.trim()) {
-          toast.error('휴대폰번호를 입력해주세요')
-          setLoading(false)
-          return
-        }
-
-        // 휴대폰번호 형식 검증
-        const phoneDigits = editableRecipient.phone.replace(/[^0-9]/g, '')
-        if (phoneDigits.length !== 11 || !phoneDigits.startsWith('01')) {
-          toast.error('올바른 휴대폰번호 형식을 입력해주세요 (예: 010-1234-5678)')
-          setLoading(false)
-          return
-        }
-      }
-
-      // 🔥 변수 치환된 제목과 내용
-      const replacedSubject = replaceVariables(subject)
-      const replacedContent = replaceVariables(emailContent)
-
-      let successCount = 0
-      let failCount = 0
-
-      // 🔥 이메일 발송
-      if (sendMethod === 'email') {
-        console.log('📧 이메일 발송 시작:', {
-          to: editableRecipient.email,
-          toName: editableRecipient.name,
-          campaignName: experienceName
-        })
-
-        const result = await emailNotificationService.sendEmail({
-          to: editableRecipient.email,
-          toName: editableRecipient.name,
-          type: 'custom',
-          data: {
-            subject: replacedSubject,
-            content: replacedContent
-          }
-        })
-
-        console.log('📧 이메일 발송 결과:', result)
-
-        if (result.success) {
-          successCount++
-          toast.success('이메일이 발송되었습니다')
-        } else {
-          failCount++
-          toast.error(`이메일 발송 실패: ${result.message}`)
-        }
-      }
-
-      // 🔥 SMS 발송 (TODO: SMS 서비스 구현 필요)
-      if (sendMethod === 'sms') {
-        // SMS 발송 로직은 추후 구현
-        toast.info('SMS 발송 기능은 준비 중입니다')
-        failCount++
-      }
-
-      // 최종 결과 확인
-      if (successCount > 0) {
-        toast.success(`${editableRecipient.name}님에게 승인 안내가 전송되었습니다 (성공: ${successCount}, 실패: ${failCount})`)
-        onApprovalComplete()
-      } else {
-        toast.error('모든 알림 발송에 실패했습니다')
-      }
-
+      toast.success('승인 처리가 완료되었습니다')
     } catch (error) {
-      console.error('❌ 승인 발송 실패:', error)
-      toast.error('승인 발송 중 오류가 발생했습니다.')
+      console.error('❌ 승인 처리 실패:', error)
+      toast.error('승인 처리 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
@@ -632,260 +228,160 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
           </div>
 
           <div className="space-y-6">
-            {/* 🔥 발송 방식 선택 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                발송 방식 선택
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setSendMethod('email')}
-                  className={`p-3 rounded-lg border-2 transition-colors ${
-                    sendMethod === 'email'
-                      ? 'border-vintage-500 bg-blue-50 text-vintage-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Mail className="w-5 h-5 mx-auto mb-1" />
-                  <div className="text-sm font-medium">이메일</div>
-                  <div className="text-xs text-gray-500 mt-1">이메일 필요</div>
-                </button>
-
-                <button
-                  onClick={() => setSendMethod('sms')}
-                  className={`p-3 rounded-lg border-2 transition-colors ${
-                    sendMethod === 'sms'
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                  disabled
-                >
-                  <div className="text-lg mb-1">📱</div>
-                  <div className="text-sm font-medium">SMS</div>
-                  <div className="text-xs text-gray-500 mt-1">준비 중</div>
-                </button>
-              </div>
-
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start">
-                  <div className="text-blue-600 mr-2">ℹ️</div>
-                  <div className="text-sm text-blue-800">
-                    <p className="font-medium">자동 알림톡 발송</p>
-                    <p className="mt-1">승인 시 카카오톡 알림톡이 자동으로 발송됩니다. 이 모달에서는 추가 이메일 안내를 발송할 수 있습니다.</p>
-                  </div>
+            {/* 🔥 카카오 알림톡 자동 발송 안내 */}
+            <div className="p-4 bg-gradient-to-r from-yellow-50 to-green-50 border-2 border-yellow-300 rounded-lg">
+              <div className="flex items-start">
+                <div className="text-2xl mr-3">💬</div>
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-1">카카오 알림톡 자동 발송</h4>
+                  <p className="text-sm text-gray-700">
+                    승인 시 네이버 클라우드 플랫폼에 등록된 템플릿으로 카카오톡 알림이 자동 발송됩니다.
+                  </p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    ✓ 수신자: {userName || '(이름 없음)'} ({userPhone || '휴대폰 없음'})
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* 🔥 이메일 템플릿 선택 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                이메일 템플릿
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setSelectedTemplate('approval')}
-                  className={`p-2 rounded-lg border text-sm transition-colors ${
-                    selectedTemplate === 'approval'
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  신청 승인 안내
-                </button>
-                <button
-                  onClick={() => setSelectedTemplate('simple')}
-                  className={`p-2 rounded-lg border text-sm transition-colors ${
-                    selectedTemplate === 'simple'
-                      ? 'border-vintage-500 bg-blue-50 text-vintage-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  간단 승인 안내
-                </button>
-                <button
-                  onClick={() => setSelectedTemplate('review_approval')}
-                  className={`p-2 rounded-lg border text-sm transition-colors ${
-                    selectedTemplate === 'review_approval'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  리뷰 승인 안내
-                </button>
-                <button
-                  onClick={() => setSelectedTemplate('point_completed')}
-                  className={`p-2 rounded-lg border text-sm transition-colors ${
-                    selectedTemplate === 'point_completed'
-                      ? 'border-navy-500 bg-purple-50 text-navy-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  포인트 지급 완료
-                </button>
-                <button
-                  onClick={() => setSelectedTemplate('custom')}
-                  className={`p-2 rounded-lg border text-sm transition-colors ${
-                    selectedTemplate === 'custom'
-                      ? 'border-orange-500 bg-orange-50 text-orange-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  직접 작성
-                </button>
-              </div>
-            </div>
-
-            {/* 이메일 제목 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                이메일 제목
-              </label>
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="이메일 제목을 입력하세요"
-              />
-            </div>
-
-            {/* 메일 내용 */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  승인 안내 내용
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowVariableHelp(!showVariableHelp)}
-                  className="text-xs text-vintage-600 hover:text-vintage-800"
-                >
-                  {showVariableHelp ? '변수 도움말 숨기기' : '사용 가능한 변수 보기'}
-                </button>
-              </div>
-              
-              {showVariableHelp && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                  <h5 className="text-sm font-medium text-vintage-800 mb-2">사용 가능한 변수:</h5>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-vintage-700">
-                    <div><code>{'{name}'}</code> - 수신자 이름</div>
-                    <div><code>{'{email}'}</code> - 수신자 이메일</div>
-                    <div><code>{'{phone}'}</code> - 수신자 휴대폰</div>
-                    <div><code>{'{campaign_name}'}</code> - 체험단명</div>
-                    <div><code>{'{brand_name}'}</code> - 브랜드명</div>
-                    <div><code>{'{reward_points}'}</code> - 리워드 포인트</div>
-                    <div><code>{'{approval_date}'}</code> - 승인일</div>
-                    <div><code>{'{deadline}'}</code> - 후기 제출 마감일</div>
-                    <div><code>{'{team_name}'}</code> - 팀명</div>
-                    <div><code>{'{today}'}</code> - 오늘 날짜</div>
-                  </div>
-                </div>
-              )}
-              
-              <textarea
-                value={emailContent}
-                onChange={(e) => setEmailContent(e.target.value)}
-                rows={12}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                placeholder="승인 안내 메일 내용을 작성하세요"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                체험 방법, 리뷰 작성 안내, 포인트 지급 조건 등을 포함해주세요
-              </p>
-            </div>
-
-            {/* 🔥 수신자 정보 (직접 수정 가능) */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-medium">수신자 정보</h4>
-                <button
-                  onClick={() => setEditingRecipient(!editingRecipient)}
-                  className="text-vintage-600 hover:text-vintage-800 text-sm flex items-center"
-                >
-                  <Edit className="w-4 h-4 mr-1" />
-                  {editingRecipient ? '완료' : '수정'}
-                </button>
+            {/* 🔥 알림톡 템플릿 미리보기 */}
+            <div className="bg-white border-2 border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 px-4 py-3 flex items-center">
+                <div className="text-2xl mr-2">💬</div>
+                <div className="font-bold text-gray-900">알림톡 발송 내용 미리보기</div>
               </div>
 
-              {editingRecipient ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">이름 *</label>
-                    <input
-                      type="text"
-                      value={editableRecipient.name}
-                      onChange={(e) => handleRecipientChange('name', e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                      placeholder="수신자 이름"
-                    />
+              <div className="p-4 bg-gray-50">
+                <div className="bg-white rounded-lg shadow-sm p-4 max-w-sm">
+                  {/* 발신자 표시 */}
+                  <div className="flex items-center mb-3 pb-3 border-b">
+                    <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-lg">🎁</span>
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm">올띵버킷</div>
+                      <div className="text-xs text-gray-500">카카오톡 알림</div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">이메일 *</label>
-                    <input
-                      type="email"
-                      value={editableRecipient.email}
-                      onChange={(e) => handleRecipientChange('email', e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                      placeholder="user@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      휴대폰번호 (선택)
-                    </label>
-                    <input
-                      type="tel"
-                      value={editableRecipient.phone}
-                      onChange={(e) => handlePhoneChange(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg"
-                      placeholder="010-1234-5678"
-                      maxLength={13}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      숫자만 입력하면 자동으로 대시(-)가 추가됩니다
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>이름: {editableRecipient.name || '이름 없음'}</div>
-                  <div>이메일: {editableRecipient.email || '이메일 없음'}</div>
-                  <div>연락처: {editableRecipient.phone || '번호 없음'}</div>
-                </div>
-              )}
-            </div>
 
-            {/* 🔥 미리보기 */}
-            <div className="bg-gradient-to-br from-vintage-50 to-navy-50 rounded-lg p-4 border border-blue-200">
-              <h4 className="font-medium mb-3 flex items-center">
-                <CheckCircle className="w-5 h-5 mr-2 text-vintage-600" />
-                발송 미리보기
-              </h4>
-              <div className="text-sm text-gray-700 space-y-2">
-                <div className="bg-white p-3 rounded-lg">
-                  <div className="font-medium text-vintage-900 mb-2">📋 발송 정보</div>
-                  <div className="space-y-1 text-sm">
-                    <div><strong>수신자:</strong> {editableRecipient.name || '(이름 없음)'}</div>
-                    <div><strong>발송방식:</strong> {sendMethod === 'email' ? '📧 이메일' : '📱 SMS (준비 중)'}</div>
-                    {sendMethod === 'email' && (
-                      <div className={editableRecipient.email ? '' : 'text-red-600'}>
-                        <strong>이메일:</strong> {editableRecipient.email || '❌ 이메일 없음'}
-                      </div>
+                  {/* 알림톡 내용 */}
+                  <div className="text-sm text-gray-800 space-y-2 whitespace-pre-wrap">
+                    {application?.status === 'point_completed' ? (
+                      // 포인트 지급 완료 템플릿 (REVIEWAPPROVEDPOINTSPAID)
+                      <>
+                        <p className="font-bold text-green-600">[올띵버킷] 리뷰 승인 완료 ✨</p>
+                        <p>{userName}님, 리뷰가 승인되었습니다!</p>
+                        <p className="pt-2">💰 포인트 지급 내역</p>
+                        <p className="text-xs bg-gray-50 p-2 rounded">
+                          - 캠페인: {experienceName}<br/>
+                          - 지급 포인트: {rewardPoints}P<br/>
+                          - 현재 잔액: {rewardPoints}P<br/>
+                          - 지급일: {new Date().toLocaleDateString('ko-KR')}
+                        </p>
+                        <p className="text-xs text-gray-600 pt-2">
+                          포인트가 지급되었습니다!<br/>
+                          마이페이지에서 확인하세요.
+                        </p>
+                        <a
+                          href="https://allthingbucket.com/points"
+                          className="inline-block mt-2 px-3 py-1.5 bg-yellow-400 text-gray-900 rounded text-xs font-medium"
+                        >
+                          포인트 확인하기
+                        </a>
+                      </>
+                    ) : application?.status === 'review_in_progress' || application?.status === 'review_resubmitted' ? (
+                      // 리뷰 승인 템플릿 (REVIEWAPPROVEDPOINTSPAID)
+                      <>
+                        <p className="font-bold text-green-600">[올띵버킷] 리뷰 승인 완료 ✨</p>
+                        <p>{userName}님, 리뷰가 승인되었습니다!</p>
+                        <p className="pt-2">💰 포인트 지급 내역</p>
+                        <p className="text-xs bg-gray-50 p-2 rounded">
+                          - 캠페인: {experienceName}<br/>
+                          - 지급 포인트: {rewardPoints}P<br/>
+                          - 현재 잔액: {rewardPoints}P<br/>
+                          - 지급일: {new Date().toLocaleDateString('ko-KR')}
+                        </p>
+                        <p className="text-xs text-gray-600 pt-2">
+                          포인트가 지급되었습니다!<br/>
+                          마이페이지에서 확인하세요.
+                        </p>
+                        <a
+                          href="https://allthingbucket.com/points"
+                          className="inline-block mt-2 px-3 py-1.5 bg-yellow-400 text-gray-900 rounded text-xs font-medium"
+                        >
+                          포인트 확인하기
+                        </a>
+                      </>
+                    ) : (
+                      // 체험단 선정 템플릿 (APPLICATIONAPPROVED)
+                      <>
+                        <p className="font-bold">[올띵버킷]</p>
+                        <p>{userName}님, 축하드립니다! 🎉</p>
+                        <p className="pt-2">{experienceName} 체험단에 선정되셨습니다!</p>
+                        <p className="pt-2">📦 다음 단계</p>
+                        <p className="text-xs bg-gray-50 p-2 rounded leading-relaxed">
+                          1. 체험단 가이드 확인 (제품 구매 or 배송 대기)<br/>
+                          2. 체험 진행 및 리뷰 작성<br/>
+                          3. 리뷰 승인 후 포인트 지급 ({rewardPoints}P)<br/>
+                          4. 포인트 출금 요청
+                        </p>
+                        <p className="text-xs text-gray-600 pt-2 leading-relaxed">
+                          ⛳️ 체험단 상세 페이지에서 체험 가이드를 확인해 주세요.<br/>
+                          혹은 이메일로 체험 가이드를 발송드렸으니 확인 후 진행해 주세요.
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          (*확인이 안 되실 경우 스팸함도 확인해 주세요.)
+                        </p>
+                        <a
+                          href="https://allthingbucket.com/my-applications"
+                          className="inline-block mt-2 px-3 py-1.5 bg-yellow-400 text-gray-900 rounded text-xs font-medium"
+                        >
+                          내 신청 확인하기
+                        </a>
+                      </>
                     )}
                   </div>
                 </div>
 
-                {sendMethod === 'email' && (
-                  <div className="bg-white p-3 rounded-lg">
-                    <div className="font-medium text-vintage-900 mb-2">📧 이메일 내용</div>
-                    <div><strong>제목:</strong> {replaceVariables(subject)}</div>
-                    <div className="mt-2"><strong>내용:</strong></div>
-                    <div className="bg-gray-50 p-2 rounded border max-h-32 overflow-y-auto whitespace-pre-wrap text-xs">
-                      {emailContent ? replaceVariables(emailContent) : '메시지 내용이 없습니다'}
-                    </div>
-                  </div>
-                )}
+                <div className="mt-3 text-xs text-gray-500 text-center">
+                  ※ 실제 알림톡은 네이버 클라우드 플랫폼에 등록된 템플릿으로 발송됩니다
+                </div>
+              </div>
+            </div>
+
+            {/* 🔥 수신자 정보 확인 */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-3">📋 수신자 정보</h4>
+              <div className="text-sm text-gray-700 space-y-2">
+                <div className="flex items-center">
+                  <span className="font-medium w-20">이름:</span>
+                  <span>{userName || '(이름 없음)'}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-medium w-20">휴대폰:</span>
+                  <span className={userPhone ? 'text-green-600' : 'text-red-600'}>
+                    {userPhone || '❌ 휴대폰 번호 없음 (알림톡 발송 불가)'}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-medium w-20">이메일:</span>
+                  <span className="text-gray-500">{userEmail || '(이메일 없음)'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 🔥 승인 안내 */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="text-blue-600 mr-2 text-xl">ℹ️</div>
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">승인 처리 안내</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>승인 버튼 클릭 시 알림톡이 자동으로 발송됩니다</li>
+                    <li>휴대폰 번호가 없는 경우 알림톡이 발송되지 않습니다</li>
+                    <li>알림톡 발송 실패 시에도 승인 처리는 정상적으로 완료됩니다</li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -893,18 +389,18 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
             <div className="flex space-x-3 pt-4 border-t">
               <button
                 onClick={handleSendApproval}
-                disabled={loading || !emailContent.trim()}
+                disabled={loading}
                 className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>발송 중...</span>
+                    <span>처리 중...</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4" />
-                    <span>승인 안내 발송</span>
+                    <span>승인하고 알림톡 발송</span>
                   </>
                 )}
               </button>

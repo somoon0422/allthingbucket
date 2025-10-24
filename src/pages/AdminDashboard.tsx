@@ -62,160 +62,9 @@ const AdminDashboard: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false)
   
   // 🔥 알림 설정
-  const [emailEnabled, setEmailEnabled] = useState<boolean>(true)
-  const [alimtalkEnabled, setAlimtalkEnabled] = useState<boolean>(true) // 카카오 알림톡 활성화
   const [emailFromName, setEmailFromName] = useState<string>('올띵버킷')
   const [emailFromAddress, setEmailFromAddress] = useState<string>('support@allthingbucket.com')
   
-  // 🔥 이메일 알림 전송 함수
-  const sendEmailNotification = async (userId: string, type: 'approval' | 'rejection' | 'withdrawal', data: any) => {
-    if (!emailEnabled) {
-      console.log('📧 이메일 알림 비활성화')
-      return
-    }
-    
-    try {
-      // 사용자 정보 조회
-      const userProfiles = await dataService.entities.user_profiles.list()
-      const userProfile = userProfiles.find((profile: any) => profile.user_id === userId)
-      
-      if (!userProfile?.email) {
-        console.log('📧 사용자 이메일 정보 없음:', userId)
-        return
-      }
-
-      let result
-      switch (type) {
-        case 'approval':
-          result = await emailNotificationService.sendApprovalEmail(
-            userProfile.email,
-            userProfile.name || '사용자',
-            data.campaignName
-          )
-          break
-        case 'rejection':
-          result = await emailNotificationService.sendRejectionEmail(
-            userProfile.email,
-            userProfile.name || '사용자',
-            data.campaignName,
-            data.reason
-          )
-          break
-        case 'withdrawal':
-          result = await emailNotificationService.sendWithdrawalApprovalEmail(
-            userProfile.email,
-            userProfile.name || '사용자',
-            data.amount
-          )
-          break
-        default:
-          throw new Error(`Unknown notification type: ${type}`)
-      }
-      
-      if (result.success) {
-        console.log('✅ 이메일 전송 완료:', { 
-          type, 
-          userId, 
-          email: userProfile.email,
-          message: result.message 
-        })
-        toast.success(result.message)
-      } else {
-        console.warn('⚠️ 이메일 전송 실패:', result.message)
-        toast.error(result.message)
-      }
-    } catch (error) {
-      console.error('❌ 이메일 전송 오류:', error)
-      // 이메일 실패해도 메인 프로세스는 계속 진행
-    }
-  }
-
-  // 🔥 카카오 알림톡 전송 함수
-  const sendAlimtalkNotification = async (userId: string, type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection', data: any) => {
-    if (!alimtalkEnabled) {
-      console.log('💬 알림톡 비활성화')
-      return
-    }
-
-    try {
-      // 사용자 정보 조회
-      const userProfiles = await dataService.entities.user_profiles.list()
-      const userProfile = userProfiles.find((profile: any) => profile.user_id === userId)
-
-      if (!userProfile?.phone) {
-        console.log('💬 사용자 전화번호 정보 없음:', userId)
-        return
-      }
-
-      let result
-      switch (type) {
-        case 'approval':
-          result = await alimtalkService.sendApprovalAlimtalk(
-            userProfile.phone,
-            userProfile.name || '사용자',
-            data.campaignName
-          )
-          break
-        case 'rejection':
-          result = await alimtalkService.sendRejectionAlimtalk(
-            userProfile.phone,
-            userProfile.name || '사용자',
-            data.campaignName,
-            data.reason
-          )
-          break
-        case 'withdrawal':
-          result = await alimtalkService.sendWithdrawalApprovalAlimtalk(
-            userProfile.phone,
-            userProfile.name || '사용자',
-            data.amount
-          )
-          break
-        case 'review_approval':
-          result = await alimtalkService.sendReviewApprovalAlimtalk(
-            userProfile.phone,
-            userProfile.name || '사용자',
-            data.campaignName
-          )
-          break
-        case 'review_rejection':
-          result = await alimtalkService.sendReviewRejectionAlimtalk(
-            userProfile.phone,
-            userProfile.name || '사용자',
-            data.campaignName,
-            data.reason
-          )
-          break
-        default:
-          throw new Error(`Unknown notification type: ${type}`)
-      }
-
-      if (result.success) {
-        console.log('✅ 알림톡 전송 완료:', {
-          type,
-          userId,
-          phone: userProfile.phone,
-          message: result.message
-        })
-        toast.success('알림톡이 발송되었습니다')
-      } else {
-        console.warn('⚠️ 알림톡 전송 실패:', result.message)
-        toast.warning('알림톡 발송에 실패했습니다')
-      }
-    } catch (error) {
-      console.error('❌ 알림톡 전송 오류:', error)
-      // 알림톡 실패해도 메인 프로세스는 계속 진행
-    }
-  }
-
-  // 🔥 통합 알림 전송 함수 (이메일 + 알림톡)
-  const sendNotification = async (userId: string, type: 'approval' | 'rejection' | 'withdrawal' | 'review_approval' | 'review_rejection', data: any) => {
-    // 이메일과 알림톡을 병렬로 발송
-    await Promise.all([
-      emailEnabled ? sendEmailNotification(userId, type as 'approval' | 'rejection' | 'withdrawal', data) : Promise.resolve(),
-      alimtalkEnabled ? sendAlimtalkNotification(userId, type, data) : Promise.resolve()
-    ])
-  }
 
 
   // 포인트 지급 요청 모달 상태
@@ -2230,16 +2079,19 @@ const AdminDashboard: React.FC = () => {
       toast.success(`출금 요청이 승인되었습니다. (${withdrawalAmount}P 차감 완료)`)
       await loadWithdrawalRequests()
       
-      // 8. 🔥 알림 전송 (출금 승인 - 이메일 + 알림톡)
+      // 8. 알림톡 발송
       try {
-        await sendNotification(
-          userId,
-          'withdrawal',
-          { amount: withdrawalAmount }
-        )
-      } catch (emailError) {
-        console.error('❌ 이메일 전송 실패:', emailError)
-        // 이메일 실패해도 메인 프로세스는 계속 진행
+        const userProfile = await dataService.entities.user_profiles.get(userId)
+        if (userProfile?.phone) {
+          await alimtalkService.sendWithdrawalApprovalAlimtalk(
+            userProfile.phone,
+            userProfile.name || '사용자',
+            withdrawalAmount
+          )
+          console.log('✅ 출금 승인 알림톡 발송 완료')
+        }
+      } catch (alimtalkError) {
+        console.error('⚠️ 알림톡 발송 실패 (승인은 완료됨):', alimtalkError)
       }
       
       // 9. 관리자 알림 생성
@@ -6800,23 +6652,6 @@ const AdminDashboard: React.FC = () => {
             </h3>
             
             <div className="space-y-6">
-              {/* 이메일 활성화 토글 */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900">이메일 전송 활성화</h4>
-                  <p className="text-sm text-gray-500">체험단 승인/거절, 출금 승인 시 이메일을 전송합니다.</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={emailEnabled}
-                    onChange={(e) => setEmailEnabled(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vintage-600"></div>
-                </label>
-              </div>
-
               {/* 발신자 이름 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
