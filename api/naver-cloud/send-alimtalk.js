@@ -71,36 +71,10 @@ export default async function handler(req, res) {
     const signature = makeSignature(timestamp, method, url, NCP_SECRET_KEY);
 
     // 알림톡 메시지 구성
-    // content: 변수가 치환된 실제 메시지 내용
-    // templateParameter는 사용하지 않음 (content에 이미 치환된 값 포함)
-    const content = `🎉 '${variables.campaignName}' 최종 선정 안내
-
-안녕하세요, ${variables.userName}님.
-
-더 나은 체험, 더 진실한 리뷰 올띵버킷 입니다.
-
-'${variables.campaignName}'에 ${variables.userName}님이 최종 선정 되셨음을 진심으로 축하드립니다! 🎉
-
-이메일을 통해 체험단 가이드를 발송해 드렸습니다. 확인 하시고 다음 단계를 진행해주세요.
-
-* 메시지 확인 어려우실 경우, 스팸함을 확인 부탁드립니다.
-그래도 확인이 어려우시면 올띵버킷 고객센터로 문의 주시면 감사 드리겠습니다.
-
-올띵버킷 (All Thing Bucket)
-체험단 운영팀
-
-
-📧 Email: support@allthingbucket.com
-📱 고객센터: 010-2212-9245 (평일 09:00 ~ 18:00)
-📱 카카오톡: @올띵버킷
-
-⚠️ 본 메일은 체험단 선정자에게만 발송되는 메일 입니다.
-문의사항은 고객센터 또는 카카오톡으로 연락 주세요.`;
-
+    // templateParameter를 사용하여 템플릿 변수 전달
     const message = {
       to: to.replace(/-/g, ''), // 하이픈 제거
-      content: content  // 변수가 이미 치환된 실제 메시지
-      // templateParameter는 제거 (content에 이미 포함됨)
+      templateParameter: variables  // 템플릿 변수 전달
     };
 
     // Failover 설정이 있는 경우 추가
