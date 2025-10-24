@@ -1,35 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { getAccessToken, getCommonHeaders, NICE_API_BASE_URL } from './lib/niceAuth'
 
-const NICE_CLIENT_ID = process.env.VITE_NICE_CLIENT_ID
-const NICE_CLIENT_SECRET = process.env.VITE_NICE_CLIENT_SECRET
-const NICE_API_BASE_URL = 'https://api.niceid.co.kr'
-
-/**
- * NICE API 액세스 토큰 발급
- */
-async function getAccessToken(): Promise<string> {
-  const response = await fetch(`${NICE_API_BASE_URL}/oauth/oauth/token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${Buffer.from(`${NICE_CLIENT_ID}:${NICE_CLIENT_SECRET}`).toString('base64')}`
-    },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      scope: 'default'
-    })
-  })
-
-  if (!response.ok) {
-    throw new Error('액세스 토큰 발급 실패')
-  }
-
-  const data = await response.json()
-  return data.dataBody.access_token
-}
+const PRODUCT_ID = process.env.VITE_NICE_PRODUCT_ID_ACCOUNT || '2001988003' // 계좌확인 상품코드
 
 /**
- * 계좌확인 API 엔드포인트
+ * 계좌성명확인 API 엔드포인트
  */
 export default async function handler(
   req: VercelRequest,
@@ -57,50 +32,79 @@ export default async function handler(
     const { bankCode, accountNumber, name } = req.body
 
     if (!bankCode || !accountNumber || !name) {
-      return res.status(400).json({ error: '은행코드, 계좌번호, 예금주명을 입력해주세요' })
+      return res.status(400).json({
+        success: false,
+        error: '은행코드, 계좌번호, 예금주명을 입력해주세요'
+      })
     }
+
+    // 계좌번호에서 하이픈 제거
+    const cleanAccountNumber = accountNumber.replace(/-/g, '')
 
     // 액세스 토큰 발급
     const accessToken = await getAccessToken()
 
-    // 계좌확인 API 호출
-    const response = await fetch(`${NICE_API_BASE_URL}/api/v1/account/verify`, {
+    // 계좌성명확인 API 호출
+    const response = await fetch(`${NICE_API_BASE_URL}/digital/niceid/api/v1.0/account/holder`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'client_id': NICE_CLIENT_ID!
-      },
+      headers: getCommonHeaders(accessToken, PRODUCT_ID),
       body: JSON.stringify({
         dataHeader: {
           CNTY_CD: 'ko'
         },
         dataBody: {
-          bank_cd: bankCode,
-          account_no: accountNumber,
-          account_holder_name: name
+          acct_gb: '1',  // 1: 개인, 2: 사업자
+          bnk_cd: bankCode,
+          name: name,
+          acct_no: cleanAccountNumber,
+          request_no: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`  // 요청 고유번호
         }
       })
     })
 
+    if (!response.ok) {
+      throw new Error(`API 요청 실패: ${response.status}`)
+    }
+
     const data = await response.json()
 
-    // 응답 반환
-    if (data.dataBody.result_cd === '0000') {
+    // 응답 구조 확인
+    // 1. dataHeader.GW_RSLT_CD 가 "1200"이어야 dataBody가 유효
+    if (data.dataHeader?.GW_RSLT_CD !== '1200') {
+      return res.status(200).json({
+        success: false,
+        message: data.dataHeader?.GW_RSLT_MSG || '게이트웨이 오류',
+        code: data.dataHeader?.GW_RSLT_CD
+      })
+    }
+
+    // 2. dataBody.rsp_cd가 "P000"이어야 result_cd가 유효
+    if (data.dataBody?.rsp_cd !== 'P000') {
+      return res.status(200).json({
+        success: false,
+        message: data.dataBody?.res_msg || '계좌확인 실패',
+        code: data.dataBody?.rsp_cd
+      })
+    }
+
+    // 3. result_cd가 "0000"이어야 성공
+    if (data.dataBody?.result_cd === '0000') {
       return res.status(200).json({
         success: true,
         message: '계좌확인 성공',
-        accountHolder: data.dataBody.account_holder_name,
-        bankName: data.dataBody.bank_nm,
+        bankCode: bankCode,
+        accountNumber: cleanAccountNumber,
+        accountHolder: name,
         data: data.dataBody
       })
     } else {
       return res.status(200).json({
         success: false,
-        message: data.dataBody.result_msg || '계좌확인 실패',
-        code: data.dataBody.result_cd
+        message: `계좌확인 실패: ${data.dataBody?.result_cd}`,
+        code: data.dataBody?.result_cd
       })
     }
+
   } catch (error) {
     console.error('계좌확인 오류:', error)
     return res.status(500).json({

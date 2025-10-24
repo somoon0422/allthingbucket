@@ -44,7 +44,7 @@ export async function verifyRealName(name: string, rrn: string) {
 }
 
 /**
- * 계좌실명확인 요청
+ * 계좌확인 요청
  * @param bankCode 은행코드 (3자리)
  * @param accountNumber 계좌번호
  * @param name 예금주명

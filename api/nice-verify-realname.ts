@@ -1,31 +1,67 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { getAccessToken, getCommonHeaders, NICE_API_BASE_URL } from './lib/niceAuth'
+import { generateCryptoKeys, encryptAES, generateIntegrityValue } from './lib/niceCrypto'
+import iconv from 'iconv-lite'
 
-const NICE_CLIENT_ID = process.env.VITE_NICE_CLIENT_ID
-const NICE_CLIENT_SECRET = process.env.VITE_NICE_CLIENT_SECRET
-const NICE_API_BASE_URL = 'https://api.niceid.co.kr'
+const PRODUCT_ID = process.env.VITE_NICE_PRODUCT_ID_REALNAME || '2101290037' // 개인실명확인 상품코드
 
 /**
- * NICE API 액세스 토큰 발급
+ * 현재 날짜시간을 YYYYMMDDHH24MISS 형식으로 반환
  */
-async function getAccessToken(): Promise<string> {
-  const response = await fetch(`${NICE_API_BASE_URL}/oauth/oauth/token`, {
+function getCurrentDateTime(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hour = String(now.getHours()).padStart(2, '0')
+  const minute = String(now.getMinutes()).padStart(2, '0')
+  const second = String(now.getSeconds()).padStart(2, '0')
+  return `${year}${month}${day}${hour}${minute}${second}`
+}
+
+/**
+ * 암복호화용 토큰 요청
+ */
+async function getCryptoToken(accessToken: string) {
+  const reqDtim = getCurrentDateTime()
+  const reqNo = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+  const response = await fetch(`${NICE_API_BASE_URL}/digital/niceid/api/v1.0/common/crypto/token`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${Buffer.from(`${NICE_CLIENT_ID}:${NICE_CLIENT_SECRET}`).toString('base64')}`
-    },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      scope: 'default'
+    headers: getCommonHeaders(accessToken, PRODUCT_ID),
+    body: JSON.stringify({
+      dataHeader: {
+        CNTY_CD: 'ko'
+      },
+      dataBody: {
+        req_dtim: reqDtim,
+        req_no: reqNo,
+        enc_mode: '1'  // 1: AES128, 2: AES256
+      }
     })
   })
 
   if (!response.ok) {
-    throw new Error('액세스 토큰 발급 실패')
+    throw new Error('암호화 토큰 요청 실패')
   }
 
   const data = await response.json()
-  return data.dataBody.access_token
+
+  if (data.dataHeader?.GW_RSLT_CD !== '1200') {
+    throw new Error(`토큰 요청 오류: ${data.dataHeader?.GW_RSLT_MSG}`)
+  }
+
+  if (data.dataBody?.rsp_cd !== 'P000') {
+    throw new Error(`토큰 요청 실패: ${data.dataBody?.res_msg}`)
+  }
+
+  return {
+    reqDtim,
+    reqNo,
+    tokenVersionId: data.dataBody.token_version_id,
+    tokenVal: data.dataBody.token_val,
+    period: data.dataBody.period
+  }
 }
 
 /**
@@ -57,47 +93,113 @@ export default async function handler(
     const { name, rrn } = req.body
 
     if (!name || !rrn) {
-      return res.status(400).json({ error: '이름과 주민등록번호를 입력해주세요' })
+      return res.status(400).json({
+        success: false,
+        error: '이름과 주민등록번호를 입력해주세요'
+      })
     }
 
-    // 액세스 토큰 발급
+    // 주민등록번호 13자리 검증
+    if (rrn.length !== 13) {
+      return res.status(400).json({
+        success: false,
+        error: '주민등록번호는 13자리여야 합니다'
+      })
+    }
+
+    // 1. 액세스 토큰 발급
     const accessToken = await getAccessToken()
 
-    // 실명확인 API 호출
-    const response = await fetch(`${NICE_API_BASE_URL}/api/v1/realname/verify`, {
+    // 2. 암복호화용 토큰 요청
+    const cryptoToken = await getCryptoToken(accessToken)
+
+    // 3. 대칭키 생성
+    const { key, iv, hmacKey } = generateCryptoKeys(
+      cryptoToken.reqDtim,
+      cryptoToken.reqNo,
+      cryptoToken.tokenVal,
+      '1'  // AES128
+    )
+
+    // 4. 성명을 EUC-KR로 인코딩 후 암호화
+    const nameEucKr = iconv.encode(name, 'euc-kr').toString('binary')
+    const encName = encryptAES(nameEucKr, key, iv, '1')
+
+    // 5. 주민등록번호 암호화
+    const encJuminId = encryptAES(rrn, key, iv, '1')
+
+    // 6. 무결성 체크값 생성
+    const integrityValue = generateIntegrityValue(
+      cryptoToken.tokenVersionId,
+      encJuminId,
+      encName,
+      hmacKey
+    )
+
+    // 7. 개인실명확인 API 호출
+    const response = await fetch(`${NICE_API_BASE_URL}/digital/niceid/api/v1.0/name/national/check`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'client_id': NICE_CLIENT_ID!
-      },
+      headers: getCommonHeaders(accessToken, PRODUCT_ID),
       body: JSON.stringify({
         dataHeader: {
           CNTY_CD: 'ko'
         },
         dataBody: {
-          name: name,
-          rrn: rrn
+          token_version_id: cryptoToken.tokenVersionId,
+          enc_jumin_id: encJuminId,
+          enc_name: encName,
+          integrity_value: integrityValue
         }
       })
     })
 
+    if (!response.ok) {
+      throw new Error(`API 요청 실패: ${response.status}`)
+    }
+
     const data = await response.json()
 
-    // 응답 반환
-    if (data.dataBody.result_cd === '0000') {
+    // 응답 구조 확인
+    // 1. dataHeader.GW_RSLT_CD 가 "1200"이어야 dataBody가 유효
+    if (data.dataHeader?.GW_RSLT_CD !== '1200') {
+      return res.status(200).json({
+        success: false,
+        message: data.dataHeader?.GW_RSLT_MSG || '게이트웨이 오류',
+        code: data.dataHeader?.GW_RSLT_CD
+      })
+    }
+
+    // 2. dataBody.rsp_cd가 "P000"이어야 result_cd가 유효
+    if (data.dataBody?.rsp_cd !== 'P000') {
+      return res.status(200).json({
+        success: false,
+        message: data.dataBody?.res_msg || '실명확인 실패',
+        code: data.dataBody?.rsp_cd
+      })
+    }
+
+    // 3. result_cd 확인
+    // 1: 성명 일치, 2: 성명 불일치, 3: 당사 성명 미보유, 7: 명의도용 차단, 8: 부정사용 의심 정보 차단
+    if (data.dataBody?.result_cd === '1') {
       return res.status(200).json({
         success: true,
         message: '실명확인 성공',
         data: data.dataBody
       })
     } else {
+      const messages: Record<string, string> = {
+        '2': '성명 불일치',
+        '3': '당사 성명 미보유',
+        '7': '명의도용 차단',
+        '8': '부정사용 의심 정보 차단'
+      }
       return res.status(200).json({
         success: false,
-        message: data.dataBody.result_msg || '실명확인 실패',
-        code: data.dataBody.result_cd
+        message: messages[data.dataBody?.result_cd] || '실명확인 실패',
+        code: data.dataBody?.result_cd
       })
     }
+
   } catch (error) {
     console.error('실명확인 오류:', error)
     return res.status(500).json({
