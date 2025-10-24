@@ -109,8 +109,7 @@ class AlimtalkService {
         name: userName,
         campaignName,
         brandName,
-        applicationDate,
-        url: 'https://allthingbucket.com/my-applications'
+        applicationDate
       },
       failoverConfig: {
         type: 'LMS',
@@ -121,7 +120,7 @@ class AlimtalkService {
     })
   }
 
-  // 🎉 신청 승인 알림톡 (기존과 다른 내용)
+  // 🎉 신청 승인 알림톡
   async sendApplicationApprovedAlimtalk(
     phoneNumber: string,
     userName: string,
@@ -134,8 +133,7 @@ class AlimtalkService {
       variables: {
         name: userName,
         campaignName,
-        rewardPoints: rewardPoints.toString(),
-        url: 'https://allthingbucket.com/my-applications'
+        rewardPoints: rewardPoints.toString()
       },
       failoverConfig: {
         type: 'LMS',
