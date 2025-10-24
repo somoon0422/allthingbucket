@@ -52,99 +52,6 @@ class AlimtalkService {
     }
   }
 
-  // 🎉 체험단 신청 승인 알림톡
-  async sendApprovalAlimtalk(
-    phoneNumber: string,
-    userName: string,
-    campaignName: string
-  ): Promise<{ success: boolean; message: string }> {
-    return this.sendAlimtalk({
-      to: phoneNumber,
-      templateCode: 'approvalnotification', // 카카오에 등록한 템플릿 코드
-      variables: {
-        userName: userName,  // 카카오 템플릿: #{userName}
-        campaignName: campaignName  // 카카오 템플릿: #{campaignName}
-      },
-      failoverConfig: {
-        type: 'SMS',
-        from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
-        content: `[올띵버킷]\n${userName}님, ${campaignName} 체험단 신청이 승인되었습니다!\n\n마이페이지에서 자세한 내용을 확인해주세요.\nhttps://allthingbucket.com/my-applications`
-      }
-      // 버튼 정보는 템플릿에 저장되어 있으므로 API 요청에 포함하지 않음
-    })
-  }
-
-  // ❌ 체험단 신청 거절 알림톡
-  async sendRejectionAlimtalk(
-    phoneNumber: string,
-    userName: string,
-    campaignName: string,
-    reason?: string
-  ): Promise<{ success: boolean; message: string }> {
-    return this.sendAlimtalk({
-      to: phoneNumber,
-      templateCode: 'REJECTION', // 카카오에 등록한 템플릿 코드
-      variables: {
-        userName,
-        campaignName,
-        reason: reason || '다른 기회에 다시 신청해주세요.',
-        url: 'https://allthingbucket.com/experiences'
-      },
-      failoverConfig: {
-        type: 'SMS',
-        from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
-        content: `[올띵버킷]\n${userName}님, ${campaignName} 체험단 신청 결과를 안내드립니다.\n\n${reason || '선정되지 않았습니다. 다른 기회에 다시 신청해주세요.'}\n\nhttps://allthingbucket.com/experiences`
-      }
-    })
-  }
-
-  // ✨ 리뷰 승인 알림톡
-  async sendReviewApprovalAlimtalk(
-    phoneNumber: string,
-    userName: string,
-    campaignName: string
-  ): Promise<{ success: boolean; message: string }> {
-    return this.sendAlimtalk({
-      to: phoneNumber,
-      templateCode: 'REVIEWAPPROVAL', // 카카오에 등록한 템플릿 코드
-      variables: {
-        userName,
-        campaignName,
-        url: 'https://allthingbucket.com/my-applications'
-      },
-      failoverConfig: {
-        type: 'SMS',
-        from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
-        content: `[올띵버킷]\n${userName}님, ${campaignName} 리뷰가 승인되었습니다! ✨\n\n포인트 지급을 요청해주세요.\nhttps://allthingbucket.com/my-applications`
-      }
-    })
-  }
-
-  // ❌ 리뷰 반려 알림톡
-  async sendReviewRejectionAlimtalk(
-    phoneNumber: string,
-    userName: string,
-    campaignName: string,
-    reason?: string
-  ): Promise<{ success: boolean; message: string }> {
-    return this.sendAlimtalk({
-      to: phoneNumber,
-      templateCode: 'REVIEWREJECTION', // 카카오에 등록한 템플릿 코드
-      variables: {
-        userName,
-        campaignName,
-        reason: reason || '리뷰 가이드라인을 다시 확인해주세요.',
-        url: 'https://allthingbucket.com/my-applications'
-      },
-      failoverConfig: {
-        type: 'LMS',
-        from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
-        subject: '[올띵버킷] 리뷰 반려 안내',
-        content: `[올띵버킷]\n${userName}님, ${campaignName} 리뷰가 반려되었습니다.\n\n반려 사유:\n${reason || '리뷰 가이드라인을 다시 확인해주세요.'}\n\n수정 후 다시 제출해주세요.\nhttps://allthingbucket.com/my-applications`
-      }
-    })
-  }
-
   // 💰 포인트 출금 승인 알림톡
   async sendWithdrawalApprovalAlimtalk(
     phoneNumber: string,
@@ -293,30 +200,6 @@ class AlimtalkService {
     })
   }
 
-  // ❌ 리뷰 반려 알림톡 (재제출 안내 포함)
-  async sendReviewRejectedDetailAlimtalk(
-    phoneNumber: string,
-    userName: string,
-    campaignName: string,
-    reason?: string
-  ): Promise<{ success: boolean; message: string }> {
-    return this.sendAlimtalk({
-      to: phoneNumber,
-      templateCode: 'REVIEW_REJECTED',
-      variables: {
-        name: userName,
-        campaignName,
-        reason: reason || '리뷰 가이드라인을 다시 확인해주세요.',
-        url: 'https://allthingbucket.com/my-applications'
-      },
-      failoverConfig: {
-        type: 'LMS',
-        from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
-        subject: '[올띵버킷] 리뷰 반려 안내',
-        content: `[올띵버킷]\n${userName}님, 리뷰 검토 결과를 안내드립니다.\n\n${campaignName} 리뷰가 반려되었습니다.\n\n❌ 반려 사유\n${reason || '리뷰 가이드라인을 다시 확인해주세요.'}\n\n반려 사유를 확인하고 수정 후 다시 제출해주세요.\nhttps://allthingbucket.com/my-applications`
-      }
-    })
-  }
 }
 
 export const alimtalkService = new AlimtalkService()

@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react'
 import {X, Mail, CheckCircle, Edit} from 'lucide-react'
 import { emailNotificationService } from '../services/emailNotificationService'
-import { alimtalkService } from '../services/alimtalkService'
 import { campaignService } from '../services/campaignService'
 import toast from 'react-hot-toast'
 
@@ -199,7 +198,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
   const [emailContent, setEmailContent] = useState('')
   const [subject, setSubject] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState(getDefaultTemplate())
-  const [sendMethod, setSendMethod] = useState<'email' | 'sms' | 'alimtalk' | 'all'>('email')
+  const [sendMethod, setSendMethod] = useState<'email' | 'sms'>('email')
   
   // 🔥 수신자 정보 상태 (직접 수정 가능)
   const [editableRecipient, setEditableRecipient] = useState({
@@ -526,7 +525,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
       }
 
       // 🔥 발송 방식별 필수 정보 검증
-      if (sendMethod === 'email' || sendMethod === 'all') {
+      if (sendMethod === 'email') {
         if (!editableRecipient.email.trim() || !editableRecipient.email.includes('@')) {
           toast.error('올바른 이메일 주소를 입력해주세요')
           setLoading(false)
@@ -534,9 +533,9 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         }
       }
 
-      if (sendMethod === 'sms' || sendMethod === 'alimtalk' || sendMethod === 'all') {
+      if (sendMethod === 'sms') {
         if (!editableRecipient.phone.trim()) {
-          toast.error('휴대폰번호를 입력해주세요 (SMS/카카오 알림톡 발송에 필요)')
+          toast.error('휴대폰번호를 입력해주세요')
           setLoading(false)
           return
         }
@@ -558,7 +557,7 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
       let failCount = 0
 
       // 🔥 이메일 발송
-      if (sendMethod === 'email' || sendMethod === 'all') {
+      if (sendMethod === 'email') {
         console.log('📧 이메일 발송 시작:', {
           to: editableRecipient.email,
           toName: editableRecipient.name,
@@ -586,29 +585,11 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
         }
       }
 
-      // 🔥 카카오 알림톡 발송
-      if (sendMethod === 'alimtalk' || sendMethod === 'all') {
-        console.log('💬 알림톡 발송 시작:', {
-          phone: editableRecipient.phone,
-          name: editableRecipient.name,
-          campaignName: experienceName
-        })
-
-        const result = await alimtalkService.sendApprovalAlimtalk(
-          editableRecipient.phone,
-          editableRecipient.name,
-          experienceName
-        )
-
-        console.log('💬 알림톡 발송 결과:', result)
-
-        if (result.success) {
-          successCount++
-          toast.success('알림톡이 발송되었습니다')
-        } else {
-          failCount++
-          toast.error(`알림톡 발송 실패: ${result.message}`)
-        }
+      // 🔥 SMS 발송 (TODO: SMS 서비스 구현 필요)
+      if (sendMethod === 'sms') {
+        // SMS 발송 로직은 추후 구현
+        toast.info('SMS 발송 기능은 준비 중입니다')
+        failCount++
       }
 
       // 최종 결과 확인
@@ -677,55 +658,23 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                       ? 'border-green-500 bg-green-50 text-green-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
+                  disabled
                 >
                   <div className="text-lg mb-1">📱</div>
                   <div className="text-sm font-medium">SMS</div>
-                  <div className="text-xs text-gray-500 mt-1">휴대폰번호 필요</div>
-                </button>
-
-                <button
-                  onClick={() => setSendMethod('alimtalk')}
-                  className={`p-3 rounded-lg border-2 transition-colors ${
-                    sendMethod === 'alimtalk'
-                      ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-lg mb-1">💬</div>
-                  <div className="text-sm font-medium">카카오 알림톡</div>
-                  <div className="text-xs text-gray-500 mt-1">휴대폰번호 필요</div>
-                </button>
-
-                <button
-                  onClick={() => setSendMethod('all')}
-                  className={`p-3 rounded-lg border-2 transition-colors ${
-                    sendMethod === 'all'
-                      ? 'border-navy-500 bg-purple-50 text-navy-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex justify-center space-x-1 mb-1">
-                    <Mail className="w-4 h-4" />
-                    <div className="text-sm">📱</div>
-                    <div className="text-sm">💬</div>
-                  </div>
-                  <div className="text-sm font-medium">모두</div>
-                  <div className="text-xs text-gray-500 mt-1">전체 정보 필요</div>
+                  <div className="text-xs text-gray-500 mt-1">준비 중</div>
                 </button>
               </div>
 
-              {/* 발송 방식별 안내 메시지 */}
-              {(sendMethod === 'sms' || sendMethod === 'alimtalk' || sendMethod === 'all') && !editableRecipient.phone && (
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="flex items-start">
-                    <div className="text-yellow-600 mr-2">⚠️</div>
-                    <div className="text-sm text-yellow-800">
-                      <p className="font-medium">휴대폰번호가 필요합니다</p>
-                      <p className="mt-1">아래 "수신자 정보" 섹션에서 휴대폰번호를 입력해주세요.</p>
-                    </div>
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start">
+                  <div className="text-blue-600 mr-2">ℹ️</div>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium">자동 알림톡 발송</p>
+                    <p className="mt-1">승인 시 카카오톡 알림톡이 자동으로 발송됩니다. 이 모달에서는 추가 이메일 안내를 발송할 수 있습니다.</p>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* 🔥 이메일 템플릿 선택 */}
@@ -883,29 +832,18 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      휴대폰번호
-                      {(sendMethod === 'sms' || sendMethod === 'alimtalk' || sendMethod === 'all') && (
-                        <span className="text-red-500 ml-1">* (필수)</span>
-                      )}
+                      휴대폰번호 (선택)
                     </label>
                     <input
                       type="tel"
                       value={editableRecipient.phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg ${
-                        (sendMethod === 'sms' || sendMethod === 'alimtalk' || sendMethod === 'all') && !editableRecipient.phone
-                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                          : ''
-                      }`}
+                      className="w-full px-3 py-2 border rounded-lg"
                       placeholder="010-1234-5678"
                       maxLength={13}
-                      required={(sendMethod === 'sms' || sendMethod === 'alimtalk' || sendMethod === 'all')}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {(sendMethod === 'sms' || sendMethod === 'alimtalk' || sendMethod === 'all')
-                        ? 'SMS/카카오 알림톡 발송에 필요합니다'
-                        : '숫자만 입력하면 자동으로 대시(-)가 추가됩니다'
-                      }
+                      숫자만 입력하면 자동으로 대시(-)가 추가됩니다
                     </p>
                   </div>
                 </div>
@@ -929,26 +867,16 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
                   <div className="font-medium text-vintage-900 mb-2">📋 발송 정보</div>
                   <div className="space-y-1 text-sm">
                     <div><strong>수신자:</strong> {editableRecipient.name || '(이름 없음)'}</div>
-                    <div><strong>발송방식:</strong> {
-                      sendMethod === 'email' ? '📧 이메일' :
-                      sendMethod === 'sms' ? '📱 SMS' :
-                      sendMethod === 'alimtalk' ? '💬 카카오 알림톡' :
-                      '📧📱💬 모든 방식'
-                    }</div>
-                    {(sendMethod === 'email' || sendMethod === 'all') && (
+                    <div><strong>발송방식:</strong> {sendMethod === 'email' ? '📧 이메일' : '📱 SMS (준비 중)'}</div>
+                    {sendMethod === 'email' && (
                       <div className={editableRecipient.email ? '' : 'text-red-600'}>
                         <strong>이메일:</strong> {editableRecipient.email || '❌ 이메일 없음'}
-                      </div>
-                    )}
-                    {(sendMethod === 'sms' || sendMethod === 'alimtalk' || sendMethod === 'all') && (
-                      <div className={editableRecipient.phone ? '' : 'text-red-600'}>
-                        <strong>휴대폰:</strong> {editableRecipient.phone || '❌ 휴대폰번호 없음'}
                       </div>
                     )}
                   </div>
                 </div>
 
-                {(sendMethod === 'email' || sendMethod === 'all') && (
+                {sendMethod === 'email' && (
                   <div className="bg-white p-3 rounded-lg">
                     <div className="font-medium text-vintage-900 mb-2">📧 이메일 내용</div>
                     <div><strong>제목:</strong> {replaceVariables(subject)}</div>
