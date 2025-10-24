@@ -2549,10 +2549,39 @@ const AdminDashboard: React.FC = () => {
       for (const applicationId of selectedApplications) {
         try {
           console.log('📝 신청 승인 처리:', applicationId)
+
+          // 신청 정보 가져오기 (알림톡 발송을 위해)
+          const application = applications.find(app => (app.id || app._id) === applicationId)
+
           await supabase
             .from('user_applications')
-            .update({ status: 'approved' })
+            .update({
+              status: 'approved',
+              updated_at: new Date().toISOString()
+            })
             .eq('id', applicationId)
+
+          // 🔥 알림톡 발송 (체험단 선정)
+          if (application) {
+            const userPhone = application.phone || application.user_profile?.phone
+            const userName = application.name || '회원'
+            const campaignName = application.campaign_name || application.experience_name || '체험단'
+            const rewardPoints = application.points || application.reward_points || 0
+
+            if (userPhone) {
+              try {
+                await alimtalkService.sendApplicationApprovedAlimtalk(
+                  userPhone,
+                  userName,
+                  campaignName,
+                  rewardPoints
+                )
+                console.log('✅ 체험단 선정 알림톡 발송 완료:', userName)
+              } catch (alimtalkError) {
+                console.error('⚠️ 알림톡 발송 실패 (승인은 완료됨):', alimtalkError)
+              }
+            }
+          }
 
           successCount++
         } catch (error) {
@@ -2591,6 +2620,111 @@ const AdminDashboard: React.FC = () => {
     } catch (error) {
       console.error('체험단 삭제 실패:', error)
       toast.error('체험단 삭제에 실패했습니다')
+    }
+  }
+
+  // 🔥 개별 체험단 신청 승인
+  const handleApproveApplication = async (applicationId: string) => {
+    try {
+      console.log('📝 체험단 신청 승인 처리:', applicationId)
+
+      // 신청 정보 가져오기
+      const application = applications.find(app => (app.id || app._id) === applicationId)
+      if (!application) {
+        toast.error('신청 정보를 찾을 수 없습니다')
+        return
+      }
+
+      // DB 업데이트
+      await supabase
+        .from('user_applications')
+        .update({
+          status: 'approved',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', applicationId)
+
+      // 🔥 알림톡 발송 (체험단 선정)
+      const userPhone = application.phone || application.user_profile?.phone
+      const userName = application.name || '회원'
+      const campaignName = application.campaign_name || application.experience_name || '체험단'
+      const rewardPoints = application.points || application.reward_points || 0
+
+      if (userPhone) {
+        try {
+          await alimtalkService.sendApplicationApprovedAlimtalk(
+            userPhone,
+            userName,
+            campaignName,
+            rewardPoints
+          )
+          console.log('✅ 체험단 선정 알림톡 발송 완료:', userName)
+        } catch (alimtalkError) {
+          console.error('⚠️ 알림톡 발송 실패 (승인은 완료됨):', alimtalkError)
+        }
+      }
+
+      toast.success(`${userName}님의 신청이 승인되었습니다`)
+      await loadApplications()
+    } catch (error) {
+      console.error('체험단 신청 승인 실패:', error)
+      toast.error('신청 승인에 실패했습니다')
+    }
+  }
+
+  // 🔥 개별 체험단 신청 반려
+  const handleRejectApplication = async (applicationId: string, reason: string) => {
+    try {
+      if (!reason || reason.trim() === '') {
+        toast.error('반려 사유를 입력해주세요')
+        return
+      }
+
+      console.log('📝 체험단 신청 반려 처리:', applicationId)
+
+      // 신청 정보 가져오기
+      const application = applications.find(app => (app.id || app._id) === applicationId)
+      if (!application) {
+        toast.error('신청 정보를 찾을 수 없습니다')
+        return
+      }
+
+      // DB 업데이트
+      await supabase
+        .from('user_applications')
+        .update({
+          status: 'rejected',
+          rejection_reason: reason.trim(),
+          rejected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', applicationId)
+
+      // 🔥 알림톡 발송 (체험단 신청 반려)
+      const userPhone = application.phone || application.user_profile?.phone
+      const userName = application.name || '회원'
+      const campaignName = application.campaign_name || application.experience_name || '체험단'
+
+      if (userPhone) {
+        try {
+          await alimtalkService.sendApplicationRejectedAlimtalk(
+            userPhone,
+            userName,
+            campaignName,
+            reason.trim()
+          )
+          console.log('✅ 체험단 신청 반려 알림톡 발송 완료:', userName)
+        } catch (alimtalkError) {
+          console.error('⚠️ 알림톡 발송 실패 (반려는 완료됨):', alimtalkError)
+        }
+      }
+
+      toast.success(`${userName}님의 신청이 반려되었습니다`)
+      setShowRejectionModal(false)
+      await loadApplications()
+    } catch (error) {
+      console.error('체험단 신청 반려 실패:', error)
+      toast.error('신청 반려에 실패했습니다')
     }
   }
 
@@ -4321,10 +4455,7 @@ const AdminDashboard: React.FC = () => {
           onClose={() => setShowApprovalModal(false)}
           onApprovalComplete={async () => {
             if (selectedApplication) {
-              // user_applications 테이블 업데이트는 400 에러 방지를 위해 건너뛰기
-              console.log('⚠️ 승인 완료 - user_applications 업데이트 건너뛰기 (400 에러 방지)')
-              toast.success('신청이 승인되었습니다')
-              await loadApplications()
+              await handleApproveApplication(selectedApplication.id || selectedApplication._id)
             }
             setShowApprovalModal(false)
           }}
@@ -4336,14 +4467,10 @@ const AdminDashboard: React.FC = () => {
           isOpen={showRejectionModal}
           application={selectedApplication}
           onClose={() => setShowRejectionModal(false)}
-          onRejectionComplete={async () => {
+          onRejectionComplete={async (reason: string) => {
             if (selectedApplication) {
-              // user_applications 테이블 업데이트는 400 에러 방지를 위해 건너뛰기
-              console.log('⚠️ 거절 완료 - user_applications 업데이트 건너뛰기 (400 에러 방지)')
-              toast.success('신청이 거절되었습니다')
-              await loadApplications()
+              await handleRejectApplication(selectedApplication.id || selectedApplication._id, reason)
             }
-            setShowRejectionModal(false)
           }}
         />
       )}

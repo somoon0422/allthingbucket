@@ -4,17 +4,23 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield, Heart, MessageSquare} from 'lucide-react'
 import LoginModal from './LoginModal'
+import ProfileCompletionModal from './ProfileCompletionModal'
+import { dataService } from '../lib/dataService'
+import { alimtalkService } from '../services/alimtalkService'
+import toast from 'react-hot-toast'
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout, isAuthenticated, isAdminUser } = useAuth()
+  const { user, logout, isAuthenticated, isAdminUser, updateUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(false)
 
   const navigationItems = [
     { name: '홈', href: '/', icon: Home },
@@ -64,6 +70,96 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       window.removeEventListener('closeLoginModal', handleCloseLoginModal)
     }
   }, [])
+
+  // 소셜 로그인 후 프로필 완성 체크
+  useEffect(() => {
+    const checkProfileCompletion = async () => {
+      // 이미 체크했거나, 로그인하지 않았거나, 관리자이면 스킵
+      if (hasCheckedProfile || !isAuthenticated || !user || isAdminUser()) {
+        return
+      }
+
+      try {
+        // user_profiles 테이블에서 전화번호 확인
+        const profile = await (dataService.entities as any).user_profiles.get(user.id)
+
+        // 전화번호가 없으면 모달 띄우기
+        if (!profile || !profile.phone) {
+          console.log('📞 전화번호 없음 - 프로필 완성 모달 표시')
+          setIsProfileModalOpen(true)
+        }
+
+        setHasCheckedProfile(true)
+      } catch (error) {
+        console.error('프로필 체크 실패:', error)
+        setHasCheckedProfile(true)
+      }
+    }
+
+    // 로그인 후 1초 뒤에 체크 (로그인 처리가 완료된 후)
+    const timer = setTimeout(() => {
+      checkProfileCompletion()
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [isAuthenticated, user, hasCheckedProfile, isAdminUser])
+
+  // 프로필 완성 완료 핸들러
+  const handleProfileComplete = async (data: { name: string, phone: string }) => {
+    try {
+      if (!user) return
+
+      // user_profiles 테이블 업데이트
+      const profile = await (dataService.entities as any).user_profiles.get(user.id)
+
+      if (profile) {
+        await (dataService.entities as any).user_profiles.update(profile.id, {
+          phone: data.phone,
+          updated_at: new Date().toISOString()
+        })
+      }
+
+      // users 테이블도 업데이트
+      try {
+        const usersResponse = await (dataService.entities as any).users.list()
+        const users = Array.isArray(usersResponse) ? usersResponse : []
+        const dbUser = users.find((u: any) => u.user_id === user.id)
+
+        if (dbUser) {
+          await (dataService.entities as any).users.update(dbUser.id, {
+            phone: data.phone,
+            updated_at: new Date().toISOString()
+          })
+        }
+      } catch (error) {
+        console.warn('users 테이블 업데이트 실패 (무시):', error)
+      }
+
+      // 사용자 상태 업데이트
+      updateUser({
+        profile: {
+          ...user.profile,
+          phone: data.phone
+        }
+      })
+
+      // 환영 알림톡 발송
+      try {
+        const result = await alimtalkService.sendWelcomeAlimtalk(data.phone, user.name)
+        if (result.success) {
+          toast.success('환영 알림톡이 발송되었습니다! 📱')
+        }
+      } catch (error) {
+        console.warn('환영 알림톡 발송 실패 (무시):', error)
+      }
+
+      toast.success('프로필이 완성되었습니다! 🎉')
+      setIsProfileModalOpen(false)
+    } catch (error) {
+      console.error('프로필 업데이트 실패:', error)
+      toast.error('프로필 업데이트에 실패했습니다')
+    }
+  }
 
   // 프로필 미완성 사용자 자동 리디렉션
   useEffect(() => {
@@ -339,9 +435,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </footer>
 
       {/* 로그인 모달 */}
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)} 
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
+
+      {/* 프로필 완성 모달 */}
+      <ProfileCompletionModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        onComplete={handleProfileComplete}
+        requiresPhoneOnly={true}
       />
     </div>
   )
