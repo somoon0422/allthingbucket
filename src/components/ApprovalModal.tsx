@@ -166,13 +166,13 @@ const ApprovalModal: React.FC<ApprovalModalProps> = ({
 
   // 🔥 완전히 안전한 데이터 추출
   const userName = SafeData.getString(application)
-  const userEmail = SafeData.getEmail(application)
   const userPhone = SafeData.getPhone(application)
   const experienceName = SafeData.getExperienceName(application)
   const brandName = SafeData.getBrandName(application)
   const rewardPoints = SafeData.getNumber(application, 'reward_points', 0)
 
   // 📧 이메일 가이드 상태
+  const [recipientEmail, setRecipientEmail] = useState(SafeData.getEmail(application))
   const [emailSubject, setEmailSubject] = useState(`[올띵버킷] ${experienceName} 체험 가이드 안내`)
   const [emailContent, setEmailContent] = useState(`안녕하세요, ${userName}님!
 
@@ -224,8 +224,15 @@ ${experienceName} 체험단에 선정되신 것을 축하드립니다! 🎉
 
   // 📧 이메일 가이드 발송
   const handleSendEmailGuide = async () => {
-    if (!userEmail) {
-      toast.error('이메일 주소가 없습니다')
+    if (!recipientEmail || !recipientEmail.trim()) {
+      toast.error('수신자 이메일 주소를 입력해주세요')
+      return
+    }
+
+    // 간단한 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(recipientEmail)) {
+      toast.error('올바른 이메일 형식이 아닙니다')
       return
     }
 
@@ -237,7 +244,7 @@ ${experienceName} 체험단에 선정되신 것을 축하드립니다! 🎉
     setEmailLoading(true)
     try {
       const result = await emailNotificationService.sendEmail({
-        to: userEmail,
+        to: recipientEmail,
         toName: userName,
         type: 'custom',
         data: {
@@ -438,7 +445,7 @@ ${experienceName} 체험단에 선정되신 것을 축하드립니다! 🎉
                 </div>
                 <div className="flex items-center">
                   <span className="font-medium w-20">이메일:</span>
-                  <span className="text-gray-500">{userEmail || '(이메일 없음)'}</span>
+                  <span className="text-gray-500">{SafeData.getEmail(application) || '(이메일 없음)'}</span>
                 </div>
               </div>
             </div>
@@ -495,22 +502,28 @@ ${experienceName} 체험단에 선정되신 것을 축하드립니다! 🎉
                     />
                   </div>
 
-                  {/* 수신자 정보 */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center text-sm text-gray-700">
-                      <Mail className="w-4 h-4 mr-2" />
-                      <span className="font-medium">수신자:</span>
-                      <span className="ml-2">{userName}</span>
-                      <span className={`ml-2 ${userEmail ? 'text-blue-600' : 'text-red-600'}`}>
-                        ({userEmail || '❌ 이메일 없음'})
-                      </span>
-                    </div>
+                  {/* 수신자 이메일 입력 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Mail className="w-4 h-4 inline mr-1" />
+                      수신자 이메일
+                    </label>
+                    <input
+                      type="email"
+                      value={recipientEmail}
+                      onChange={(e) => setRecipientEmail(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="example@email.com"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      수신자: {userName}
+                    </p>
                   </div>
 
                   {/* 발송 버튼 */}
                   <button
                     onClick={handleSendEmailGuide}
-                    disabled={emailLoading || !userEmail}
+                    disabled={emailLoading || !recipientEmail || !recipientEmail.trim()}
                     className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-colors"
                   >
                     {emailLoading ? (
