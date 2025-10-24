@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react'
-import { X, CheckCircle } from 'lucide-react'
+import { X, CheckCircle, Mail, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { emailNotificationService } from '../services/emailNotificationService'
 
 // 🔥 완전히 안전한 데이터 접근
 const SafeData = {

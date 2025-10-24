@@ -345,6 +345,9 @@ const AdminDashboard: React.FC = () => {
                    campaign_name: campaignInfo?.campaign_name || campaignInfo?.product_name || campaignInfo?.name || '캠페인명 없음',
                    campaign_description: campaignInfo?.description || '',
                    experience_name: campaignInfo?.campaign_name || campaignInfo?.product_name || '체험단 정보 없음',
+                   // 🔥 포인트 정보 매핑 (캠페인의 리워드 포인트)
+                   reward_points: campaignInfo?.rewards || campaignInfo?.reward_points || campaignInfo?.points || 0,
+                   points: campaignInfo?.rewards || campaignInfo?.reward_points || campaignInfo?.points || 0,
               // 원본 데이터 보존
               userInfo,
               userProfile,
