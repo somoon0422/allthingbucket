@@ -122,11 +122,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         (userProfile && userProfile.phone) ||
                         (influencerProfile && influencerProfile.phone)
 
+        console.log('📞 전화번호 체크 결과:', {
+          hasPhone,
+          dbUserHasPhone: !!(dbUser && dbUser.phone),
+          userProfileHasPhone: !!(userProfile && userProfile.phone),
+          influencerProfileHasPhone: !!(influencerProfile && influencerProfile.phone)
+        })
+
         if (!hasPhone) {
-          console.log('📞 전화번호 없음 - 프로필 완성 모달 표시')
+          console.log('❌ 전화번호 없음 - 프로필 완성 모달 표시')
           setIsProfileModalOpen(true)
         } else {
-          console.log('✅ 전화번호 확인됨')
+          console.log('✅ 전화번호 확인됨 - 모달 표시 안 함')
         }
 
         // 체크 완료된 user_id 저장
