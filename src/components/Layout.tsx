@@ -74,16 +74,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // 소셜 로그인 후 프로필 완성 체크
   useEffect(() => {
     const checkProfileCompletion = async () => {
+      const isAdmin = isAdminUser()
+
       console.log('🔍 [프로필체크] 시작', {
         isAuthenticated,
         hasUser: !!user,
         userId: user?.id,
-        isAdmin: isAdminUser()
+        isAdmin
       })
 
       // 로그인하지 않았거나, 관리자이면 스킵
-      if (!isAuthenticated || !user || isAdminUser()) {
-        console.log('⏭️ [프로필체크] 스킵 (미인증 또는 어드민)')
+      if (!isAuthenticated || !user || isAdmin) {
+        console.log('⏭️ [프로필체크] 스킵 (미인증 또는 어드민) - 모달 닫기')
+        setIsProfileModalOpen(false)
         return
       }
 
@@ -153,7 +156,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [isAuthenticated, user, isAdminUser])
+  }, [isAuthenticated, user])
 
   // 프로필 완성 완료 핸들러
   const handleProfileComplete = async (data: { name: string, phone: string }) => {
