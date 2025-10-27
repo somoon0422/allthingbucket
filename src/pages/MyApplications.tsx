@@ -896,30 +896,12 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 flex items-center justify-center text-xs font-semibold mt-0.5">
                       6
                     </div>
                     <div>
-                      <span className="font-semibold text-gray-900">리뷰 승인 완료:</span>
-                      <span className="text-gray-700 ml-1">'포인트 지급 신청' 버튼을 클릭하여 포인트를 요청하세요.</span>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-semibold mt-0.5">
-                      7
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">포인트 지급 요청됨:</span>
-                      <span className="text-gray-700 ml-1">관리자 승인을 기다립니다.</span>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-navy-100 to-pink-100 text-navy-700 flex items-center justify-center text-xs font-semibold mt-0.5">
-                      8
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">🎉 체험 종료:</span>
-                      <span className="text-gray-700 ml-1">포인트가 지급되었습니다. 모든 프로세스가 완료되었습니다!</span>
+                      <span className="font-semibold text-gray-900">🎉 리뷰 승인 및 포인트 지급:</span>
+                      <span className="text-gray-700 ml-1">관리자가 리뷰를 승인하면 포인트가 자동으로 지급됩니다!</span>
                     </div>
                   </div>
                 </div>
