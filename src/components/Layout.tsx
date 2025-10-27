@@ -86,10 +86,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       // 이미 이 user_id를 체크했으면 스킵
       if (checkedUserIds.has(user.id)) {
+        console.log('⏭️ 이미 체크 완료된 사용자 - 스킵')
         return
       }
 
       try {
+        console.log('🔍 프로필 체크 시작 - user_id:', user.id)
+
         // users, user_profiles, influencer_profiles 모두 확인
         const users = await (dataService.entities as any).users.list()
         const userProfiles = await (dataService.entities as any).user_profiles.list()
@@ -118,15 +121,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         })
 
         // 세 테이블 중 하나에라도 전화번호가 있으면 OK
-        const hasPhone = (dbUser && dbUser.phone) ||
-                        (userProfile && userProfile.phone) ||
-                        (influencerProfile && influencerProfile.phone)
+        const hasPhone = !!(
+          (dbUser && dbUser.phone && dbUser.phone.trim()) ||
+          (userProfile && userProfile.phone && userProfile.phone.trim()) ||
+          (influencerProfile && influencerProfile.phone && influencerProfile.phone.trim())
+        )
 
         console.log('📞 전화번호 체크 결과:', {
           hasPhone,
-          dbUserHasPhone: !!(dbUser && dbUser.phone),
-          userProfileHasPhone: !!(userProfile && userProfile.phone),
-          influencerProfileHasPhone: !!(influencerProfile && influencerProfile.phone)
+          dbUserHasPhone: !!(dbUser && dbUser.phone && dbUser.phone.trim()),
+          userProfileHasPhone: !!(userProfile && userProfile.phone && userProfile.phone.trim()),
+          influencerProfileHasPhone: !!(influencerProfile && influencerProfile.phone && influencerProfile.phone.trim())
         })
 
         if (!hasPhone) {
@@ -142,7 +147,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         setCheckedUserIds(newCheckedUserIds)
         localStorage.setItem('checkedUserIds', JSON.stringify(Array.from(newCheckedUserIds)))
       } catch (error) {
-        console.error('프로필 체크 실패:', error)
+        console.error('❌ 프로필 체크 실패:', error)
         // 에러 발생 시에도 체크 완료로 표시 (무한 루프 방지)
         const newCheckedUserIds = new Set(checkedUserIds)
         newCheckedUserIds.add(user.id)
