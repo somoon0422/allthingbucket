@@ -20,9 +20,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-  // localStorage를 사용하여 체크 상태를 영구 저장
-  const [hasCheckedProfile, setHasCheckedProfile] = useState(() => {
-    return localStorage.getItem('profileChecked') === 'true'
+  // user_id별로 체크 완료 상태 저장
+  const [checkedUserIds, setCheckedUserIds] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem('checkedUserIds')
+    return stored ? new Set(JSON.parse(stored)) : new Set()
   })
 
   const navigationItems = [
@@ -37,9 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     logout()
     navigate('/')
     setIsMobileMenuOpen(false)
-    // 프로필 체크 상태 초기화
-    localStorage.removeItem('profileChecked')
-    setHasCheckedProfile(false)
+    // 로그아웃 시에는 체크 상태 유지 (다른 사용자가 로그인할 수 있으므로)
   }
 
   const handleAdminAccess = () => {
@@ -80,8 +79,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // 소셜 로그인 후 프로필 완성 체크
   useEffect(() => {
     const checkProfileCompletion = async () => {
-      // 이미 체크했거나, 로그인하지 않았거나, 관리자이면 스킵
-      if (hasCheckedProfile || !isAuthenticated || !user || isAdminUser()) {
+      // 로그인하지 않았거나, 관리자이면 스킵
+      if (!isAuthenticated || !user || isAdminUser()) {
+        return
+      }
+
+      // 이미 이 user_id를 체크했으면 스킵
+      if (checkedUserIds.has(user.id)) {
         return
       }
 
@@ -123,14 +127,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           setIsProfileModalOpen(true)
         } else {
           console.log('✅ 전화번호 확인됨')
-          // 전화번호가 있으면 localStorage에 체크 완료 표시
-          localStorage.setItem('profileChecked', 'true')
         }
 
-        setHasCheckedProfile(true)
+        // 체크 완료된 user_id 저장
+        const newCheckedUserIds = new Set(checkedUserIds)
+        newCheckedUserIds.add(user.id)
+        setCheckedUserIds(newCheckedUserIds)
+        localStorage.setItem('checkedUserIds', JSON.stringify(Array.from(newCheckedUserIds)))
       } catch (error) {
         console.error('프로필 체크 실패:', error)
-        setHasCheckedProfile(true)
+        // 에러 발생 시에도 체크 완료로 표시 (무한 루프 방지)
+        const newCheckedUserIds = new Set(checkedUserIds)
+        newCheckedUserIds.add(user.id)
+        setCheckedUserIds(newCheckedUserIds)
+        localStorage.setItem('checkedUserIds', JSON.stringify(Array.from(newCheckedUserIds)))
       }
     }
 
@@ -140,7 +150,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [isAuthenticated, user, hasCheckedProfile, isAdminUser])
+  }, [isAuthenticated, user, checkedUserIds, isAdminUser])
 
   // 프로필 완성 완료 핸들러
   const handleProfileComplete = async (data: { name: string, phone: string }) => {
@@ -203,9 +213,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setIsProfileModalOpen(false)
 
       // 프로필 완성 체크 완료 표시
-      setHasCheckedProfile(true)
-      localStorage.setItem('profileChecked', 'true')
-      console.log('✅ 프로필 완성 및 체크 완료 저장')
+      if (user) {
+        const newCheckedUserIds = new Set(checkedUserIds)
+        newCheckedUserIds.add(user.id)
+        setCheckedUserIds(newCheckedUserIds)
+        localStorage.setItem('checkedUserIds', JSON.stringify(Array.from(newCheckedUserIds)))
+        console.log('✅ 프로필 완성 및 체크 완료 저장')
+      }
     } catch (error) {
       console.error('프로필 업데이트 실패:', error)
       toast.error('프로필 업데이트에 실패했습니다')
