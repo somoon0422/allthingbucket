@@ -20,11 +20,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-  // user_id별로 체크 완료 상태 저장
-  const [checkedUserIds, setCheckedUserIds] = useState<Set<string>>(() => {
-    const stored = localStorage.getItem('checkedUserIds')
-    return stored ? new Set(JSON.parse(stored)) : new Set()
-  })
 
   const navigationItems = [
     { name: '홈', href: '/', icon: Home },
@@ -84,27 +79,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         return
       }
 
-      // 이미 이 user_id를 체크했으면 스킵
-      if (checkedUserIds.has(user.id)) {
-        console.log('⏭️ 이미 체크 완료된 사용자 - 스킵')
-        return
-      }
-
       try {
         console.log('🔍 프로필 체크 시작 - user_id:', user.id)
 
-        // users, user_profiles, influencer_profiles 모두 확인
-        const users = await (dataService.entities as any).users.list()
-        const userProfiles = await (dataService.entities as any).user_profiles.list()
+        // influencer_profiles만 확인 (전화번호가 여기에 저장됨)
         const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
-
-        const dbUser = Array.isArray(users)
-          ? users.find((u: any) => u && u.user_id === user.id)
-          : null
-
-        const userProfile = Array.isArray(userProfiles)
-          ? userProfiles.find((p: any) => p && p.user_id === user.id)
-          : null
 
         const influencerProfile = Array.isArray(influencerProfiles)
           ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
@@ -112,26 +91,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         console.log('🔍 프로필 체크:', {
           userId: user.id,
-          dbUser: !!dbUser,
-          userProfile: !!userProfile,
           influencerProfile: !!influencerProfile,
-          dbUserPhone: dbUser?.phone,
-          userPhone: userProfile?.phone,
           influencerPhone: influencerProfile?.phone
         })
 
-        // 세 테이블 중 하나에라도 전화번호가 있으면 OK
-        const hasPhone = !!(
-          (dbUser && dbUser.phone && dbUser.phone.trim()) ||
-          (userProfile && userProfile.phone && userProfile.phone.trim()) ||
-          (influencerProfile && influencerProfile.phone && influencerProfile.phone.trim())
-        )
+        // 전화번호가 있으면 OK
+        const hasPhone = !!(influencerProfile && influencerProfile.phone && influencerProfile.phone.trim())
 
         console.log('📞 전화번호 체크 결과:', {
           hasPhone,
-          dbUserHasPhone: !!(dbUser && dbUser.phone && dbUser.phone.trim()),
-          userProfileHasPhone: !!(userProfile && userProfile.phone && userProfile.phone.trim()),
-          influencerProfileHasPhone: !!(influencerProfile && influencerProfile.phone && influencerProfile.phone.trim())
+          phone: influencerProfile?.phone
         })
 
         if (!hasPhone) {
@@ -140,19 +109,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         } else {
           console.log('✅ 전화번호 확인됨 - 모달 표시 안 함')
         }
-
-        // 체크 완료된 user_id 저장
-        const newCheckedUserIds = new Set(checkedUserIds)
-        newCheckedUserIds.add(user.id)
-        setCheckedUserIds(newCheckedUserIds)
-        localStorage.setItem('checkedUserIds', JSON.stringify(Array.from(newCheckedUserIds)))
       } catch (error) {
         console.error('❌ 프로필 체크 실패:', error)
-        // 에러 발생 시에도 체크 완료로 표시 (무한 루프 방지)
-        const newCheckedUserIds = new Set(checkedUserIds)
-        newCheckedUserIds.add(user.id)
-        setCheckedUserIds(newCheckedUserIds)
-        localStorage.setItem('checkedUserIds', JSON.stringify(Array.from(newCheckedUserIds)))
       }
     }
 
@@ -162,7 +120,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [isAuthenticated, user, checkedUserIds, isAdminUser])
+  }, [isAuthenticated, user, isAdminUser])
 
   // 프로필 완성 완료 핸들러
   const handleProfileComplete = async (data: { name: string, phone: string }) => {
@@ -223,15 +181,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       toast.success('프로필이 완성되었습니다! 🎉')
       setIsProfileModalOpen(false)
-
-      // 프로필 완성 체크 완료 표시
-      if (user) {
-        const newCheckedUserIds = new Set(checkedUserIds)
-        newCheckedUserIds.add(user.id)
-        setCheckedUserIds(newCheckedUserIds)
-        localStorage.setItem('checkedUserIds', JSON.stringify(Array.from(newCheckedUserIds)))
-        console.log('✅ 프로필 완성 및 체크 완료 저장')
-      }
+      console.log('✅ 프로필 완성 완료')
     } catch (error) {
       console.error('프로필 업데이트 실패:', error)
       toast.error('프로필 업데이트에 실패했습니다')
