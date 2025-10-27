@@ -20,7 +20,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-  const [hasCheckedProfile, setHasCheckedProfile] = useState(false)
+  // localStorage를 사용하여 체크 상태를 영구 저장
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(() => {
+    return localStorage.getItem('profileChecked') === 'true'
+  })
 
   const navigationItems = [
     { name: '홈', href: '/', icon: Home },
@@ -34,6 +37,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     logout()
     navigate('/')
     setIsMobileMenuOpen(false)
+    // 프로필 체크 상태 초기화
+    localStorage.removeItem('profileChecked')
+    setHasCheckedProfile(false)
   }
 
   const handleAdminAccess = () => {
@@ -87,6 +93,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         if (!profile || !profile.phone) {
           console.log('📞 전화번호 없음 - 프로필 완성 모달 표시')
           setIsProfileModalOpen(true)
+        } else {
+          console.log('✅ 전화번호 확인됨:', profile.phone)
+          // 전화번호가 있으면 localStorage에 체크 완료 표시
+          localStorage.setItem('profileChecked', 'true')
         }
 
         setHasCheckedProfile(true)
@@ -155,6 +165,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       toast.success('프로필이 완성되었습니다! 🎉')
       setIsProfileModalOpen(false)
+
+      // 프로필 완성 체크 완료 표시
+      setHasCheckedProfile(true)
+      localStorage.setItem('profileChecked', 'true')
+      console.log('✅ 프로필 완성 및 체크 완료 저장')
     } catch (error) {
       console.error('프로필 업데이트 실패:', error)
       toast.error('프로필 업데이트에 실패했습니다')

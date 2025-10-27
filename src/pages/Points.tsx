@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { usePoints } from '../hooks/usePoints'
 import { DollarSign, TrendingUp, CreditCard, ArrowUpRight, ArrowDownLeft, ExternalLink, Calendar, FileText, Star, CheckCircle, AlertCircle } from 'lucide-react'
 import ChatBot from '../components/ChatBot'
+import WithdrawalRequestModal, { WithdrawalFormData, BankAccountInfo } from '../components/WithdrawalRequestModal'
 
 interface PointsProps {
   embedded?: boolean
@@ -45,6 +46,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
   const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([])
   const [userPointsData, setUserPointsData] = useState<any>(null) // 실제 DB 데이터 저장
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false)
+  const [existingBankAccount, setExistingBankAccount] = useState<BankAccountInfo | null>(null)
   const [withdrawalData, setWithdrawalData] = useState({
     requested_amount: '',
     bank_name: '',
@@ -172,111 +174,126 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
     }
   }
 
-  const handleWithdrawalRequest = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // 새로운 출금 신청 처리 함수
+  const handleWithdrawalSubmit = async (formData: WithdrawalFormData) => {
     if (!user) return
 
-    const amount = Number(withdrawalData.requested_amount)
-    
     try {
       const { dataService } = await import('../lib/dataService')
-      
-      // 1. 기존 인증된 계좌가 있는지 확인
-      const existingAccounts = await dataService.entities.bank_accounts.list({
-        filter: { user_id: user.user_id }
-      })
-      
-      const verifiedAccount = existingAccounts.find(account => account.is_verified)
-      
-      // NICE API 실명인증 및 계좌인증을 위한 준비
-      if (!verifiedAccount) {
-        // TODO: NICE API 연결 시 여기서 NICE 인증 모달 호출
-        alert('출금 요청을 위해 실명인증이 필요합니다.\n\nNICE API를 통한 본인인증 후 출금이 처리됩니다.')
-        // 임시로 출금 요청을 계속 진행 (NICE API 연결 전까지)
-        // return 문을 제거하여 출금 요청이 계속 진행되도록 함
-      }
 
-      // 2. 계좌 정보 저장 (기존 인증된 계좌 사용 또는 새 계좌)
-      let bankAccount = verifiedAccount
-      
-      // 새로운 계좌 정보가 입력된 경우에만 새 계좌 생성
-      if (withdrawalData.bank_name && withdrawalData.account_number && 
-          (!verifiedAccount || withdrawalData.bank_name !== verifiedAccount.bank_name || 
-           withdrawalData.account_number !== verifiedAccount.account_number)) {
-        
+      console.log('🔄 출금 신청 시작:', formData)
+
+      // 1. 계좌 정보 저장 또는 업데이트
+      let bankAccountId = formData.bankAccount.id
+
+      if (!bankAccountId) {
+        // 새로운 계좌 정보 생성
         const bankAccountData = {
           user_id: user.user_id,
-          bank_name: withdrawalData.bank_name,
-          account_number: withdrawalData.account_number,
-          account_holder: withdrawalData.account_holder,
-          is_verified: false, // 새 계좌는 재인증 필요
+          bank_name: formData.bankAccount.bank_name,
+          account_number: formData.bankAccount.account_number,
+          account_holder: formData.bankAccount.account_holder,
+          is_verified: false,
+          real_name_verified: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
-        
-        bankAccount = await dataService.entities.bank_accounts.create(bankAccountData)
-        
-        if (!bankAccount) {
-          alert('계좌 정보 저장에 실패했습니다.')
-          return
+
+        const newBankAccount = await dataService.entities.bank_accounts.create(bankAccountData)
+
+        if (!newBankAccount) {
+          throw new Error('계좌 정보 저장에 실패했습니다.')
         }
-        
-        // 새 계좌는 NICE API 인증이 필요하므로 알림
-        alert('새로운 계좌 정보가 입력되었습니다.\n\nNICE API를 통한 실명인증 및 계좌인증 후 출금이 처리됩니다.')
-        // TODO: NICE API 연결 시 여기서 인증 모달 호출
-        // 임시로 출금 요청을 계속 진행
-        // return
+
+        bankAccountId = newBankAccount.id
+        console.log('✅ 새 계좌 정보 저장:', newBankAccount)
       }
 
-      // 3. 출금 요청 생성 (NICE API 연결 전까지는 계좌 정보 없이도 가능)
-      const { taxAmount, finalAmount } = calculateTax(amount)
+      // 2. 출금 요청 생성
+      const { taxAmount, finalAmount } = calculateTax(formData.amount)
+
+      // 지급 예정일 계산
+      const calculatePaymentScheduleDate = () => {
+        const today = new Date()
+        const day = today.getDate()
+        let scheduleDate = new Date()
+
+        if (day <= 10) {
+          scheduleDate.setDate(15)
+        } else if (day <= 20) {
+          scheduleDate.setDate(25)
+        } else {
+          scheduleDate.setMonth(scheduleDate.getMonth() + 1)
+          scheduleDate.setDate(5)
+        }
+
+        return scheduleDate.toISOString().split('T')[0]
+      }
+
       const withdrawalRequestData = {
         user_id: user.user_id,
-        bank_account_id: bankAccount?.id || null, // 계좌가 없어도 null로 처리
-        points_amount: amount,
-        withdrawal_amount: amount,
+        bank_account_id: bankAccountId,
+        points_amount: formData.amount,
+        withdrawal_amount: formData.amount,
+        requested_amount: formData.amount,
         tax_amount: taxAmount,
         final_amount: finalAmount,
         status: 'pending',
-        request_reason: bankAccount 
-          ? '포인트 출금 요청 (관리자 승인 대기)' 
-          : '포인트 출금 요청 (NICE API 실명인증 후 처리)',
+        request_reason: '포인트 출금 요청 (관리자 승인 대기)',
+
+        // 새로 추가된 법적 필드
+        resident_number: formData.residentNumber, // TODO: 실제 운영 시 암호화 필요
+        tax_agreement: formData.agreements.taxAgreement,
+        privacy_agreement: formData.agreements.privacyAgreement,
+        tax_withholding_agreement: formData.agreements.taxWithholdingAgreement,
+        agreement_timestamp: formData.agreements.timestamp,
+        agreement_ip: formData.agreementIp,
+        payment_schedule_date: calculatePaymentScheduleDate(),
+        payment_method: 'bank_transfer',
+        tax_report_status: 'pending',
+
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
-      
+
+      console.log('📝 출금 요청 데이터:', withdrawalRequestData)
+
       const withdrawalRequest = await dataService.entities.withdrawal_requests.create(withdrawalRequestData)
-      
-      if (withdrawalRequest) {
-        // 관리자 알림 생성
-        await dataService.entities.admin_notifications.create({
-          type: 'withdrawal_requested',
-          title: '새로운 출금 요청',
-          message: `${user.user_id}님이 ${amount.toLocaleString()}P 출금을 요청했습니다.`,
-          is_read: false,
-          created_at: new Date().toISOString()
-        })
-        
-        const successMessage = bankAccount 
-          ? `출금 요청이 접수되었습니다!\n\n💬 카카오톡: @올띵버킷\n\n인증된 계좌로 출금 요청이 완료되었습니다.\n관리자 승인 후 영업일 기준 3~5일 내 처리됩니다.`
-          : `출금 요청이 접수되었습니다!\n\n💬 카카오톡: @올띵버킷\n\n실명인증 및 계좌인증 후 출금이 처리됩니다.\n관리자 승인 후 영업일 기준 3~5일 내 처리됩니다.`
-        
-        alert(successMessage)
-        
-        setShowWithdrawalModal(false)
-        setWithdrawalData({
-          requested_amount: '',
-          bank_name: '',
-          account_number: '',
-          account_holder: ''
-        })
-        loadData() // 데이터 새로고침
-      } else {
-        alert('출금 요청에 실패했습니다.')
+
+      if (!withdrawalRequest) {
+        throw new Error('출금 요청 생성에 실패했습니다.')
       }
+
+      console.log('✅ 출금 요청 생성 성공:', withdrawalRequest)
+
+      // 3. 관리자 알림 생성
+      await dataService.entities.admin_notifications.create({
+        type: 'withdrawal_requested',
+        title: '새로운 포인트 출금 요청',
+        message: `${user.user_id}님이 ${formData.amount.toLocaleString()}P 출금을 요청했습니다. (실지급: ${finalAmount.toLocaleString()}원)`,
+        is_read: false,
+        created_at: new Date().toISOString()
+      })
+
+      // 4. 성공 메시지 표시
+      const scheduleDate = calculatePaymentScheduleDate()
+      alert(
+        `✅ 출금 요청이 접수되었습니다!\n\n` +
+        `💰 신청 금액: ${formData.amount.toLocaleString()}원\n` +
+        `💵 실지급액: ${finalAmount.toLocaleString()}원 (세금 ${taxAmount.toLocaleString()}원 차감)\n` +
+        `📅 예상 입금일: ${new Date(scheduleDate).toLocaleDateString('ko-KR')}\n\n` +
+        `관리자 승인 후 처리됩니다.\n\n` +
+        `💬 문의: 카카오톡 @올띵버킷\n` +
+        `📧 이메일: support@allthingbucket.com`
+      )
+
+      // 5. 데이터 새로고침
+      await loadData()
+
     } catch (error) {
-      console.error('출금 요청 오류:', error)
-      alert('출금 요청 중 오류가 발생했습니다.')
+      console.error('❌ 출금 요청 실패:', error)
+      alert(`출금 요청 중 오류가 발생했습니다.\n\n${error instanceof Error ? error.message : '알 수 없는 오류'}`)
+      throw error
     }
   }
 
@@ -538,34 +555,28 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
         <button
           onClick={async () => {
             if (!user) return
-            
+
             try {
               // 기존 인증된 계좌 정보 로드
               const { dataService } = await import('../lib/dataService')
               const existingAccounts = await dataService.entities.bank_accounts.list({
                 filter: { user_id: user.user_id }
               })
-              
-              const verifiedAccount = existingAccounts.find(account => account.is_verified)
-              
+
+              const verifiedAccount = existingAccounts.find(account => account.is_verified || account.real_name_verified)
+
               if (verifiedAccount) {
-                // 인증된 계좌가 있으면 기존 정보로 설정
-                setWithdrawalData({
-                  requested_amount: '',
+                setExistingBankAccount({
+                  id: verifiedAccount.id,
                   bank_name: verifiedAccount.bank_name,
                   account_number: verifiedAccount.account_number,
-                  account_holder: verifiedAccount.account_holder
+                  account_holder: verifiedAccount.account_holder,
+                  is_verified: verifiedAccount.is_verified || verifiedAccount.real_name_verified
                 })
               } else {
-                // 인증된 계좌가 없으면 빈 상태로 설정
-                setWithdrawalData({
-                  requested_amount: '',
-                  bank_name: '',
-                  account_number: '',
-                  account_holder: ''
-                })
+                setExistingBankAccount(null)
               }
-              
+
               setShowWithdrawalModal(true)
             } catch (error) {
               console.error('계좌 정보 로드 실패:', error)
@@ -807,239 +818,32 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
         </div>
       </div>
 
-      {/* 출금 요청 모달 */}
-      {showWithdrawalModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">포인트 출금</h2>
-              
-              {/* 계좌인증 안내 */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <CreditCard className="w-5 h-5 text-vintage-400" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-vintage-800 mb-1">
-                      계좌인증 필수 안내
-                    </h3>
-                    <p className="text-sm text-vintage-700">
-                      출금 요청을 위해서는 먼저 계좌인증이 완료되어야 합니다.
-                    </p>
-                    <ul className="text-xs text-vintage-600 mt-2 space-y-1">
-                      <li>• 1원 인증을 통해 계좌 소유자 본인 확인</li>
-                      <li>• 인증 완료 후 출금 요청 가능</li>
-                      <li>• 새로운 계좌 입력 시 재인증 필요</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              
-              <form onSubmit={handleWithdrawalRequest} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    출금 금액
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      required
-                      min="1000"
-                      max={(() => {
-                        // 🔥 실제 DB 데이터 우선 사용
-                        const directAvailablePoints = userPointsData?.available_points || 0
-                        
-                        if (directAvailablePoints > 0) {
-                          console.log('🔍 출금 모달 최대값 - 직접 데이터 사용:', directAvailablePoints)
-                          return directAvailablePoints
-                        }
-                        
-                        // 백업: 히스토리에서 계산
-                        const completedPoints = pointHistory.filter(p => 
-                          p.payment_status === 'completed' || p.payment_status === '지급완료'
-                        )
-                        const totalCompletedPoints = completedPoints.reduce((sum, p) => sum + (p.points_amount || 0), 0)
-                        
-                        const withdrawnPoints = pointHistory.filter(p => 
-                          p.points_type === 'withdrawn' || p.payment_status === '출금완료'
-                        )
-                        const totalWithdrawnPoints = withdrawnPoints.reduce((sum, p) => sum + Math.abs(p.points_amount || 0), 0)
-                        
-                        return Math.max(0, totalCompletedPoints - totalWithdrawnPoints)
-                      })()}
-                      value={withdrawalData.requested_amount}
-                      onChange={(e) => setWithdrawalData(prev => ({ ...prev, requested_amount: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500"
-                      placeholder="1000"
-                    />
-                    <span className="absolute right-3 top-2 text-gray-500">P</span>
-                  </div>
-                  <div className="mt-1 space-y-1">
-                    <p className="text-xs text-gray-500">
-                      출금 가능: {(() => {
-                        // 🔥 실제 DB 데이터 우선 사용
-                        const directAvailablePoints = userPointsData?.available_points || 0
-                        
-                        if (directAvailablePoints > 0) {
-                          return directAvailablePoints.toLocaleString()
-                        }
-                        
-                        // 백업: 히스토리에서 계산
-                        const completedPoints = pointHistory.filter(p => 
-                          p.payment_status === 'completed' || p.payment_status === '지급완료'
-                        )
-                        const totalCompletedPoints = completedPoints.reduce((sum, p) => sum + (p.points_amount || 0), 0)
-                        
-                        const withdrawnPoints = pointHistory.filter(p => 
-                          p.points_type === 'withdrawn' || p.payment_status === '출금완료'
-                        )
-                        const totalWithdrawnPoints = withdrawnPoints.reduce((sum, p) => sum + Math.abs(p.points_amount || 0), 0)
-                        
-                        const availablePoints = Math.max(0, totalCompletedPoints - totalWithdrawnPoints)
-                        return availablePoints.toLocaleString()
-                      })()}P (최소 1,000P)
-                    </p>
-                    {withdrawalData.requested_amount && (
-                      <p className={`text-xs ${
-                        Number(withdrawalData.requested_amount) >= 1000 
-                          ? 'text-green-600' 
-                          : 'text-red-600'
-                      }`}>
-                        {Number(withdrawalData.requested_amount) >= 1000 
-                          ? '✓ 출금 신청 가능' 
-                          : '✗ 최소 1,000P 이상 입력해주세요'
-                        }
-                      </p>
-                    )}
-                  </div>
-                </div>
-                {/* 세금 미리보기 */}
-                {previewTax.finalAmount > 0 && (
-                  <div className="bg-purple-50 p-3 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">출금 정보</h4>
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span>요청 금액:</span>
-                        <span>{Number(withdrawalData.requested_amount).toLocaleString()}원</span>
-                      </div>
-                      <div className="flex justify-between text-red-600">
-                        <span>세금 (3.3%):</span>
-                        <span>-{previewTax.taxAmount.toLocaleString()}원</span>
-                      </div>
-                      <div className="flex justify-between font-bold border-t pt-1">
-                        <span>실지급액:</span>
-                        <span>{previewTax.finalAmount.toLocaleString()}원</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+      {/* 새로운 출금 요청 모달 */}
+      <WithdrawalRequestModal
+        isOpen={showWithdrawalModal}
+        onClose={() => setShowWithdrawalModal(false)}
+        availablePoints={(() => {
+          const directAvailablePoints = userPointsData?.available_points || 0
+          if (directAvailablePoints > 0) return directAvailablePoints
 
-                {/* 계좌 정보 섹션 */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-gray-900">입금 계좌 정보</h3>
-                  </div>
-                  
-                  {withdrawalData.bank_name ? (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center mb-2">
-                        <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                        <span className="text-sm font-medium text-green-800">인증된 계좌</span>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">은행:</span>
-                          <span className="font-medium">{withdrawalData.bank_name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">계좌번호:</span>
-                          <span className="font-medium">{withdrawalData.account_number}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">예금주:</span>
-                          <span className="font-medium">{withdrawalData.account_holder}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center mb-2">
-                        <AlertCircle className="w-5 h-5 text-gray-600 mr-2" />
-                        <span className="text-sm font-medium text-gray-800">출금 신청 시 본인인증 진행</span>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        출금 신청 버튼을 누르면 본인인증 후 출금이 처리됩니다.
-                      </p>
-                    </div>
-                  )}
-                </div>
+          const completedPoints = pointHistory.filter(p =>
+            p.payment_status === 'completed' || p.payment_status === '지급완료'
+          )
+          const totalCompletedPoints = completedPoints.reduce((sum, p) => sum + (p.points_amount || 0), 0)
 
-                {/* 출금 안내 - 핵심 정보만 */}
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-yellow-900 mb-2">출금 안내</h4>
-                      <ul className="text-xs text-yellow-800 space-y-1">
-                        <li>• 최소 출금 금액: 1,000원</li>
-                        <li>• 본인 명의 계좌만 가능</li>
-                        <li>• 세금 3.3% 차감 후 지급</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+          const withdrawnPoints = pointHistory.filter(p =>
+            p.points_type === 'withdrawn' || p.payment_status === '출금완료'
+          )
+          const totalWithdrawnPoints = withdrawnPoints.reduce((sum, p) => sum + Math.abs(p.points_amount || 0), 0)
 
-                {/* 고객센터 정보 */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      <FileText className="w-5 h-5 text-gray-600 mt-0.5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">고객센터</h4>
-                      <div className="text-xs text-gray-700 space-y-1">
-                        <div>📧 이메일: support@allthingbucket.com</div>
-                        <div>💬 카카오톡: @올띵버킷 (24시간 문의 가능)</div>
-                        <div className="mt-2 text-gray-600">
-                          문의사항이 있으시면 언제든 연락주세요!
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          return Math.max(0, totalCompletedPoints - totalWithdrawnPoints)
+        })()}
+        onSubmit={handleWithdrawalSubmit}
+        existingBankAccount={existingBankAccount}
+      />
 
-                <div className="flex space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowWithdrawalModal(false)
-                      setWithdrawalData({
-                        requested_amount: '',
-                        bank_name: '',
-                        account_number: '',
-                        account_holder: ''
-                      })
-                    }}
-                    className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!withdrawalData.requested_amount || Number(withdrawalData.requested_amount) < 1000}
-                    className="flex-1 bg-navy-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    출금 요청
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 기존 출금 모달 제거됨 - 위의 새 모달로 대체 */}
+
 
       {/* 캠페인 히스토리 모달 */}
       {showCampaignHistoryModal && selectedCampaign && (

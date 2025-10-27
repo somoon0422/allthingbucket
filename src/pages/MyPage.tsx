@@ -307,6 +307,24 @@ const MyPage: React.FC = () => {
         profileData.tax_info = formData.tax_info
       }
 
+      // 3. user_profiles 테이블에도 전화번호 동기화 (프로필 완성도 체크용)
+      try {
+        const userProfiles = await (dataService.entities as any).user_profiles.list()
+        const userProfile = Array.isArray(userProfiles)
+          ? userProfiles.find((p: any) => p && p.user_id === user.user_id)
+          : null
+
+        if (userProfile && formData.phone) {
+          await (dataService.entities as any).user_profiles.update(userProfile.id, {
+            phone: formData.phone,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ user_profiles 테이블에 전화번호 동기화 완료')
+        }
+      } catch (syncError) {
+        console.warn('user_profiles 동기화 실패 (무시):', syncError)
+      }
+
       if (profile && profile._id) {
         // influencer_profiles 업데이트 - Supabase API 사용
         const result = await (dataService.entities as any).influencer_profiles.update(profile._id, profileData)
