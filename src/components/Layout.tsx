@@ -127,22 +127,53 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     try {
       if (!user) return
 
+      console.log('🔄 프로필 업데이트 시작:', { userId: user.id, phone: data.phone })
+
+      // influencer_profiles 테이블 업데이트/생성
+      try {
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+        const influencerProfile = Array.isArray(influencerProfiles)
+          ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
+          : null
+
+        if (influencerProfile) {
+          // 기존 프로필 업데이트
+          await (dataService.entities as any).influencer_profiles.update(influencerProfile.id, {
+            phone: data.phone,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ influencer_profiles 업데이트 완료')
+        } else {
+          // 새 프로필 생성
+          await (dataService.entities as any).influencer_profiles.create({
+            user_id: user.id,
+            phone: data.phone,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ influencer_profiles 생성 완료')
+        }
+      } catch (error) {
+        console.error('❌ influencer_profiles 업데이트 실패:', error)
+        throw error // 이 부분은 실패하면 안되므로 에러 throw
+      }
+
       // user_profiles 테이블 업데이트 (user_id로 검색)
-      const profiles = await (dataService.entities as any).user_profiles.list()
-      const profile = Array.isArray(profiles)
-        ? profiles.find((p: any) => p && p.user_id === user.id)
-        : null
+      try {
+        const profiles = await (dataService.entities as any).user_profiles.list()
+        const profile = Array.isArray(profiles)
+          ? profiles.find((p: any) => p && p.user_id === user.id)
+          : null
 
-      console.log('🔍 프로필 업데이트 대상:', { userId: user.id, foundProfile: !!profile })
-
-      if (profile) {
-        await (dataService.entities as any).user_profiles.update(profile.id, {
-          phone: data.phone,
-          updated_at: new Date().toISOString()
-        })
-        console.log('✅ user_profiles 업데이트 완료')
-      } else {
-        console.warn('⚠️ user_profiles에서 프로필을 찾을 수 없음')
+        if (profile) {
+          await (dataService.entities as any).user_profiles.update(profile.id, {
+            phone: data.phone,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ user_profiles 업데이트 완료')
+        }
+      } catch (error) {
+        console.warn('⚠️ user_profiles 업데이트 실패 (무시):', error)
       }
 
       // users 테이블도 업데이트
@@ -156,9 +187,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             phone: data.phone,
             updated_at: new Date().toISOString()
           })
+          console.log('✅ users 업데이트 완료')
         }
       } catch (error) {
-        console.warn('users 테이블 업데이트 실패 (무시):', error)
+        console.warn('⚠️ users 테이블 업데이트 실패 (무시):', error)
       }
 
       // 사용자 상태 업데이트
@@ -183,7 +215,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setIsProfileModalOpen(false)
       console.log('✅ 프로필 완성 완료')
     } catch (error) {
-      console.error('프로필 업데이트 실패:', error)
+      console.error('❌ 프로필 업데이트 실패:', error)
       toast.error('프로필 업데이트에 실패했습니다')
     }
   }
