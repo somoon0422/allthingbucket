@@ -8,7 +8,7 @@ import CampaignCreationModal from '../components/CampaignCreationModal'
 import CampaignEditModal from '../components/CampaignEditModal'
 import ShippingModal from '../components/ShippingModal'
 import ConsultationManager from '../components/ConsultationManager'
-import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, MessageSquare, User, Calculator, Truck, Package, Edit, Phone, Mail, Tag, DollarSign} from 'lucide-react'
+import {CheckCircle, XCircle, Clock, Home, RefreshCw, FileText, UserCheck, Gift, Plus, Trash2, Edit3, X, AlertTriangle, Eye, Bell, Settings, Banknote, Download, MessageCircle, MessageSquare, User, Calculator, Truck, Package, Edit, Phone, Mail, Tag, DollarSign, ChevronLeft, ChevronRight} from 'lucide-react'
 import toast from 'react-hot-toast'
 // 이메일 및 카카오 알림톡 서비스
 import { emailNotificationService } from '../services/emailNotificationService'
@@ -98,6 +98,11 @@ const AdminDashboard: React.FC = () => {
   const [chatNotifications, setChatNotifications] = useState<any[]>([])
   const [unreadChatCount, setUnreadChatCount] = useState(0)
   const [onlineUsers, setOnlineUsers] = useState<any[]>([])
+
+  // 이미지 모달 상태
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [imageGallery, setImageGallery] = useState<string[]>([])
   
   // 회원 상세보기 모달 상태
   const [showUserDetailModal, setShowUserDetailModal] = useState(false)
@@ -4528,7 +4533,12 @@ const AdminDashboard: React.FC = () => {
                                 key={idx}
                                 src={img}
                                 alt={`리뷰 이미지 ${idx + 1}`}
-                                className="w-full h-48 object-cover rounded-lg border"
+                                className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => {
+                                  setSelectedImage(img)
+                                  setImageGallery(selectedApplication.review_images)
+                                  setSelectedImageIndex(idx)
+                                }}
                               />
                             ))}
                           </div>
@@ -6833,6 +6843,70 @@ const AdminDashboard: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 이미지 모달 */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-fade-in"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
+            {/* 닫기 버튼 */}
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 p-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full transition-all duration-300 z-10 hover:scale-110"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* 이전 이미지 버튼 */}
+            {imageGallery.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const newIndex = selectedImageIndex === 0 ? imageGallery.length - 1 : selectedImageIndex - 1
+                  setSelectedImageIndex(newIndex)
+                  setSelectedImage(imageGallery[newIndex])
+                }}
+                className="absolute left-4 p-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full transition-all duration-300 hover:scale-110"
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+            )}
+
+            {/* 이미지 */}
+            <div className="relative flex items-center justify-center w-full h-full">
+              <img
+                src={selectedImage}
+                alt="전체 이미지"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {/* 이미지 카운터 */}
+              {imageGallery.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
+                  {selectedImageIndex + 1} / {imageGallery.length}
+                </div>
+              )}
+            </div>
+
+            {/* 다음 이미지 버튼 */}
+            {imageGallery.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const newIndex = selectedImageIndex === imageGallery.length - 1 ? 0 : selectedImageIndex + 1
+                  setSelectedImageIndex(newIndex)
+                  setSelectedImage(imageGallery[newIndex])
+                }}
+                className="absolute right-4 p-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full transition-all duration-300 hover:scale-110"
+              >
+                <ChevronRight className="w-8 h-8" />
+              </button>
+            )}
           </div>
         </div>
       )}
