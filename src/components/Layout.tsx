@@ -74,43 +74,59 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // 소셜 로그인 후 프로필 완성 체크
   useEffect(() => {
     const checkProfileCompletion = async () => {
+      console.log('🔍 [프로필체크] 시작', {
+        isAuthenticated,
+        hasUser: !!user,
+        userId: user?.id,
+        isAdmin: isAdminUser()
+      })
+
       // 로그인하지 않았거나, 관리자이면 스킵
       if (!isAuthenticated || !user || isAdminUser()) {
+        console.log('⏭️ [프로필체크] 스킵 (미인증 또는 어드민)')
         return
       }
 
       try {
-        console.log('🔍 프로필 체크 시작 - user_id:', user.id)
-
         // influencer_profiles만 확인 (전화번호가 여기에 저장됨)
         const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+        console.log('📋 [프로필체크] influencer_profiles 전체 개수:', influencerProfiles?.length || 0)
 
         const influencerProfile = Array.isArray(influencerProfiles)
           ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
           : null
 
-        console.log('🔍 프로필 체크:', {
-          userId: user.id,
-          influencerProfile: !!influencerProfile,
-          influencerPhone: influencerProfile?.phone
+        console.log('🔍 [프로필체크] 결과:', {
+          found: !!influencerProfile,
+          profileId: influencerProfile?.id,
+          phone: influencerProfile?.phone,
+          phoneLength: influencerProfile?.phone?.length,
+          phoneTrimmed: influencerProfile?.phone?.trim(),
+          phoneType: typeof influencerProfile?.phone
         })
 
-        // 전화번호가 있으면 OK
-        const hasPhone = !!(influencerProfile && influencerProfile.phone && influencerProfile.phone.trim())
+        // 전화번호가 있으면 OK (더 엄격한 체크)
+        const phoneValue = influencerProfile?.phone
+        const hasPhone = !!(
+          phoneValue &&
+          typeof phoneValue === 'string' &&
+          phoneValue.trim().length >= 10
+        )
 
-        console.log('📞 전화번호 체크 결과:', {
+        console.log('📞 [프로필체크] 최종 판단:', {
           hasPhone,
-          phone: influencerProfile?.phone
+          willShowModal: !hasPhone
         })
 
         if (!hasPhone) {
-          console.log('❌ 전화번호 없음 - 프로필 완성 모달 표시')
+          console.log('❌ [프로필체크] 전화번호 없음 → 모달 표시')
           setIsProfileModalOpen(true)
         } else {
-          console.log('✅ 전화번호 확인됨 - 모달 표시 안 함')
+          console.log('✅ [프로필체크] 전화번호 있음 → 모달 표시 안 함')
+          setIsProfileModalOpen(false)
         }
       } catch (error) {
-        console.error('❌ 프로필 체크 실패:', error)
+        console.error('❌ [프로필체크] 오류 발생:', error)
       }
     }
 
