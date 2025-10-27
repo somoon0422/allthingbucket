@@ -684,6 +684,7 @@ const MyPage: React.FC = () => {
                   onChange={(phone) => setFormData(prev => ({ ...prev, phone }))}
                   required
                   placeholder="010-1234-5678"
+                  showLabel={false}
                 />
               </div>
             ) : (

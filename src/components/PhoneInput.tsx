@@ -9,6 +9,7 @@ interface PhoneInputProps {
   disabled?: boolean
   placeholder?: string
   required?: boolean
+  showLabel?: boolean
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -17,7 +18,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   error,
   disabled = false,
   placeholder = "010-1234-5678",
-  required = false
+  required = false,
+  showLabel = true
 }) => {
   const [displayValue, setDisplayValue] = useState('')
   const [isFocused, setIsFocused] = useState(false)
@@ -137,11 +139,13 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   return (
     <div>
-      <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-        <Phone className="w-4 h-4 mr-2" />
-        연락처 {required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      
+      {showLabel && (
+        <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <Phone className="w-4 h-4 mr-2" />
+          연락처 {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
+
       <div className="relative">
         {/* 전화 아이콘 */}
         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
