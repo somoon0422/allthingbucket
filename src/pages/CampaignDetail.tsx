@@ -6,7 +6,7 @@ import { useExperiences } from '../hooks/useExperiences'
 import { useWishlist } from '../hooks/useWishlist'
 import { ApplicationFormModal } from '../components/ApplicationFormModal'
 import { setCampaignOGTags } from '../utils/ogTags'
-import {Clock, ArrowLeft, CheckCircle, XCircle, AlertCircle, Share2, ChevronLeft, ChevronRight, ChevronUp, Heart, Hash, Info, Gift, Target, MessageSquare, Star, FileText, User} from 'lucide-react'
+import {Clock, ArrowLeft, CheckCircle, XCircle, AlertCircle, Share2, ChevronLeft, ChevronRight, ChevronUp, Heart, Hash, Info, Gift, Target, MessageSquare, Star, FileText, User, ExternalLink, X} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dataService } from '../lib/dataService'
 
@@ -124,6 +124,9 @@ const CampaignDetail: React.FC = () => {
   const [loadingReviews, setLoadingReviews] = useState(false)
   const [currentReviewPage, setCurrentReviewPage] = useState(1)
   const reviewsPerPage = 5
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [imageGallery, setImageGallery] = useState<string[]>([])
 
   // 이메일에서 사용자명 추출 헬퍼 함수
   const extractUsername = (email: string | null | undefined): string => {
@@ -1119,6 +1122,11 @@ const CampaignDetail: React.FC = () => {
                                   src={imageUrl}
                                   alt={`리뷰 이미지 ${index + 1}`}
                                   className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 cursor-pointer"
+                                  onClick={() => {
+                                    setSelectedImage(imageUrl)
+                                    setImageGallery(review.images)
+                                    setSelectedImageIndex(index)
+                                  }}
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=이미지+로딩+실패'
                                   }}
@@ -1409,6 +1417,70 @@ const CampaignDetail: React.FC = () => {
           setApplicationStatus({ status: 'submitted' })
         }}
       />
+
+      {/* 이미지 모달 */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-fade-in"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
+            {/* 닫기 버튼 */}
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 p-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full transition-all duration-300 z-10 hover:scale-110"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* 이전 이미지 버튼 */}
+            {imageGallery.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const newIndex = selectedImageIndex === 0 ? imageGallery.length - 1 : selectedImageIndex - 1
+                  setSelectedImageIndex(newIndex)
+                  setSelectedImage(imageGallery[newIndex])
+                }}
+                className="absolute left-4 p-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full transition-all duration-300 hover:scale-110"
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+            )}
+
+            {/* 이미지 */}
+            <div className="relative flex items-center justify-center w-full h-full">
+              <img
+                src={selectedImage}
+                alt="전체 이미지"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {/* 이미지 카운터 */}
+              {imageGallery.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
+                  {selectedImageIndex + 1} / {imageGallery.length}
+                </div>
+              )}
+            </div>
+
+            {/* 다음 이미지 버튼 */}
+            {imageGallery.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const newIndex = selectedImageIndex === imageGallery.length - 1 ? 0 : selectedImageIndex + 1
+                  setSelectedImageIndex(newIndex)
+                  setSelectedImage(imageGallery[newIndex])
+                }}
+                className="absolute right-4 p-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full transition-all duration-300 hover:scale-110"
+              >
+                <ChevronRight className="w-8 h-8" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
