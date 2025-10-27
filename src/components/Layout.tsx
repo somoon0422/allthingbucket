@@ -88,32 +88,49 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
 
       try {
-        // influencer_profiles만 확인 (전화번호가 여기에 저장됨)
-        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
-        console.log('📋 [프로필체크] influencer_profiles 전체 개수:', influencerProfiles?.length || 0)
+        // 1️⃣ user_profiles 체크
+        const userProfiles = await (dataService.entities as any).user_profiles.list()
+        const userProfile = Array.isArray(userProfiles)
+          ? userProfiles.find((p: any) => p && p.user_id === user.id)
+          : null
 
+        console.log('📋 [프로필체크] user_profiles:', {
+          found: !!userProfile,
+          phone: userProfile?.phone
+        })
+
+        // 2️⃣ influencer_profiles 체크
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
         const influencerProfile = Array.isArray(influencerProfiles)
           ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
           : null
 
-        console.log('🔍 [프로필체크] 결과:', {
+        console.log('📋 [프로필체크] influencer_profiles:', {
           found: !!influencerProfile,
-          profileId: influencerProfile?.id,
-          phone: influencerProfile?.phone,
-          phoneLength: influencerProfile?.phone?.length,
-          phoneTrimmed: influencerProfile?.phone?.trim(),
-          phoneType: typeof influencerProfile?.phone
+          phone: influencerProfile?.phone
         })
 
-        // 전화번호가 있으면 OK (더 엄격한 체크)
-        const phoneValue = influencerProfile?.phone
-        const hasPhone = !!(
-          phoneValue &&
-          typeof phoneValue === 'string' &&
-          phoneValue.trim().length >= 10
+        // 3️⃣ 둘 중 하나라도 전화번호가 있으면 OK
+        const userProfilePhone = userProfile?.phone
+        const influencerProfilePhone = influencerProfile?.phone
+
+        const hasPhoneInUserProfile = !!(
+          userProfilePhone &&
+          typeof userProfilePhone === 'string' &&
+          userProfilePhone.trim().length >= 10
         )
 
+        const hasPhoneInInfluencerProfile = !!(
+          influencerProfilePhone &&
+          typeof influencerProfilePhone === 'string' &&
+          influencerProfilePhone.trim().length >= 10
+        )
+
+        const hasPhone = hasPhoneInUserProfile || hasPhoneInInfluencerProfile
+
         console.log('📞 [프로필체크] 최종 판단:', {
+          hasPhoneInUserProfile,
+          hasPhoneInInfluencerProfile,
           hasPhone,
           willShowModal: !hasPhone
         })
