@@ -86,8 +86,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
 
       try {
-        // user_profiles 테이블에서 전화번호 확인
-        const profile = await (dataService.entities as any).user_profiles.get(user.id)
+        // user_profiles 테이블에서 전화번호 확인 (user_id로 검색)
+        const profiles = await (dataService.entities as any).user_profiles.list()
+        const profile = Array.isArray(profiles)
+          ? profiles.find((p: any) => p && p.user_id === user.id)
+          : null
+
+        console.log('🔍 프로필 체크:', { userId: user.id, foundProfile: !!profile, phone: profile?.phone })
 
         // 전화번호가 없으면 모달 띄우기
         if (!profile || !profile.phone) {
@@ -119,14 +124,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     try {
       if (!user) return
 
-      // user_profiles 테이블 업데이트
-      const profile = await (dataService.entities as any).user_profiles.get(user.id)
+      // user_profiles 테이블 업데이트 (user_id로 검색)
+      const profiles = await (dataService.entities as any).user_profiles.list()
+      const profile = Array.isArray(profiles)
+        ? profiles.find((p: any) => p && p.user_id === user.id)
+        : null
+
+      console.log('🔍 프로필 업데이트 대상:', { userId: user.id, foundProfile: !!profile })
 
       if (profile) {
         await (dataService.entities as any).user_profiles.update(profile.id, {
           phone: data.phone,
           updated_at: new Date().toISOString()
         })
+        console.log('✅ user_profiles 업데이트 완료')
+      } else {
+        console.warn('⚠️ user_profiles에서 프로필을 찾을 수 없음')
       }
 
       // users 테이블도 업데이트
