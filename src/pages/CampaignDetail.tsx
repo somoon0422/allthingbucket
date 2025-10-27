@@ -214,15 +214,25 @@ const CampaignDetail: React.FC = () => {
       const allReviews = await dataService.entities.user_reviews.list()
       const users = await dataService.entities.users.list()
 
+      // review_submissions에서 blog_url 가져오기
+      const reviewSubmissions = await (dataService.entities as any).review_submissions?.list() || []
+
       // 이 캠페인에 대한 리뷰만 필터링
       const campaignReviews = allReviews
         .filter((review: any) => review.campaign_id === id || review.experience_id === id)
         .map((review: any) => {
           // user_id로 사용자 정보 찾기
           const user = users.find((u: any) => u.user_id === review.user_id)
+
+          // review_id로 submission 데이터 찾기 (blog_url 가져오기)
+          const submission = Array.isArray(reviewSubmissions)
+            ? reviewSubmissions.find((s: any) => s.review_id === review.review_id)
+            : null
+
           return {
             ...review,
-            user_email: user?.email || null
+            user_email: user?.email || null,
+            blog_url: submission?.blog_url || review.blog_url || null
           }
         })
         .sort((a: any, b: any) => {
@@ -1054,6 +1064,51 @@ const CampaignDetail: React.FC = () => {
                         <p className="text-slate-700 leading-relaxed whitespace-pre-line mb-5 text-base">
                           {review.content || review.review_content}
                         </p>
+
+                        {/* 블로그 URL 임베드 미리보기 */}
+                        {review.blog_url && (
+                          <div className="mt-5 mb-5">
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-2">
+                                  <FileText className="w-5 h-5 text-blue-600" />
+                                  <span className="text-sm font-bold text-blue-900">블로그 리뷰</span>
+                                </div>
+                                <a
+                                  href={review.blog_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 font-bold hover:underline"
+                                >
+                                  <span>새 창에서 보기</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
+                              <iframe
+                                src={review.blog_url}
+                                className="w-full h-96 rounded-lg bg-white shadow-inner"
+                                title={`블로그 리뷰 미리보기`}
+                                sandbox="allow-scripts allow-same-origin"
+                                loading="lazy"
+                                onError={(e) => {
+                                  // iframe 로드 실패 시 링크로 대체
+                                  const iframe = e.target as HTMLIFrameElement
+                                  const parent = iframe.parentElement
+                                  if (parent) {
+                                    parent.innerHTML = `
+                                      <a href="${review.blog_url}" target="_blank" rel="noopener noreferrer"
+                                         class="flex items-center justify-center space-x-2 p-6 bg-white rounded-lg hover:bg-blue-50 transition-colors">
+                                        <FileText class="w-6 h-6 text-blue-600" />
+                                        <span class="text-blue-600 font-bold underline">${review.blog_url}</span>
+                                        <ExternalLink class="w-4 h-4 text-blue-600" />
+                                      </a>
+                                    `
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
 
                         {/* 리뷰 이미지들 */}
                         {review.images && review.images.length > 0 && (
