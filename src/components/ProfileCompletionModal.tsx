@@ -105,25 +105,35 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
   }
 
   // 완료
-  const handleComplete = () => {
-    if (requiresPhoneOnly) {
-      // 전화번호만 필요한 경우 (회원가입 후)
-      if (!isVerified) {
-        setError('휴대폰 인증을 완료해주세요')
-        return
+  const handleComplete = async () => {
+    try {
+      setLoading(true)
+      setError('')
+
+      if (requiresPhoneOnly) {
+        // 전화번호만 필요한 경우 (회원가입 후)
+        if (!isVerified) {
+          setError('휴대폰 인증을 완료해주세요')
+          return
+        }
+        await onComplete({ name: '', phone })
+      } else {
+        // 모든 정보 필요한 경우 (캠페인 신청 시)
+        if (!name) {
+          setError('실명을 입력해주세요')
+          return
+        }
+        if (!isVerified) {
+          setError('휴대폰 인증을 완료해주세요')
+          return
+        }
+        await onComplete({ name, phone })
       }
-      onComplete({ name: '', phone })
-    } else {
-      // 모든 정보 필요한 경우 (캠페인 신청 시)
-      if (!name) {
-        setError('실명을 입력해주세요')
-        return
-      }
-      if (!isVerified) {
-        setError('휴대폰 인증을 완료해주세요')
-        return
-      }
-      onComplete({ name, phone })
+    } catch (error) {
+      console.error('프로필 완성 실패:', error)
+      setError('프로필 완성에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -280,10 +290,10 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
           {/* 완료 버튼 */}
           <button
             onClick={handleComplete}
-            disabled={!isVerified || (!requiresPhoneOnly && !name)}
+            disabled={loading || !isVerified || (!requiresPhoneOnly && !name)}
             className="w-full bg-gradient-to-r from-navy-600 to-pink-600 text-white py-3.5 rounded-xl font-semibold hover:from-navy-700 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            완료
+            {loading ? '처리 중...' : '완료'}
           </button>
         </div>
       </div>
