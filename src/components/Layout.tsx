@@ -86,20 +86,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
 
       try {
-        // user_profiles 테이블에서 전화번호 확인 (user_id로 검색)
-        const profiles = await (dataService.entities as any).user_profiles.list()
-        const profile = Array.isArray(profiles)
-          ? profiles.find((p: any) => p && p.user_id === user.id)
+        // user_profiles와 influencer_profiles 모두 확인
+        const userProfiles = await (dataService.entities as any).user_profiles.list()
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+
+        const userProfile = Array.isArray(userProfiles)
+          ? userProfiles.find((p: any) => p && p.user_id === user.id)
           : null
 
-        console.log('🔍 프로필 체크:', { userId: user.id, foundProfile: !!profile, phone: profile?.phone })
+        const influencerProfile = Array.isArray(influencerProfiles)
+          ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
+          : null
 
-        // 전화번호가 없으면 모달 띄우기
-        if (!profile || !profile.phone) {
+        console.log('🔍 프로필 체크:', {
+          userId: user.id,
+          userProfile: !!userProfile,
+          influencerProfile: !!influencerProfile,
+          userPhone: userProfile?.phone,
+          influencerPhone: influencerProfile?.phone
+        })
+
+        // 두 테이블 중 하나에라도 전화번호가 있으면 OK
+        const hasPhone = (userProfile && userProfile.phone) || (influencerProfile && influencerProfile.phone)
+
+        if (!hasPhone) {
           console.log('📞 전화번호 없음 - 프로필 완성 모달 표시')
           setIsProfileModalOpen(true)
         } else {
-          console.log('✅ 전화번호 확인됨:', profile.phone)
+          console.log('✅ 전화번호 확인됨')
           // 전화번호가 있으면 localStorage에 체크 완료 표시
           localStorage.setItem('profileChecked', 'true')
         }
