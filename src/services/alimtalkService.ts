@@ -96,6 +96,7 @@ class AlimtalkService {
 
 포인트 적립 후 현금으로 출금 신청도 가능합니다.
 
+지금 진행 중인 체험단 보러가기
 https://allthingbucket.com/experiences`
       }
     })
