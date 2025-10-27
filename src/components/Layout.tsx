@@ -86,9 +86,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
 
       try {
-        // user_profiles와 influencer_profiles 모두 확인
+        // users, user_profiles, influencer_profiles 모두 확인
+        const users = await (dataService.entities as any).users.list()
         const userProfiles = await (dataService.entities as any).user_profiles.list()
         const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+
+        const dbUser = Array.isArray(users)
+          ? users.find((u: any) => u && u.user_id === user.id)
+          : null
 
         const userProfile = Array.isArray(userProfiles)
           ? userProfiles.find((p: any) => p && p.user_id === user.id)
@@ -100,14 +105,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         console.log('🔍 프로필 체크:', {
           userId: user.id,
+          dbUser: !!dbUser,
           userProfile: !!userProfile,
           influencerProfile: !!influencerProfile,
+          dbUserPhone: dbUser?.phone,
           userPhone: userProfile?.phone,
           influencerPhone: influencerProfile?.phone
         })
 
-        // 두 테이블 중 하나에라도 전화번호가 있으면 OK
-        const hasPhone = (userProfile && userProfile.phone) || (influencerProfile && influencerProfile.phone)
+        // 세 테이블 중 하나에라도 전화번호가 있으면 OK
+        const hasPhone = (dbUser && dbUser.phone) ||
+                        (userProfile && userProfile.phone) ||
+                        (influencerProfile && influencerProfile.phone)
 
         if (!hasPhone) {
           console.log('📞 전화번호 없음 - 프로필 완성 모달 표시')
