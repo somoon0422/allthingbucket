@@ -90,11 +90,11 @@ class AlimtalkService {
         type: 'LMS',
         from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
         subject: '[올띵버킷] 가입 환영',
-        content: `${userName}님, 가입을 환영합니다!
+        content: `${userName}님, 올띵버킷 가입을 환영합니다!
 
-올띵버킷에서 다양한 체험단에 참여하고 리뷰를 작성하면 포인트를 받을 수 있습니다.
+다양한 체험단에 신청하고 리뷰 작성을 통해 누구나 인플루언서가 될 수 있는 기회를 잡으세요!
 
-지금 바로 참여 가능한 캠페인을 확인해보세요!
+포인트 적립 후 현금으로 출금 신청도 가능합니다.
 
 https://allthingbucket.com/experiences`
       }
