@@ -195,8 +195,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       // 사용자 상태 업데이트
       updateUser({
+        phone: data.phone,
         profile: {
-          ...user.profile,
+          ...(user.profile || {}),
           phone: data.phone
         }
       })

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { AlertCircle, X, CheckCircle2, User, Phone, Instagram, Clock } from 'lucide-react'
 import { sendVerificationCode, verifyCode, formatPhoneNumber } from '../services/phoneVerificationService'
+import PhoneInput from './PhoneInput'
 
 interface ProfileCompletionModalProps {
   isOpen: boolean
@@ -182,23 +183,23 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
 
             {/* 휴대폰 번호 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Phone className="w-4 h-4 inline mr-1" />
-                휴대폰 번호
-              </label>
               <div className="flex space-x-2">
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="01012345678"
-                  disabled={isVerified}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy-500 focus:border-transparent disabled:bg-gray-100"
-                />
+                <div className="flex-1">
+                  <PhoneInput
+                    value={phone}
+                    onChange={setPhone}
+                    disabled={isVerified}
+                    placeholder="010-1234-5678"
+                    required={true}
+                    showLabel={true}
+                  />
+                </div>
+              </div>
+              <div className="mt-2">
                 <button
                   onClick={handleSendCode}
-                  disabled={loading || isVerified}
-                  className="px-6 py-3 bg-navy-600 text-white rounded-xl hover:bg-navy-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium whitespace-nowrap"
+                  disabled={loading || isVerified || phone.replace(/[^0-9]/g, '').length < 10}
+                  className="w-full px-6 py-3 bg-navy-600 text-white rounded-xl hover:bg-navy-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {isCodeSent ? '재발송' : '인증번호 발송'}
                 </button>
