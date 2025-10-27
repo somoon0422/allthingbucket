@@ -87,9 +87,16 @@ class AlimtalkService {
         url: 'https://allthingbucket.com/experiences'
       },
       failoverConfig: {
-        type: 'SMS',
+        type: 'LMS',
         from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
-        content: `[올띵버킷]\n${userName}님, 가입을 환영합니다! 🎉\n\n다양한 체험단에 참여하고 리뷰 작성으로 포인트를 받아보세요!\n\nhttps://allthingbucket.com/experiences`
+        subject: '[올띵버킷] 가입 환영',
+        content: `${userName}님, 가입을 환영합니다!
+
+올띵버킷에서 다양한 체험단에 참여하고 리뷰를 작성하면 포인트를 받을 수 있습니다.
+
+지금 바로 참여 가능한 캠페인을 확인해보세요!
+
+https://allthingbucket.com/experiences`
       }
     })
   }
