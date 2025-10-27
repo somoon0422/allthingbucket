@@ -201,7 +201,7 @@ https://allthingbucket.com/experiences`
         type: 'LMS',
         from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
         subject: '[올띵버킷] 리뷰 승인 완료',
-        content: `[올띵버킷]\n${userName}님, 리뷰가 승인되었습니다! ✨\n\n${campaignName} 리뷰 검수가 완료되어 포인트가 지급되었습니다.\n\n💰 포인트 지급 내역\n- 지급 포인트: ${amount}P\n- 현재 잔액: ${totalPoints}P\n- 지급일: ${paymentDate}\n\nhttps://allthingbucket.com/points`
+        content: `[올띵버킷]\n${userName}님, 리뷰가 승인되었습니다! ✨\n\n${campaignName} 리뷰 검수가 완료되어 포인트가 지급되었습니다.\n\n💰 포인트 지급 내역\n- 지급 포인트: ${amount}P\n- 현재 잔액: ${totalPoints}P\n- 지급일: ${paymentDate}\n\n💸 적립된 포인트는 현금으로 출금 가능합니다!\n출금 신청하기: https://allthingbucket.com/points`
       }
     })
   }

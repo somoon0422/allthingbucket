@@ -901,7 +901,10 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                     </div>
                     <div>
                       <span className="font-semibold text-gray-900">🎉 리뷰 승인 및 포인트 지급:</span>
-                      <span className="text-gray-700 ml-1">관리자가 리뷰를 승인하면 포인트가 자동으로 지급됩니다!</span>
+                      <span className="text-gray-700 ml-1">관리자가 리뷰를 승인하면 포인트가 자동으로 지급됩니다! </span>
+                      <a href="/points" className="text-blue-600 hover:text-blue-700 font-semibold underline ml-1">
+                        적립된 포인트 현금으로 출금하기 →
+                      </a>
                     </div>
                   </div>
                 </div>
