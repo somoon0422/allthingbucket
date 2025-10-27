@@ -15,7 +15,7 @@ import Points from './Points'
 import MyApplications from './MyApplications'
 
 const MyPage: React.FC = () => {
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, isAdminUser } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sidebarSection, setSidebarSection] = useState(searchParams.get('section') || 'applications')
@@ -204,8 +204,8 @@ const MyPage: React.FC = () => {
 
       setMissingFields(missing)
 
-      // 프로필 미완성 시 안내 모달 표시
-      if (missing.length > 0) {
+      // 프로필 미완성 시 안내 모달 표시 (단, 어드민은 제외)
+      if (missing.length > 0 && !isAdminUser()) {
         setShowCompletionModal(true)
         setEditMode(true) // 자동으로 편집 모드 활성화
       }
