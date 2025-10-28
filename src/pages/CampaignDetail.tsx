@@ -958,6 +958,7 @@ const CampaignDetail: React.FC = () => {
             )}
               </div>
             )}
+          </div>
 
           {/* 오른쪽 사이드바 - 항상 표시 */}
           <div className="lg:col-span-1">
