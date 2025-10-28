@@ -2310,7 +2310,8 @@ export const dataService = {
           return []
         }
       }
-    },
+    }
+  },  // entities 끝
 
   // 커뮤니티 기능
   community: {
@@ -2425,6 +2426,32 @@ export const dataService = {
         console.error('게시물 삭제 실패:', error)
         return { error }
       }
+    }
+  },  // community 끝
+
+  // 이미지 업로드
+  uploadImage: async (formData: FormData) => {
+    try {
+      const file = formData.get('file') as File
+      if (!file) {
+        return { data: null, error: new Error('파일이 없습니다') }
+      }
+
+      const fileName = `${Date.now()}_${file.name}`
+      const { data, error } = await supabase.storage
+        .from('community-images')
+        .upload(fileName, file)
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('community-images')
+        .getPublicUrl(fileName)
+
+      return { data: { url: publicUrl }, error: null }
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error)
+      return { data: null, error }
     }
   }
 }
