@@ -4,6 +4,8 @@ import { useAuth } from '../hooks/useAuth'
 import { MessageSquare, ThumbsUp, PenSquare, Search, X, Trash2, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 
 interface Post {
   id: string
@@ -123,8 +125,10 @@ const Community: React.FC = () => {
   }
 
   const getPreviewText = (content: string, maxLength: number = 100) => {
-    if (content.length <= maxLength) return content
-    return content.substring(0, maxLength) + '...'
+    // HTML 태그 제거
+    const text = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
   }
 
   const handleDeletePost = async (postId: string, e: React.MouseEvent) => {
@@ -307,6 +311,30 @@ const Community: React.FC = () => {
   )
 }
 
+// Quill 에디터 설정
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }],
+    [{ 'font': [] }],
+    [{ 'size': ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    [{ 'align': [] }],
+    ['link', 'image'],
+    ['clean']
+  ]
+}
+
+const quillFormats = [
+  'header', 'font', 'size',
+  'bold', 'italic', 'underline', 'strike',
+  'color', 'background',
+  'list', 'bullet',
+  'align',
+  'link', 'image'
+]
+
 // 글쓰기 모달
 const WriteModal: React.FC<{
   onClose: () => void
@@ -414,12 +442,17 @@ const WriteModal: React.FC<{
           {/* 내용 */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">내용</label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="내용을 입력하세요"
-              className="w-full h-64 p-3 text-sm border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-1 focus:ring-[#E84E86] focus:border-[#E84E86]"
-            />
+            <div className="border border-gray-300 rounded-md">
+              <ReactQuill
+                theme="snow"
+                value={content}
+                onChange={setContent}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="내용을 입력하세요"
+                style={{ height: '300px', marginBottom: '42px' }}
+              />
+            </div>
           </div>
 
           {/* 이미지 */}

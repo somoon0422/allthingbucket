@@ -4,6 +4,7 @@ import { dataService } from '../lib/dataService'
 import { useAuth } from '../hooks/useAuth'
 import { ThumbsUp, MessageSquare, ArrowLeft, Trash2, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
+import 'react-quill/dist/quill.snow.css'
 
 interface Post {
   id: string
@@ -228,7 +229,10 @@ const CommunityDetail: React.FC = () => {
             </div>
 
             <div className="prose max-w-none">
-              <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+              <div
+                className="text-gray-900 ql-editor"
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
             </div>
 
             {post.image_url && (
