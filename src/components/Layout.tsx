@@ -20,6 +20,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [existingPhone, setExistingPhone] = useState('')
+  const [hasPhone, setHasPhone] = useState(false)
 
   const navigationItems = [
     { name: '홈', href: '/', icon: Home },
@@ -114,7 +116,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           phone: influencerProfile?.phone
         })
 
-        // 3️⃣ 둘 중 하나라도 전화번호가 있으면 OK
+        // 3️⃣ 전화번호 체크
         const userProfilePhone = userProfile?.phone
         const influencerProfilePhone = influencerProfile?.phone
 
@@ -130,20 +132,46 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           influencerProfilePhone.trim().length >= 10
         )
 
-        const hasPhone = hasPhoneInUserProfile || hasPhoneInInfluencerProfile
+        const phoneExists = hasPhoneInUserProfile || hasPhoneInInfluencerProfile
+        const phoneNumber = hasPhoneInUserProfile ? userProfilePhone : (hasPhoneInInfluencerProfile ? influencerProfilePhone : '')
+
+        // 4️⃣ 닉네임 체크
+        const userProfileNickname = userProfile?.nickname
+        const influencerProfileNickname = influencerProfile?.nickname
+
+        const hasNicknameInUserProfile = !!(
+          userProfileNickname &&
+          typeof userProfileNickname === 'string' &&
+          userProfileNickname.trim().length >= 2
+        )
+
+        const hasNicknameInInfluencerProfile = !!(
+          influencerProfileNickname &&
+          typeof influencerProfileNickname === 'string' &&
+          influencerProfileNickname.trim().length >= 2
+        )
+
+        const nicknameExists = hasNicknameInUserProfile || hasNicknameInInfluencerProfile
 
         console.log('📞 [프로필체크] 최종 판단:', {
           hasPhoneInUserProfile,
           hasPhoneInInfluencerProfile,
-          hasPhone,
-          willShowModal: !hasPhone
+          phoneExists,
+          phoneNumber: phoneExists ? phoneNumber : 'none',
+          hasNicknameInUserProfile,
+          hasNicknameInInfluencerProfile,
+          nicknameExists,
+          willShowModal: !phoneExists || !nicknameExists
         })
 
-        if (!hasPhone) {
-          console.log('❌ [프로필체크] 전화번호 없음 → 모달 표시')
+        // 전화번호나 닉네임이 없으면 모달 표시
+        if (!phoneExists || !nicknameExists) {
+          console.log('❌ [프로필체크] 프로필 미완성 → 모달 표시')
+          setExistingPhone(phoneNumber)
+          setHasPhone(phoneExists)
           setIsProfileModalOpen(true)
         } else {
-          console.log('✅ [프로필체크] 전화번호 있음 → 모달 표시 안 함')
+          console.log('✅ [프로필체크] 프로필 완성 → 모달 표시 안 함')
           setIsProfileModalOpen(false)
         }
       } catch (error) {
@@ -559,6 +587,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         onClose={() => setIsProfileModalOpen(false)}
         onComplete={handleProfileComplete}
         requiresPhoneOnly={true}
+        hasPhone={hasPhone}
+        existingPhone={existingPhone}
       />
     </div>
   )

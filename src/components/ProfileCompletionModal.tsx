@@ -9,13 +9,17 @@ interface ProfileCompletionModalProps {
   onClose: () => void
   onComplete: (data: { name: string, phone: string, nickname: string, profileImage?: string }) => void
   requiresPhoneOnly?: boolean // 전화번호만 필요한 경우 (회원가입 후)
+  hasPhone?: boolean // 이미 전화번호가 있는 경우 (회원가입으로 등록한 사용자)
+  existingPhone?: string // 기존 전화번호
 }
 
 const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
   isOpen,
   onClose,
   onComplete,
-  requiresPhoneOnly = false
+  requiresPhoneOnly = false,
+  hasPhone = false,
+  existingPhone = ''
 }) => {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -45,17 +49,17 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setName('')
-      setPhone('')
+      setPhone(hasPhone ? existingPhone : '')
       setNickname('')
       setProfileImage(null)
       setProfileImagePreview('')
       setVerificationCode('')
       setIsCodeSent(false)
-      setIsVerified(false)
+      setIsVerified(hasPhone) // 이미 전화번호가 있으면 인증 완료로 처리
       setTimeLeft(0)
       setError('')
     }
-  }, [isOpen])
+  }, [isOpen, hasPhone, existingPhone])
 
   if (!isOpen) return null
 
@@ -164,8 +168,8 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
         return
       }
 
-      // 휴대폰 인증 확인
-      if (!isVerified) {
+      // 휴대폰 인증 확인 (이미 전화번호가 있는 경우 스킵)
+      if (!hasPhone && !isVerified) {
         setError('휴대폰 인증을 완료해주세요')
         return
       }
@@ -234,12 +238,14 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
               <User className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {requiresPhoneOnly ? '환영합니다! 🎉' : '프로필 정보 입력'}
+              {hasPhone ? '닉네임 설정 🎉' : (requiresPhoneOnly ? '환영합니다! 🎉' : '프로필 정보 입력')}
             </h2>
             <p className="text-gray-600">
-              {requiresPhoneOnly
-                ? '휴대폰 번호를 인증하고 환영 알림을 받아보세요'
-                : '캠페인 신청을 위해 정보를 입력해주세요'}
+              {hasPhone
+                ? '사용할 닉네임과 프로필 사진을 설정해주세요'
+                : (requiresPhoneOnly
+                  ? '휴대폰 번호를 인증하고 환영 알림을 받아보세요'
+                  : '캠페인 신청을 위해 정보를 입력해주세요')}
             </p>
           </div>
 
@@ -330,61 +336,65 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
               </div>
             )}
 
-            {/* 휴대폰 번호 */}
-            <div>
-              <div className="flex space-x-2">
-                <div className="flex-1">
-                  <PhoneInput
-                    value={phone}
-                    onChange={setPhone}
-                    disabled={isVerified}
-                    placeholder="010-1234-5678"
-                    required={true}
-                    showLabel={true}
-                  />
+            {/* 휴대폰 번호 - 이미 전화번호가 있는 경우 표시 안 함 */}
+            {!hasPhone && (
+              <>
+                <div>
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <PhoneInput
+                        value={phone}
+                        onChange={setPhone}
+                        disabled={isVerified}
+                        placeholder="010-1234-5678"
+                        required={true}
+                        showLabel={true}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <button
+                      onClick={handleSendCode}
+                      disabled={loading || isVerified || phone.replace(/[^0-9]/g, '').length < 10}
+                      className="w-full px-6 py-3 bg-navy-600 text-white rounded-xl hover:bg-navy-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+                    >
+                      {isCodeSent ? '재발송' : '인증번호 발송'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2">
-                <button
-                  onClick={handleSendCode}
-                  disabled={loading || isVerified || phone.replace(/[^0-9]/g, '').length < 10}
-                  className="w-full px-6 py-3 bg-navy-600 text-white rounded-xl hover:bg-navy-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                  {isCodeSent ? '재발송' : '인증번호 발송'}
-                </button>
-              </div>
-            </div>
 
-            {/* 인증번호 입력 */}
-            {isCodeSent && !isVerified && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
-                  <span>인증번호</span>
-                  {timeLeft > 0 && (
-                    <span className="text-red-600 text-sm flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {formatTime(timeLeft)}
-                    </span>
-                  )}
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                    placeholder="6자리 입력"
-                    maxLength={6}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={handleVerifyCode}
-                    disabled={loading || verificationCode.length !== 6}
-                    className="px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-                  >
-                    확인
-                  </button>
-                </div>
-              </div>
+                {/* 인증번호 입력 */}
+                {isCodeSent && !isVerified && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                      <span>인증번호</span>
+                      {timeLeft > 0 && (
+                        <span className="text-red-600 text-sm flex items-center">
+                          <Clock className="w-4 h-4 mr-1" />
+                          {formatTime(timeLeft)}
+                        </span>
+                      )}
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                        placeholder="6자리 입력"
+                        maxLength={6}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy-500 focus:border-transparent"
+                      />
+                      <button
+                        onClick={handleVerifyCode}
+                        disabled={loading || verificationCode.length !== 6}
+                        className="px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+                      >
+                        확인
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* 인증 완료 */}
