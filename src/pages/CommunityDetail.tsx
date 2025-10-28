@@ -35,14 +35,18 @@ const CommunityDetail: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [commentContent, setCommentContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [viewCountIncremented, setViewCountIncremented] = useState(false)
 
   useEffect(() => {
     if (id) {
       fetchPost()
-      // 조회수 증가
-      dataService.community.incrementViewCount(id)
+      // 조회수 증가 (한 번만)
+      if (!viewCountIncremented) {
+        dataService.community.incrementViewCount(id)
+        setViewCountIncremented(true)
+      }
     }
-  }, [id])
+  }, [id, viewCountIncremented])
 
   const fetchPost = async () => {
     try {
