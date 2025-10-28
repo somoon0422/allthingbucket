@@ -208,17 +208,17 @@ const Community: React.FC = () => {
 
           {/* 메인 */}
           <main className="flex-1">
-            {/* 모바일 카테고리 */}
-            <div className="md:hidden mb-4 overflow-x-auto">
+            {/* 카테고리 (모든 화면) */}
+            <div className="mb-4 overflow-x-auto">
               <div className="flex space-x-2 pb-2">
                 {CATEGORIES.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
-                    className={`flex-shrink-0 px-4 py-2 text-sm rounded-full transition-colors ${
+                    className={`flex-shrink-0 px-4 py-2 text-sm rounded-md transition-colors ${
                       selectedCategory === category.id
                         ? 'bg-primary-600 text-white font-medium'
-                        : 'bg-white border border-gray-300 text-gray-700'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     {category.name}
