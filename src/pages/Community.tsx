@@ -388,11 +388,21 @@ const WriteModal: React.FC<{
       let image_url = ''
 
       if (image) {
-        const formData = new FormData()
-        formData.append('file', image)
-        const uploadResult = await dataService.uploadImage(formData)
-        if (uploadResult.error) throw uploadResult.error
-        image_url = uploadResult.data?.url || ''
+        try {
+          const formData = new FormData()
+          formData.append('file', image)
+          const uploadResult = await dataService.uploadImage(formData)
+
+          if (uploadResult.error) {
+            console.warn('이미지 업로드 실패, 텍스트만 게시합니다:', uploadResult.error)
+            toast('이미지 업로드에 실패했지만 텍스트는 게시됩니다', { icon: '⚠️' })
+          } else {
+            image_url = uploadResult.data?.url || ''
+          }
+        } catch (imageError) {
+          console.warn('이미지 업로드 예외:', imageError)
+          toast('이미지 업로드에 실패했지만 텍스트는 게시됩니다', { icon: '⚠️' })
+        }
       }
 
       const { error } = await dataService.community.createPost({
