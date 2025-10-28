@@ -6,7 +6,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 
 // Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
-import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Tag, FileText, Heart, Coins, Menu} from 'lucide-react'
+import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Tag, FileText, Heart, Coins, Menu, Upload} from 'lucide-react'
 import { PhoneInput } from '../components/PhoneInput'
 import ProfileCompletionModal from '../components/ProfileCompletionModal'
 import ChatBot from '../components/ChatBot'
@@ -29,6 +29,8 @@ const MyPage: React.FC = () => {
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [formData, setFormData] = useState({
+    nickname: '',
+    profile_image_url: '',
     full_name: '',
     phone: '',
     email: '',
@@ -63,6 +65,9 @@ const MyPage: React.FC = () => {
       tax_type: 'individual'
     }
   })
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
+  const [profileImagePreview, setProfileImagePreview] = useState<string>('')
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -125,6 +130,8 @@ const MyPage: React.FC = () => {
       if (influencerProfile) {
         setProfile(influencerProfile)
         setFormData({
+          nickname: influencerProfile.nickname || userProfile?.nickname || '',
+          profile_image_url: influencerProfile.profile_image_url || userProfile?.profile_image_url || '',
           full_name: user.name || '',  // users 테이블에서 가져옴
           phone: influencerProfile.phone || userProfile?.phone || '',
           email: user.email || '',
@@ -159,15 +166,25 @@ const MyPage: React.FC = () => {
             tax_type: 'individual'
           }
         })
+        // 프로필 이미지 미리보기 설정
+        if (influencerProfile.profile_image_url || userProfile?.profile_image_url) {
+          setProfileImagePreview(influencerProfile.profile_image_url || userProfile?.profile_image_url || '')
+        }
       } else if (userProfile) {
         // 기본 프로필만 있는 경우
         setProfile(userProfile)
         setFormData(prev => ({
           ...prev,
+          nickname: userProfile.nickname || '',
+          profile_image_url: userProfile.profile_image_url || '',
           full_name: user.name || '',  // users 테이블에서 가져옴
           phone: userProfile.phone || '',
           email: user.email || '',
         }))
+        // 프로필 이미지 미리보기 설정
+        if (userProfile.profile_image_url) {
+          setProfileImagePreview(userProfile.profile_image_url)
+        }
       } else {
         // 신규 사용자
         setFormData(prev => ({
@@ -217,6 +234,33 @@ const MyPage: React.FC = () => {
     }
   }
 
+  // 프로필 이미지 선택 핸들러
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // 이미지 파일 검증
+      if (!file.type.startsWith('image/')) {
+        toast.error('이미지 파일만 업로드 가능합니다')
+        return
+      }
+
+      // 파일 크기 검증 (5MB 제한)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('이미지 크기는 5MB 이하여야 합니다')
+        return
+      }
+
+      setProfileImageFile(file)
+
+      // 미리보기 생성
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSave = async () => {
     if (!user) {
       toast.error('사용자 정보를 불러오는 중입니다')
@@ -224,6 +268,16 @@ const MyPage: React.FC = () => {
     }
 
     // 필수 정보 확인
+    if (!formData.nickname.trim()) {
+      toast.error('닉네임은 필수 입력 항목입니다')
+      return
+    }
+
+    if (formData.nickname.trim().length < 2 || formData.nickname.trim().length > 20) {
+      toast.error('닉네임은 2-20자 사이로 입력해주세요')
+      return
+    }
+
     if (!formData.full_name || !formData.phone) {
       toast.error('실명과 전화번호는 필수 입력 항목입니다')
       return
@@ -231,6 +285,25 @@ const MyPage: React.FC = () => {
 
     setSaving(true)
     try {
+      // 프로필 이미지 업로드 (새 이미지가 선택된 경우)
+      let uploadedImageUrl = formData.profile_image_url
+      if (profileImageFile) {
+        setUploadingImage(true)
+        try {
+          const { data, error: uploadError } = await dataService.uploadImage(profileImageFile, 'profile-images')
+          if (uploadError) {
+            console.warn('프로필 이미지 업로드 실패:', uploadError)
+            toast('이미지 업로드에 실패했지만 다른 정보는 저장됩니다', { icon: '⚠️' })
+          } else if (data) {
+            uploadedImageUrl = data
+          }
+        } catch (err) {
+          console.warn('프로필 이미지 업로드 중 오류:', err)
+          toast('이미지 업로드에 실패했지만 다른 정보는 저장됩니다', { icon: '⚠️' })
+        } finally {
+          setUploadingImage(false)
+        }
+      }
       // 1. users 테이블에 full_name 저장
       try {
         const usersResponse = await (dataService.entities as any).users.list()
@@ -279,6 +352,8 @@ const MyPage: React.FC = () => {
         platform: mainPlatform,
         handle: mainHandle,
         follower_count: totalFollowers, // 총 팔로워 수
+        nickname: formData.nickname.trim(),
+        profile_image_url: uploadedImageUrl || null,
         phone: formData.phone,
         gender: formData.gender || null,
         naver_blog: formData.naver_blog || null,
@@ -652,8 +727,89 @@ const MyPage: React.FC = () => {
       {activeTab === 'basic' && (
         <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">기본 정보</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 프로필 이미지 */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              프로필 사진 (선택사항)
+            </label>
+            {editMode ? (
+              <div className="flex items-center gap-4">
+                {/* 프로필 이미지 미리보기 */}
+                <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-gray-300">
+                  {profileImagePreview ? (
+                    <img
+                      src={profileImagePreview}
+                      alt="프로필 미리보기"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-12 h-12 text-gray-400" />
+                  )}
+                </div>
+
+                {/* 업로드 버튼 */}
+                <label className="flex-1 cursor-pointer">
+                  <div className="px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl hover:border-navy-400 hover:bg-gray-50 transition-all text-center">
+                    <Upload className="w-5 h-5 mx-auto mb-1 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      {profileImageFile ? profileImageFile.name : '이미지 선택'}
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                    disabled={saving || uploadingImage}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-gray-300">
+                  {formData.profile_image_url ? (
+                    <img
+                      src={formData.profile_image_url}
+                      alt="프로필"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-12 h-12 text-gray-400" />
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">
+                  {formData.profile_image_url ? '프로필 사진이 설정되어 있습니다' : '프로필 사진이 없습니다'}
+                </p>
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">JPG, PNG 파일 (최대 5MB)</p>
+          </div>
+
+          {/* 닉네임 */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              닉네임 <span className="text-red-500">*</span>
+            </label>
+            {editMode ? (
+              <input
+                type="text"
+                required
+                value={formData.nickname}
+                onChange={(e) => setFormData(prev => ({ ...prev, nickname: e.target.value }))}
+                placeholder="커뮤니티에서 사용할 닉네임"
+                maxLength={20}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
+              />
+            ) : (
+              <p className="font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                {formData.nickname || '미입력'}
+              </p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">2-20자 사이로 입력해주세요</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               실명 <span className="text-red-500">*</span>

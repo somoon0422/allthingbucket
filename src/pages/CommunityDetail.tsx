@@ -10,6 +10,8 @@ interface Post {
   id: string
   user_id: string
   user_email: string
+  user_nickname?: string
+  user_profile_image_url?: string
   content: string
   category?: string
   image_url?: string
@@ -24,6 +26,8 @@ interface Comment {
   post_id: string
   user_id: string
   user_email: string
+  user_nickname?: string
+  user_profile_image_url?: string
   content: string
   created_at: string
 }
@@ -107,10 +111,43 @@ const CommunityDetail: React.FC = () => {
 
     try {
       setSubmitting(true)
+
+      // 사용자 프로필 정보 가져오기 (닉네임, 프로필 이미지)
+      let userNickname = user.email?.split('@')[0] || '익명'
+      let userProfileImageUrl = ''
+
+      try {
+        // influencer_profiles에서 먼저 확인
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+        const influencerProfile = Array.isArray(influencerProfiles)
+          ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
+          : null
+
+        if (influencerProfile?.nickname) {
+          userNickname = influencerProfile.nickname
+          userProfileImageUrl = influencerProfile.profile_image_url || ''
+        } else {
+          // user_profiles에서 확인
+          const userProfiles = await (dataService.entities as any).user_profiles.list()
+          const userProfile = Array.isArray(userProfiles)
+            ? userProfiles.find((p: any) => p && p.user_id === user.id)
+            : null
+
+          if (userProfile?.nickname) {
+            userNickname = userProfile.nickname
+            userProfileImageUrl = userProfile.profile_image_url || ''
+          }
+        }
+      } catch (error) {
+        console.warn('프로필 정보 조회 실패, 기본값 사용:', error)
+      }
+
       const { error } = await dataService.community.addComment({
         post_id: post.id,
         user_id: user.id,
         user_email: user.email || '',
+        user_nickname: userNickname,
+        user_profile_image_url: userProfileImageUrl || undefined,
         content: commentContent
       })
 
@@ -208,9 +245,24 @@ const CommunityDetail: React.FC = () => {
                   <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">
                     {post.category || '자유게시판'}
                   </span>
-                  <span className="text-xs text-gray-500">
-                    {extractUsername(post.user_email)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {post.user_profile_image_url ? (
+                      <img
+                        src={post.user_profile_image_url}
+                        alt={post.user_nickname || '프로필'}
+                        className="w-5 h-5 rounded-full object-cover border border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-xs text-gray-500">
+                          {(post.user_nickname || post.user_email.split('@')[0])[0].toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-xs text-gray-500">
+                      {post.user_nickname || extractUsername(post.user_email)}
+                    </span>
+                  </div>
                   <span className="text-xs text-gray-400">·</span>
                   <span className="text-xs text-gray-500">
                     {getTimeAgo(post.created_at)}
@@ -275,11 +327,25 @@ const CommunityDetail: React.FC = () => {
               <div className="space-y-4 mb-4">
                 {post.comments.map((comment) => (
                   <div key={comment.id} className="flex gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full"></div>
+                    <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full overflow-hidden">
+                      {comment.user_profile_image_url ? (
+                        <img
+                          src={comment.user_profile_image_url}
+                          alt={comment.user_nickname || '프로필'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-sm text-gray-500">
+                            {(comment.user_nickname || comment.user_email.split('@')[0])[0].toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium text-gray-900">
-                          {extractUsername(comment.user_email)}
+                          {comment.user_nickname || extractUsername(comment.user_email)}
                         </span>
                         <span className="text-xs text-gray-500">
                           {getTimeAgo(comment.created_at)}

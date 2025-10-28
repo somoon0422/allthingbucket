@@ -160,11 +160,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [isAuthenticated, user])
 
   // 프로필 완성 완료 핸들러
-  const handleProfileComplete = async (data: { name: string, phone: string }) => {
+  const handleProfileComplete = async (data: { name: string, phone: string, nickname: string, profileImage?: string }) => {
     try {
       if (!user) return
 
-      console.log('🔄 프로필 업데이트 시작:', { userId: user.id, phone: data.phone })
+      console.log('🔄 프로필 업데이트 시작:', {
+        userId: user.id,
+        phone: data.phone,
+        nickname: data.nickname,
+        hasProfileImage: !!data.profileImage
+      })
 
       // influencer_profiles 테이블 업데이트/생성
       try {
@@ -173,20 +178,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
           : null
 
+        const profileData: any = {
+          phone: data.phone,
+          nickname: data.nickname,
+          updated_at: new Date().toISOString()
+        }
+
+        if (data.profileImage) {
+          profileData.profile_image_url = data.profileImage
+        }
+
         if (influencerProfile) {
           // 기존 프로필 업데이트
-          await (dataService.entities as any).influencer_profiles.update(influencerProfile.id, {
-            phone: data.phone,
-            updated_at: new Date().toISOString()
-          })
+          await (dataService.entities as any).influencer_profiles.update(influencerProfile.id, profileData)
           console.log('✅ influencer_profiles 업데이트 완료')
         } else {
           // 새 프로필 생성
           await (dataService.entities as any).influencer_profiles.create({
             user_id: user.id,
-            phone: data.phone,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            ...profileData,
+            created_at: new Date().toISOString()
           })
           console.log('✅ influencer_profiles 생성 완료')
         }
@@ -202,11 +213,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ? profiles.find((p: any) => p && p.user_id === user.id)
           : null
 
+        const profileData: any = {
+          phone: data.phone,
+          nickname: data.nickname,
+          updated_at: new Date().toISOString()
+        }
+
+        if (data.profileImage) {
+          profileData.profile_image_url = data.profileImage
+        }
+
         if (profile) {
-          await (dataService.entities as any).user_profiles.update(profile.id, {
-            phone: data.phone,
-            updated_at: new Date().toISOString()
-          })
+          await (dataService.entities as any).user_profiles.update(profile.id, profileData)
           console.log('✅ user_profiles 업데이트 완료')
         }
       } catch (error) {

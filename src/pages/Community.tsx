@@ -11,6 +11,8 @@ interface Post {
   id: string
   user_id: string
   user_email: string
+  user_nickname?: string
+  user_profile_image_url?: string
   content: string
   category?: string
   image_url?: string
@@ -26,6 +28,8 @@ interface Comment {
   post_id: string
   user_id: string
   user_email: string
+  user_nickname?: string
+  user_profile_image_url?: string
   content: string
   created_at: string
 }
@@ -265,7 +269,20 @@ const Community: React.FC = () => {
                     </h3>
                   </div>
                   <div className="flex-shrink-0 flex items-center gap-4 text-xs text-gray-500">
-                    <span className="w-20 text-center">{extractUsername(post.user_email)}</span>
+                    <div className="flex items-center gap-2 w-24">
+                      {post.user_profile_image_url ? (
+                        <img
+                          src={post.user_profile_image_url}
+                          alt={post.user_nickname || '프로필'}
+                          className="w-6 h-6 rounded-full object-cover border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-xs text-gray-500">{(post.user_nickname || post.user_email.split('@')[0])[0].toUpperCase()}</span>
+                        </div>
+                      )}
+                      <span className="truncate">{post.user_nickname || extractUsername(post.user_email)}</span>
+                    </div>
                     <span className="w-16 text-center">{getTimeAgo(post.created_at)}</span>
                     <span className="flex items-center gap-1 w-12 justify-center">
                       <Eye className="w-3.5 h-3.5" />
@@ -385,9 +402,41 @@ const WriteModal: React.FC<{
         }
       }
 
+      // 사용자 프로필 정보 가져오기 (닉네임, 프로필 이미지)
+      let userNickname = user.email?.split('@')[0] || '익명'
+      let userProfileImageUrl = ''
+
+      try {
+        // influencer_profiles에서 먼저 확인
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+        const influencerProfile = Array.isArray(influencerProfiles)
+          ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
+          : null
+
+        if (influencerProfile?.nickname) {
+          userNickname = influencerProfile.nickname
+          userProfileImageUrl = influencerProfile.profile_image_url || ''
+        } else {
+          // user_profiles에서 확인
+          const userProfiles = await (dataService.entities as any).user_profiles.list()
+          const userProfile = Array.isArray(userProfiles)
+            ? userProfiles.find((p: any) => p && p.user_id === user.id)
+            : null
+
+          if (userProfile?.nickname) {
+            userNickname = userProfile.nickname
+            userProfileImageUrl = userProfile.profile_image_url || ''
+          }
+        }
+      } catch (error) {
+        console.warn('프로필 정보 조회 실패, 기본값 사용:', error)
+      }
+
       const { error } = await dataService.community.createPost({
         user_id: user.id,
         user_email: user.email || '',
+        user_nickname: userNickname,
+        user_profile_image_url: userProfileImageUrl || undefined,
         content,
         category,
         image_url: image_url || undefined

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { AlertCircle, X, CheckCircle2, User, Phone, Instagram, Clock } from 'lucide-react'
+import { AlertCircle, X, CheckCircle2, User, Phone, Instagram, Clock, Upload, Image as ImageIcon } from 'lucide-react'
 import { sendVerificationCode, verifyCode, formatPhoneNumber } from '../services/phoneVerificationService'
 import PhoneInput from './PhoneInput'
+import { dataService } from '../lib/dataService'
 
 interface ProfileCompletionModalProps {
   isOpen: boolean
   onClose: () => void
-  onComplete: (data: { name: string, phone: string }) => void
+  onComplete: (data: { name: string, phone: string, nickname: string, profileImage?: string }) => void
   requiresPhoneOnly?: boolean // 전화번호만 필요한 경우 (회원가입 후)
 }
 
@@ -18,11 +19,15 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
 }) => {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [profileImage, setProfileImage] = useState<File | null>(null)
+  const [profileImagePreview, setProfileImagePreview] = useState<string>('')
   const [verificationCode, setVerificationCode] = useState('')
   const [isCodeSent, setIsCodeSent] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState('')
 
   // 타이머
@@ -41,6 +46,9 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
     if (isOpen) {
       setName('')
       setPhone('')
+      setNickname('')
+      setProfileImage(null)
+      setProfileImagePreview('')
       setVerificationCode('')
       setIsCodeSent(false)
       setIsVerified(false)
@@ -104,30 +112,87 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
     }
   }
 
+  // 프로필 이미지 선택 핸들러
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // 이미지 파일 검증
+      if (!file.type.startsWith('image/')) {
+        setError('이미지 파일만 업로드 가능합니다')
+        return
+      }
+
+      // 파일 크기 검증 (5MB 제한)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('이미지 크기는 5MB 이하여야 합니다')
+        return
+      }
+
+      setProfileImage(file)
+
+      // 미리보기 생성
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+      setError('')
+    }
+  }
+
   // 완료
   const handleComplete = async () => {
     try {
       setLoading(true)
       setError('')
 
+      // 닉네임 필수 입력 검증
+      if (!nickname.trim()) {
+        setError('닉네임을 입력해주세요')
+        return
+      }
+
+      // 닉네임 길이 검증 (2-20자)
+      if (nickname.trim().length < 2 || nickname.trim().length > 20) {
+        setError('닉네임은 2-20자 사이로 입력해주세요')
+        return
+      }
+
+      // 휴대폰 인증 확인
+      if (!isVerified) {
+        setError('휴대폰 인증을 완료해주세요')
+        return
+      }
+
+      // 프로필 이미지 업로드 (선택사항)
+      let uploadedImageUrl = ''
+      if (profileImage) {
+        setUploadingImage(true)
+        try {
+          const { data, error: uploadError } = await dataService.uploadImage(profileImage, 'profile-images')
+          if (uploadError) {
+            console.warn('프로필 이미지 업로드 실패:', uploadError)
+            // 이미지 업로드 실패는 치명적이지 않음
+          } else if (data) {
+            uploadedImageUrl = data
+          }
+        } catch (err) {
+          console.warn('프로필 이미지 업로드 중 오류:', err)
+        } finally {
+          setUploadingImage(false)
+        }
+      }
+
       if (requiresPhoneOnly) {
         // 전화번호만 필요한 경우 (회원가입 후)
-        if (!isVerified) {
-          setError('휴대폰 인증을 완료해주세요')
-          return
-        }
-        await onComplete({ name: '', phone })
+        await onComplete({ name: '', phone, nickname: nickname.trim(), profileImage: uploadedImageUrl })
       } else {
         // 모든 정보 필요한 경우 (캠페인 신청 시)
         if (!name) {
           setError('실명을 입력해주세요')
           return
         }
-        if (!isVerified) {
-          setError('휴대폰 인증을 완료해주세요')
-          return
-        }
-        await onComplete({ name, phone })
+        await onComplete({ name, phone, nickname: nickname.trim(), profileImage: uploadedImageUrl })
       }
     } catch (error) {
       console.error('프로필 완성 실패:', error)
@@ -174,12 +239,69 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
 
           {/* 입력 폼 */}
           <div className="space-y-4 mb-6">
+            {/* 프로필 이미지 업로드 (선택사항) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <ImageIcon className="w-4 h-4 inline mr-1" />
+                프로필 사진 (선택사항)
+              </label>
+              <div className="flex items-center gap-4">
+                {/* 프로필 이미지 미리보기 */}
+                <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-gray-300">
+                  {profileImagePreview ? (
+                    <img
+                      src={profileImagePreview}
+                      alt="프로필 미리보기"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-10 h-10 text-gray-400" />
+                  )}
+                </div>
+
+                {/* 업로드 버튼 */}
+                <label className="flex-1 cursor-pointer">
+                  <div className="px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl hover:border-navy-400 hover:bg-gray-50 transition-all text-center">
+                    <Upload className="w-5 h-5 mx-auto mb-1 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      {profileImage ? profileImage.name : '이미지 선택'}
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                    disabled={loading}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">JPG, PNG 파일 (최대 5MB)</p>
+            </div>
+
+            {/* 닉네임 입력 (필수) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <User className="w-4 h-4 inline mr-1" />
+                닉네임 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="커뮤니티에서 사용할 닉네임"
+                maxLength={20}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">2-20자 사이로 입력해주세요</p>
+            </div>
+
             {/* 실명 입력 (캠페인 신청 시에만) */}
             {!requiresPhoneOnly && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <User className="w-4 h-4 inline mr-1" />
-                  실명
+                  실명 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -290,10 +412,10 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
           {/* 완료 버튼 */}
           <button
             onClick={handleComplete}
-            disabled={loading || !isVerified || (!requiresPhoneOnly && !name)}
+            disabled={loading || uploadingImage || !isVerified || !nickname.trim() || (!requiresPhoneOnly && !name)}
             className="w-full bg-gradient-to-r from-navy-600 to-pink-600 text-white py-3.5 rounded-xl font-semibold hover:from-navy-700 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            {loading ? '처리 중...' : '완료'}
+            {uploadingImage ? '이미지 업로드 중...' : loading ? '처리 중...' : '완료'}
           </button>
         </div>
       </div>
