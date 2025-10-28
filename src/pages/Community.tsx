@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { useAuth } from '../hooks/useAuth'
-import { MessageSquare, ThumbsUp, Send, Image as ImageIcon, X, Edit2, Trash2 } from 'lucide-react'
+import { MessageSquare, ThumbsUp, Send, Image as ImageIcon, X, Trash2, Clock, TrendingUp } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Post {
@@ -106,6 +106,23 @@ const Community: React.FC = () => {
     }
   }
 
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('정말 이 게시물을 삭제하시겠습니까?')) {
+      return
+    }
+
+    try {
+      const { error } = await dataService.community.deletePost(postId)
+      if (error) throw error
+
+      toast.success('게시물이 삭제되었습니다')
+      setPosts(posts.filter(p => p.id !== postId))
+    } catch (error) {
+      console.error('게시물 삭제 실패:', error)
+      toast.error('게시물 삭제에 실패했습니다')
+    }
+  }
+
   const handleLikePost = async (postId: string) => {
     if (!isAuthenticated || !user) {
       toast.error('로그인이 필요합니다')
@@ -194,142 +211,192 @@ const Community: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-beige-50 via-white to-beige-100 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">커뮤니티</h1>
-          <p className="text-slate-600">올띵버킷 멤버들과 자유롭게 소통하세요</p>
+        <div className="mb-8 text-center">
+          <div className="inline-flex items-center space-x-2 mb-3">
+            <MessageSquare className="w-8 h-8 text-primary-600" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-pink-600 bg-clip-text text-transparent">
+              커뮤니티
+            </h1>
+          </div>
+          <p className="text-slate-600 text-lg">올띵버킷 멤버들과 자유롭게 소통하고 경험을 공유하세요</p>
+          <div className="flex items-center justify-center space-x-6 mt-4 text-sm text-slate-500">
+            <div className="flex items-center space-x-1">
+              <TrendingUp className="w-4 h-4" />
+              <span>게시물 {posts.length}개</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <ThumbsUp className="w-4 h-4" />
+              <span>좋아요 {posts.reduce((sum, p) => sum + p.likes, 0)}개</span>
+            </div>
+          </div>
         </div>
 
         {/* 게시물 작성 */}
-        {isAuthenticated && (
-          <div className="bg-white rounded-xl p-5 border border-slate-200 mb-6">
-            <textarea
-              value={newPostContent}
-              onChange={(e) => setNewPostContent(e.target.value)}
-              placeholder="무슨 생각을 하고 계신가요?"
-              className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
-              rows={3}
-            />
-
-            {imagePreview && (
-              <div className="relative mt-3">
-                <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
-                <button
-                  onClick={() => {
-                    setNewPostImage(null)
-                    setImagePreview(null)
-                  }}
-                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+        {isAuthenticated ? (
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-slate-200">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                {user?.email ? extractUsername(user.email).charAt(0).toUpperCase() : 'U'}
               </div>
-            )}
-
-            <div className="flex items-center justify-between mt-3">
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
+              <div className="flex-1">
+                <textarea
+                  value={newPostContent}
+                  onChange={(e) => setNewPostContent(e.target.value)}
+                  placeholder="무엇을 공유하고 싶으신가요?"
+                  className="w-full p-4 border-2 border-slate-200 rounded-xl resize-none focus:outline-none focus:border-primary-500 transition-colors text-base"
+                  rows={4}
                 />
-                <div className="flex items-center space-x-2 px-3 py-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors text-sm">
-                  <ImageIcon className="w-4 h-4 text-slate-600" />
-                  <span className="text-slate-600 font-medium">이미지</span>
-                </div>
-              </label>
 
-              <button
-                onClick={handleCreatePost}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium text-sm"
-              >
-                게시
-              </button>
+                {imagePreview && (
+                  <div className="relative mt-4">
+                    <img src={imagePreview} alt="Preview" className="w-full max-h-96 object-cover rounded-xl" />
+                    <button
+                      onClick={() => {
+                        setNewPostImage(null)
+                        setImagePreview(null)
+                      }}
+                      className="absolute top-3 right-3 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between mt-4">
+                  <label className="cursor-pointer group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <div className="flex items-center space-x-2 px-4 py-2.5 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
+                      <ImageIcon className="w-5 h-5 text-slate-600 group-hover:text-slate-800" />
+                      <span className="text-slate-700 font-medium">사진 추가</span>
+                    </div>
+                  </label>
+
+                  <button
+                    onClick={handleCreatePost}
+                    disabled={!newPostContent.trim()}
+                    className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-pink-600 text-white rounded-xl hover:from-primary-700 hover:to-pink-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                  >
+                    게시하기
+                  </button>
+                </div>
+              </div>
             </div>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-r from-primary-50 to-pink-50 rounded-2xl p-8 mb-8 text-center border border-primary-100">
+            <MessageSquare className="w-12 h-12 text-primary-600 mx-auto mb-3" />
+            <h3 className="text-xl font-bold text-slate-900 mb-2">로그인하고 소통해보세요!</h3>
+            <p className="text-slate-600">로그인하면 게시물을 작성하고 댓글을 남길 수 있습니다.</p>
           </div>
         )}
 
         {/* 게시물 목록 */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-              <p className="text-slate-600 mt-4 text-sm">로딩 중...</p>
+            <div className="text-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-600 mx-auto"></div>
+              <p className="text-slate-600 mt-6 text-lg">게시물을 불러오는 중...</p>
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
-              <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-600 text-sm">아직 게시물이 없습니다</p>
-              <p className="text-slate-500 text-xs mt-1">첫 번째 게시물을 작성해보세요!</p>
+            <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+              <MessageSquare className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-700 mb-2">아직 게시물이 없습니다</h3>
+              <p className="text-slate-500">첫 번째 게시물의 주인공이 되어보세요!</p>
             </div>
           ) : (
             posts.map((post) => {
               const displayName = extractUsername(post.user_email)
               const hasLiked = user && post.liked_by.includes(user.id)
+              const isAuthor = user && post.user_id === user.id
 
               return (
-                <div key={post.id} className="bg-white rounded-xl p-5 border border-slate-200">
+                <div key={post.id} className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200 hover:shadow-xl transition-shadow">
                   {/* 게시물 헤더 */}
-                  <div className="flex items-start space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                      {displayName.charAt(0).toUpperCase()}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                        {displayName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">{displayName}</h3>
+                        <div className="flex items-center space-x-1 text-xs text-slate-500">
+                          <Clock className="w-3 h-3" />
+                          <span>{getTimeAgo(post.created_at)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900">{displayName}</h3>
-                      <p className="text-xs text-slate-500">{getTimeAgo(post.created_at)}</p>
-                    </div>
+
+                    {isAuthor && (
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="삭제"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
 
                   {/* 게시물 내용 */}
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line mb-3">
+                  <p className="text-base text-slate-800 leading-relaxed whitespace-pre-line mb-4">
                     {post.content}
                   </p>
 
                   {/* 이미지 */}
                   {post.image_url && (
-                    <img
-                      src={post.image_url}
-                      alt="Post"
-                      className="w-full rounded-lg mb-3"
-                    />
+                    <div className="mb-4 rounded-xl overflow-hidden">
+                      <img
+                        src={post.image_url}
+                        alt="Post"
+                        className="w-full max-h-96 object-cover"
+                      />
+                    </div>
                   )}
 
-                  {/* 좋아요/댓글 버튼 */}
-                  <div className="flex items-center space-x-4 pt-3 border-t border-slate-100">
+                  {/* 좋아요/댓글 통계 */}
+                  <div className="flex items-center justify-between py-3 border-t border-b border-slate-100">
                     <button
                       onClick={() => handleLikePost(post.id)}
-                      className={`flex items-center space-x-1 text-xs font-medium transition-colors ${
-                        hasLiked ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                        hasLiked
+                          ? 'text-primary-600 bg-primary-50 font-semibold'
+                          : 'text-slate-600 hover:text-primary-600 hover:bg-slate-50'
                       }`}
                     >
-                      <ThumbsUp className={`w-4 h-4 ${hasLiked ? 'fill-current' : ''}`} />
-                      <span>{post.likes}</span>
+                      <ThumbsUp className={`w-5 h-5 ${hasLiked ? 'fill-current' : ''}`} />
+                      <span className="text-sm">{post.likes > 0 ? `좋아요 ${post.likes}` : '좋아요'}</span>
                     </button>
-                    <div className="flex items-center space-x-1 text-xs font-medium text-slate-600">
-                      <MessageSquare className="w-4 h-4" />
-                      <span>{post.comments?.length || 0}</span>
+                    <div className="flex items-center space-x-2 text-slate-600">
+                      <MessageSquare className="w-5 h-5" />
+                      <span className="text-sm font-medium">댓글 {post.comments?.length || 0}</span>
                     </div>
                   </div>
 
-                  {/* 댓글 */}
+                  {/* 댓글 목록 */}
                   {post.comments && post.comments.length > 0 && (
-                    <div className="mt-4 space-y-3 pt-3 border-t border-slate-100">
+                    <div className="mt-4 space-y-3">
                       {post.comments.map((comment) => {
                         const commentUsername = extractUsername(comment.user_email)
                         return (
-                          <div key={comment.id} className="flex items-start space-x-2">
-                            <div className="w-7 h-7 bg-gradient-to-br from-navy-500 to-navy-600 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                          <div key={comment.id} className="flex items-start space-x-3 p-3 bg-slate-50 rounded-xl">
+                            <div className="w-9 h-9 bg-gradient-to-br from-navy-500 to-navy-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                               {commentUsername.charAt(0).toUpperCase()}
                             </div>
-                            <div className="flex-1 bg-slate-50 rounded-lg p-2">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-slate-900">{commentUsername}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="text-sm font-bold text-slate-900">{commentUsername}</span>
+                                <span className="text-xs text-slate-400">·</span>
                                 <span className="text-xs text-slate-500">{getTimeAgo(comment.created_at)}</span>
                               </div>
-                              <p className="text-xs text-slate-700">{comment.content}</p>
+                              <p className="text-sm text-slate-700 leading-relaxed">{comment.content}</p>
                             </div>
                           </div>
                         )
@@ -339,20 +406,23 @@ const Community: React.FC = () => {
 
                   {/* 댓글 입력 */}
                   {isAuthenticated && (
-                    <div className="mt-3 flex items-center space-x-2">
+                    <div className="mt-4 flex items-center space-x-3">
+                      <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {user?.email ? extractUsername(user.email).charAt(0).toUpperCase() : 'U'}
+                      </div>
                       <input
                         type="text"
                         value={commentInputs[post.id] || ''}
                         onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
                         onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
                         placeholder="댓글을 입력하세요..."
-                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="flex-1 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
                       />
                       <button
                         onClick={() => handleAddComment(post.id)}
-                        className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                        className="p-2.5 bg-gradient-to-r from-primary-600 to-pink-600 text-white rounded-xl hover:from-primary-700 hover:to-pink-700 transition-all shadow-md"
                       >
-                        <Send className="w-4 h-4" />
+                        <Send className="w-5 h-5" />
                       </button>
                     </div>
                   )}
