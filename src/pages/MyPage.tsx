@@ -6,7 +6,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 
 // Lumi SDK 제거됨 - Supabase API 사용
 import toast from 'react-hot-toast'
-import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Tag, FileText, Heart, Coins, Menu, Upload} from 'lucide-react'
+import {User, Instagram, Youtube, MessageSquare, Star, Award, Save, Edit3, X, TrendingUp, Globe, Shield, Tag, FileText, Heart, Coins, Menu, Upload, Trash2} from 'lucide-react'
 import { PhoneInput } from '../components/PhoneInput'
 import ProfileCompletionModal from '../components/ProfileCompletionModal'
 import ChatBot from '../components/ChatBot'
@@ -259,6 +259,14 @@ const MyPage: React.FC = () => {
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  // 프로필 이미지 삭제 핸들러
+  const handleRemoveImage = () => {
+    setProfileImageFile(null)
+    setProfileImagePreview('')
+    setFormData(prev => ({ ...prev, profile_image_url: '' }))
+    toast.success('프로필 사진이 삭제되었습니다')
   }
 
   const handleSave = async () => {
@@ -747,6 +755,17 @@ const MyPage: React.FC = () => {
                   ) : (
                     <User className="w-12 h-12 text-gray-400" />
                   )}
+                  {/* 삭제 버튼 */}
+                  {profileImagePreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      title="프로필 사진 삭제"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 {/* 업로드 버튼 */}
@@ -765,6 +784,18 @@ const MyPage: React.FC = () => {
                     disabled={saving || uploadingImage}
                   />
                 </label>
+
+                {/* 삭제 버튼 (텍스트) */}
+                {(profileImagePreview || formData.profile_image_url) && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    삭제
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-4">

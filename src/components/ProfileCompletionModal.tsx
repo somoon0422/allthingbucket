@@ -140,6 +140,12 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
     }
   }
 
+  // 프로필 이미지 삭제 핸들러
+  const handleRemoveImage = () => {
+    setProfileImage(null)
+    setProfileImagePreview('')
+  }
+
   // 완료
   const handleComplete = async () => {
     try {
@@ -256,6 +262,17 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
                     />
                   ) : (
                     <User className="w-10 h-10 text-gray-400" />
+                  )}
+                  {/* 삭제 버튼 */}
+                  {profileImagePreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      title="프로필 사진 삭제"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   )}
                 </div>
 
