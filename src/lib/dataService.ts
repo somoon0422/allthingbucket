@@ -2438,11 +2438,28 @@ export const dataService = {
       }
 
       const fileName = `${Date.now()}_${file.name}`
-      const { data, error } = await supabase.storage
+
+      // 먼저 community-images 버킷 시도, 없으면 images 버킷 사용
+      let data, error
+
+      const communityUpload = await supabase.storage
         .from('community-images')
         .upload(fileName, file)
 
-      if (error) throw error
+      if (communityUpload.error) {
+        console.log('community-images 버킷 없음, images 버킷 사용')
+        const imagesUpload = await supabase.storage
+          .from('images')
+          .upload(`community/${fileName}`, file)
+
+        if (imagesUpload.error) throw imagesUpload.error
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('images')
+          .getPublicUrl(`community/${fileName}`)
+
+        return { data: { url: publicUrl }, error: null }
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('community-images')
