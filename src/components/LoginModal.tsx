@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { Mail, Lock, Eye, EyeOff, User, Phone, MapPin, Calendar, Users, X } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, MapPin, Calendar, Users, X } from 'lucide-react'
 import { GoogleLoginButton } from './GoogleLoginButton'
 import { KakaoLoginButton } from './KakaoLoginButton'
 import { AddressInput } from './AddressInput'
@@ -19,7 +19,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     email: '',
     password: '',
     name: '',
-    phone: '',
     address: '',
     detailed_address: '',
     birth_date: '',
@@ -70,7 +69,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          phone: formData.phone,
           address: formData.address,
           detailed_address: formData.detailed_address,
           birth_date: formData.birth_date,
@@ -88,29 +86,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
-    }))
-  }
-
-  // 전화번호 자동 포맷팅 (010-1234-5678)
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    // 숫자만 추출
-    const numbers = value.replace(/[^0-9]/g, '')
-
-    // 최대 11자리까지만
-    const limitedNumbers = numbers.slice(0, 11)
-
-    // 포맷팅
-    let formatted = limitedNumbers
-    if (limitedNumbers.length > 3 && limitedNumbers.length <= 7) {
-      formatted = `${limitedNumbers.slice(0, 3)}-${limitedNumbers.slice(3)}`
-    } else if (limitedNumbers.length > 7) {
-      formatted = `${limitedNumbers.slice(0, 3)}-${limitedNumbers.slice(3, 7)}-${limitedNumbers.slice(7)}`
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      phone: formatted
     }))
   }
 
@@ -309,26 +284,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     onChange={handleInputChange}
                     className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
                     placeholder="이름을 입력하세요"
-                  />
-                </div>
-              </div>
-
-              {/* 전화번호 */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  전화번호
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500"
-                    placeholder="010-1234-5678"
-                    maxLength={13}
                   />
                 </div>
               </div>

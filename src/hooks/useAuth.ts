@@ -226,7 +226,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             user_id: result.data.user.id,
             email: userData.email,
             name: userData.name,
-            phone: userData.phone || null,
+            phone: null, // 회원가입 시 전화번호 받지 않음 (프로필 완성 단계에서 입력)
             is_active: true,
             created_at: new Date().toISOString()
           })
@@ -239,7 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profileData = {
           user_id: result.data.user.id,
           name: userData.name,
-          phone: userData.phone,
+          phone: null, // 회원가입 시 전화번호 받지 않음 (프로필 완성 단계에서 입력)
           address: userData.address,
           detailed_address: userData.detailed_address,
           birth_date: userData.birth_date,
