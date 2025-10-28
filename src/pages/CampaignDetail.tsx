@@ -1068,90 +1068,102 @@ const CampaignDetail: React.FC = () => {
                           {review.content || review.review_content}
                         </p>
 
-                        {/* 블로그 URL 임베드 미리보기 */}
+                        {/* 블로그 URL - 강조 */}
                         {review.blog_url && (
-                          <div className="mt-5 mb-5">
-                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
-                              <div className="flex items-center justify-between mb-3">
+                          <div className="mt-5">
+                            <div className="bg-gradient-to-br from-navy-50 to-primary-50 rounded-lg p-5 border-2 border-primary-200">
+                              <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center space-x-2">
-                                  <FileText className="w-5 h-5 text-blue-600" />
-                                  <span className="text-sm font-bold text-blue-900">블로그 리뷰</span>
+                                  <div className="p-2 bg-primary-500 rounded-lg">
+                                    <FileText className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-sm font-bold text-slate-900">전체 블로그 리뷰</h4>
+                                    <p className="text-xs text-slate-600">상세한 리뷰를 확인하세요</p>
+                                  </div>
                                 </div>
                                 <a
                                   href={review.blog_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 font-bold hover:underline"
+                                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-bold text-sm transition-all duration-200"
                                 >
-                                  <span>새 창에서 보기</span>
-                                  <ExternalLink className="w-3 h-3" />
+                                  <span>블로그 보기</span>
+                                  <ExternalLink className="w-4 h-4" />
                                 </a>
                               </div>
-                              <iframe
-                                src={review.blog_url}
-                                className="w-full h-96 rounded-lg bg-white shadow-inner"
-                                title={`블로그 리뷰 미리보기`}
-                                sandbox="allow-scripts allow-same-origin"
-                                loading="lazy"
-                                onError={(e) => {
-                                  // iframe 로드 실패 시 링크로 대체
-                                  const iframe = e.target as HTMLIFrameElement
-                                  const parent = iframe.parentElement
-                                  if (parent) {
-                                    parent.innerHTML = `
-                                      <a href="${review.blog_url}" target="_blank" rel="noopener noreferrer"
-                                         class="flex items-center justify-center space-x-2 p-6 bg-white rounded-lg hover:bg-blue-50 transition-colors">
-                                        <FileText class="w-6 h-6 text-blue-600" />
-                                        <span class="text-blue-600 font-bold underline">${review.blog_url}</span>
-                                        <ExternalLink class="w-4 h-4 text-blue-600" />
-                                      </a>
-                                    `
-                                  }
-                                }}
-                              />
+                              <div className="bg-white rounded-lg p-3 text-sm text-slate-700 break-all">
+                                <a href={review.blog_url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                                  {review.blog_url}
+                                </a>
+                              </div>
                             </div>
                           </div>
                         )}
 
-                        {/* 리뷰 이미지들 */}
+                        {/* 리뷰 이미지들 - 블러 처리 */}
                         {review.images && review.images.length > 0 && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-5">
-                            {review.images.map((imageUrl: string, index: number) => (
-                              <div key={index} className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 shadow-md hover:shadow-xl transition-all duration-300">
-                                <img
-                                  src={imageUrl}
-                                  alt={`리뷰 이미지 ${index + 1}`}
-                                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 cursor-pointer"
-                                  onClick={() => {
-                                    setSelectedImage(imageUrl)
-                                    setImageGallery(review.images)
-                                    setSelectedImageIndex(index)
-                                  }}
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=이미지+로딩+실패'
-                                  }}
-                                />
+                          <div className="mt-5">
+                            <div className="bg-beige-50 border border-beige-200 rounded-lg p-4">
+                              <div className="flex items-start space-x-3 mb-3">
+                                <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
+                                  <FileText className="w-4 h-4 text-primary-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-bold text-slate-900 mb-1">구매평 이미지</h4>
+                                  <p className="text-xs text-slate-600">개인정보 보호를 위해 블러 처리되었습니다. 전체 리뷰는 블로그/SNS 링크에서 확인하세요.</p>
+                                </div>
                               </div>
-                            ))}
+                              <div className="grid grid-cols-3 gap-2">
+                                {review.images.slice(0, 3).map((imageUrl: string, index: number) => (
+                                  <div key={index} className="aspect-square rounded-lg overflow-hidden bg-slate-100 relative">
+                                    <img
+                                      src={imageUrl}
+                                      alt={`리뷰 이미지 ${index + 1}`}
+                                      className="w-full h-full object-cover blur-md"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=이미지'
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                      <span className="text-white text-xs font-bold">블러 처리</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              {review.images.length > 3 && (
+                                <p className="text-xs text-slate-500 mt-2 text-center">외 {review.images.length - 3}개</p>
+                              )}
+                            </div>
                           </div>
                         )}
 
-                        {/* SNS 링크 */}
+                        {/* SNS 링크 - 강조 */}
                         {review.social_media_links && review.social_media_links.length > 0 && (
-                          <div className="mt-6 pt-5 border-t border-slate-200">
-                            <div className="space-y-3">
-                              {review.social_media_links.map((link: string, index: number) => (
-                                <a
-                                  key={index}
-                                  href={link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700 font-bold hover:translate-x-2 transition-all duration-200"
-                                >
-                                  <FileText className="w-5 h-5" />
-                                  <span>SNS에서 전체 리뷰 보기 {review.social_media_links.length > 1 ? `(${index + 1})` : ''}</span>
-                                </a>
-                              ))}
+                          <div className="mt-5">
+                            <div className="bg-gradient-to-br from-gold-50 to-beige-50 rounded-lg p-4 border border-gold-200">
+                              <div className="flex items-center space-x-2 mb-3">
+                                <div className="p-1.5 bg-gold-500 rounded-lg">
+                                  <FileText className="w-4 h-4 text-white" />
+                                </div>
+                                <h4 className="text-sm font-bold text-slate-900">SNS 리뷰</h4>
+                              </div>
+                              <div className="space-y-2">
+                                {review.social_media_links.map((link: string, index: number) => (
+                                  <a
+                                    key={index}
+                                    href={link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-between p-3 bg-white rounded-lg hover:bg-slate-50 transition-all duration-200 group border border-slate-200"
+                                  >
+                                    <span className="text-xs text-slate-700 font-medium truncate flex-1">
+                                      SNS 리뷰 {review.social_media_links.length > 1 ? `#${index + 1}` : ''}
+                                    </span>
+                                    <ExternalLink className="w-4 h-4 text-primary-600 group-hover:translate-x-1 transition-transform flex-shrink-0 ml-2" />
+                                  </a>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         )}
