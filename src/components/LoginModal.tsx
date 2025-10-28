@@ -333,16 +333,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* 주소 */}
-              <AddressInput
-                address={formData.address}
-                detailedAddress={formData.detailed_address}
-                onAddressChange={(address, detailedAddress) =>
-                  setFormData(prev => ({ ...prev, address, detailed_address: detailedAddress }))
-                }
-                required={false}
-              />
-
               {/* 생년월일 */}
               <div>
                 <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700 mb-1">
