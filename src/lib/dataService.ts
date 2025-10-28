@@ -2310,7 +2310,123 @@ export const dataService = {
           return []
         }
       }
+    },
+
+  // 커뮤니티 기능
+  community: {
+    // 게시물 목록 조회
+    getPosts: async () => {
+      try {
+        const { data: posts, error: postsError } = await supabase
+          .from('community_posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (postsError) throw postsError
+
+        // 각 게시물의 댓글 조회
+        const postsWithComments = await Promise.all(
+          (posts || []).map(async (post) => {
+            const { data: comments } = await supabase
+              .from('community_comments')
+              .select('*')
+              .eq('post_id', post.id)
+              .order('created_at', { ascending: true })
+
+            return {
+              ...post,
+              comments: comments || []
+            }
+          })
+        )
+
+        return { data: postsWithComments, error: null }
+      } catch (error) {
+        console.error('게시물 조회 실패:', error)
+        return { data: null, error }
+      }
+    },
+
+    // 게시물 작성
+    createPost: async (post: { user_id: string; user_email: string; content: string; image_url?: string }) => {
+      try {
+        const { data, error } = await supabase
+          .from('community_posts')
+          .insert([post])
+          .select()
+
+        if (error) throw error
+        return { data, error: null }
+      } catch (error) {
+        console.error('게시물 작성 실패:', error)
+        return { data: null, error }
+      }
+    },
+
+    // 게시물 좋아요
+    likePost: async (postId: string, userId: string, like: boolean) => {
+      try {
+        const { data: post, error: fetchError } = await supabase
+          .from('community_posts')
+          .select('likes, liked_by')
+          .eq('id', postId)
+          .single()
+
+        if (fetchError) throw fetchError
+
+        const likedBy = post.liked_by || []
+        const newLikedBy = like
+          ? [...likedBy, userId]
+          : likedBy.filter((id: string) => id !== userId)
+
+        const { error: updateError } = await supabase
+          .from('community_posts')
+          .update({
+            likes: like ? (post.likes || 0) + 1 : Math.max((post.likes || 0) - 1, 0),
+            liked_by: newLikedBy
+          })
+          .eq('id', postId)
+
+        if (updateError) throw updateError
+        return { error: null }
+      } catch (error) {
+        console.error('좋아요 실패:', error)
+        return { error }
+      }
+    },
+
+    // 댓글 작성
+    addComment: async (comment: { post_id: string; user_id: string; user_email: string; content: string }) => {
+      try {
+        const { data, error } = await supabase
+          .from('community_comments')
+          .insert([comment])
+          .select()
+
+        if (error) throw error
+        return { data, error: null }
+      } catch (error) {
+        console.error('댓글 작성 실패:', error)
+        return { data: null, error }
+      }
+    },
+
+    // 게시물 삭제
+    deletePost: async (postId: string) => {
+      try {
+        const { error } = await supabase
+          .from('community_posts')
+          .delete()
+          .eq('id', postId)
+
+        if (error) throw error
+        return { error: null }
+      } catch (error) {
+        console.error('게시물 삭제 실패:', error)
+        return { error }
+      }
     }
+  }
 
   }
 }

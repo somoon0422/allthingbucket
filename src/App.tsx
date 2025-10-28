@@ -19,6 +19,7 @@ import IdentityVerification from './pages/IdentityVerification'
 import AuthCallback from './pages/AuthCallback'
 import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
 import Consultation from './pages/Consultation'
+import Community from './pages/Community'
 
 // 관리자 페이지
 import AdminLogin from './pages/AdminLogin'
@@ -80,6 +81,7 @@ function App() {
                   <Route path="/withdrawal" element={<WithdrawalRequest />} />
                   <Route path="/identity-verification" element={<IdentityVerification />} />
                   <Route path="/consultation" element={<Consultation />} />
+                  <Route path="/community" element={<Community />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield, Heart, MessageSquare} from 'lucide-react'
+import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield, Heart, MessageSquare, Users} from 'lucide-react'
 import LoginModal from './LoginModal'
 import ProfileCompletionModal from './ProfileCompletionModal'
 import { dataService } from '../lib/dataService'
@@ -24,6 +24,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigationItems = [
     { name: '홈', href: '/', icon: Home },
     { name: '체험단', href: '/experiences', icon: Gift },
+    { name: '커뮤니티', href: '/community', icon: Users },
     ...(isAuthenticated ? [
       { name: '마이페이지', href: '/mypage', icon: User },
     ] : [])
@@ -309,19 +310,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               })}
             </div>
 
-            {/* 광고문의 버튼 */}
-            <div className="hidden md:flex items-center">
-              <Link
-                to="/consultation"
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all shadow-sm"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>광고문의</span>
-              </Link>
-            </div>
-
             {/* 사용자 메뉴 */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-3">
               {isAuthenticated ? (
                 <>
                   <div className="flex items-center space-x-2 text-sm text-gray-700">
@@ -334,7 +324,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </span>
                     )}
                   </div>
-                  
+
                   {isAdminUser() && (
                     <button
                       onClick={handleAdminAccess}
@@ -344,7 +334,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       <span>관리자 페이지</span>
                     </button>
                   )}
-                  
+
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-1 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
@@ -364,6 +354,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   로그인
                 </button>
               )}
+
+              {/* 광고문의 버튼 (작고 오른쪽 배치) */}
+              <Link
+                to="/consultation"
+                className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-md transition-all"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>광고문의</span>
+              </Link>
             </div>
 
             {/* 모바일 메뉴 버튼 */}
