@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { dataService } from '../lib/dataService'
 import { useAuth } from '../hooks/useAuth'
@@ -35,18 +35,16 @@ const CommunityDetail: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [commentContent, setCommentContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [viewCountIncremented, setViewCountIncremented] = useState(false)
+  const viewCountIncrementedRef = useRef(false)
 
   useEffect(() => {
-    if (id) {
+    if (id && !viewCountIncrementedRef.current) {
       fetchPost()
       // 조회수 증가 (한 번만)
-      if (!viewCountIncremented) {
-        dataService.community.incrementViewCount(id)
-        setViewCountIncremented(true)
-      }
+      dataService.community.incrementViewCount(id)
+      viewCountIncrementedRef.current = true
     }
-  }, [id, viewCountIncremented])
+  }, [id])
 
   const fetchPost = async () => {
     try {
