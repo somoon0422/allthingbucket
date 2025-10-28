@@ -292,7 +292,7 @@ ${experienceName} 체험단에 선정되신 것을 축하드립니다! 🎉
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className={`text-xl font-bold ${application?.status === 'point_completed' ? 'text-vintage-600' : 'text-green-600'}`}>
+              <h3 className={`text-xl font-bold ${application?.status === 'point_completed' ? 'text-primary-600' : 'text-green-600'}`}>
                 {getModalTitle()}
               </h3>
               <p className="text-sm text-gray-500 mt-1">

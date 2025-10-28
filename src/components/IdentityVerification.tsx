@@ -133,7 +133,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8 w-full max-w-md mx-4 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-vintage-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">본인인증 진행중</h3>
           <p className="text-gray-600 mb-4">
             새 창에서 본인인증을 완료해주세요.<br />
@@ -177,7 +177,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Shield className="w-5 h-5 mr-2 text-vintage-600" />
+            <Shield className="w-5 h-5 mr-2 text-primary-600" />
             실명인증
           </h3>
           {onClose && (
@@ -192,8 +192,8 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
 
         <div className="mb-6 p-4 bg-blue-50 rounded-lg">
           <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-vintage-600 mr-2 mt-0.5" />
-            <div className="text-sm text-vintage-800">
+            <AlertCircle className="w-5 h-5 text-primary-600 mr-2 mt-0.5" />
+            <div className="text-sm text-primary-800">
               <p className="font-medium mb-1">출금을 위한 실명인증이 필요합니다</p>
               <p>• 3.3% 원천징수 세금 공제를 위해 주민등록번호가 필요합니다</p>
               <p>• 나이스평가정보를 통한 안전한 본인인증을 진행합니다</p>
@@ -211,7 +211,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
               type="text"
               value={formData.userName}
               onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="실명을 입력해주세요"
               required
             />
@@ -226,7 +226,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
               type="tel"
               value={formData.userPhone}
               onChange={(e) => setFormData({ ...formData, userPhone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="010-1234-5678"
               required
             />
@@ -241,7 +241,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
               type="date"
               value={formData.userBirth}
               onChange={(e) => setFormData({ ...formData, userBirth: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               required
             />
           </div>
@@ -259,7 +259,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? '인증 요청중...' : '본인인증 시작'}
             </button>

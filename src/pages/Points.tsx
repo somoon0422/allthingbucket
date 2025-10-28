@@ -300,9 +300,9 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
   const getStatusBadge = (status: string) => {
     const statusMap = {
       pending: { text: '대기중', color: 'bg-yellow-100 text-yellow-800' },
-      account_verified: { text: '계좌인증완료', color: 'bg-blue-100 text-vintage-800' },
+      account_verified: { text: '계좌인증완료', color: 'bg-blue-100 text-primary-800' },
       pending_approval: { text: '승인대기', color: 'bg-purple-100 text-navy-800' },
-      approved: { text: '승인됨', color: 'bg-blue-100 text-vintage-800' },
+      approved: { text: '승인됨', color: 'bg-blue-100 text-primary-800' },
       processing: { text: '처리중', color: 'bg-purple-100 text-navy-800' },
       completed: { text: '완료', color: 'bg-green-100 text-green-800' },
       rejected: { text: '거절됨', color: 'bg-red-100 text-red-800' }
@@ -389,7 +389,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
           status: app.status,
           details: `신청 상태: ${app.status}`,
           icon: FileText,
-          color: 'text-vintage-500'
+          color: 'text-primary-500'
         })),
         ...campaignReviews.map((review: any) => ({
           type: 'review',
@@ -505,7 +505,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border">
           <div className="flex items-center">
-            <TrendingUp className="w-8 h-8 text-vintage-600" />
+            <TrendingUp className="w-8 h-8 text-primary-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">총 적립</p>
               <p className="text-2xl font-bold text-gray-900">
@@ -682,7 +682,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                           })
                           setShowAccountVerificationModal(true)
                         }}
-                        className="mt-2 px-3 py-1 bg-vintage-500 text-white text-xs rounded-lg hover:bg-vintage-600"
+                        className="mt-2 px-3 py-1 bg-primary-500 text-white text-xs rounded-lg hover:bg-primary-600"
                       >
                         1원 인증
                       </button>
@@ -720,7 +720,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                     )}
                     <div>
                       <h3 
-                        className={`font-medium text-gray-900 ${(point.campaign_id || point.campaign_name || point.description?.includes('캠페인')) ? 'cursor-pointer hover:text-vintage-600 hover:underline' : ''}`}
+                        className={`font-medium text-gray-900 ${(point.campaign_id || point.campaign_name || point.description?.includes('캠페인')) ? 'cursor-pointer hover:text-primary-600 hover:underline' : ''}`}
                         onClick={() => {
                           console.log('🔍 포인트 제목 클릭:', {
                             description: point.description,
@@ -754,7 +754,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                       {point.campaign_name && (
                         <div className="flex items-center space-x-2">
                           <p 
-                            className={`text-sm text-gray-600 ${point.campaign_id ? 'cursor-pointer hover:text-vintage-600 hover:underline' : ''}`}
+                            className={`text-sm text-gray-600 ${point.campaign_id ? 'cursor-pointer hover:text-primary-600 hover:underline' : ''}`}
                             onClick={() => {
                               if (point.campaign_id) {
                                 fetchCampaignHistory(point.campaign_id, point.campaign_name)
@@ -766,7 +766,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                           {point.campaign_id && (
                             <button
                               onClick={() => navigate(`/campaigns/${point.campaign_id}`)}
-                              className="text-vintage-500 hover:text-vintage-700 transition-colors"
+                              className="text-primary-500 hover:text-primary-700 transition-colors"
                               title="캠페인 상세페이지로 이동"
                             >
                               <ExternalLink className="w-4 h-4" />
@@ -858,7 +858,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => navigate(`/campaigns/${selectedCampaign.id}`)}
-                    className="px-3 py-1 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-1 text-sm"
+                    className="px-3 py-1 bg-primary-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-1 text-sm"
                   >
                     <ExternalLink className="w-4 h-4" />
                     <span>상세페이지</span>
@@ -900,7 +900,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                           <div className="mt-2">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               history.status === 'completed' || history.status === '지급완료' ? 'bg-green-100 text-green-800' :
-                              history.status === 'approved' || history.status === '승인됨' ? 'bg-blue-100 text-vintage-800' :
+                              history.status === 'approved' || history.status === '승인됨' ? 'bg-blue-100 text-primary-800' :
                               history.status === 'pending' || history.status === '대기중' ? 'bg-yellow-100 text-yellow-800' :
                               history.status === 'rejected' || history.status === '거절됨' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-800'
@@ -938,8 +938,8 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
               
               <div className="space-y-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-vintage-900 mb-2">인증 방법</h4>
-                  <ol className="text-sm text-vintage-800 space-y-1">
+                  <h4 className="font-medium text-primary-900 mb-2">인증 방법</h4>
+                  <ol className="text-sm text-primary-800 space-y-1">
                     <li>1. 계좌로 1원을 입금해주세요</li>
                     <li>2. 입금자명: <strong>올띵버킷</strong></li>
                     <li>3. 입금 후 아래에 입금자명을 입력해주세요</li>
@@ -955,7 +955,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                     required
                     value={verificationData.depositName}
                     onChange={(e) => setVerificationData(prev => ({ ...prev, depositName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="입금자명을 입력하세요"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -993,7 +993,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                 </button>
                 <button
                   onClick={handleAccountVerification}
-                  className="flex-1 px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   인증 완료
                 </button>
@@ -1046,7 +1046,7 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
           <div>
             <h4 className="font-medium text-gray-900 mb-2">🔸 실명인증 안내</h4>
             <ul className="space-y-1 text-xs ml-4">
-              <li>• 명의도용 차단이 되어 있거나 나이스평가 정보에서 사용자 정보를 불러올 수 없는 경우, <a href="https://www.namecheck.co.kr/prod_name.nc" target="_blank" rel="noopener noreferrer" className="text-vintage-600 hover:text-vintage-800 underline">온라인 실명 등록 서비스</a>를 이용하세요.</li>
+              <li>• 명의도용 차단이 되어 있거나 나이스평가 정보에서 사용자 정보를 불러올 수 없는 경우, <a href="https://www.namecheck.co.kr/prod_name.nc" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-800 underline">온라인 실명 등록 서비스</a>를 이용하세요.</li>
             </ul>
           </div>
         </div>

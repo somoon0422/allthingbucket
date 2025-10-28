@@ -189,9 +189,9 @@ const Home: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-vintage-50 via-gold-50 to-navy-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-gold-50 to-navy-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-vintage-200 border-t-vintage-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">올띵버킷을 불러오는 중...</p>
         </div>
       </div>
@@ -199,24 +199,24 @@ const Home: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-vintage-50 via-gold-50 to-navy-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-gold-50 to-navy-50">
       {/* Hero Section - 더 현대적이고 세련된 디자인 */}
       <section className="relative overflow-hidden pt-20 pb-32">
         {/* 배경 장식 */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-vintage-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary-400/20 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-navy-400/20 rounded-full blur-3xl"></div>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 mb-8 shadow-lg">
-              <TrendingUp className="w-4 h-4 text-vintage-600" />
+              <TrendingUp className="w-4 h-4 text-primary-600" />
               <span className="text-sm font-semibold text-gray-700">대한민국 No.1 체험단 플랫폼</span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-6 tracking-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-vintage-600 via-navy-600 to-gold-600">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-600 via-navy-600 to-gold-600">
                 올띵버킷
               </span>
             </h1>
@@ -229,7 +229,7 @@ const Home: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/experiences"
-                className="inline-flex items-center justify-center bg-gradient-to-r from-vintage-600 to-navy-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg"
+                className="inline-flex items-center justify-center bg-gradient-to-r from-primary-600 to-navy-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg"
               >
                 체험단 둘러보기
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -253,7 +253,7 @@ const Home: React.FC = () => {
           <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
               <Link to="/experiences" className="text-center group cursor-pointer">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-vintage-500 to-vintage-700 rounded-2xl shadow-lg shadow-vintage-500/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl shadow-lg shadow-primary-500/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Gift className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-4xl font-bold text-gray-900 mb-2">{stats.totalExperiences}</h3>
@@ -282,7 +282,7 @@ const Home: React.FC = () => {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-vintage-500 to-vintage-700 text-white rounded-full px-4 py-2 mb-4 shadow-lg">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-500 to-primary-700 text-white rounded-full px-4 py-2 mb-4 shadow-lg">
               <Sparkles className="w-4 h-4" />
               <span className="text-sm font-semibold">HOT</span>
             </div>
@@ -304,7 +304,7 @@ const Home: React.FC = () => {
                     isCampaignClosed(experience) ? 'opacity-60' : 'hover:scale-105'
                   }`}
                 >
-                  <div className="relative h-56 bg-gradient-to-br from-vintage-400 to-navy-400 overflow-hidden">
+                  <div className="relative h-56 bg-gradient-to-br from-primary-400 to-navy-400 overflow-hidden">
                     {(() => {
                       const imageSources = [
                         (experience.main_images && Array.isArray(experience.main_images) && experience.main_images.length > 0) ? experience.main_images[0] : null,
@@ -340,7 +340,7 @@ const Home: React.FC = () => {
                       <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-sm ${
                         isCampaignClosed(experience)
                           ? 'bg-red-500/90 text-white'
-                          : 'bg-white/90 text-vintage-600'
+                          : 'bg-white/90 text-primary-600'
                       }`}>
                         {getDeadlineDisplay(experience)}
                       </span>
@@ -366,7 +366,7 @@ const Home: React.FC = () => {
 
                     <div className="absolute bottom-4 left-4 right-4">
                       <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-3 py-2 inline-flex items-center gap-2 shadow-lg">
-                        <div className="w-8 h-8 bg-gradient-to-br from-vintage-600 to-navy-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-navy-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {(experience.brand || 'B').charAt(0)}
                         </div>
                         <span className="text-gray-900 font-semibold text-sm">
@@ -377,7 +377,7 @@ const Home: React.FC = () => {
                   </div>
 
                   <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-vintage-600 transition-colors">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
                       {experience.campaign_name ||
                        experience.title ||
                        experience.experience_name ||
@@ -399,11 +399,11 @@ const Home: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-vintage-600 font-bold">
+                      <div className="flex items-center gap-1 text-primary-600 font-bold">
                         <Coins className="w-5 h-5" />
                         <span>{experience.rewards || 0} P</span>
                       </div>
-                      <div className="inline-flex items-center gap-1 text-vintage-600 font-semibold group-hover:gap-2 transition-all">
+                      <div className="inline-flex items-center gap-1 text-primary-600 font-semibold group-hover:gap-2 transition-all">
                         <span>자세히 보기</span>
                         <ArrowRight className="w-4 h-4" />
                       </div>
@@ -427,7 +427,7 @@ const Home: React.FC = () => {
           <div className="text-center mt-16">
             <Link
               to="/experiences"
-              className="inline-flex items-center bg-gradient-to-r from-vintage-600 to-navy-600 text-white px-10 py-5 rounded-2xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-lg"
+              className="inline-flex items-center bg-gradient-to-r from-primary-600 to-navy-600 text-white px-10 py-5 rounded-2xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-lg"
             >
               모든 체험단 보기
               <ArrowRight className="w-5 h-5 ml-2" />
@@ -450,7 +450,7 @@ const Home: React.FC = () => {
             </div>
 
             <div className="relative">
-              <div className="bg-gradient-to-br from-vintage-50 to-navy-50 rounded-3xl shadow-xl p-10 max-w-4xl mx-auto border border-white">
+              <div className="bg-gradient-to-br from-primary-50 to-navy-50 rounded-3xl shadow-xl p-10 max-w-4xl mx-auto border border-white">
                 <div className="flex items-center mb-6">
                   <div className="flex text-yellow-400">
                     {[...Array(5)].map((_, i) => (
@@ -465,7 +465,7 @@ const Home: React.FC = () => {
                   "{reviews[currentReviewIndex]?.review_content || '훌륭한 체험단이었습니다!'}"
                 </blockquote>
                 <div className="flex items-center">
-                  <div className="w-14 h-14 bg-gradient-to-br from-vintage-600 to-navy-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  <div className="w-14 h-14 bg-gradient-to-br from-primary-600 to-navy-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
                     {reviews[currentReviewIndex]?.user_name?.charAt(0) || 'U'}
                   </div>
                   <div className="ml-4">
@@ -487,7 +487,7 @@ const Home: React.FC = () => {
                       onClick={() => setCurrentReviewIndex(index)}
                       className={`w-3 h-3 rounded-full transition-all duration-300 ${
                         index === currentReviewIndex
-                          ? 'bg-vintage-600 w-8'
+                          ? 'bg-primary-600 w-8'
                           : 'bg-gray-300 hover:bg-gray-400'
                       }`}
                     />
@@ -513,10 +513,10 @@ const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { icon: Zap, title: '빠른 신청', desc: '간편한 신청 과정으로 빠르게 체험단에 참여하세요', gradient: 'from-vintage-500 to-vintage-700' },
+              { icon: Zap, title: '빠른 신청', desc: '간편한 신청 과정으로 빠르게 체험단에 참여하세요', gradient: 'from-primary-500 to-primary-700' },
               { icon: Award, title: '품질 보장', desc: '엄선된 브랜드와 제품으로 만족스러운 경험을 제공합니다', gradient: 'from-navy-500 to-navy-700' },
               { icon: Target, title: '맞춤 추천', desc: '당신의 관심사에 맞는 체험단을 추천해드립니다', gradient: 'from-gold-500 to-gold-700' },
-              { icon: CheckCircle, title: '안전한 거래', desc: '안전하고 투명한 시스템으로 보호받으세요', gradient: 'from-vintage-600 to-navy-600' }
+              { icon: CheckCircle, title: '안전한 거래', desc: '안전하고 투명한 시스템으로 보호받으세요', gradient: 'from-primary-600 to-navy-600' }
             ].map((feature, index) => (
               <div key={index} className="text-center group">
                 <div className={`inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br ${feature.gradient} rounded-3xl shadow-lg mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
@@ -532,7 +532,7 @@ const Home: React.FC = () => {
 
       {/* CTA Section */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-vintage-600 via-navy-600 to-gold-600"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-600 via-navy-600 to-gold-600"></div>
         <div className="absolute inset-0">
           <div className="absolute top-10 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-10 right-10 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>

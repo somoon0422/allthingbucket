@@ -129,7 +129,7 @@ const Wishlist: React.FC<WishlistProps> = ({ embedded = false }) => {
               placeholder="찜한 체험단 검색..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+              className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +142,7 @@ const Wishlist: React.FC<WishlistProps> = ({ embedded = false }) => {
         {/* 로딩 상태 */}
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             <span className="ml-3 text-gray-600">찜 목록을 불러오는 중...</span>
           </div>
         )}
@@ -155,7 +155,7 @@ const Wishlist: React.FC<WishlistProps> = ({ embedded = false }) => {
             <p className="text-gray-600 mb-6">관심있는 체험단을 찜해보세요!</p>
             <button
               onClick={() => navigate('/experiences')}
-              className="px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               체험단 둘러보기
             </button>
@@ -323,7 +323,7 @@ const Wishlist: React.FC<WishlistProps> = ({ embedded = false }) => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleViewCampaign(item.campaign_id)}
-                        className="flex-1 flex items-center justify-center px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        className="flex-1 flex items-center justify-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                       >
                         <Eye className="w-4 h-4 mr-2" />
                         자세히 보기

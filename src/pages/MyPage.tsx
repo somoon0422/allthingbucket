@@ -476,7 +476,7 @@ const MyPage: React.FC = () => {
                       className={`
                         w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all
                         ${isActive
-                          ? 'bg-gradient-to-r from-vintage-50 to-navy-50 text-navy-700 border-l-4 border-navy-600 font-semibold shadow-sm'
+                          ? 'bg-gradient-to-r from-primary-50 to-navy-50 text-navy-700 border-l-4 border-navy-600 font-semibold shadow-sm'
                           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                         }
                       `}
@@ -592,18 +592,18 @@ const MyPage: React.FC = () => {
 
       {/* 🔔 프로필 정보 채우기 공지 */}
       {(!user?.name || !profile?.phone) && activeTab === 'basic' && (
-        <div className="bg-gradient-to-r from-vintage-50 to-navy-50 border-l-4 border-vintage-400 p-4 mb-6 rounded-r-lg">
+        <div className="bg-gradient-to-r from-primary-50 to-navy-50 border-l-4 border-primary-400 p-4 mb-6 rounded-r-lg">
           <div className="flex items-start">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-vintage-600" />
+                <User className="w-5 h-5 text-primary-600" />
               </div>
             </div>
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-vintage-800">
+              <h3 className="text-sm font-medium text-primary-800">
                 프로필 정보를 완성해주세요!
               </h3>
-              <div className="mt-2 text-sm text-vintage-700">
+              <div className="mt-2 text-sm text-primary-700">
                 <p className="mb-2">
                   체험단 신청 시 자동으로 입력되는 정보입니다.
                   <strong>실명, 전화번호</strong>를 모두 입력해주세요.
@@ -616,7 +616,7 @@ const MyPage: React.FC = () => {
               <div className="mt-3">
                 <button
                   onClick={() => setEditMode(true)}
-                  className="inline-flex items-center px-3 py-2 bg-vintage-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Edit3 className="w-4 h-4 mr-1" />
                   지금 완성하기
@@ -1130,11 +1130,11 @@ const MyPage: React.FC = () => {
             </div>
 
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <TrendingUp className="w-8 h-8 text-vintage-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-vintage-600">
+              <TrendingUp className="w-8 h-8 text-primary-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-primary-600">
                 {Object.values(profile.follower_counts || {}).reduce((sum: number, count: any) => sum + (count || 0), 0).toLocaleString()}
               </p>
-              <p className="text-sm text-vintage-700 mt-1">총 팔로워 수</p>
+              <p className="text-sm text-primary-700 mt-1">총 팔로워 수</p>
             </div>
           </div>
         </div>

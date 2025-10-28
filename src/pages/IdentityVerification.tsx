@@ -166,11 +166,11 @@ export default function IdentityVerification() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-vintage-50 via-white to-navy-50 py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-navy-50 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         {/* 헤더 */}
         <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-vintage-500 to-navy-600 rounded-2xl shadow-lg shadow-vintage-500/30 mb-6 transform hover:scale-110 transition-transform duration-300">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-500 to-navy-600 rounded-2xl shadow-lg shadow-primary-500/30 mb-6 transform hover:scale-110 transition-transform duration-300">
             <Shield className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">본인인증 및 계좌 등록</h1>
@@ -182,22 +182,22 @@ export default function IdentityVerification() {
         {/* 진행 단계 표시 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-8 mb-8">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
-            <div className={`flex flex-col items-center gap-2 flex-1 transition-all duration-300 ${step === 'identity' || step === 'account' || step === 'complete' ? 'text-vintage-600' : 'text-gray-400'}`}>
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${step === 'identity' || step === 'account' || step === 'complete' ? 'bg-gradient-to-br from-vintage-500 to-navy-600 text-white shadow-lg shadow-vintage-500/30 scale-110' : 'bg-gray-100'}`}>
+            <div className={`flex flex-col items-center gap-2 flex-1 transition-all duration-300 ${step === 'identity' || step === 'account' || step === 'complete' ? 'text-primary-600' : 'text-gray-400'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${step === 'identity' || step === 'account' || step === 'complete' ? 'bg-gradient-to-br from-primary-500 to-navy-600 text-white shadow-lg shadow-primary-500/30 scale-110' : 'bg-gray-100'}`}>
                 {step === 'account' || step === 'complete' ? <CheckCircle className="w-6 h-6" /> : '1'}
               </div>
               <span className="font-medium text-sm">본인인증</span>
             </div>
-            <div className={`h-1 w-full flex-1 mx-4 rounded-full transition-all duration-500 ${step === 'account' || step === 'complete' ? 'bg-gradient-to-r from-vintage-500 to-navy-600' : 'bg-gray-200'}`}></div>
-            <div className={`flex flex-col items-center gap-2 flex-1 transition-all duration-300 ${step === 'account' || step === 'complete' ? 'text-vintage-600' : 'text-gray-400'}`}>
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${step === 'account' || step === 'complete' ? 'bg-gradient-to-br from-vintage-500 to-navy-600 text-white shadow-lg shadow-vintage-500/30 scale-110' : 'bg-gray-100'}`}>
+            <div className={`h-1 w-full flex-1 mx-4 rounded-full transition-all duration-500 ${step === 'account' || step === 'complete' ? 'bg-gradient-to-r from-primary-500 to-navy-600' : 'bg-gray-200'}`}></div>
+            <div className={`flex flex-col items-center gap-2 flex-1 transition-all duration-300 ${step === 'account' || step === 'complete' ? 'text-primary-600' : 'text-gray-400'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${step === 'account' || step === 'complete' ? 'bg-gradient-to-br from-primary-500 to-navy-600 text-white shadow-lg shadow-primary-500/30 scale-110' : 'bg-gray-100'}`}>
                 {step === 'complete' ? <CheckCircle className="w-6 h-6" /> : '2'}
               </div>
               <span className="font-medium text-sm">계좌 등록</span>
             </div>
-            <div className={`h-1 w-full flex-1 mx-4 rounded-full transition-all duration-500 ${step === 'complete' ? 'bg-gradient-to-r from-vintage-500 to-navy-600' : 'bg-gray-200'}`}></div>
-            <div className={`flex flex-col items-center gap-2 flex-1 transition-all duration-300 ${step === 'complete' ? 'text-vintage-600' : 'text-gray-400'}`}>
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${step === 'complete' ? 'bg-gradient-to-br from-vintage-500 to-navy-600 text-white shadow-lg shadow-vintage-500/30 scale-110' : 'bg-gray-100'}`}>
+            <div className={`h-1 w-full flex-1 mx-4 rounded-full transition-all duration-500 ${step === 'complete' ? 'bg-gradient-to-r from-primary-500 to-navy-600' : 'bg-gray-200'}`}></div>
+            <div className={`flex flex-col items-center gap-2 flex-1 transition-all duration-300 ${step === 'complete' ? 'text-primary-600' : 'text-gray-400'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${step === 'complete' ? 'bg-gradient-to-br from-primary-500 to-navy-600 text-white shadow-lg shadow-primary-500/30 scale-110' : 'bg-gray-100'}`}>
                 {step === 'complete' ? <CheckCircle className="w-6 h-6" /> : '3'}
               </div>
               <span className="font-medium text-sm">완료</span>
@@ -209,7 +209,7 @@ export default function IdentityVerification() {
         {step === 'identity' && (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-10 transform transition-all duration-500 hover:shadow-2xl">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-vintage-500 to-navy-600 rounded-2xl shadow-lg shadow-vintage-500/30 mx-auto mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-500 to-navy-600 rounded-2xl shadow-lg shadow-primary-500/30 mx-auto mb-6">
                 <Shield className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-3xl font-bold text-gray-900 mb-3">본인인증</h2>
@@ -224,7 +224,7 @@ export default function IdentityVerification() {
                 <p className="text-gray-700 leading-relaxed">주민등록번호가 수집되며, 3.3% 원천징수 시 사용됩니다</p>
               </div>
               <div className="flex items-start space-x-4 bg-blue-50 rounded-xl p-4 transform transition-all duration-200 hover:scale-105">
-                <CheckCircle className="w-6 h-6 text-vintage-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-6 h-6 text-primary-600 flex-shrink-0 mt-0.5" />
                 <p className="text-gray-700 leading-relaxed">인증 정보는 암호화되어 안전하게 보관됩니다</p>
               </div>
               <div className="flex items-start space-x-4 bg-indigo-50 rounded-xl p-4 transform transition-all duration-200 hover:scale-105">
@@ -236,7 +236,7 @@ export default function IdentityVerification() {
             <button
               onClick={handleIdentityVerification}
               disabled={loading}
-              className="w-full py-5 bg-gradient-to-r from-vintage-600 to-navy-600 text-white text-lg rounded-xl font-semibold shadow-lg shadow-vintage-500/30 hover:shadow-xl hover:shadow-vintage-500/40 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300"
+              className="w-full py-5 bg-gradient-to-r from-primary-600 to-navy-600 text-white text-lg rounded-xl font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -255,7 +255,7 @@ export default function IdentityVerification() {
         {step === 'account' && (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-10 transform transition-all duration-500 hover:shadow-2xl">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-vintage-500 to-navy-600 rounded-2xl shadow-lg shadow-vintage-500/30 mx-auto mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-500 to-navy-600 rounded-2xl shadow-lg shadow-primary-500/30 mx-auto mb-6">
                 <CreditCard className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-3xl font-bold text-gray-900 mb-3">출금 계좌 등록</h2>
@@ -273,7 +273,7 @@ export default function IdentityVerification() {
                 <select
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
-                  className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 transition-all duration-200 bg-white hover:border-blue-300 text-gray-900"
+                  className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white hover:border-blue-300 text-gray-900"
                 >
                   <option value="">은행을 선택하세요</option>
                   {bankList.map(bank => (
@@ -293,7 +293,7 @@ export default function IdentityVerification() {
                   value={bankAccount}
                   onChange={(e) => setBankAccount(e.target.value.replace(/[^0-9]/g, ''))}
                   placeholder="123456789012"
-                  className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 transition-all duration-200 hover:border-blue-300"
+                  className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-blue-300"
                 />
               </div>
 
@@ -308,11 +308,11 @@ export default function IdentityVerification() {
                   value={accountHolder}
                   onChange={(e) => setAccountHolder(e.target.value)}
                   placeholder={identityData?.name || '홍길동'}
-                  className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 transition-all duration-200 hover:border-blue-300"
+                  className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-blue-300"
                 />
                 {identityData && (
                   <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-vintage-700">
+                    <p className="text-sm text-primary-700">
                       ✓ 본인인증 이름: <span className="font-semibold">{identityData.name}</span>
                     </p>
                   </div>
@@ -323,7 +323,7 @@ export default function IdentityVerification() {
             <button
               onClick={handleSaveAccount}
               disabled={loading || !bankName || !bankAccount || !accountHolder}
-              className="w-full py-5 bg-gradient-to-r from-vintage-600 to-navy-600 text-white text-lg rounded-xl font-semibold shadow-lg shadow-vintage-500/30 hover:shadow-xl hover:shadow-vintage-500/40 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300"
+              className="w-full py-5 bg-gradient-to-r from-primary-600 to-navy-600 text-white text-lg rounded-xl font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -349,8 +349,8 @@ export default function IdentityVerification() {
               이제 모든 캠페인에 신청하실 수 있습니다
             </p>
             <div className="inline-flex items-center gap-2 px-6 py-3 bg-blue-50 rounded-full">
-              <div className="w-2 h-2 bg-vintage-600 rounded-full animate-pulse"></div>
-              <p className="text-sm text-vintage-700 font-medium">
+              <div className="w-2 h-2 bg-primary-600 rounded-full animate-pulse"></div>
+              <p className="text-sm text-primary-700 font-medium">
                 3초 후 프로필 페이지로 이동합니다...
               </p>
             </div>

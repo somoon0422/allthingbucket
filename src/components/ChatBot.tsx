@@ -898,7 +898,7 @@ const ChatBot: React.FC = () => {
                         {/* 이메일 문의 */}
                         <a 
                           href="mailto:support@allthingbucket.com" 
-                          className="flex items-center justify-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-vintage-700 font-medium hover:bg-blue-100 hover:border-blue-300 transition-all duration-200"
+                          className="flex items-center justify-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-primary-700 font-medium hover:bg-blue-100 hover:border-blue-300 transition-all duration-200"
                           title="이메일 문의"
                         >
                           <Mail className="w-4 h-4" />
@@ -937,7 +937,7 @@ const ChatBot: React.FC = () => {
                               <>
                                 <button
                                   onClick={toggleAllSelection}
-                                  className="text-xs text-vintage-600 hover:text-vintage-800"
+                                  className="text-xs text-primary-600 hover:text-primary-800"
                                 >
                                   {selectedRooms.size === chatRooms.length ? '전체 해제' : '전체 선택'}
                                 </button>
@@ -974,7 +974,7 @@ const ChatBot: React.FC = () => {
                                     type="checkbox"
                                     checked={selectedRooms.has(room.id)}
                                     onChange={() => toggleRoomSelection(room.id)}
-                                    className="w-4 h-4 text-vintage-600 bg-gray-100 border-gray-300 rounded focus:ring-vintage-500"
+                                    className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500"
                                   />
                                 )}
                                 <button
@@ -1062,7 +1062,7 @@ const ChatBot: React.FC = () => {
                         minute: '2-digit' 
                       })}
                       {message.sender === 'admin' && !message.isRead && (
-                        <span className="ml-2 text-vintage-500">●</span>
+                        <span className="ml-2 text-primary-500">●</span>
                       )}
                     </div>
                   </div>

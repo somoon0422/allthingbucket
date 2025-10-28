@@ -298,8 +298,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     to={item.href}
                     className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActive
-                        ? 'text-vintage-600 bg-vintage-50'
-                        : 'text-gray-700 hover:text-vintage-600 hover:bg-gray-50'
+                        ? 'text-primary-600 bg-primary-50'
+                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                     }`}
                   >
                     <item.icon className="w-4 h-4" />
@@ -359,7 +359,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     // 모달 열기 이벤트 발생
                     window.dispatchEvent(new CustomEvent('openLoginModal'))
                   }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-vintage-500 hover:bg-vintage-600 rounded-md transition-colors shadow-sm"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors shadow-sm"
                 >
                   로그인
                 </button>
@@ -395,8 +395,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
                       isActive
-                        ? 'text-vintage-600 bg-vintage-50 border-l-4 border-vintage-600'
-                        : 'text-gray-700 hover:text-vintage-600 hover:bg-gray-50'
+                        ? 'text-primary-600 bg-primary-50 border-l-4 border-primary-600'
+                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                     }`}
                   >
                     <item.icon className="w-5 h-5" />
@@ -461,7 +461,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       window.dispatchEvent(new CustomEvent('openLoginModal'))
                       setIsMobileMenuOpen(false)
                     }}
-                    className="w-full px-4 py-3 text-base font-medium text-white bg-vintage-500 hover:bg-vintage-600 rounded-lg transition-colors shadow-sm"
+                    className="w-full px-4 py-3 text-base font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm"
                   >
                     로그인
                   </button>
@@ -499,10 +499,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 sm:mb-4">서비스</h3>
               <ul className="space-y-2">
-                <li><Link to="/experiences" className="text-sm text-gray-600 hover:text-vintage-600 transition-colors">체험단 목록</Link></li>
-                <li><Link to="/wishlist" className="text-sm text-gray-600 hover:text-vintage-600 transition-colors">찜 목록</Link></li>
-                <li><Link to="/my-applications" className="text-sm text-gray-600 hover:text-vintage-600 transition-colors">내 신청내역</Link></li>
-                <li><Link to="/points" className="text-sm text-gray-600 hover:text-vintage-600 transition-colors">포인트 관리</Link></li>
+                <li><Link to="/experiences" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">체험단 목록</Link></li>
+                <li><Link to="/wishlist" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">찜 목록</Link></li>
+                <li><Link to="/my-applications" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">내 신청내역</Link></li>
+                <li><Link to="/points" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">포인트 관리</Link></li>
               </ul>
             </div>
             

@@ -135,7 +135,7 @@ const Campaigns: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">캠페인 목록을 불러오는 중...</p>
         </div>
       </div>
@@ -163,14 +163,14 @@ const Campaigns: React.FC = () => {
                 placeholder="캠페인 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
             <div>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="all">전체 카테고리</option>
                 <option value="beauty">뷰티</option>
@@ -286,7 +286,7 @@ const Campaigns: React.FC = () => {
                         e.stopPropagation()
                         handleCampaignClick(campaign)
                       }}
-                      className="w-full py-2 px-4 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      className="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                     >
                       자세히 보기
                     </button>
@@ -299,8 +299,8 @@ const Campaigns: React.FC = () => {
 
         {/* 캠페인 참여 안내 */}
         <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-vintage-900 mb-3">💡 캠페인 참여 방법</h3>
-          <div className="grid md:grid-cols-3 gap-4 text-sm text-vintage-800">
+          <h3 className="text-lg font-medium text-primary-900 mb-3">💡 캠페인 참여 방법</h3>
+          <div className="grid md:grid-cols-3 gap-4 text-sm text-primary-800">
             <div>
               <div className="font-medium mb-1">1. 캠페인 선택</div>
               <div>관심있는 브랜드의 캠페인을 선택하세요</div>

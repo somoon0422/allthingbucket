@@ -242,7 +242,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
         <div
           className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
             dragActive 
-              ? 'border-vintage-500 bg-blue-50' 
+              ? 'border-primary-500 bg-blue-50' 
               : 'border-gray-300 hover:border-gray-400'
           } ${uploading ? 'pointer-events-none opacity-50' : ''}`}
           onDragEnter={handleDrag}
@@ -261,7 +261,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
           
           {uploading ? (
             <div className="flex flex-col items-center">
-              <Loader2 className="w-8 h-8 text-vintage-600 animate-spin mb-2" />
+              <Loader2 className="w-8 h-8 text-primary-600 animate-spin mb-2" />
               <p className="text-sm text-gray-600">업로드 중...</p>
             </div>
           ) : (
@@ -284,7 +284,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
           {!showUrlInput ? (
             <button
               onClick={() => setShowUrlInput(true)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm text-vintage-600 hover:text-vintage-700 hover:bg-blue-50 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-3 py-2 text-sm text-primary-600 hover:text-primary-700 hover:bg-blue-50 rounded-lg transition-colors"
             >
               <LinkIcon className="w-4 h-4" />
               <span>URL로 이미지 추가</span>
@@ -296,12 +296,12 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="이미지 URL을 입력하세요"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 onKeyPress={(e) => e.key === 'Enter' && handleUrlAdd()}
               />
               <button
                 onClick={handleUrlAdd}
-                className="px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 추가
               </button>
@@ -353,8 +353,8 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
 
       {/* 도움말 */}
       <div className="flex items-start space-x-2 p-3 bg-blue-50 rounded-lg">
-        <AlertCircle className="w-4 h-4 text-vintage-600 mt-0.5 flex-shrink-0" />
-        <div className="text-xs text-vintage-700">
+        <AlertCircle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+        <div className="text-xs text-primary-700">
           <p className="font-medium mb-1">이미지 업로드 안내</p>
           <ul className="space-y-1">
             {allowFileUpload && <li>• 파일 업로드: JPG, PNG, GIF 등 이미지 파일만 가능</li>}

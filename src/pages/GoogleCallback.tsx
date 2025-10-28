@@ -87,7 +87,7 @@ const GoogleCallback: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Google 로그인 처리 중...</p>
         </div>
       </div>
@@ -107,7 +107,7 @@ const GoogleCallback: React.FC = () => {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             홈으로 돌아가기
           </button>

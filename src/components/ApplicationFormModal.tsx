@@ -651,7 +651,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   <Star className="w-4 h-4 text-green-600" />
                 </div>
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-vintage-600 font-bold text-sm">B</span>
+                  <span className="text-primary-600 font-bold text-sm">B</span>
                 </div>
               </div>
               
@@ -684,7 +684,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="실명을 입력해주세요"
                     required
                   />
@@ -699,7 +699,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="example@email.com"
                     required
                   />
@@ -838,7 +838,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     ))
 
                     const allPlatforms = [
-                      { value: 'review', label: '구매후기', icon: '⭐', color: 'vintage', bgColor: 'bg-blue-50', borderColor: 'border-vintage-500' },
+                      { value: 'review', label: '구매후기', icon: '⭐', color: 'vintage', bgColor: 'bg-blue-50', borderColor: 'border-primary-500' },
                       { value: 'blog', label: 'Blog', labelKo: '블로그 포스트', icon: '📝', color: 'green', bgColor: 'bg-green-50', borderColor: 'border-green-500' },
                       { value: 'naver', label: 'Naver', labelKo: '네이버', icon: '🟢', color: 'green', bgColor: 'bg-green-50', borderColor: 'border-green-500' },
                       { value: 'instagram', label: 'Instagram', labelKo: '인스타그램 포스트', icon: '📸', color: 'pink', bgColor: 'bg-pink-50', borderColor: 'border-pink-500' },
@@ -911,7 +911,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="instagram_handle"
                     value={formData.instagram_handle}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="@username"
                   />
                 </div>
@@ -925,7 +925,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="blog_url"
                     value={formData.blog_url}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="https://blog.example.com"
                   />
                 </div>
@@ -939,7 +939,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                     name="youtube_channel"
                     value={formData.youtube_channel}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="https://youtube.com/@channel"
                   />
                 </div>
@@ -962,7 +962,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                   value={formData.application_reason}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                   placeholder="이 체험단에 신청하는 이유를 자세히 작성해주세요"
                   required
                 />
@@ -1012,7 +1012,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? '신청 중...' : '신청하기'}
               </button>

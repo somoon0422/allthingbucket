@@ -260,7 +260,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
       case 'product_purchased':
         return {
           label: '제품구매완료',
-          color: 'bg-blue-100 text-vintage-800',
+          color: 'bg-blue-100 text-primary-800',
           icon: CheckCircle
         }
       case 'shipping':
@@ -284,7 +284,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
       case 'registered':
         return {
           label: '등록',
-          color: 'bg-blue-100 text-vintage-800',
+          color: 'bg-blue-100 text-primary-800',
           icon: User
         }
       case 'completed':
@@ -296,13 +296,13 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
       case 'in_progress':
         return {
           label: '진행중',
-          color: 'bg-blue-100 text-vintage-800',
+          color: 'bg-blue-100 text-primary-800',
           icon: CheckCircle
         }
       case 'review_submitted':
         return {
           label: '리뷰 제출됨',
-          color: 'bg-blue-100 text-vintage-800',
+          color: 'bg-blue-100 text-primary-800',
           icon: FileText
         }
       case 'review_in_progress':
@@ -736,7 +736,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
     return (
       <div className={embedded ? 'flex justify-center items-center py-12' : 'min-h-screen bg-gray-50 flex items-center justify-center'}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vintage-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">신청 내역을 불러오는 중...</p>
         </div>
       </div>
@@ -761,7 +761,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => navigate('/profile')}
-                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
               >
                 <User className="w-4 h-4" />
                 <span>프로필 관리</span>
@@ -783,7 +783,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                   }
                 }}
                 disabled={loading}
-                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 <span>새로고침</span>
@@ -813,14 +813,14 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                 onClick={() => setStatusFilter(tab.value)}
                 className={`px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all duration-200 ${
                   statusFilter === tab.value
-                    ? 'bg-vintage-600 text-white shadow-md'
+                    ? 'bg-primary-600 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {tab.label}
                 <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
                   statusFilter === tab.value
-                    ? 'bg-vintage-500 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-gray-300 text-gray-600'
                 }`}>
                   {tab.count}
@@ -831,18 +831,18 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
           
           <div className="text-sm sm:text-base text-gray-600">
             {statusFilter === 'all' ? (
-              <>총 <span className="font-semibold text-vintage-600">{filteredApplications.length}</span>개 신청</>
+              <>총 <span className="font-semibold text-primary-600">{filteredApplications.length}</span>개 신청</>
             ) : (
-              <>{getStatusInfo(statusFilter).label} <span className="font-semibold text-vintage-600">{filteredApplications.length}</span>개</>
+              <>{getStatusInfo(statusFilter).label} <span className="font-semibold text-primary-600">{filteredApplications.length}</span>개</>
             )}
           </div>
         </div>
 
         {/* 프로세스 안내 박스 */}
         {filteredApplications.length > 0 && (
-          <div className="bg-gradient-to-r from-vintage-50 to-navy-50 border border-blue-200 rounded-xl p-4 sm:p-6 mb-6">
+          <div className="bg-gradient-to-r from-primary-50 to-navy-50 border border-blue-200 rounded-xl p-4 sm:p-6 mb-6">
             <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-vintage-500 rounded-full flex items-center justify-center">
+              <div className="flex-shrink-0 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
                 <AlertCircle className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
@@ -869,7 +869,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-vintage-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-primary-700 flex items-center justify-center text-xs font-semibold mt-0.5">
                       3
                     </div>
                     <div>
@@ -928,7 +928,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
             {statusFilter === 'all' && (
               <a
                 href="/experiences"
-                className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-vintage-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
               >
                 체험단 둘러보기
                 <ExternalLink className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
@@ -1000,7 +1000,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                           {/* 체험단 정보 */}
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
                             <div className="flex items-center space-x-2 sm:space-x-3">
-                              <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-vintage-600 flex-shrink-0" />
+                              <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 flex-shrink-0" />
                               <h3 className={`text-base sm:text-lg font-semibold line-clamp-2 ${isExpiredCampaign ? 'text-gray-500' : 'text-gray-900'}`}>
                                 {experienceName}
                                 {isExpiredCampaign && (
@@ -1045,7 +1045,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                                 dDayInfo.status === 'expired' ? 'bg-red-100 text-red-800' :
                                 dDayInfo.status === 'today' ? 'bg-orange-100 text-orange-800' :
                                 dDayInfo.status === 'urgent' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-vintage-800'
+                                'bg-blue-100 text-primary-800'
                               }`}>
                                 <CalendarDays className="w-3 h-3" />
                                 <span>리뷰 마감: {dDayInfo.text}</span>
@@ -1084,7 +1084,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => handleViewDetail(application)}
-                            className="inline-flex items-center px-3 py-2 bg-vintage-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                           >
                             <Eye className="w-4 h-4 mr-1 sm:mr-2" />
                             <span className="hidden sm:inline">상세보기</span>
@@ -1140,10 +1140,10 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                           {status === 'shipping' && (application as any).tracking_number && (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                               <div className="flex items-center space-x-2">
-                                <Package className="w-4 h-4 text-vintage-600" />
+                                <Package className="w-4 h-4 text-primary-600" />
                                 <div>
-                                  <p className="text-sm font-medium text-vintage-800">배송 추적 정보</p>
-                                  <p className="text-xs text-vintage-600">
+                                  <p className="text-sm font-medium text-primary-800">배송 추적 정보</p>
+                                  <p className="text-xs text-primary-600">
                                     {(application as any).courier && (application as any).courier !== 'other' ? 
                                       `${(application as any).courier}: ${(application as any).tracking_number}` : 
                                       `송장번호: ${(application as any).tracking_number}`
@@ -1319,7 +1319,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                           href={safeString(selectedApplication, 'blog_url')}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-vintage-600 hover:text-vintage-800 break-all"
+                          className="text-primary-600 hover:text-primary-800 break-all"
                         >
                           {safeString(selectedApplication, 'blog_url')}
                         </a>
@@ -1332,7 +1332,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                           href={safeString(selectedApplication, 'youtube_channel')}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-vintage-600 hover:text-vintage-800 break-all"
+                          className="text-primary-600 hover:text-primary-800 break-all"
                         >
                           {safeString(selectedApplication, 'youtube_channel')}
                         </a>

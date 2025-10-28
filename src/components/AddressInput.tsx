@@ -153,14 +153,14 @@ const AddressInput: React.FC<AddressInputProps> = ({
             value={address}
             readOnly
             placeholder="주소 검색 버튼을 클릭해주세요"
-            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-lg bg-gray-50 cursor-pointer focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+            className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-lg bg-gray-50 cursor-pointer focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             onClick={handleAddressSearch}
           />
           <button
             type="button"
             onClick={handleAddressSearch}
             disabled={isSearching}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-500 hover:text-vintage-600 transition-colors disabled:opacity-50"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-500 hover:text-primary-600 transition-colors disabled:opacity-50"
           >
             <Search className="w-4 h-4" />
           </button>
@@ -173,7 +173,7 @@ const AddressInput: React.FC<AddressInputProps> = ({
           value={detailedAddress}
           onChange={handleDetailedAddressChange}
           placeholder="상세 주소를 입력해주세요 (예: 101동 202호, 3층)"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         />
       </div>
 

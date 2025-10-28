@@ -185,7 +185,7 @@ const PointsApprovalModal: React.FC<PointsApprovalModalProps> = ({
                   onClick={() => setSelectedTemplate('simple')}
                   className={`p-2 rounded-lg border text-sm transition-colors ${
                     selectedTemplate === 'simple'
-                      ? 'border-vintage-500 bg-blue-50 text-vintage-700'
+                      ? 'border-primary-500 bg-blue-50 text-primary-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -228,7 +228,7 @@ const PointsApprovalModal: React.FC<PointsApprovalModalProps> = ({
                 <h4 className="font-medium">수신자 정보</h4>
                 <button
                   onClick={() => setEditingRecipient(!editingRecipient)}
-                  className="text-vintage-600 hover:text-vintage-800 text-sm"
+                  className="text-primary-600 hover:text-primary-800 text-sm"
                 >
                   {editingRecipient ? '완료' : '수정'}
                 </button>

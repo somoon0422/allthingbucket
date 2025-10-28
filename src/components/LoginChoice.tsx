@@ -159,8 +159,8 @@ const LoginChoice: React.FC = () => {
 
         {/* 🎯 디버깅 정보 */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="text-sm font-semibold text-vintage-800 mb-2">🔧 시스템 상태</h3>
-          <ul className="text-xs text-vintage-700 space-y-1">
+          <h3 className="text-sm font-semibold text-primary-800 mb-2">🔧 시스템 상태</h3>
+          <ul className="text-xs text-primary-700 space-y-1">
             <li>• 훅 상태: {authHook ? '정상' : '오류'}</li>
             <li>• 로그인 함수: {typeof authHook?.login === 'function' ? '사용가능' : '불가'}</li>
             <li>• 로딩 상태: {loading ? '진행중' : '대기중'}</li>

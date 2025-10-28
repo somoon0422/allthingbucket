@@ -275,10 +275,10 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
           {/* 안내 문구 */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <div className="flex items-start space-x-2">
-              <CheckCircle2 className="w-5 h-5 text-vintage-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-vintage-900">
+              <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-primary-900">
                 <p className="font-medium mb-1">입력하신 정보는 안전하게 보관됩니다</p>
-                <p className="text-xs text-vintage-700">
+                <p className="text-xs text-primary-700">
                   {requiresPhoneOnly
                     ? '인증 완료 후 카카오톡으로 환영 메시지를 보내드립니다.'
                     : '캠페인 신청 및 세금 정산 시에만 사용됩니다.'}

@@ -434,7 +434,7 @@ const CampaignDetail: React.FC = () => {
       default:
         return {
           label: '신청완료',
-          color: 'bg-blue-100 text-vintage-800',
+          color: 'bg-blue-100 text-primary-800',
           icon: CheckCircle
         }
     }

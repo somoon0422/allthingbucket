@@ -382,7 +382,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="experience_name"
                 value={formData.experience_name}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="체험단명을 입력하세요"
                 required
               />
@@ -397,7 +397,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="brand_name"
                 value={formData.brand_name}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="브랜드명을 입력하세요"
                 required
               />
@@ -511,7 +511,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="platform"
                 value={formData.platform}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               >
                 <option value="인스타그램">인스타그램</option>
@@ -531,7 +531,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="delivery_type"
                 value={formData.delivery_type}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               >
                 <option value="배송형">배송형</option>
@@ -552,7 +552,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               value={formData.description}
               onChange={handleInputChange}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="캠페인에 대한 자세한 설명을 입력하세요"
               required
             />
@@ -568,7 +568,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               value={htmlContent}
               onChange={(e) => setHtmlContent(e.target.value)}
               rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent font-mono text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
               placeholder="HTML 코드를 입력하세요. 예: <div><img src='...' /><p>상세 설명...</p></div>"
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -588,7 +588,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="reward_points"
                 value={formData.reward_points}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="0"
                 min="0"
               />
@@ -604,7 +604,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="max_participants"
                 value={formData.max_participants}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="0"
                 min="0"
               />
@@ -618,7 +618,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="active">모집중</option>
                 <option value="pending">준비중</option>
@@ -674,7 +674,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               value={formData.requirements}
               onChange={handleInputChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="참여자가 만족해야 할 조건들을 입력하세요"
             />
           </div>
@@ -731,7 +731,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="keywords"
                 value={formData.keywords}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="예: #뷰티 #스킨케어 #자연주의 (쉼표로 구분)"
               />
             </div>
@@ -747,7 +747,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="product_links"
                 value={formData.product_links}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="https://example.com/product"
               />
             </div>
@@ -779,7 +779,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               {/* 신청 기간 */}
               <div className="space-y-4">
                 <h4 className="text-md font-medium text-gray-700 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-vintage-600" />
+                  <Calendar className="w-4 h-4 mr-2 text-primary-600" />
                   신청 기간
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
@@ -790,7 +790,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="application_start_date"
                       value={formData.application_start_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -800,10 +800,10 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="application_end_date"
                       value={formData.application_end_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     {formData.application_end_date && (
-                      <p className="text-xs text-vintage-600 mt-1">
+                      <p className="text-xs text-primary-600 mt-1">
                         신청 마감일: {getDeadlineDisplay(formData.application_end_date)}
                       </p>
                     )}
@@ -822,7 +822,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                   name="influencer_announcement_date"
                   value={formData.influencer_announcement_date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
 
@@ -840,7 +840,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="content_start_date"
                       value={formData.content_start_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -850,7 +850,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="content_end_date"
                       value={formData.content_end_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     {formData.content_end_date && (
                       <p className="text-xs text-navy-600 mt-1">
@@ -904,7 +904,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                   value={formData.current_applicants}
                   onChange={handleInputChange}
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="0"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -995,7 +995,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-vintage-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? '등록 중...' : '캠페인 등록'}
             </button>

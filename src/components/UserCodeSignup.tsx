@@ -175,7 +175,7 @@ const UserCodeSignup: React.FC<UserCodeSignupProps> = ({
         </form>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-vintage-700">
+          <p className="text-sm text-primary-700">
             💡 <strong>회원 코드가 없으신가요?</strong><br />
             관리자에게 문의하여 회원 코드를 발급받으세요.
           </p>

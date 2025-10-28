@@ -345,7 +345,7 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
                   onClick={() => setSendMethod('email')}
                   className={`p-3 rounded-lg border-2 transition-colors ${
                     sendMethod === 'email'
-                      ? 'border-vintage-500 bg-blue-50 text-vintage-700'
+                      ? 'border-primary-500 bg-blue-50 text-primary-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -456,7 +456,7 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowVariableHelp(!showVariableHelp)}
-                  className="text-xs text-vintage-600 hover:text-vintage-800"
+                  className="text-xs text-primary-600 hover:text-primary-800"
                 >
                   {showVariableHelp ? '변수 도움말 숨기기' : '사용 가능한 변수 보기'}
                 </button>
@@ -464,8 +464,8 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
               
               {showVariableHelp && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                  <h5 className="text-sm font-medium text-vintage-800 mb-2">사용 가능한 변수:</h5>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-vintage-700">
+                  <h5 className="text-sm font-medium text-primary-800 mb-2">사용 가능한 변수:</h5>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-primary-700">
                     <div><code>{'{name}'}</code> - 수신자 이름</div>
                     <div><code>{'{email}'}</code> - 수신자 이메일</div>
                     <div><code>{'{phone}'}</code> - 수신자 휴대폰</div>
@@ -495,7 +495,7 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
                 <h4 className="font-medium">수신자 정보</h4>
                 <button
                   onClick={() => setEditingRecipient(!editingRecipient)}
-                  className="text-vintage-600 hover:text-vintage-800 text-sm flex items-center"
+                  className="text-primary-600 hover:text-primary-800 text-sm flex items-center"
                 >
                   <Edit className="w-4 h-4 mr-1" />
                   {editingRecipient ? '완료' : '수정'}

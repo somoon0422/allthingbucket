@@ -199,7 +199,7 @@ const Consultation: React.FC = () => {
             </p>
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-3 bg-vintage-600 text-white rounded-lg hover:bg-vintage-700 transition-colors font-medium"
+              className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
             >
               홈으로 돌아가기
             </button>
@@ -258,7 +258,7 @@ const Consultation: React.FC = () => {
                 value={formData.companyName}
                 onChange={handleChange}
                 placeholder="업체명을 입력해주세요"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
             </div>
@@ -276,7 +276,7 @@ const Consultation: React.FC = () => {
                 value={formatPhoneNumber(formData.contactPhone)}
                 onChange={handleChange}
                 placeholder="010-1234-5678"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">숫자 11자리 입력 시 자동으로 하이픈이 추가됩니다</p>
@@ -295,7 +295,7 @@ const Consultation: React.FC = () => {
                 value={formData.contactEmail}
                 onChange={handleChange}
                 placeholder="email@example.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -312,7 +312,7 @@ const Consultation: React.FC = () => {
                 value={formData.contactPerson}
                 onChange={handleChange}
                 placeholder="담당자명을 입력해주세요"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -327,7 +327,7 @@ const Consultation: React.FC = () => {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               >
                 <option value="">카테고리를 선택해주세요</option>
@@ -348,7 +348,7 @@ const Consultation: React.FC = () => {
                 name="budgetRange"
                 value={formData.budgetRange}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">예산 범위를 선택해주세요 (선택사항)</option>
                 {budgetRanges.map(range => (
@@ -370,7 +370,7 @@ const Consultation: React.FC = () => {
                 onChange={handleChange}
                 placeholder="상담을 원하시는 내용을 자유롭게 작성해주세요&#10;예) 제품 특징, 타겟 고객, 캠페인 목표 등"
                 rows={5}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               />
             </div>
 
@@ -383,7 +383,7 @@ const Consultation: React.FC = () => {
                   name="privacyConsent"
                   checked={formData.privacyConsent}
                   onChange={handleChange}
-                  className="mt-1 w-4 h-4 text-vintage-600 border-gray-300 rounded focus:ring-vintage-500"
+                  className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   required
                 />
                 <label htmlFor="privacyConsent" className="ml-3 text-sm text-gray-700">
@@ -404,7 +404,7 @@ const Consultation: React.FC = () => {
                   name="isAgency"
                   checked={formData.isAgency}
                   onChange={handleChange}
-                  className="mt-1 w-4 h-4 text-vintage-600 border-gray-300 rounded focus:ring-vintage-500"
+                  className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                 />
                 <label htmlFor="isAgency" className="ml-3 text-sm text-gray-700">
                   대행사입니다

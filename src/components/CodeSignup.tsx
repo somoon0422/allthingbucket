@@ -165,7 +165,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Gift className="w-12 h-12 text-vintage-600 mx-auto mb-4" />
+          <Gift className="w-12 h-12 text-primary-600 mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-gray-900">캠페인 회원가입</h2>
           <p className="mt-2 text-gray-600">캠페인 코드로 회원가입하고 참여해보세요!</p>
         </div>
@@ -182,13 +182,13 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="캠페인 코드를 입력하세요"
                 required
               />
               {verifying && (
                 <div className="absolute right-3 top-2.5">
-                  <div className="animate-spin w-5 h-5 border-2 border-vintage-600 border-t-transparent rounded-full"></div>
+                  <div className="animate-spin w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full"></div>
                 </div>
               )}
             </div>
@@ -221,7 +221,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="실명을 입력하세요"
                   required
                 />
@@ -239,7 +239,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="이메일을 입력하세요"
                   required
                 />
@@ -259,7 +259,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="010-1234-5678"
                   required
                 />
@@ -288,7 +288,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                 type="date"
                 value={formData.birth_date}
                 onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -301,7 +301,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                 id="gender"
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">선택하세요</option>
                 <option value="male">남성</option>
@@ -321,7 +321,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                   type="text"
                   value={formData.instagram}
                   onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="@username"
                 />
               </div>
@@ -338,7 +338,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                   type="text"
                   value={formData.youtube}
                   onChange={(e) => setFormData({ ...formData, youtube: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="채널명 또는 URL"
                 />
               </div>
@@ -353,7 +353,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
                 type="number"
                 value={formData.followers}
                 onChange={(e) => setFormData({ ...formData, followers: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="0"
                 min="0"
               />
@@ -363,7 +363,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
           <button
             type="submit"
             disabled={loading || !campaign}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-vintage-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-vintage-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <div className="flex items-center space-x-2">
@@ -378,7 +378,7 @@ const CodeSignup: React.FC<CodeSignupProps> = ({ code: initialCode }) => {
 
         <div className="text-center text-sm text-gray-500">
           이미 계정이 있으신가요?{' '}
-          <a href="/login" className="text-vintage-600 hover:text-vintage-500">
+          <a href="/login" className="text-primary-600 hover:text-primary-500">
             로그인하기
           </a>
         </div>

@@ -174,9 +174,9 @@ const Experiences: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-vintage-50 via-gold-50 to-navy-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-gold-50 to-navy-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-vintage-200 border-t-vintage-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">체험단 목록을 불러오는 중...</p>
         </div>
       </div>
@@ -185,7 +185,7 @@ const Experiences: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-vintage-50 via-gold-50 to-navy-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-gold-50 to-navy-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-red-600 text-2xl">⚠️</span>
@@ -194,7 +194,7 @@ const Experiences: React.FC = () => {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-gradient-to-r from-vintage-600 to-navy-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 font-medium"
+            className="bg-gradient-to-r from-primary-600 to-navy-600 text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 font-medium"
           >
             페이지 새로고침
           </button>
@@ -204,12 +204,12 @@ const Experiences: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-vintage-50 via-gold-50 to-navy-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-gold-50 to-navy-50">
       {/* Header */}
       <div className="bg-white/70 backdrop-blur-lg shadow-xl border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-vintage-500 to-navy-500 text-white rounded-full px-4 py-2 mb-4 shadow-lg">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-500 to-navy-500 text-white rounded-full px-4 py-2 mb-4 shadow-lg">
               <Gift className="w-4 h-4" />
               <span className="text-sm font-semibold">EXPERIENCES</span>
             </div>
@@ -236,7 +236,7 @@ const Experiences: React.FC = () => {
                   placeholder="체험단 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm transition-all duration-200"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition-all duration-200"
                 />
               </div>
             </div>
@@ -245,7 +245,7 @@ const Experiences: React.FC = () => {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm transition-all duration-200"
+              className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition-all duration-200"
             >
               <option value="all">전체</option>
               <option value="beauty">뷰티</option>
@@ -257,7 +257,7 @@ const Experiences: React.FC = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'newest' | 'deadline' | 'points')}
-              className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vintage-500 focus:border-vintage-500 text-sm transition-all duration-200"
+              className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition-all duration-200"
             >
               <option value="newest">최신순</option>
               <option value="deadline">마감임박순</option>
@@ -268,13 +268,13 @@ const Experiences: React.FC = () => {
             <div className="flex border border-gray-200 rounded-lg overflow-hidden">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-vintage-600 to-navy-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                className={`p-2 transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-primary-600 to-navy-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
               >
                 <Grid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-vintage-600 to-navy-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                className={`p-2 transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-primary-600 to-navy-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -300,7 +300,7 @@ const Experiences: React.FC = () => {
                 }`}
               >
                 {/* 이미지 */}
-                <div className={`${viewMode === 'grid' ? 'aspect-[4/3]' : 'w-48 h-48 flex-shrink-0'} bg-gradient-to-br from-vintage-400 to-navy-400 relative overflow-hidden`}>
+                <div className={`${viewMode === 'grid' ? 'aspect-[4/3]' : 'w-48 h-48 flex-shrink-0'} bg-gradient-to-br from-primary-400 to-navy-400 relative overflow-hidden`}>
                   {(() => {
                     // 🔥 실제 DB 필드명 기반 이미지 소스 확인 (main_images, detail_images)
                     const imageSources = [
@@ -437,7 +437,7 @@ const Experiences: React.FC = () => {
 
                   {/* D-Day 배지 */}
                   <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
-                    <span className="bg-white/90 text-vintage-600 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
+                    <span className="bg-white/90 text-primary-600 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
                       {getDeadlineDisplay(experience)}
                     </span>
                   </div>
@@ -471,7 +471,7 @@ const Experiences: React.FC = () => {
 
                   {/* 브랜드 정보 */}
                   <div className="flex items-center mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-vintage-600 to-navy-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-navy-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
                       {(experience.brand || experience.brand_name || 'B').charAt(0)}
                     </div>
                     <span className="ml-3 text-sm font-semibold text-gray-700 truncate">
@@ -483,23 +483,23 @@ const Experiences: React.FC = () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-2 text-vintage-600" />
+                        <Users className="w-4 h-4 mr-2 text-primary-600" />
                         <span>모집인원</span>
                       </div>
                       <span className="font-semibold">{experience.current_applicants || 0}/{experience.max_participants || experience.recruitment_count || 0}명</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-2 text-vintage-600" />
+                        <Clock className="w-4 h-4 mr-2 text-primary-600" />
                         <span>마감일</span>
                       </div>
-                      <span className="font-semibold text-vintage-600">{getDeadlineDisplay(experience)}</span>
+                      <span className="font-semibold text-primary-600">{getDeadlineDisplay(experience)}</span>
                     </div>
                   </div>
 
                   {/* 포인트 */}
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div className="flex items-center text-vintage-600 font-bold text-lg">
+                    <div className="flex items-center text-primary-600 font-bold text-lg">
                       <Coins className="w-5 h-5 mr-2" />
                       {experience.rewards || 0} P
                     </div>
@@ -511,7 +511,7 @@ const Experiences: React.FC = () => {
         ) : (
           <div className="text-center py-16">
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-12 max-w-md mx-auto">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-vintage-500 to-navy-500 rounded-3xl shadow-lg mx-auto mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-500 to-navy-500 rounded-3xl shadow-lg mx-auto mb-6">
                 <Gift className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-2xl font-semibold text-gray-900 mb-3">
@@ -526,7 +526,7 @@ const Experiences: React.FC = () => {
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="bg-gradient-to-r from-vintage-600 to-navy-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg"
+                  className="bg-gradient-to-r from-primary-600 to-navy-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg"
                 >
                   전체 보기
                 </button>
@@ -539,7 +539,7 @@ const Experiences: React.FC = () => {
         {filteredExperiences.length > 0 && (
           <div className="text-center mt-8">
             <p className="text-lg text-gray-600">
-              총 <span className="font-semibold bg-clip-text text-transparent bg-gradient-to-r from-vintage-600 to-navy-600">{filteredExperiences.length}</span>개의 체험단을 찾았습니다
+              총 <span className="font-semibold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-navy-600">{filteredExperiences.length}</span>개의 체험단을 찾았습니다
             </p>
           </div>
         )}
