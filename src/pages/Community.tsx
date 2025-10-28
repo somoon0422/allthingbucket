@@ -30,10 +30,9 @@ interface Comment {
 const CATEGORIES = [
   { id: 'all', name: '전체' },
   { id: '자유게시판', name: '자유게시판' },
-  { id: '체험후기', name: '체험후기' },
-  { id: '꿀팁공유', name: '꿀팁공유' },
-  { id: '제품추천', name: '제품추천' },
-  { id: '사진/영상', name: '사진/영상' },
+  { id: '가입인사', name: '가입인사' },
+  { id: '서이추', name: '서이추' },
+  { id: '이벤트', name: '이벤트' },
 ]
 
 const Community: React.FC = () => {
@@ -180,29 +179,12 @@ const Community: React.FC = () => {
         </div>
 
         <div className="flex gap-6">
-          {/* 사이드바 */}
-          <aside className="w-48 flex-shrink-0 hidden md:block">
-            <div className="bg-white border border-gray-200 rounded-md overflow-hidden">
-              {CATEGORIES.map((category, idx) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`w-full px-4 py-3 text-sm text-left transition-colors ${
-                    idx !== 0 ? 'border-t border-gray-200' : ''
-                  } ${
-                    selectedCategory === category.id
-                      ? 'bg-primary-50 text-primary-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {category.name}
-                  {category.id !== 'all' && (
-                    <span className="ml-2 text-xs text-gray-500">
-                      ({posts.filter(p => p.category === category.id).length})
-                    </span>
-                  )}
-                </button>
-              ))}
+          {/* 사이드바 - 추후 배너 영역 */}
+          <aside className="w-64 flex-shrink-0 hidden lg:block">
+            <div className="bg-white border border-gray-200 rounded-md p-4">
+              <p className="text-sm text-gray-500 text-center py-8">
+                배너 영역
+              </p>
             </div>
           </aside>
 
@@ -270,66 +252,49 @@ const Community: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
-                {filteredPosts.map((post) => {
+              <div className="bg-white border border-gray-200 rounded-md">
+                {filteredPosts.map((post, idx) => {
                   const categoryInfo = getCategoryInfo(post.category)
                   const canDelete = user && (post.user_id === user.id || isAdminUser())
 
                   return (
                     <div
                       key={post.id}
-                      className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group"
+                      className={`flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer group ${
+                        idx !== 0 ? 'border-t border-gray-200' : ''
+                      }`}
                       onClick={() => navigate(`/community/${post.id}`)}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">
-                              {categoryInfo.name}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {extractUsername(post.user_email)}
-                            </span>
-                            <span className="text-xs text-gray-400">·</span>
-                            <span className="text-xs text-gray-500">
-                              {getTimeAgo(post.created_at)}
-                            </span>
-                          </div>
-                          <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
-                            {getPreviewText(post.content, 80)}
-                          </h3>
-                          <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                            {getPreviewText(post.content, 120)}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <ThumbsUp className="w-3.5 h-3.5" />
-                              {post.likes}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MessageSquare className="w-3.5 h-3.5" />
-                              {post.comments?.length || 0}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {post.image_url && (
-                            <img
-                              src={post.image_url}
-                              alt="thumbnail"
-                              className="w-16 h-16 rounded object-cover"
-                            />
-                          )}
-                          {canDelete && (
-                            <button
-                              onClick={(e) => handleDeletePost(post.id, e)}
-                              className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                              title={isAdminUser() && post.user_id !== user?.id ? '관리자 권한으로 삭제' : '삭제'}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
+                      <div className="flex-shrink-0 w-16">
+                        <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full border border-gray-300">
+                          {categoryInfo.name}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1 hover:text-primary-600 transition-colors">
+                          {getPreviewText(post.content, 100)}
+                        </h3>
+                      </div>
+                      <div className="flex-shrink-0 flex items-center gap-4 text-xs text-gray-500">
+                        <span>{extractUsername(post.user_email)}</span>
+                        <span>{getTimeAgo(post.created_at)}</span>
+                        <span className="flex items-center gap-1">
+                          <ThumbsUp className="w-3.5 h-3.5" />
+                          {post.likes}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          {post.comments?.length || 0}
+                        </span>
+                        {canDelete && (
+                          <button
+                            onClick={(e) => handleDeletePost(post.id, e)}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                            title={isAdminUser() && post.user_id !== user?.id ? '관리자 권한으로 삭제' : '삭제'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )
@@ -442,17 +407,21 @@ const WriteModal: React.FC<{
           {/* 카테고리 */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">카테고리</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
+            <div className="flex flex-wrap gap-2">
               {CATEGORIES.filter(cat => cat.id !== 'all').map((cat) => (
-                <option key={cat.id} value={cat.id}>
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.id)}
+                  className={`px-4 py-2 text-sm rounded-md border transition-colors ${
+                    category === cat.id
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
                   {cat.name}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* 내용 */}
