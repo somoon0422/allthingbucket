@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { dataService } from '../lib/dataService'
 import { useAuth } from '../hooks/useAuth'
-import { MessageSquare, ThumbsUp, PenSquare, Search, X, Trash2 } from 'lucide-react'
+import { MessageSquare, ThumbsUp, PenSquare, Search, X, Trash2, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
@@ -14,6 +14,7 @@ interface Post {
   image_url?: string
   likes: number
   liked_by: string[]
+  view_count?: number
   created_at: string
   comments: Comment[]
 }
@@ -262,6 +263,10 @@ const Community: React.FC = () => {
                   <div className="flex-shrink-0 flex items-center gap-4 text-xs text-gray-500">
                     <span className="w-20 text-center">{extractUsername(post.user_email)}</span>
                     <span className="w-16 text-center">{getTimeAgo(post.created_at)}</span>
+                    <span className="flex items-center gap-1 w-12 justify-center">
+                      <Eye className="w-3.5 h-3.5" />
+                      {post.view_count || 0}
+                    </span>
                     <span className="flex items-center gap-1 w-12 justify-center">
                       <ThumbsUp className="w-3.5 h-3.5" />
                       {post.likes}

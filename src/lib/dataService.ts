@@ -2426,6 +2426,18 @@ export const dataService = {
         console.error('게시물 삭제 실패:', error)
         return { error }
       }
+    },
+
+    // 조회수 증가
+    incrementViewCount: async (postId: string) => {
+      try {
+        const { error } = await supabase.rpc('increment_post_view_count', { post_id: postId })
+        if (error) throw error
+        return { error: null }
+      } catch (error) {
+        console.error('조회수 증가 실패:', error)
+        return { error }
+      }
     }
   },  // community 끝
 

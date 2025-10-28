@@ -39,6 +39,8 @@ const CommunityDetail: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchPost()
+      // 조회수 증가
+      dataService.community.incrementViewCount(id)
     }
   }, [id])
 
