@@ -178,18 +178,9 @@ const Community: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex gap-6">
-          {/* 사이드바 - 추후 배너 영역 */}
-          <aside className="w-64 flex-shrink-0 hidden lg:block">
-            <div className="bg-white border border-gray-200 rounded-md p-4">
-              <p className="text-sm text-gray-500 text-center py-8">
-                배너 영역
-              </p>
-            </div>
-          </aside>
-
-          {/* 메인 */}
-          <main className="flex-1">
+        {/* 메인 */}
+        <div>
+          <main className="w-full">
             {/* 카테고리 (모든 화면) */}
             <div className="mb-4 overflow-x-auto">
               <div className="flex space-x-2 pb-2">
