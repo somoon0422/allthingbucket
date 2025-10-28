@@ -148,32 +148,15 @@ const Community: React.FC = () => {
   const { isAdminUser } = useAuth()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 py-6">
         {/* 헤더 */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-2">
-            ✨ 커뮤니티 ✨
-          </h1>
-          <p className="text-sm text-gray-600">함께 나누는 체험단 이야기</p>
-        </div>
-
-        {/* 검색 & 글쓰기 */}
-        <div className="flex gap-3 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="궁금한 내용을 검색해보세요 🔍"
-              className="w-full pl-12 pr-4 py-3 text-sm border-2 border-purple-200 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white shadow-sm"
-            />
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">커뮤니티</h1>
           {isAuthenticated && (
             <button
               onClick={() => setShowWriteModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-medium rounded-full hover:shadow-lg transform hover:scale-105 transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#E84E86] text-white text-sm font-medium rounded-md hover:bg-[#d43d75] transition-colors"
             >
               <PenSquare className="w-4 h-4" />
               <span>글쓰기</span>
@@ -181,16 +164,28 @@ const Community: React.FC = () => {
           )}
         </div>
 
+        {/* 검색 */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="검색어를 입력하세요"
+            className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#E84E86] focus:border-[#E84E86]"
+          />
+        </div>
+
         {/* 카테고리 */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
           {CATEGORIES.map((category) => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`flex-shrink-0 px-5 py-2.5 text-sm font-medium rounded-full transition-all transform hover:scale-105 ${
+              className={`flex-shrink-0 px-4 py-2 text-sm rounded-full border transition-colors ${
                 selectedCategory === category.id
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
-                  : 'bg-white text-gray-700 border-2 border-purple-200 hover:border-purple-400'
+                  ? 'bg-[#E84E86] text-white border-[#E84E86]'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-[#E84E86]'
               }`}
             >
               {category.name}
@@ -199,27 +194,27 @@ const Community: React.FC = () => {
         </div>
 
         {/* 정렬 */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-gray-600">
-            총 <span className="font-bold text-purple-600">{filteredPosts.length}</span>개의 게시글
+            총 <span className="font-medium text-gray-900">{filteredPosts.length}</span>개
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => setSortBy('latest')}
-              className={`px-4 py-2 text-sm rounded-full transition-all ${
+              className={`px-3 py-1.5 text-sm rounded transition-colors ${
                 sortBy === 'latest'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 border border-gray-300 hover:border-purple-400'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               최신순
             </button>
             <button
               onClick={() => setSortBy('popular')}
-              className={`px-4 py-2 text-sm rounded-full transition-all ${
+              className={`px-3 py-1.5 text-sm rounded transition-colors ${
                 sortBy === 'popular'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 border border-gray-300 hover:border-purple-400'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               인기순
@@ -230,77 +225,60 @@ const Community: React.FC = () => {
         {/* 게시글 목록 */}
         {loading ? (
           <div className="text-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 border-t-purple-600 mx-auto"></div>
-            <p className="text-sm text-gray-500 mt-4">로딩 중...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-[#E84E86] mx-auto"></div>
+            <p className="text-sm text-gray-500 mt-3">로딩 중...</p>
           </div>
         ) : filteredPosts.length === 0 ? (
-          <div className="text-center py-20 bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-3xl">
-            <div className="text-6xl mb-4">💬</div>
-            <h3 className="text-lg font-bold text-gray-700 mb-2">
-              {searchQuery ? '검색 결과가 없어요' : '아직 게시글이 없어요'}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {searchQuery ? '다른 검색어로 시도해보세요' : '첫 번째 글을 작성해보세요!'}
+          <div className="text-center py-20 bg-white border border-gray-200 rounded-md">
+            <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-gray-600">
+              {searchQuery ? '검색 결과가 없습니다' : '아직 게시글이 없습니다'}
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredPosts.map((post) => {
+          <div className="bg-white border border-gray-200 rounded-md">
+            {filteredPosts.map((post, idx) => {
               const categoryInfo = getCategoryInfo(post.category)
               const canDelete = user && (post.user_id === user.id || isAdminUser())
 
               return (
                 <div
                   key={post.id}
-                  className="bg-white/80 backdrop-blur-sm border-2 border-purple-200 rounded-2xl p-5 hover:shadow-lg hover:border-purple-400 transform hover:scale-[1.02] transition-all cursor-pointer group"
+                  className={`flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer group ${
+                    idx !== 0 ? 'border-t border-gray-200' : ''
+                  }`}
                   onClick={() => navigate(`/community/${post.id}`)}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="inline-block px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 text-xs font-medium rounded-full border border-purple-200">
-                          {categoryInfo.name}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {extractUsername(post.user_email)}
-                        </span>
-                        <span className="text-xs text-gray-400">·</span>
-                        <span className="text-xs text-gray-500">
-                          {getTimeAgo(post.created_at)}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-medium text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
-                        {post.content}
-                      </h3>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <ThumbsUp className="w-4 h-4" />
-                          {post.likes}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="w-4 h-4" />
-                          {post.comments?.length || 0}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {post.image_url && (
-                        <img
-                          src={post.image_url}
-                          alt="thumbnail"
-                          className="w-20 h-20 rounded-xl object-cover border-2 border-purple-100"
-                        />
-                      )}
-                      {canDelete && (
-                        <button
-                          onClick={(e) => handleDeletePost(post.id, e)}
-                          className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
-                          title={isAdminUser() && post.user_id !== user?.id ? '관리자 권한으로 삭제' : '삭제'}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+                  <div className="flex-shrink-0 w-20">
+                    <span className="inline-block px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full border border-gray-300">
+                      {categoryInfo.name}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-gray-900 line-clamp-1 hover:text-[#E84E86] transition-colors">
+                      {getPreviewText(post.content, 100)}
+                    </h3>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center gap-4 text-xs text-gray-500">
+                    <span className="w-20 text-center">{extractUsername(post.user_email)}</span>
+                    <span className="w-16 text-center">{getTimeAgo(post.created_at)}</span>
+                    <span className="flex items-center gap-1 w-12 justify-center">
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                      {post.likes}
+                    </span>
+                    <span className="flex items-center gap-1 w-12 justify-center">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      {post.comments?.length || 0}
+                    </span>
+                    {canDelete && (
+                      <button
+                        onClick={(e) => handleDeletePost(post.id, e)}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                        title={isAdminUser() && post.user_id !== user?.id ? '관리자 권한으로 삭제' : '삭제'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -395,35 +373,31 @@ const WriteModal: React.FC<{
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-white to-purple-50 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-2 border-purple-200">
-        <div className="sticky top-0 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-6 py-5 flex items-center justify-between rounded-t-3xl">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            ✨ 글쓰기
-          </h2>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900">글쓰기</h2>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white/20 p-2 rounded-full transition-all"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4">
           {/* 카테고리 */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-              📁 카테고리 선택
-            </label>
+            <label className="block text-sm font-medium text-gray-900 mb-2">카테고리</label>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.filter(cat => cat.id !== 'all').map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
-                  className={`px-4 py-2.5 text-sm font-medium rounded-full border-2 transition-all transform hover:scale-105 ${
+                  className={`px-4 py-2 text-sm rounded-full border transition-colors ${
                     category === cat.id
-                      ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white border-purple-400 shadow-lg'
-                      : 'bg-white text-gray-700 border-purple-200 hover:border-purple-400'
+                      ? 'bg-[#E84E86] text-white border-[#E84E86]'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#E84E86]'
                   }`}
                 >
                   {cat.name}
@@ -434,63 +408,58 @@ const WriteModal: React.FC<{
 
           {/* 내용 */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-              ✍️ 내용
-            </label>
+            <label className="block text-sm font-medium text-gray-900 mb-2">내용</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="어떤 이야기를 나눠볼까요? 😊"
-              className="w-full h-64 p-4 text-sm border-2 border-purple-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/80 backdrop-blur-sm"
+              placeholder="내용을 입력하세요"
+              className="w-full h-64 p-3 text-sm border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-1 focus:ring-[#E84E86] focus:border-[#E84E86]"
             />
           </div>
 
           {/* 이미지 */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-              📸 이미지 (선택)
-            </label>
+            <label className="block text-sm font-medium text-gray-900 mb-2">이미지 (선택)</label>
             {imagePreview ? (
               <div className="relative">
-                <img src={imagePreview} alt="Preview" className="w-full h-56 object-cover rounded-2xl border-2 border-purple-200" />
+                <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-md" />
                 <button
                   onClick={() => {
                     setImage(null)
                     setImagePreview(null)
                   }}
-                  className="absolute top-3 right-3 p-2 bg-red-500 rounded-full text-white hover:bg-red-600 shadow-lg transition-all"
+                  className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-purple-300 rounded-2xl hover:border-purple-500 cursor-pointer transition-all bg-purple-50/50 hover:bg-purple-100/50">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-md hover:border-[#E84E86] cursor-pointer transition-colors">
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageSelect}
                   className="hidden"
                 />
-                <div className="text-5xl mb-2">📷</div>
-                <span className="text-sm text-gray-600 font-medium">클릭하여 이미지 추가</span>
+                <span className="text-sm text-gray-500">클릭하여 이미지 추가</span>
               </label>
             )}
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-white/80 backdrop-blur-sm border-t-2 border-purple-200 px-6 py-4 flex justify-end gap-3 rounded-b-3xl">
+        <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-sm border-2 border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-all font-medium"
+            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
           >
             취소
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting || !content.trim()}
-            className="px-6 py-2.5 text-sm bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-full hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-medium"
+            className="px-4 py-2 text-sm bg-[#E84E86] text-white rounded-md hover:bg-[#d43d75] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? '작성 중...' : '게시하기 ✨'}
+            {submitting ? '작성 중...' : '작성'}
           </button>
         </div>
       </div>
