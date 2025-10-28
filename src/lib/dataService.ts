@@ -2427,6 +2427,4 @@ export const dataService = {
       }
     }
   }
-
-  }
 }
