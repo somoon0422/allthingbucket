@@ -633,25 +633,6 @@ const CampaignDetail: React.FC = () => {
                     </span>
                   )}
                 </button>
-                <button
-                  onClick={() => handleTabChange('reviews')}
-                  className={`group flex-1 flex items-center justify-center space-x-1.5 px-4 py-3 font-medium transition-all duration-200 relative text-sm ${
-                    activeTab === 'reviews'
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  {activeTab === 'reviews' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
-                  )}
-                  <Star className={`w-4 h-4 ${activeTab === 'reviews' ? 'text-primary-600' : ''}`} />
-                  <span>리뷰</span>
-                  {reviews.length > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 bg-gold-500 text-white rounded-full text-xs font-bold">
-                      {reviews.length}
-                    </span>
-                  )}
-                </button>
               </div>
             </div>
 
@@ -916,23 +897,23 @@ const CampaignDetail: React.FC = () => {
                 {applicantComments.map((comment: any) => {
                   const displayName = extractUsername(comment.user_email)
                   return (
-                  <div key={comment.application_id} className="bg-white rounded-2xl shadow-lg p-7 border border-slate-200/60 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <div className="flex items-start space-x-5">
+                  <div key={comment.application_id} className="bg-white rounded-lg p-4 border border-slate-200">
+                    <div className="flex items-start space-x-3">
                       {/* 사용자 아바타 */}
                       <div className="flex-shrink-0">
-                        <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md">
+                        <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
                       </div>
 
                       {/* 코멘트 내용 */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <h4 className="text-base font-bold text-slate-900">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="text-sm font-bold text-slate-900">
                               {displayName}
                             </h4>
-                            <span className="text-sm text-slate-500 font-medium">
+                            <span className="text-xs text-slate-500 font-medium">
                               {(() => {
                                 const dateStr = comment.comment_created_at || comment.created_at
                                 if (!dateStr) return '방금 전'
@@ -965,7 +946,7 @@ const CampaignDetail: React.FC = () => {
                           </div>
                         </div>
 
-                        <p className="text-slate-700 leading-relaxed whitespace-pre-line text-base">
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-line text-sm">
                           {comment.applicant_comment}
                         </p>
                       </div>
@@ -977,226 +958,6 @@ const CampaignDetail: React.FC = () => {
             )}
               </div>
             )}
-
-            {/* 리뷰 탭 */}
-            {activeTab === 'reviews' && (
-              <div>
-            {loadingReviews ? (
-              <div className="bg-white rounded-2xl shadow-xl p-16 text-center border border-slate-200/60">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-amber-500 mx-auto mb-6"></div>
-                <p className="text-slate-600 font-medium text-lg">리뷰를 불러오는 중...</p>
-              </div>
-            ) : reviews.length === 0 ? (
-              <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-xl p-16 text-center border border-slate-200/60">
-                <div className="bg-gradient-to-br from-amber-100 to-yellow-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Star className="w-12 h-12 text-amber-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">아직 작성된 리뷰가 없습니다</h3>
-                <p className="text-slate-600 text-lg">캠페인 승인 후 리뷰를 작성하면 이곳에 표시됩니다</p>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-5">
-                  {reviews
-                    .slice((currentReviewPage - 1) * reviewsPerPage, currentReviewPage * reviewsPerPage)
-                    .map((review: any) => {
-                      const displayName = extractUsername(review.user_email || review.email)
-                      return (
-                    <div key={review.review_id} className="bg-white rounded-2xl shadow-lg p-7 border border-slate-200/60 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                      <div className="flex items-start space-x-5">
-                        {/* 사용자 아바타 */}
-                        <div className="flex-shrink-0">
-                          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md">
-                            {displayName.charAt(0).toUpperCase()}
-                          </div>
-                        </div>
-
-                        {/* 리뷰 내용 */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <h4 className="text-base font-bold text-slate-900">
-                                {displayName}
-                              </h4>
-                            <span className="text-sm text-slate-500 font-medium">
-                              {(() => {
-                                const dateStr = review.created_at
-                                if (!dateStr) return '방금 전'
-
-                                try {
-                                  const date = new Date(dateStr)
-                                  if (isNaN(date.getTime())) return '방금 전'
-
-                                  return date.toLocaleDateString('ko-KR', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })
-                                } catch {
-                                  return '방금 전'
-                                }
-                              })()}
-                            </span>
-                          </div>
-
-                          {/* 별점 */}
-                          {review.rating && (
-                            <div className="flex items-center space-x-1 mb-3">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`w-5 h-5 ${
-                                    star <= review.rating
-                                      ? 'text-amber-400 fill-current drop-shadow-sm'
-                                      : 'text-slate-300'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 리뷰 제목 */}
-                        {review.title && (
-                          <h5 className="text-lg font-bold text-slate-900 mb-3">
-                            {review.title}
-                          </h5>
-                        )}
-
-                        {/* 리뷰 내용 */}
-                        <p className="text-slate-700 leading-relaxed whitespace-pre-line mb-5 text-base">
-                          {review.content || review.review_content}
-                        </p>
-
-                        {/* 블로그 URL - 강조 */}
-                        {review.blog_url && (
-                          <div className="mt-5">
-                            <div className="bg-gradient-to-br from-navy-50 to-primary-50 rounded-lg p-5 border-2 border-primary-200">
-                              <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center space-x-2">
-                                  <div className="p-2 bg-primary-500 rounded-lg">
-                                    <FileText className="w-5 h-5 text-white" />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-sm font-bold text-slate-900">전체 블로그 리뷰</h4>
-                                    <p className="text-xs text-slate-600">상세한 리뷰를 확인하세요</p>
-                                  </div>
-                                </div>
-                                <a
-                                  href={review.blog_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-bold text-sm transition-all duration-200"
-                                >
-                                  <span>블로그 보기</span>
-                                  <ExternalLink className="w-4 h-4" />
-                                </a>
-                              </div>
-                              <div className="bg-white rounded-lg p-3 text-sm text-slate-700 break-all">
-                                <a href={review.blog_url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
-                                  {review.blog_url}
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* 리뷰 이미지들 - 블러 처리 */}
-                        {review.images && review.images.length > 0 && (
-                          <div className="mt-5">
-                            <div className="bg-beige-50 border border-beige-200 rounded-lg p-4">
-                              <div className="flex items-start space-x-3 mb-3">
-                                <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
-                                  <FileText className="w-4 h-4 text-primary-600" />
-                                </div>
-                                <div className="flex-1">
-                                  <h4 className="text-sm font-bold text-slate-900 mb-1">구매평 이미지</h4>
-                                  <p className="text-xs text-slate-600">개인정보 보호를 위해 블러 처리되었습니다. 전체 리뷰는 블로그/SNS 링크에서 확인하세요.</p>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-3 gap-2">
-                                {review.images.slice(0, 3).map((imageUrl: string, index: number) => (
-                                  <div key={index} className="aspect-square rounded-lg overflow-hidden bg-slate-100 relative">
-                                    <img
-                                      src={imageUrl}
-                                      alt={`리뷰 이미지 ${index + 1}`}
-                                      className="w-full h-full object-cover blur-md"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300?text=이미지'
-                                      }}
-                                    />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                      <span className="text-white text-xs font-bold">블러 처리</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              {review.images.length > 3 && (
-                                <p className="text-xs text-slate-500 mt-2 text-center">외 {review.images.length - 3}개</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* SNS 링크 - 강조 */}
-                        {review.social_media_links && review.social_media_links.length > 0 && (
-                          <div className="mt-5">
-                            <div className="bg-gradient-to-br from-gold-50 to-beige-50 rounded-lg p-4 border border-gold-200">
-                              <div className="flex items-center space-x-2 mb-3">
-                                <div className="p-1.5 bg-gold-500 rounded-lg">
-                                  <FileText className="w-4 h-4 text-white" />
-                                </div>
-                                <h4 className="text-sm font-bold text-slate-900">SNS 리뷰</h4>
-                              </div>
-                              <div className="space-y-2">
-                                {review.social_media_links.map((link: string, index: number) => (
-                                  <a
-                                    key={index}
-                                    href={link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-between p-3 bg-white rounded-lg hover:bg-slate-50 transition-all duration-200 group border border-slate-200"
-                                  >
-                                    <span className="text-xs text-slate-700 font-medium truncate flex-1">
-                                      SNS 리뷰 {review.social_media_links.length > 1 ? `#${index + 1}` : ''}
-                                    </span>
-                                    <ExternalLink className="w-4 h-4 text-primary-600 group-hover:translate-x-1 transition-transform flex-shrink-0 ml-2" />
-                                  </a>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                    )
-                  })}
-                </div>
-
-                {/* 페이지네이션 */}
-                {reviews.length > reviewsPerPage && (
-                  <div className="flex justify-center items-center space-x-3 mt-10">
-                    {Array.from({ length: Math.ceil(reviews.length / reviewsPerPage) }, (_, i) => i + 1).map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentReviewPage(pageNum)}
-                        className={`px-5 py-3 rounded-xl font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 ${
-                          currentReviewPage === pageNum
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
-                            : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-              </div>
-            )}
-          </div>
 
           {/* 오른쪽 사이드바 - 항상 표시 */}
           <div className="lg:col-span-1">
