@@ -672,20 +672,6 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                     <p className="text-sm text-gray-500 mt-1">
                       {new Date(withdrawal.created_at).toLocaleDateString()}
                     </p>
-                    {withdrawal.status === 'pending' && (
-                      <button
-                        onClick={() => {
-                          setVerificationData({
-                            bankAccountId: withdrawal.bank_account_id || '',
-                            depositName: ''
-                          })
-                          setShowAccountVerificationModal(true)
-                        }}
-                        className="mt-2 px-3 py-1 bg-primary-500 text-white text-xs rounded-lg hover:bg-primary-600"
-                      >
-                        1원 인증
-                      </button>
-                    )}
                   </div>
                 </div>
                 {withdrawal.admin_note && (
