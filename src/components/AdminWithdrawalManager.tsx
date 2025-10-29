@@ -58,21 +58,28 @@ const AdminWithdrawalManager: React.FC<AdminWithdrawalManagerProps> = ({
       // 출금 요청 데이터 가져오기
       const requests = await dataService.entities.withdrawal_requests.list()
 
+      // 모든 사용자 정보를 한 번에 가져오기 (성능 최적화)
+      const allUserProfiles = await dataService.entities.user_profiles.list()
+      const allUsers = await dataService.entities.users.list()
+      const allApplications = await dataService.entities.user_applications.list()
+
+      console.log('🔍 전체 user_profiles 데이터:', allUserProfiles)
+      console.log('🔍 전체 users 데이터:', allUsers)
+
       // 사용자 정보 및 캠페인 정보 병합
       const enrichedRequests = await Promise.all(
         requests.map(async (request: any) => {
           try {
-            // 사용자 정보 조회 (user_profiles에서)
-            const userProfiles = await dataService.entities.user_profiles.list({
-              filter: { user_id: request.user_id }
-            })
-            const userProfile = userProfiles[0]
+            // JavaScript로 필터링
+            const userProfile = allUserProfiles.find((p: any) => p.user_id === request.user_id)
+            const user = allUsers.find((u: any) => u.user_id === request.user_id)
 
-            // users 테이블에서 이메일 정보 가져오기
-            const users = await dataService.entities.users.list({
-              filter: { user_id: request.user_id }
+            console.log(`🔍 출금 요청 ${request.id}:`, {
+              request_user_id: request.user_id,
+              userProfile,
+              user,
+              user_name: userProfile?.name || userProfile?.real_name || user?.name
             })
-            const user = users[0]
 
             // 계좌 정보 조회
             let bankInfo = {}
@@ -90,18 +97,18 @@ const AdminWithdrawalManager: React.FC<AdminWithdrawalManagerProps> = ({
             }
 
             // 사용자가 체험한 브랜드 정보 조회
-            const applications = await dataService.entities.user_applications.list({
-              filter: { user_id: request.user_id, status: 'approved' }
-            })
+            const userApplications = allApplications.filter((app: any) =>
+              app.user_id === request.user_id && app.status === 'approved'
+            )
 
-            const campaignBrands = applications
+            const campaignBrands = userApplications
               .map((app: any) => app.campaign_name || app.experience_name)
               .filter((name: string) => name)
               .slice(0, 5) // 최대 5개까지
 
             return {
               ...request,
-              user_name: userProfile?.name || userProfile?.real_name || user?.name || '알 수 없음',
+              user_name: userProfile?.name || userProfile?.real_name || user?.name || request.user_id || '알 수 없음',
               user_email: user?.email,
               ...bankInfo,
               campaign_brands: campaignBrands
