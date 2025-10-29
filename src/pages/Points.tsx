@@ -235,7 +235,6 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
         bank_account_id: bankAccountId,
         points_amount: formData.amount,
         withdrawal_amount: formData.amount,
-        requested_amount: formData.amount,
         tax_amount: taxAmount,
         final_amount: finalAmount,
         status: 'pending',
@@ -659,8 +658,8 @@ const Points: React.FC<PointsProps> = ({ embedded = false }) => {
                           예금주: {withdrawal.account_holder}
                         </p>
                         <div className="text-sm text-gray-500 mt-1">
-                          요청: {withdrawal.requested_amount?.toLocaleString()}원 | 
-                          세금: {withdrawal.tax_amount?.toLocaleString()}원 | 
+                          요청: {(withdrawal.points_amount || withdrawal.withdrawal_amount)?.toLocaleString()}원 |
+                          세금: {withdrawal.tax_amount?.toLocaleString()}원 |
                           실지급: {withdrawal.final_amount?.toLocaleString()}원
                         </div>
                       </div>
