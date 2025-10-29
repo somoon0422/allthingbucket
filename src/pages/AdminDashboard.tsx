@@ -123,6 +123,7 @@ const AdminDashboard: React.FC = () => {
   const [showWithdrawalApprovalModal, setShowWithdrawalApprovalModal] = useState(false)
   const [showCompletedWithdrawals, setShowCompletedWithdrawals] = useState(true) // 완료된 내역 표시 여부
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null) // 특정 사용자 필터
+  const [selectedWithdrawalIds, setSelectedWithdrawalIds] = useState<Set<string>>(new Set()) // 일괄 처리용 선택된 출금 요청 IDs
 
   // 은행 정보 및 주민등록번호 편집 상태
   const [isEditingBankInfo, setIsEditingBankInfo] = useState(false)
@@ -2153,6 +2154,51 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
+  // 일괄 승인 처리
+  const handleBulkApproveWithdrawals = async () => {
+    if (selectedWithdrawalIds.size === 0) {
+      toast.error('승인할 출금 요청을 선택해주세요.')
+      return
+    }
+
+    const confirmMessage = `선택한 ${selectedWithdrawalIds.size}개의 출금 요청을 일괄 승인하시겠습니까?`
+    if (!window.confirm(confirmMessage)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      let successCount = 0
+      let failCount = 0
+
+      for (const requestId of selectedWithdrawalIds) {
+        try {
+          await handleApproveWithdrawal(requestId)
+          successCount++
+        } catch (error) {
+          console.error(`출금 요청 ${requestId} 승인 실패:`, error)
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`${successCount}개의 출금 요청이 승인되었습니다.${failCount > 0 ? ` (${failCount}개 실패)` : ''}`)
+      }
+      if (failCount > 0 && successCount === 0) {
+        toast.error(`모든 출금 요청 승인에 실패했습니다.`)
+      }
+
+      // 선택 초기화
+      setSelectedWithdrawalIds(new Set())
+      await loadWithdrawalRequests()
+    } catch (error) {
+      console.error('일괄 승인 실패:', error)
+      toast.error('일괄 승인 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 출금 요청 거부
   const handleRejectWithdrawal = async (requestId: string, adminNotes?: string) => {
     try {
@@ -3898,7 +3944,22 @@ const AdminDashboard: React.FC = () => {
               <div className="flex items-center gap-4">
                 <div className="text-sm font-medium text-gray-600">
                   총 {withdrawalRequests.length}개의 요청
+                  {selectedWithdrawalIds.size > 0 && (
+                    <span className="ml-2 text-primary-600">
+                      ({selectedWithdrawalIds.size}개 선택됨)
+                    </span>
+                  )}
                 </div>
+                {selectedWithdrawalIds.size > 0 && (
+                  <button
+                    onClick={handleBulkApproveWithdrawals}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    일괄 승인 ({selectedWithdrawalIds.size})
+                  </button>
+                )}
                 <button
                   onClick={exportWithdrawalRequestsToExcel}
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-navy-600 to-navy-700 text-white rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-200 font-medium"
@@ -3976,6 +4037,24 @@ const AdminDashboard: React.FC = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-3 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={filteredRequests.filter(r => r.status === 'pending').every(r => selectedWithdrawalIds.has(r.id))}
+                            onChange={(e) => {
+                              const pendingRequests = filteredRequests.filter(r => r.status === 'pending')
+                              if (e.target.checked) {
+                                setSelectedWithdrawalIds(new Set([...selectedWithdrawalIds, ...pendingRequests.map(r => r.id)]))
+                              } else {
+                                const newSet = new Set(selectedWithdrawalIds)
+                                pendingRequests.forEach(r => newSet.delete(r.id))
+                                setSelectedWithdrawalIds(newSet)
+                              }
+                            }}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                            title="대기 중인 요청 전체 선택"
+                          />
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">번호</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">USER_ID</th>
@@ -3997,6 +4076,24 @@ const AdminDashboard: React.FC = () => {
                         
                         return (
                           <tr key={request.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-4 whitespace-nowrap">
+                              {request.status === 'pending' && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedWithdrawalIds.has(request.id)}
+                                  onChange={(e) => {
+                                    const newSet = new Set(selectedWithdrawalIds)
+                                    if (e.target.checked) {
+                                      newSet.add(request.id)
+                                    } else {
+                                      newSet.delete(request.id)
+                                    }
+                                    setSelectedWithdrawalIds(newSet)
+                                  }}
+                                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                />
+                              )}
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {index + 1}
                             </td>
