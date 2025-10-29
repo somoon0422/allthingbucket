@@ -206,6 +206,31 @@ https://allthingbucket.com/experiences`
     })
   }
 
+  // ❌ 리뷰 반려 알림톡
+  async sendReviewRejectionAlimtalk(
+    phoneNumber: string,
+    userName: string,
+    campaignName: string,
+    reason: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.sendAlimtalk({
+      to: phoneNumber,
+      templateCode: 'REVIEWREJECTION',
+      variables: {
+        name: userName,
+        campaignName,
+        reason,
+        url: 'https://allthingbucket.com/my-applications'
+      },
+      failoverConfig: {
+        type: 'LMS',
+        from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
+        subject: '[올띵버킷] 리뷰 반려 안내',
+        content: `[올띵버킷]\n${userName}님, ${campaignName} 리뷰가 반려되었습니다.\n\n📝 반려 사유\n${reason}\n\n리뷰를 수정하여 다시 제출해 주세요.\n내 신청 페이지: https://allthingbucket.com/my-applications`
+      }
+    })
+  }
+
 }
 
 export const alimtalkService = new AlimtalkService()

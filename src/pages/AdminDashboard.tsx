@@ -671,7 +671,7 @@ const AdminDashboard: React.FC = () => {
       // 🔥 알림톡 발송 (리뷰 반려)
       if (userPhone) {
         try {
-          await alimtalkService.sendReviewRejectedDetailAlimtalk(
+          await alimtalkService.sendReviewRejectionAlimtalk(
             userPhone,
             userName,
             campaignName,
