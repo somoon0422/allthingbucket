@@ -1372,14 +1372,18 @@ const AdminDashboard: React.FC = () => {
     try {
       console.log('🔍 사용자 포인트 조회 시작:', { userId, applicationId })
 
-      // 사용자 정보 조회 - Supabase auth.users 테이블에서 조회
+      // 사용자 정보 조회 - 전체 데이터를 가져온 후 필터링
       let user = null
       try {
-        const usersResult = await dataService.entities.users.list({
-          filter: { user_id: userId }
-        })
-        user = usersResult && usersResult.length > 0 ? usersResult[0] : null
+        const allUsers = await dataService.entities.users.list()
+        console.log('🔍 전체 users 데이터:', allUsers)
+        user = allUsers.find((u: any) => u.user_id === userId)
         console.log('✅ 사용자 조회 결과:', user)
+        console.log('🔍 매칭 확인:', {
+          찾는_userId: userId,
+          찾은_user_id: user?.user_id,
+          매칭됨: user?.user_id === userId
+        })
       } catch (userError) {
         console.error('❌ 사용자 조회 실패:', userError)
       }
@@ -1405,16 +1409,14 @@ const AdminDashboard: React.FC = () => {
         return
       }
 
-      // 사용자 포인트 정보 조회
-      const userPoints = await dataService.entities.user_points.list({
-        filter: { user_id: userId }
-      })
+      // 사용자 포인트 정보 조회 - 전체 데이터를 가져온 후 필터링
+      const allUserPoints = await dataService.entities.user_points.list()
+      const userPoints = allUserPoints.filter((p: any) => p.user_id === userId)
       console.log('✅ 사용자 포인트 정보:', userPoints)
 
-      // 포인트 내역 조회
-      const pointsHistory = await dataService.entities.points_history.list({
-        filter: { user_id: userId }
-      })
+      // 포인트 내역 조회 - 전체 데이터를 가져온 후 필터링
+      const allPointsHistory = await dataService.entities.points_history.list()
+      const pointsHistory = allPointsHistory.filter((p: any) => p.user_id === userId)
       console.log('✅ 포인트 내역:', pointsHistory)
 
       // 현재 포인트 계산
