@@ -62,7 +62,13 @@ const AdminWithdrawalManager: React.FC<AdminWithdrawalManagerProps> = ({
       const enrichedRequests = await Promise.all(
         requests.map(async (request: any) => {
           try {
-            // 사용자 정보 조회
+            // 사용자 정보 조회 (user_profiles에서)
+            const userProfiles = await dataService.entities.user_profiles.list({
+              filter: { user_id: request.user_id }
+            })
+            const userProfile = userProfiles[0]
+
+            // users 테이블에서 이메일 정보 가져오기
             const users = await dataService.entities.users.list({
               filter: { user_id: request.user_id }
             })
@@ -95,7 +101,7 @@ const AdminWithdrawalManager: React.FC<AdminWithdrawalManagerProps> = ({
 
             return {
               ...request,
-              user_name: user?.name || user?.user_id || '알 수 없음',
+              user_name: userProfile?.name || userProfile?.real_name || user?.name || '알 수 없음',
               user_email: user?.email,
               ...bankInfo,
               campaign_brands: campaignBrands
