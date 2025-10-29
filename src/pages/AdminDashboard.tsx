@@ -552,13 +552,10 @@ const AdminDashboard: React.FC = () => {
         pointAmount
       })
 
-      // 🔥 1. user_applications 상태를 point_completed로 업데이트 (포인트 자동 지급)
-      await dataService.entities.user_applications.update(applicationId, {
-        status: 'point_completed',
-        updated_at: new Date().toISOString()
-      })
+      // 🔥 1. 상태 동기화 (user_applications, review_submissions, user_reviews 모두 업데이트)
+      await syncReviewStatus(applicationId, 'point_completed')
 
-      console.log('✅ user_applications 상태 업데이트 완료: point_completed')
+      console.log('✅ 모든 테이블 상태 동기화 완료: point_completed')
 
       // 🔥 2. 포인트 지급 처리 (points_history에 레코드 생성)
       if (pointAmount > 0 && userId) {
