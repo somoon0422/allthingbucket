@@ -1278,33 +1278,46 @@ const AdminDashboard: React.FC = () => {
     try {
       const requests = await (dataService.entities as any).withdrawal_requests.list()
       console.log('🔍 로드된 출금 요청 원본 데이터:', requests)
-      
+
+      // 모든 데이터를 한 번에 가져오기 (성능 최적화)
+      const [allUserProfiles, allUsers, allApplications] = await Promise.all([
+        (dataService.entities as any).user_profiles.list(),
+        (dataService.entities as any).users.list(),
+        (dataService.entities as any).user_applications.list()
+      ])
+
+      console.log('🔍 전체 user_profiles:', allUserProfiles)
+      console.log('🔍 전체 users:', allUsers)
+
       // 계좌 정보와 사용자 정보와 함께 조회
       const requestsWithDetails = await Promise.all(
         (requests || []).map(async (request: any, index: number) => {
           try {
-            const [account, userProfile, userData, userApplications] = await Promise.all([
-              // bank_account_id가 null이면 계좌 정보 조회 건너뛰기
-              request.bank_account_id ? (dataService.entities as any).bank_accounts.get(request.bank_account_id) : Promise.resolve(null),
-              (dataService.entities as any).user_profiles.list({
-                filter: { user_id: request.user_id }
-              }),
-              (dataService.entities as any).users.list({
-                filter: { user_id: request.user_id }
-              }),
-              (dataService.entities as any).user_applications.list({
-                filter: { user_id: request.user_id }
-              })
-            ])
-            
+            // JavaScript로 필터링
+            const userProfile = allUserProfiles.find((p: any) => p.user_id === request.user_id)
+            const userData = allUsers.find((u: any) => u.user_id === request.user_id)
+            const userApplications = allApplications.filter((app: any) => app.user_id === request.user_id)
+
+            console.log(`🔍 출금 요청 ${request.id} 매칭:`, {
+              request_user_id: request.user_id,
+              userProfile,
+              userData,
+              user_name: userProfile?.name || userProfile?.real_name || userData?.name
+            })
+
+            // 계좌 정보 조회
+            const account = request.bank_account_id
+              ? await (dataService.entities as any).bank_accounts.get(request.bank_account_id)
+              : null
+
             // 사용자별 환급 요청 누적 횟수 계산
             const userWithdrawalCount = (requests || []).filter((r: any) => r.user_id === request.user_id).length
-            
+
             return {
               ...request,
               bank_account: account,
-              user_profile: userProfile?.[0],
-              user_data: userData?.[0], // users 테이블에서 가져온 데이터
+              user_profile: userProfile,
+              user_data: userData, // users 테이블에서 가져온 데이터
               user_applications: userApplications || [],
               withdrawal_count: userWithdrawalCount,
               index: index + 1
