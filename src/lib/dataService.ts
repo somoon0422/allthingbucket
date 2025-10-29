@@ -617,19 +617,22 @@ export const dataService = {
 
     // 사용자 신청
     user_applications: {
-      list: async () => {
+      list: async (options?: { limit?: number }) => {
         try {
           console.log('🔥 Supabase user_applications.list 호출됨')
+          const limit = options?.limit || 100 // 기본값: 최근 100개만
+
           const { data, error } = await supabase
             .from('user_applications')
             .select('*')
             .order('updated_at', { ascending: false })
-          
+            .limit(limit)
+
           if (error) {
             console.error('❌ user_applications 조회 실패:', error)
             return []
           }
-          
+
           console.log('✅ Supabase user_applications.list 결과:', data)
           return data || []
         } catch (error) {

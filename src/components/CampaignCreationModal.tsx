@@ -114,6 +114,12 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     experience_announcement_date: '', // 체험단 발표일
     result_announcement_date: '', // 캠페인 결과발표일
     current_applicants: 0, // 현재 신청자 수
+    // 상시 운영 플래그
+    is_always_open_application: false, // 상시 신청
+    is_always_open_content: false, // 상시 콘텐츠 등록
+    is_always_announcement_experience: false, // 상시 체험단 발표
+    is_always_announcement_result: false, // 상시 결과 발표
+    is_always_announcement_influencer: false, // 상시 인플루언서 발표
     // 승인 안내 메시지 커스터마이징
     approval_email_subject: '', // 승인 이메일 제목
     approval_email_content: '', // 승인 이메일 내용
@@ -170,10 +176,11 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+    const target = e.target as HTMLInputElement
+    const { name, value, type, checked } = target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }))
   }
 
@@ -241,6 +248,12 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         contact_phone: '01022129245',
         main_images: mainImages,
         detail_images: detailImages,
+        // 상시 운영 플래그
+        is_always_open_application: formData.is_always_open_application,
+        is_always_open_content: formData.is_always_open_content,
+        is_always_announcement_experience: formData.is_always_announcement_experience,
+        is_always_announcement_result: formData.is_always_announcement_result,
+        is_always_announcement_influencer: formData.is_always_announcement_influencer,
         // 승인 안내 메시지
         approval_email_subject: formData.approval_email_subject.trim() || null,
         approval_email_content: formData.approval_email_content.trim() || null,
@@ -284,6 +297,8 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         experience_name: '',
         brand_name: '',
         description: '',
+        platform: '인스타그램',
+        delivery_type: '배송형',
         reward_points: '',
         max_participants: '30',
         requirements: '',
@@ -305,7 +320,17 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         content_end_date: '',
         experience_announcement_date: '',
         result_announcement_date: '',
-        current_applicants: 0
+        current_applicants: 0,
+        // 상시 운영 플래그
+        is_always_open_application: false,
+        is_always_open_content: false,
+        is_always_announcement_experience: false,
+        is_always_announcement_result: false,
+        is_always_announcement_influencer: false,
+        // 승인 안내 메시지
+        approval_email_subject: '',
+        approval_email_content: '',
+        approval_sms_content: ''
       })
       setMainImages([])
       setDetailImages([])
@@ -778,10 +803,22 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 신청 기간 */}
               <div className="space-y-4">
-                <h4 className="text-md font-medium text-gray-700 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-primary-600" />
-                  신청 기간
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-md font-medium text-gray-700 flex items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-primary-600" />
+                    신청 기간
+                  </h4>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_open_application"
+                      checked={formData.is_always_open_application}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 신청</span>
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">시작일</label>
@@ -790,7 +827,8 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="application_start_date"
                       value={formData.application_start_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      disabled={formData.is_always_open_application}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -800,11 +838,17 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="application_end_date"
                       value={formData.application_end_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      disabled={formData.is_always_open_application}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
-                    {formData.application_end_date && (
+                    {formData.application_end_date && !formData.is_always_open_application && (
                       <p className="text-xs text-primary-600 mt-1">
                         신청 마감일: {getDeadlineDisplay(formData.application_end_date)}
+                      </p>
+                    )}
+                    {formData.is_always_open_application && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        ✓ 상시 신청 가능
                       </p>
                     )}
                   </div>
@@ -813,25 +857,55 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
               {/* 인플루언서 발표 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <UserCheck className="w-4 h-4 mr-2 text-green-600" />
-                  인플루언서 발표일
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-green-600" />
+                    인플루언서 발표일
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_announcement_influencer"
+                      checked={formData.is_always_announcement_influencer}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 발표</span>
+                  </label>
+                </div>
                 <input
                   type="date"
                   name="influencer_announcement_date"
                   value={formData.influencer_announcement_date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled={formData.is_always_announcement_influencer}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
+                {formData.is_always_announcement_influencer && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">
+                    ✓ 상시 발표
+                  </p>
+                )}
               </div>
 
               {/* 콘텐츠 등록 기간 */}
               <div className="space-y-4">
-                <h4 className="text-md font-medium text-gray-700 flex items-center">
-                  <CalendarDays className="w-4 h-4 mr-2 text-navy-600" />
-                  콘텐츠 등록 기간
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-md font-medium text-gray-700 flex items-center">
+                    <CalendarDays className="w-4 h-4 mr-2 text-navy-600" />
+                    콘텐츠 등록 기간
+                  </h4>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_open_content"
+                      checked={formData.is_always_open_content}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-navy-600 focus:ring-navy-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 등록</span>
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">시작일</label>
@@ -840,7 +914,8 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="content_start_date"
                       value={formData.content_start_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      disabled={formData.is_always_open_content}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -850,11 +925,17 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="content_end_date"
                       value={formData.content_end_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      disabled={formData.is_always_open_content}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
-                    {formData.content_end_date && (
+                    {formData.content_end_date && !formData.is_always_open_content && (
                       <p className="text-xs text-navy-600 mt-1">
                         리뷰 마감일: {getDeadlineDisplay(formData.content_end_date)}
+                      </p>
+                    )}
+                    {formData.is_always_open_content && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        ✓ 상시 등록 가능
                       </p>
                     )}
                   </div>
@@ -864,31 +945,67 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               {/* 발표 일정 */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <UserCheck className="w-4 h-4 mr-2 text-green-600" />
-                    체험단 발표일
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700 flex items-center">
+                      <UserCheck className="w-4 h-4 mr-2 text-green-600" />
+                      체험단 발표일
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="is_always_announcement_experience"
+                        checked={formData.is_always_announcement_experience}
+                        onChange={handleInputChange}
+                        className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-600">상시 발표</span>
+                    </label>
+                  </div>
                   <input
                     type="date"
                     name="experience_announcement_date"
                     value={formData.experience_announcement_date}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    disabled={formData.is_always_announcement_experience}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
+                  {formData.is_always_announcement_experience && (
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      ✓ 상시 발표
+                    </p>
+                  )}
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <Megaphone className="w-4 h-4 mr-2 text-orange-600" />
-                    캠페인 결과발표일
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700 flex items-center">
+                      <Megaphone className="w-4 h-4 mr-2 text-orange-600" />
+                      캠페인 결과발표일
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="is_always_announcement_result"
+                        checked={formData.is_always_announcement_result}
+                        onChange={handleInputChange}
+                        className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-600">상시 발표</span>
+                    </label>
+                  </div>
                   <input
                     type="date"
                     name="result_announcement_date"
                     value={formData.result_announcement_date}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    disabled={formData.is_always_announcement_result}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
+                  {formData.is_always_announcement_result && (
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      ✓ 상시 발표
+                    </p>
+                  )}
                 </div>
               </div>
 

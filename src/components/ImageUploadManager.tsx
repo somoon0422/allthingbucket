@@ -41,32 +41,49 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
     }
   }, [initialImages])
 
-  // 🔄 대안 업로드 방식 (Base64 변환)
-  const handleAlternativeUpload = useCallback(async (files: File[]) => {
+  // 🔄 Supabase Storage 업로드
+  const handleStorageUpload = useCallback(async (files: File[]) => {
     try {
-      console.log('🔄 대안 업로드 방식 시도 (Base64)')
-      const base64Images: string[] = []
-      
+      console.log('🔄 Supabase Storage 업로드 시도')
+      const { supabase } = await import('../lib/dataService')
+      const uploadedUrls: string[] = []
+
       for (const file of files) {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-        base64Images.push(base64)
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`
+        const filePath = `campaigns/${fileName}`
+
+        // Supabase Storage에 업로드
+        const { data, error } = await supabase.storage
+          .from('campaign_images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (error) {
+          console.error('❌ Storage 업로드 실패:', error)
+          throw error
+        }
+
+        // Public URL 가져오기
+        const { data: { publicUrl } } = supabase.storage
+          .from('campaign_images')
+          .getPublicUrl(filePath)
+
+        uploadedUrls.push(publicUrl)
+        console.log('✅ Storage 업로드 성공:', publicUrl)
       }
-      
-      if (base64Images.length > 0) {
-        const newImages = [...images, ...base64Images]
+
+      if (uploadedUrls.length > 0) {
+        const newImages = [...images, ...uploadedUrls]
         setImages(newImages)
         onImagesChange(newImages)
-        toast.success(`${base64Images.length}개 이미지를 Base64 방식으로 업로드 완료`)
-        console.log('✅ Base64 업로드 성공')
+        toast.success(`${uploadedUrls.length}개 이미지 업로드 완료`)
       }
-    } catch (altError) {
-      console.error('❌ 대안 업로드도 실패:', altError)
-      toast.error('모든 업로드 방식이 실패했습니다. 파일 크기를 확인해주세요.')
+    } catch (error) {
+      console.error('❌ Storage 업로드 실패:', error)
+      toast.error('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
+      throw error
     }
   }, [images, onImagesChange])
 
@@ -112,62 +129,17 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
       console.log('🔄 파일 업로드 시작:', validFiles.map(f => f.name))
       console.log('🔍 이미지 업로드 준비 완료')
       console.log('🔍 사용자 인증 상태:', { user: user?.name, id: user?.user_id })
-      
-      // 🚀 Base64 방식으로 파일 업로드
-      try {
-        const uploadResults = await Promise.all(
-          validFiles.map(async (file) => {
-            return new Promise<{fileUrl: string}>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => {
-                resolve({ fileUrl: reader.result as string })
-              }
-              reader.onerror = reject
-              reader.readAsDataURL(file)
-            })
-          })
-        )
-        console.log('📊 업로드 결과:', uploadResults)
-        
-        const successfulUploads: string[] = []
-        const failedUploads: string[] = []
-        
-        uploadResults.forEach((result, index) => {
-          if (result.fileUrl) {
-            successfulUploads.push(result.fileUrl)
-            console.log(`✅ 업로드 성공: ${validFiles[index].name} -> ${result.fileUrl}`)
-          } else {
-            failedUploads.push(validFiles[index].name)
-            console.error(`❌ 업로드 실패: ${validFiles[index].name}`)
-          }
-        })
-        
-        if (successfulUploads.length > 0) {
-          const newImages = [...images, ...successfulUploads]
-          setImages(newImages)
-          onImagesChange(newImages)
-          toast.success(`${successfulUploads.length}개 이미지 업로드 완료`)
-        }
-        
-        if (failedUploads.length > 0) {
-          // 실패한 파일들을 Base64로 처리
-          const failedFiles = validFiles.filter((_, index) => failedUploads.includes(validFiles[index].name))
-          await handleAlternativeUpload(failedFiles)
-        }
-      } catch (uploadError) {
-        console.warn('⚠️ 업로드 실패, Base64 방식으로 전환:', uploadError)
-        // 업로드 실패 시 Base64 방식으로 전환
-        await handleAlternativeUpload(validFiles)
-      }
-      
+
+      // 🚀 Supabase Storage로 파일 업로드
+      await handleStorageUpload(validFiles)
+
     } catch (error) {
       console.error('❌ 파일 업로드 오류:', error)
-      // 최종적으로 Base64 방식으로 시도
-      await handleAlternativeUpload(validFiles)
+      toast.error('이미지 업로드에 실패했습니다.')
     } finally {
       setUploading(false)
     }
-  }, [images, maxImages, onImagesChange, user, allowFileUpload, handleAlternativeUpload])
+  }, [images, maxImages, onImagesChange, user, allowFileUpload, handleStorageUpload])
 
   // URL 추가 처리
   const handleUrlAdd = useCallback(() => {

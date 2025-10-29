@@ -460,12 +460,17 @@ const AdminDashboard: React.FC = () => {
         throw new Error(`알 수 없는 상태: ${newStatus}`)
       }
 
-      // 1. user_applications 업데이트 (임시로 건너뛰기)
-      console.log('🔍 현재 신청 데이터 구조 확인:', app)
-      console.log('⚠️ user_applications 업데이트를 임시로 건너뛰고 다른 테이블만 업데이트')
-      
-      // TODO: user_applications 테이블 스키마 확인 후 수정 필요
-      // 현재는 400 에러 방지를 위해 user_applications 업데이트를 건너뛰기
+      // 1. user_applications 업데이트
+      try {
+        await (dataService.entities as any).user_applications.update(applicationId, {
+          status: mapping.user_applications,
+          updated_at: new Date().toISOString()
+        })
+        console.log(`✅ user_applications 상태 업데이트 완료: ${mapping.user_applications}`)
+      } catch (updateError) {
+        console.error('❌ user_applications 업데이트 실패:', updateError)
+        throw updateError
+      }
 
       // 2. review_submissions 업데이트
       if (app.review_submission_id) {
@@ -820,20 +825,10 @@ const AdminDashboard: React.FC = () => {
     if (window.confirm('포인트 지급을 완료하시겠습니까?')) {
       try {
         console.log('포인트 지급 완료 시작:', applicationId)
-        
-        // 1. user_applications 상태를 point_completed로 변경 (포인트 지급 완료)
-        try {
-          await (dataService.entities as any).user_applications.update(applicationId, {
-            status: 'point_completed',
-            updated_at: new Date().toISOString()
-          })
-          console.log('✅ user_applications 상태 업데이트 완료: point_completed')
-        } catch (updateError) {
-          console.warn('⚠️ user_applications 업데이트 실패 (무시):', updateError)
-        }
 
+        // 1. 상태 동기화 (user_applications, review_submissions, user_reviews)
         await syncReviewStatus(applicationId, 'point_completed')
-        
+
         // 2. points_history에서 해당 신청의 pending 상태를 success로 변경
         try {
           const application = applications.find(app => (app.id || app._id) === applicationId)
