@@ -2643,6 +2643,10 @@ const AdminDashboard: React.FC = () => {
 
   // 필터링된 데이터
   const filteredApplications = applications.filter(app => {
+    // 🔥 리뷰 관련 상태는 "신청 관리" 섹션에서 제외 (리뷰 검수 관리 섹션에서만 표시)
+    const reviewRelatedStatuses = ['review_in_progress', 'review_resubmitted', 'review_rejected', 'review_completed', 'point_completed', 'point_requested']
+    if (reviewRelatedStatuses.includes(app.status)) return false
+
     if (applicationFilter !== 'all' && app.status !== applicationFilter) return false
     if (applicationSearch && !app.name?.toLowerCase().includes(applicationSearch.toLowerCase())) return false
     return true
@@ -4694,26 +4698,31 @@ const AdminDashboard: React.FC = () => {
 
                 {/* 액션 버튼 */}
                 <div className="flex space-x-3 pt-4 border-t">
-                  <button
-                    onClick={() => {
-                      setShowApplicationDetailModal(false)
-                      setShowApprovalModal(true)
-                    }}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>승인</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowApplicationDetailModal(false)
-                      setShowRejectionModal(true)
-                    }}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    <span>거절</span>
-                  </button>
+                  {/* 🔥 리뷰 관련 상태가 아닐 때만 승인/거절 버튼 표시 */}
+                  {!['review_in_progress', 'review_resubmitted', 'review_rejected', 'review_completed', 'point_completed', 'point_requested'].includes(selectedApplication.status) && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setShowApplicationDetailModal(false)
+                          setShowApprovalModal(true)
+                        }}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        <span>승인</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowApplicationDetailModal(false)
+                          setShowRejectionModal(true)
+                        }}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        <span>거절</span>
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => setShowApplicationDetailModal(false)}
                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
