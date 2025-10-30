@@ -215,6 +215,12 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
     experience_announcement_date: '',
     result_announcement_date: '',
     current_applicants: 0,
+    // 상시 운영 플래그
+    is_always_open_application: false, // 상시 신청
+    is_always_open_content: false, // 상시 콘텐츠 등록
+    is_always_announcement_experience: false, // 상시 체험단 발표
+    is_always_announcement_result: false, // 상시 결과 발표
+    is_always_announcement_influencer: false, // 상시 인플루언서 발표
     // 승인 안내 메시지
     approval_email_subject: '',
     approval_email_content: '',
@@ -277,6 +283,12 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         experience_announcement_date: formatDateForInput(safeString(campaign, 'experience_announcement')),
         result_announcement_date: formatDateForInput(safeString(campaign, 'result_announcement')),
         current_applicants: safeNumber(campaign, 'current_participants', 0),
+        // 상시 운영 플래그
+        is_always_open_application: campaign.is_always_open_application || false,
+        is_always_open_content: campaign.is_always_open_content || false,
+        is_always_announcement_experience: campaign.is_always_announcement_experience || false,
+        is_always_announcement_result: campaign.is_always_announcement_result || false,
+        is_always_announcement_influencer: campaign.is_always_announcement_influencer || false,
         // 승인 안내 메시지
         approval_email_subject: safeString(campaign, 'approval_email_subject', ''),
         approval_email_content: safeString(campaign, 'approval_email_content', ''),
@@ -572,6 +584,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         review_deadline: formData.content_end_date || null,
         experience_announcement: formData.experience_announcement_date || null,
         result_announcement: formData.result_announcement_date || null,
+        influencer_announcement: formData.influencer_announcement_date || null,
         experience_location: formData.experience_location || null,
         experience_period: formData.experience_period || null,
         requirements: formData.requirements.trim() || null,
@@ -580,6 +593,12 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         review_guidelines: formData.review_guidelines.trim() || null,
         additional_info: formData.additional_info.trim() || null,
         rewards: formData.reward_points ? parseInt(formData.reward_points) : 0,
+        // 상시 운영 플래그
+        is_always_open_application: formData.is_always_open_application,
+        is_always_open_content: formData.is_always_open_content,
+        is_always_announcement_experience: formData.is_always_announcement_experience,
+        is_always_announcement_result: formData.is_always_announcement_result,
+        is_always_announcement_influencer: formData.is_always_announcement_influencer,
         main_images: mainImages,
         detail_images: detailImages,
         updated_at: new Date().toISOString()
@@ -1132,104 +1151,213 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
           {/* 캠페인 일정 정보 (기본 필드들만) */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">캠페인 일정 정보</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <div className="space-y-6">
               {/* 체험단 신청기간 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  체험단 신청 시작일
-                </label>
-                <input
-                  type="date"
-                  name="application_start_date"
-                  value={formData.application_start_date}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    체험단 신청기간
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_open_application"
+                      checked={formData.is_always_open_application}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 신청</span>
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">시작일</label>
+                    <input
+                      type="date"
+                      name="application_start_date"
+                      value={formData.application_start_date}
+                      onChange={handleInputChange}
+                      disabled={formData.is_always_open_application}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">종료일 (신청 마감일)</label>
+                    <input
+                      type="date"
+                      name="application_end_date"
+                      value={formData.application_end_date}
+                      onChange={handleInputChange}
+                      disabled={formData.is_always_open_application}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    />
+                    {formData.application_end_date && !formData.is_always_open_application && (
+                      <p className="text-xs text-primary-600 mt-1">
+                        신청 마감일: {getDeadlineDisplay(formData.application_end_date)}
+                      </p>
+                    )}
+                    {formData.is_always_open_application && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        ✓ 상시 신청 가능
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
+              {/* 인플루언서 발표 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  체험단 신청 마감일
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-green-600" />
+                    인플루언서 발표일
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_announcement_influencer"
+                      checked={formData.is_always_announcement_influencer}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 발표</span>
+                  </label>
+                </div>
                 <input
                   type="date"
-                  name="application_end_date"
-                  value={formData.application_end_date}
+                  name="influencer_announcement_date"
+                  value={formData.influencer_announcement_date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled={formData.is_always_announcement_influencer}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
-                {formData.application_end_date && (
-                  <p className="text-xs text-primary-600 mt-1">
-                    신청 마감일: {getDeadlineDisplay(formData.application_end_date)}
+                {formData.is_always_announcement_influencer && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">
+                    ✓ 상시 발표
                   </p>
                 )}
               </div>
 
-              {/* 리뷰 등록기간 */}
+              {/* 콘텐츠/리뷰 등록기간 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  리뷰 등록 시작일
-                </label>
-                <input
-                  type="date"
-                  name="content_start_date"
-                  value={formData.content_start_date}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  리뷰 등록 마감일
-                </label>
-                <input
-                  type="date"
-                  name="content_end_date"
-                  value={formData.content_end_date}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-                {formData.content_end_date && (
-                  <p className="text-xs text-navy-600 mt-1">
-                    리뷰 마감일: {getDeadlineDisplay(formData.content_end_date)}
-                  </p>
-                )}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <CalendarDays className="w-4 h-4 inline mr-1 text-navy-600" />
+                    콘텐츠 등록 기간
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_open_content"
+                      checked={formData.is_always_open_content}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-navy-600 focus:ring-navy-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 등록</span>
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">시작일</label>
+                    <input
+                      type="date"
+                      name="content_start_date"
+                      value={formData.content_start_date}
+                      onChange={handleInputChange}
+                      disabled={formData.is_always_open_content}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">종료일 (등록 마감일)</label>
+                    <input
+                      type="date"
+                      name="content_end_date"
+                      value={formData.content_end_date}
+                      onChange={handleInputChange}
+                      disabled={formData.is_always_open_content}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    />
+                    {formData.content_end_date && !formData.is_always_open_content && (
+                      <p className="text-xs text-navy-600 mt-1">
+                        리뷰 마감일: {getDeadlineDisplay(formData.content_end_date)}
+                      </p>
+                    )}
+                    {formData.is_always_open_content && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        ✓ 상시 등록 가능
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* 선정자 발표일 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-green-600" />
-                  선정자 발표일
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center">
+                    <Megaphone className="w-4 h-4 mr-2 text-purple-600" />
+                    체험단 발표일
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_announcement_experience"
+                      checked={formData.is_always_announcement_experience}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 발표</span>
+                  </label>
+                </div>
                 <input
                   type="date"
                   name="experience_announcement_date"
                   value={formData.experience_announcement_date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled={formData.is_always_announcement_experience}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
+                {formData.is_always_announcement_experience && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">
+                    ✓ 상시 발표
+                  </p>
+                )}
               </div>
 
               {/* 캠페인 결과발표일 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-orange-600" />
-                  캠페인 결과발표일
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center">
+                    <Target className="w-4 h-4 mr-2 text-orange-600" />
+                    캠페인 결과발표일
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_announcement_result"
+                      checked={formData.is_always_announcement_result}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 발표</span>
+                  </label>
+                </div>
                 <input
                   type="date"
                   name="result_announcement_date"
                   value={formData.result_announcement_date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled={formData.is_always_announcement_result}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
+                {formData.is_always_announcement_result && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">
+                    ✓ 상시 발표
+                  </p>
+                )}
               </div>
 
               {/* 현재 신청자 수 */}
