@@ -557,9 +557,10 @@ const AdminDashboard: React.FC = () => {
 
       console.log('✅ 모든 테이블 상태 동기화 완료: point_completed')
 
-      // 🔥 2. 포인트 지급 처리 (points_history에 레코드 생성)
+      // 🔥 2. 포인트 지급 처리 (points_history + user_points 업데이트)
       if (pointAmount > 0 && userId) {
         try {
+          // 2-1. points_history에 레코드 생성
           await (dataService.entities as any).points_history.create({
             user_id: userId,
             campaign_id: campaignId,
@@ -574,7 +575,33 @@ const AdminDashboard: React.FC = () => {
             transaction_date: new Date().toISOString(),
             created_at: new Date().toISOString()
           })
-          console.log('✅ 포인트 지급 완료 레코드 생성 완료:', pointAmount)
+          console.log('✅ points_history 레코드 생성 완료:', pointAmount)
+
+          // 2-2. user_points 테이블의 total_points 업데이트
+          const userPointsRecords = await (dataService.entities as any).user_points.list()
+          const userPointRecord = userPointsRecords.find((p: any) => p.user_id === userId)
+
+          if (userPointRecord) {
+            const newTotalPoints = (userPointRecord.total_points || 0) + pointAmount
+            await (dataService.entities as any).user_points.update(userPointRecord.id, {
+              total_points: newTotalPoints,
+              updated_at: new Date().toISOString()
+            })
+            console.log('✅ user_points 업데이트 완료:', {
+              이전: userPointRecord.total_points,
+              추가: pointAmount,
+              현재: newTotalPoints
+            })
+          } else {
+            // user_points 레코드가 없으면 생성
+            await (dataService.entities as any).user_points.create({
+              user_id: userId,
+              total_points: pointAmount,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            console.log('✅ user_points 레코드 생성 완료:', pointAmount)
+          }
         } catch (pointError) {
           console.error('⚠️ 포인트 지급 실패:', pointError)
           // 포인트 지급 실패해도 리뷰 승인은 유지
@@ -588,7 +615,16 @@ const AdminDashboard: React.FC = () => {
                           selectedReviewApplication.campaign_name ||
                           '캠페인'
 
-      if (userPhone && pointAmount > 0) {
+      console.log('📱 알림톡 발송 조건 확인:', {
+        userPhone,
+        userName,
+        campaignName,
+        pointAmount,
+        hasPhone: !!userPhone,
+        hasPointAmount: pointAmount > 0
+      })
+
+      if (userPhone) {
         try {
           // 현재 포인트 잔액 조회
           const userPointsRecords = await (dataService.entities as any).user_points.list()
