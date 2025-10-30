@@ -417,7 +417,24 @@ const MyPage: React.FC = () => {
           toast.error('프로필 업데이트에 실패했습니다')
         }
       } else {
-        // 새 influencer_profile 생성 - Supabase API 사용
+        // 새 influencer_profile 생성 - nickname 중복 체크
+        const allProfiles = await (dataService.entities as any).influencer_profiles.list()
+        const existingNicknames = Array.isArray(allProfiles)
+          ? allProfiles.filter((p: any) => p && p.nickname).map((p: any) => p.nickname)
+          : []
+
+        let uniqueNickname = profileData.nickname
+        if (existingNicknames.includes(uniqueNickname)) {
+          let counter = 1
+          while (existingNicknames.includes(`${uniqueNickname}_${counter}`)) {
+            counter++
+          }
+          uniqueNickname = `${uniqueNickname}_${counter}`
+          console.log(`⚠️ 닉네임 중복 발견, 고유 닉네임 생성: ${uniqueNickname}`)
+          profileData.nickname = uniqueNickname
+        }
+
+        // Supabase API 사용하여 생성
         const result = await (dataService.entities as any).influencer_profiles.create(profileData)
 
         // Supabase는 성공시 생성된 데이터를 직접 반환함 (result.id가 있으면 성공)

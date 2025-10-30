@@ -391,7 +391,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       if (!hasSNS) {
         // SNS 미등록 시 안내 모달 표시
         if (confirm('운영채널을 등록해 주세요!\n\n네이버 블로그, 인스타그램, 유튜브, 틱톡, 페이스북 중\n최소 1개 이상의 운영채널을 등록해야 신청할 수 있습니다.\n\n프로필 페이지의 운영채널 탭으로 이동하시겠습니까?')) {
-          window.location.href = '/mypage?tab=channels'
+          window.location.href = '/mypage?section=profile&tab=channels'
         }
         return
       }

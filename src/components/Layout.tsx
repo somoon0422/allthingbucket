@@ -221,13 +221,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           await (dataService.entities as any).influencer_profiles.update(influencerProfile.id, profileData)
           console.log('✅ influencer_profiles 업데이트 완료')
         } else {
-          // 새 프로필 생성
+          // 새 프로필 생성 - nickname 중복 체크
+          let uniqueNickname = data.nickname
+          const existingNicknames = influencerProfiles
+            .filter((p: any) => p && p.nickname)
+            .map((p: any) => p.nickname)
+
+          // nickname이 중복되면 고유한 닉네임 생성
+          if (existingNicknames.includes(uniqueNickname)) {
+            let counter = 1
+            while (existingNicknames.includes(`${uniqueNickname}_${counter}`)) {
+              counter++
+            }
+            uniqueNickname = `${uniqueNickname}_${counter}`
+            console.log(`⚠️ 닉네임 중복 발견, 고유 닉네임 생성: ${uniqueNickname}`)
+          }
+
           await (dataService.entities as any).influencer_profiles.create({
             user_id: user.id,
             ...profileData,
+            nickname: uniqueNickname,
             created_at: new Date().toISOString()
           })
-          console.log('✅ influencer_profiles 생성 완료')
+          console.log('✅ influencer_profiles 생성 완료:', uniqueNickname)
         }
       } catch (error) {
         console.error('❌ influencer_profiles 업데이트 실패:', error)
