@@ -6873,22 +6873,67 @@ const AdminDashboard: React.FC = () => {
 
       {/* 🔥 리뷰 승인 확인 모달 */}
       {showReviewApprovalModal && selectedReviewApplication && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-8">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">리뷰 승인 확인</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">리뷰 승인 및 포인트 지급</h3>
               <p className="text-gray-600 mb-6">
                 정말 이 리뷰를 승인하시겠습니까?<br />
-                승인 후 리워드 지급 절차가 진행됩니다.
+                승인 시 포인트가 자동으로 지급되고 알림톡이 발송됩니다.
               </p>
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+
+              {/* 신청자 정보 */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <p className="text-sm text-gray-700">
                   <strong>신청자:</strong> {selectedReviewApplication.name || '정보 없음'}
                 </p>
                 <p className="text-sm text-gray-700 mt-1">
-                  <strong>캠페인:</strong> {selectedReviewApplication.experience?.campaign_name || '정보 없음'}
+                  <strong>캠페인:</strong> {selectedReviewApplication.experience?.campaign_name || selectedReviewApplication.campaign_name || '정보 없음'}
+                </p>
+                <p className="text-sm text-gray-700 mt-1">
+                  <strong>지급 포인트:</strong> {(selectedReviewApplication.campaignInfo?.rewards || selectedReviewApplication.experience?.rewards || selectedReviewApplication.rewards || 0).toLocaleString()}P
+                </p>
+                <p className="text-sm text-gray-700 mt-1">
+                  <strong>휴대폰:</strong> {selectedReviewApplication.phone || selectedReviewApplication.user_profile?.phone || '❌ 없음 (알림톡 발송 불가)'}
                 </p>
               </div>
+
+              {/* 🔥 알림톡 미리보기 */}
+              {(selectedReviewApplication.phone || selectedReviewApplication.user_profile?.phone) && (
+                <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
+                  <div className="font-bold text-gray-900 mb-2">📱 알림톡 발송 내용 미리보기</div>
+                  <div className="text-xs text-gray-600 mb-3">템플릿 코드: REVIEWAPPROVEDPOINTSPAID</div>
+
+                  <div className="bg-white rounded-lg p-4 border border-gray-300">
+                    <div className="font-bold text-sm mb-2">[올띵버킷]</div>
+                    <div className="text-sm leading-relaxed whitespace-pre-line">
+{`${selectedReviewApplication.name || '회원'}님, 리뷰가 승인되었습니다! ✨
+
+${selectedReviewApplication.experience?.campaign_name || selectedReviewApplication.campaign_name || '캠페인'} 리뷰 검수가 완료되어 포인트가 지급되었습니다.
+
+💰 포인트 지급 내역
+- 지급 포인트: ${(selectedReviewApplication.campaignInfo?.rewards || selectedReviewApplication.experience?.rewards || selectedReviewApplication.rewards || 0).toLocaleString()}P
+- 지급일: ${new Date().toLocaleDateString('ko-KR')}
+
+📌 출금 안내
+마이페이지에서 출금 신청 가능합니다.
+출금 시 3.3% 원천징수(소득세) 공제됩니다.`}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      ※ 실제 알림톡은 네이버 클라우드 플랫폼에 등록된 템플릿으로 발송됩니다
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!( selectedReviewApplication.phone || selectedReviewApplication.user_profile?.phone) && (
+                <div className="bg-yellow-50 rounded-lg p-4 mb-4 border border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ 휴대폰 번호가 없어 알림톡이 발송되지 않습니다.
+                  </p>
+                </div>
+              )}
+
               <div className="flex space-x-3">
                 <button
                   onClick={() => {
@@ -6901,9 +6946,10 @@ const AdminDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={handleConfirmApproveReview}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
                 >
-                  승인하기
+                  <CheckCircle className="w-4 h-4" />
+                  <span>승인하고 포인트 지급</span>
                 </button>
               </div>
             </div>
