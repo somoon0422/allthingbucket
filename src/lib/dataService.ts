@@ -478,25 +478,26 @@ export const dataService = {
 
     // 캠페인
     campaigns: {
-      list: async (options?: { select?: string }) => {
+      list: async (options?: { select?: string; limit?: number }) => {
         try {
-          console.log('🔥 Supabase campaigns.list 호출됨', options)
-          
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
             return []
           }
-          
-          let query = supabase.from('campaigns').select(options?.select || '*')
-          
+
+          const selectFields = options?.select || '*'
+          let query = supabase.from('campaigns').select(selectFields)
+
+          const limit = options?.limit || 20
+          query = query.limit(limit)
+
           const { data, error } = await query.order('created_at', { ascending: false })
-          
+
           if (error) {
             console.error('❌ campaigns 조회 실패:', error)
             return []
           }
-          
-          console.log('✅ Supabase campaigns.list 결과:', data)
+
           return data || []
         } catch (error) {
           console.error('❌ campaigns 조회 실패:', error)
@@ -543,18 +544,51 @@ export const dataService = {
       },
       update: async (id: string, data: any) => {
         try {
+          console.log('🚀 campaigns 업데이트 시작:', { id, dataKeys: Object.keys(data) })
+          
+          // 🔥 이미지 데이터 분리 (큰 데이터는 별도 처리)
+          const { main_images, detail_images, ...otherData } = data
+          
+          // 1단계: 기본 데이터 업데이트 (이미지 제외)
           const { data: result, error } = await supabase
             .from('campaigns')
-            .update(data)
+            .update(otherData)
             .eq('id', id)
             .select()
             .maybeSingle()
           
           if (error) {
-            console.error('❌ campaigns 업데이트 실패:', error)
+            console.error('❌ campaigns 기본 데이터 업데이트 실패:', error)
             return null
           }
           
+          // 2단계: 이미지 데이터가 있는 경우 별도 업데이트
+          if (main_images !== undefined || detail_images !== undefined) {
+            console.log('🖼️ 이미지 데이터 별도 업데이트:', { 
+              hasMainImages: main_images !== undefined,
+              hasDetailImages: detail_images !== undefined,
+              mainImagesLength: main_images?.length || 0,
+              detailImagesLength: detail_images?.length || 0
+            })
+            
+            const imageUpdateData: any = {}
+            if (main_images !== undefined) imageUpdateData.main_images = main_images
+            if (detail_images !== undefined) imageUpdateData.detail_images = detail_images
+            
+            const { error: imageError } = await supabase
+              .from('campaigns')
+              .update(imageUpdateData)
+              .eq('id', id)
+            
+            if (imageError) {
+              console.error('❌ campaigns 이미지 업데이트 실패:', imageError)
+              // 이미지 업데이트 실패해도 기본 데이터는 업데이트되었으므로 계속 진행
+            } else {
+              console.log('✅ campaigns 이미지 업데이트 성공')
+            }
+          }
+          
+          console.log('✅ campaigns 업데이트 완료:', result)
           return result
         } catch (error) {
           console.error('❌ campaigns 업데이트 실패:', error)
@@ -583,19 +617,22 @@ export const dataService = {
 
     // 사용자 신청
     user_applications: {
-      list: async () => {
+      list: async (options?: { limit?: number }) => {
         try {
           console.log('🔥 Supabase user_applications.list 호출됨')
+          const limit = options?.limit || 100 // 기본값: 최근 100개만
+
           const { data, error } = await supabase
             .from('user_applications')
             .select('*')
             .order('updated_at', { ascending: false })
-          
+            .limit(limit)
+
           if (error) {
             console.error('❌ user_applications 조회 실패:', error)
             return []
           }
-          
+
           console.log('✅ Supabase user_applications.list 결과:', data)
           return data || []
         } catch (error) {
@@ -624,6 +661,7 @@ export const dataService = {
       },
       create: async (data: any) => {
         try {
+          console.log('🔥 user_applications.create 호출:', data)
           const { data: result, error } = await supabase
             .from('user_applications')
             .insert([data])
@@ -632,13 +670,14 @@ export const dataService = {
           
           if (error) {
             console.error('❌ user_applications 생성 실패:', error)
-            return null
+            return { success: false, error: error.message }
           }
           
-          return result
+          console.log('✅ user_applications 생성 성공:', result)
+          return { success: true, data: result }
         } catch (error) {
           console.error('❌ user_applications 생성 실패:', error)
-          return null
+          return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다' }
         }
       },
       update: async (id: string, data: any) => {
@@ -683,19 +722,25 @@ export const dataService = {
 
     // 리뷰 제출
     review_submissions: {
-      list: async () => {
+      list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase review_submissions.list 호출됨')
-          const { data, error } = await supabase
-            .from('review_submissions')
-            .select('*')
-            .order('updated_at', { ascending: false })
-          
+          console.log('🔥 Supabase review_submissions.list 호출됨', options)
+
+          let query = supabase.from('review_submissions').select('*')
+
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+
+          const { data, error } = await query.order('updated_at', { ascending: false })
+
           if (error) {
             console.error('❌ review_submissions 조회 실패:', error)
             return []
           }
-          
+
           console.log('✅ Supabase review_submissions.list 결과:', data)
           return data || []
         } catch (error) {
@@ -789,13 +834,12 @@ export const dataService = {
           const { data, error } = await supabase
             .from('user_reviews')
             .select('*')
-            .order('created_at', { ascending: false })
-          
+
           if (error) {
             console.error('❌ user_reviews 조회 실패:', error)
             return []
           }
-          
+
           console.log('✅ Supabase user_reviews.list 결과:', data)
           return data || []
         } catch (error) {
@@ -824,21 +868,23 @@ export const dataService = {
       },
       create: async (data: any) => {
         try {
+          console.log('🔥 user_reviews.create 호출:', data)
           const { data: result, error } = await supabase
             .from('user_reviews')
             .insert([data])
             .select()
             .maybeSingle()
-          
+
           if (error) {
             console.error('❌ user_reviews 생성 실패:', error)
-            return null
+            return { success: false, error: error.message }
           }
-          
-          return result
+
+          console.log('✅ user_reviews 생성 성공:', result)
+          return { success: true, data: result }
         } catch (error) {
           console.error('❌ user_reviews 생성 실패:', error)
-          return null
+          return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다' }
         }
       },
       update: async (id: string, data: any) => {
@@ -876,6 +922,106 @@ export const dataService = {
           return true
         } catch (error) {
           console.error('❌ user_reviews 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
+    // 관리자
+    admins: {
+      list: async () => {
+        try {
+          console.log('🔥 Supabase admins.list 호출됨')
+          const { data, error } = await supabase
+            .from('admins')
+            .select('*')
+            .order('created_at', { ascending: false })
+          
+          if (error) {
+            console.error('❌ admins 조회 실패:', error)
+            return []
+          }
+          
+          console.log('✅ Supabase admins.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ admins 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('admins')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle()
+          
+          if (error) {
+            console.error('❌ admins 조회 실패:', error)
+            return null
+          }
+          
+          return data
+        } catch (error) {
+          console.error('❌ admins 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('admins')
+            .insert([data])
+            .select()
+            .maybeSingle()
+          
+          if (error) {
+            console.error('❌ admins 생성 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ admins 생성 실패:', error)
+          return null
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('admins')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .maybeSingle()
+          
+          if (error) {
+            console.error('❌ admins 업데이트 실패:', error)
+            return null
+          }
+          
+          return result
+        } catch (error) {
+          console.error('❌ admins 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('admins')
+            .delete()
+            .eq('id', id)
+          
+          if (error) {
+            console.error('❌ admins 삭제 실패:', error)
+            return false
+          }
+          
+          return true
+        } catch (error) {
+          console.error('❌ admins 삭제 실패:', error)
           return false
         }
       }
@@ -1638,7 +1784,7 @@ export const dataService = {
 
     // 채팅방
     chat_rooms: {
-      list: async (options?: { filter?: any }) => {
+      list: async () => {
         try {
           const { data, error } = await supabase
             .from('chat_rooms')
@@ -1718,10 +1864,18 @@ export const dataService = {
     chat_conversations: {
       list: async (options?: { filter?: any }) => {
         try {
-          const { data, error } = await supabase
+          let query = supabase
             .from('chat_conversations')
             .select('*')
             .order('last_message_at', { ascending: false })
+
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+
+          const { data, error } = await query
 
           if (error) throw error
           return data || []
@@ -1794,7 +1948,7 @@ export const dataService = {
 
     // 관리자 채팅 알림
     admin_chat_notifications: {
-      list: async (options?: { filter?: any }) => {
+      list: async () => {
         try {
           const { data, error } = await supabase
             .from('admin_chat_notifications')
@@ -1870,9 +2024,156 @@ export const dataService = {
       }
     },
 
+    // 캠페인 제품
+    campaign_products: {
+      list: async (options?: { filter?: any }) => {
+        try {
+          console.log('🔥 Supabase campaign_products.list 호출됨', options)
+
+          if (!supabase) {
+            console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
+            return []
+          }
+
+          let query = supabase.from('campaign_products').select('*')
+
+          if (options?.filter) {
+            Object.entries(options.filter).forEach(([key, value]) => {
+              query = query.eq(key, value)
+            })
+          }
+
+          const { data, error } = await query.order('created_at', { ascending: false })
+
+          if (error) {
+            console.error('❌ campaign_products 조회 실패:', error)
+            return []
+          }
+
+          console.log('✅ Supabase campaign_products.list 결과:', data)
+          return data || []
+        } catch (error) {
+          console.error('❌ campaign_products 조회 실패:', error)
+          return []
+        }
+      },
+      get: async (id: string) => {
+        try {
+          const { data, error } = await supabase
+            .from('campaign_products')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle()
+
+          if (error) {
+            console.error('❌ campaign_products 조회 실패:', error)
+            return null
+          }
+
+          return data
+        } catch (error) {
+          console.error('❌ campaign_products 조회 실패:', error)
+          return null
+        }
+      },
+      create: async (data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('campaign_products')
+            .insert([data])
+            .select()
+            .maybeSingle()
+
+          if (error) {
+            console.error('❌ campaign_products 생성 실패:', error)
+            return null
+          }
+
+          return result
+        } catch (error) {
+          console.error('❌ campaign_products 생성 실패:', error)
+          return null
+        }
+      },
+      createMany: async (dataArray: any[]) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('campaign_products')
+            .insert(dataArray)
+            .select()
+
+          if (error) {
+            console.error('❌ campaign_products 대량 생성 실패:', error)
+            return []
+          }
+
+          return result || []
+        } catch (error) {
+          console.error('❌ campaign_products 대량 생성 실패:', error)
+          return []
+        }
+      },
+      update: async (id: string, data: any) => {
+        try {
+          const { data: result, error } = await supabase
+            .from('campaign_products')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .maybeSingle()
+
+          if (error) {
+            console.error('❌ campaign_products 업데이트 실패:', error)
+            return null
+          }
+
+          return result
+        } catch (error) {
+          console.error('❌ campaign_products 업데이트 실패:', error)
+          return null
+        }
+      },
+      delete: async (id: string) => {
+        try {
+          const { error } = await supabase
+            .from('campaign_products')
+            .delete()
+            .eq('id', id)
+
+          if (error) {
+            console.error('❌ campaign_products 삭제 실패:', error)
+            return false
+          }
+
+          return true
+        } catch (error) {
+          console.error('❌ campaign_products 삭제 실패:', error)
+          return false
+        }
+      },
+      deleteByCampaignId: async (campaignId: string) => {
+        try {
+          const { error } = await supabase
+            .from('campaign_products')
+            .delete()
+            .eq('campaign_id', campaignId)
+
+          if (error) {
+            console.error('❌ campaign_products 삭제 실패:', error)
+            return false
+          }
+
+          return true
+        } catch (error) {
+          console.error('❌ campaign_products 삭제 실패:', error)
+          return false
+        }
+      }
+    },
+
     // 온라인 상태 관리
     user_online_status: {
-      async list(filters?: any) {
+      async list() {
         try {
           const { data, error } = await supabase
             .from('user_online_status')
@@ -2013,6 +2314,176 @@ export const dataService = {
         }
       }
     }
+  },  // entities 끝
 
+  // 커뮤니티 기능
+  community: {
+    // 게시물 목록 조회
+    getPosts: async () => {
+      try {
+        const { data: posts, error: postsError } = await supabase
+          .from('community_posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (postsError) throw postsError
+
+        // 각 게시물의 댓글 조회
+        const postsWithComments = await Promise.all(
+          (posts || []).map(async (post) => {
+            const { data: comments } = await supabase
+              .from('community_comments')
+              .select('*')
+              .eq('post_id', post.id)
+              .order('created_at', { ascending: true })
+
+            return {
+              ...post,
+              comments: comments || []
+            }
+          })
+        )
+
+        return { data: postsWithComments, error: null }
+      } catch (error) {
+        console.error('게시물 조회 실패:', error)
+        return { data: null, error }
+      }
+    },
+
+    // 게시물 작성
+    createPost: async (post: { user_id: string; user_email: string; content: string; image_url?: string }) => {
+      try {
+        const { data, error } = await supabase
+          .from('community_posts')
+          .insert([post])
+          .select()
+
+        if (error) throw error
+        return { data, error: null }
+      } catch (error) {
+        console.error('게시물 작성 실패:', error)
+        return { data: null, error }
+      }
+    },
+
+    // 게시물 좋아요
+    likePost: async (postId: string, userId: string, like: boolean) => {
+      try {
+        const { data: post, error: fetchError } = await supabase
+          .from('community_posts')
+          .select('likes, liked_by')
+          .eq('id', postId)
+          .single()
+
+        if (fetchError) throw fetchError
+
+        const likedBy = post.liked_by || []
+        const newLikedBy = like
+          ? [...likedBy, userId]
+          : likedBy.filter((id: string) => id !== userId)
+
+        const { error: updateError } = await supabase
+          .from('community_posts')
+          .update({
+            likes: like ? (post.likes || 0) + 1 : Math.max((post.likes || 0) - 1, 0),
+            liked_by: newLikedBy
+          })
+          .eq('id', postId)
+
+        if (updateError) throw updateError
+        return { error: null }
+      } catch (error) {
+        console.error('좋아요 실패:', error)
+        return { error }
+      }
+    },
+
+    // 댓글 작성
+    addComment: async (comment: { post_id: string; user_id: string; user_email: string; content: string }) => {
+      try {
+        const { data, error } = await supabase
+          .from('community_comments')
+          .insert([comment])
+          .select()
+
+        if (error) throw error
+        return { data, error: null }
+      } catch (error) {
+        console.error('댓글 작성 실패:', error)
+        return { data: null, error }
+      }
+    },
+
+    // 게시물 삭제
+    deletePost: async (postId: string) => {
+      try {
+        const { error } = await supabase
+          .from('community_posts')
+          .delete()
+          .eq('id', postId)
+
+        if (error) throw error
+        return { error: null }
+      } catch (error) {
+        console.error('게시물 삭제 실패:', error)
+        return { error }
+      }
+    },
+
+    // 조회수 증가
+    incrementViewCount: async (postId: string) => {
+      try {
+        const { error } = await supabase.rpc('increment_post_view_count', { post_id: postId })
+        if (error) throw error
+        return { error: null }
+      } catch (error) {
+        console.error('조회수 증가 실패:', error)
+        return { error }
+      }
+    }
+  },  // community 끝
+
+  // 이미지 업로드
+  uploadImage: async (formData: FormData) => {
+    try {
+      const file = formData.get('file') as File
+      if (!file) {
+        return { data: null, error: new Error('파일이 없습니다') }
+      }
+
+      const fileName = `${Date.now()}_${file.name}`
+
+      // 먼저 community-images 버킷 시도, 없으면 images 버킷 사용
+      let data, error
+
+      const communityUpload = await supabase.storage
+        .from('community-images')
+        .upload(fileName, file)
+
+      if (communityUpload.error) {
+        console.log('community-images 버킷 없음, images 버킷 사용')
+        const imagesUpload = await supabase.storage
+          .from('images')
+          .upload(`community/${fileName}`, file)
+
+        if (imagesUpload.error) throw imagesUpload.error
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('images')
+          .getPublicUrl(`community/${fileName}`)
+
+        return { data: { url: publicUrl }, error: null }
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('community-images')
+        .getPublicUrl(fileName)
+
+      return { data: { url: publicUrl }, error: null }
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error)
+      return { data: null, error }
+    }
   }
 }

@@ -1,6 +1,5 @@
 import React from 'react'
 import { SupabaseOAuthService } from '../services/supabaseOAuthService'
-import { GoogleAuthService } from '../services/googleAuthService'
 import toast from 'react-hot-toast'
 
 interface GoogleLoginButtonProps {
@@ -16,10 +15,11 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
 }) => {
   const handleGoogleLogin = async () => {
     try {
-      // 🔥 개발 환경에서는 직접 Google OAuth 사용, 프로덕션에서는 Supabase OAuth 사용
+      // 환경 확인
       const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      const isProduction = window.location.hostname === 'allthingbucket.com'
       
-      console.log('🔥 Google OAuth 로그인 시작...', { isDevelopment })
+      console.log('🔥 Google OAuth 로그인 시작...', { isDevelopment, isProduction })
       
       // 기존 관리자 세션 정리 (구글 로그인 시 일반 사용자로 로그인)
       localStorage.removeItem('admin_token')
@@ -28,24 +28,25 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       // 모달 닫기 이벤트 발생
       window.dispatchEvent(new CustomEvent('closeLoginModal'))
       
-      if (isDevelopment) {
-        // 개발 환경: 직접 Google OAuth 사용
-        console.log('🔄 개발 환경: 직접 Google OAuth 사용')
-        await GoogleAuthService.handleGoogleLogin()
-      } else {
-        // 프로덕션 환경: Supabase OAuth 사용
-        console.log('🔄 프로덕션 환경: Supabase OAuth 사용')
-        await SupabaseOAuthService.signInWithGoogle()
-      }
+      // 모든 환경에서 Supabase OAuth 사용 (안정적이고 에러 없음)
+      console.log('🔄 Supabase OAuth 사용 (모든 환경)')
       
-    } catch (error: any) {
+      // 사용자에게 친근한 메시지 표시
+      toast.loading('올띵버킷으로 로그인 중...', { id: 'google-login' })
+      
+      await SupabaseOAuthService.signInWithGoogle()
+      
+      // 로딩 토스트 제거 (성공/실패는 다른 곳에서 처리)
+      toast.dismiss('google-login')
+      
+    } catch (error) {
       console.error('❌ Google OAuth 로그인 실패:', error)
-      
+
       // 에러 메시지 표시
-      const errorMessage = error.message || 'Google 로그인에 실패했습니다'
+      const errorMessage = error instanceof Error ? error.message : 'Google 로그인에 실패했습니다'
       toast.error(errorMessage)
-      
-      onError?.(error.message || 'Google 로그인에 실패했습니다')
+
+      onError?.(errorMessage)
     }
   }
 

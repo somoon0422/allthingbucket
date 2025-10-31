@@ -1,12 +1,63 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import ApplicationFormModal from '../components/ApplicationFormModal'
 import ReviewSubmissionManager from '../components/ReviewSubmissionManager'
-import {Calendar, Gift, Clock, ArrowLeft, Target, Hash, Link, Info, Users, Coins, MapPin, ChevronDown, ChevronUp} from 'lucide-react'
+import {Calendar, Gift, Clock, ArrowLeft, Target, Hash, Link, Info, Users, Coins, MapPin, ChevronDown, ChevronUp, ShoppingCart, FileText, Camera, Video, TestTube, Newspaper, Building, Wrench} from 'lucide-react'
 import toast from 'react-hot-toast'
 
+// 🔥 체험단 타입 정보 (여러 타입 지원)
+const EXPERIENCE_TYPES = {
+  purchase_review: {
+    label: '구매평',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    icon: ShoppingCart,
+    description: '제품을 직접 구매하고 솔직한 구매평을 작성하는 캠페인입니다.'
+  },
+  blog_review: {
+    label: '블로그 리뷰',
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    icon: FileText,
+    description: '블로그에 상세한 리뷰를 작성하는 캠페인입니다.'
+  },
+  instagram: {
+    label: '인스타그램',
+    color: 'bg-pink-100 text-pink-800 border-pink-200',
+    icon: Camera,
+    description: '인스타그램에 제품 소개 포스트를 올리는 캠페인입니다.'
+  },
+  youtube: {
+    label: '유튜브',
+    color: 'bg-red-100 text-red-800 border-red-200',
+    icon: Video,
+    description: '유튜브에 제품 리뷰 영상을 올리는 캠페인입니다.'
+  },
+  product: {
+    label: '제품 체험',
+    color: 'bg-green-100 text-green-800 border-green-200',
+    icon: TestTube,
+    description: '제품을 체험하고 솔직한 후기를 작성하는 캠페인입니다.'
+  },
+  press: {
+    label: '기자단',
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
+    icon: Newspaper,
+    description: '언론 매체를 통해 제품을 소개하는 캠페인입니다.'
+  },
+  local: {
+    label: '지역 체험',
+    color: 'bg-teal-100 text-teal-800 border-teal-200',
+    icon: Building,
+    description: '지역 특색을 살린 체험 콘텐츠를 제작하는 캠페인입니다.'
+  },
+  other: {
+    label: '기타',
+    color: 'bg-gray-100 text-gray-800 border-gray-200',
+    icon: Wrench,
+    description: '기타 형태의 체험 캠페인입니다.'
+  }
+}
 
 function ExperienceDetail() {
   const { id } = useParams()
@@ -32,6 +83,42 @@ function ExperienceDetail() {
       })
     }
   }
+
+  // 🔥 체험단 타입 처리 함수
+  const getExperienceTypes = useCallback((typeData: any) => {
+    if (!typeData) return []
+    
+    // 배열인 경우
+    if (Array.isArray(typeData)) {
+      return typeData.filter(type => type && EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES])
+    }
+    
+    // 문자열인 경우 (쉼표로 구분된 경우)
+    if (typeof typeData === 'string') {
+      return typeData.split(',').map(type => type.trim()).filter(type => type && EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES])
+    }
+    
+    // 단일 문자열인 경우
+    if (typeof typeData === 'string' && EXPERIENCE_TYPES[typeData as keyof typeof EXPERIENCE_TYPES]) {
+      return [typeData]
+    }
+    
+    return []
+  }, [])
+
+  // 🔥 체험단 타입 표시 텍스트 생성
+  const getExperienceTypeDisplay = useCallback((types: string[]) => {
+    if (types.length === 0) return '체험단'
+    if (types.length === 1) return types[0]
+    
+    const typeLabels = types.map(type => EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES]?.label || type)
+    
+    if (types.length === 2) {
+      return `${typeLabels[0]} + ${typeLabels[1]}`
+    } else {
+      return `${typeLabels.slice(0, -1).join(' + ')} + ${typeLabels[typeLabels.length - 1]}`
+    }
+  }, [])
 
   // 🔥 D-Day 계산 함수
   const getDeadlineDisplay = (deadline: string) => {
@@ -63,6 +150,61 @@ function ExperienceDetail() {
     }
   }
 
+  // 🔥 마감 상태 실시간 체크
+  useEffect(() => {
+    if (experience) {
+      const checkClosedStatus = () => {
+        let isClosed = false
+        let closeReason = ''
+        
+        // 1. 캠페인 상태 체크
+        const campaignStatus = experience.status || 'active'
+        if (campaignStatus === 'closed' || campaignStatus === 'inactive') {
+          isClosed = true
+          closeReason = '캠페인 상태: ' + campaignStatus
+        }
+        
+        // 2. 신청 마감일 체크
+        if (!isClosed) {
+          const applicationEndDate = experience.application_end_date || 
+                                   experience.application_end ||
+                                   experience.end_date
+          if (applicationEndDate) {
+            const endDate = new Date(applicationEndDate)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            endDate.setHours(0, 0, 0, 0)
+            
+            if (endDate < today) {
+              isClosed = true
+              closeReason = '신청 마감일 초과: ' + applicationEndDate
+            }
+          }
+        }
+        
+        // 3. 최대 참가자 수 체크
+        if (!isClosed) {
+          const maxParticipants = experience.max_participants
+          const currentParticipants = experience.current_participants || 0
+          
+          if (maxParticipants && currentParticipants >= maxParticipants) {
+            isClosed = true
+            closeReason = `모집 인원 마감: ${currentParticipants}/${maxParticipants}`
+          }
+        }
+        
+        console.log('🔄 실시간 마감 상태 체크:', { isClosed, closeReason })
+        setIsApplicationClosed(isClosed)
+      }
+      
+      checkClosedStatus()
+      
+      // 1분마다 마감 상태 재체크 (날짜가 바뀔 수 있으므로)
+      const interval = setInterval(checkClosedStatus, 60000)
+      return () => clearInterval(interval)
+    }
+  }, [experience])
+
   // 체험단 정보 로드
   useEffect(() => {
     const loadExperience = async () => {
@@ -71,6 +213,9 @@ function ExperienceDetail() {
       try {
         console.log('🔍 체험단 상세 정보 로딩:', id)
         const experienceData = await getCampaignById(id)
+        console.log('📊 로딩된 캠페인 데이터:', experienceData)
+        console.log('📊 캠페인 데이터 타입:', typeof experienceData)
+        console.log('📊 캠페인 데이터 존재 여부:', !!experienceData)
         setExperience(experienceData)
         
         // 🔥 디버깅: 날짜 데이터 확인
@@ -88,61 +233,114 @@ function ExperienceDetail() {
           }, {} as any)
         })
         
-        // 🔥 캠페인 상태 체크 - status 필드 기준으로 수정
-        const campaignStatus = (experienceData as any)?.status || 'active'
+        // 🔥 캠페인 상태 체크 - campaign_status 필드 기준으로 수정
+        console.log('🚀 마감 체크 로직 시작!')
         
-        console.log('🔍 캠페인 상태 체크:', {
+        if (!experienceData) {
+          console.warn('⚠️ experienceData가 없어서 마감 체크를 건너뜀니다')
+          return
+        }
+        
+        const campaignStatus = (experienceData as any)?.campaign_status || (experienceData as any)?.status || 'recruiting'
+        
+        console.log('🔍 캠페인 상태 체크 (상세):', {
+          campaignId: id,
           status: campaignStatus,
           application_end_date: (experienceData as any)?.application_end_date,
           application_end: (experienceData as any)?.application_end,
           end_date: (experienceData as any)?.end_date,
           max_participants: (experienceData as any)?.max_participants,
           current_participants: (experienceData as any)?.current_participants,
-          allFields: Object.keys(experienceData || {})
+          title: (experienceData as any)?.title || (experienceData as any)?.campaign_name,
+          allFields: Object.keys(experienceData || {}),
+          rawData: experienceData
         })
         
-        // 종합적인 마감 상태 체크
+        // 🔥 종합적인 마감 상태 체크 (강화)
         let isClosed = false
         let closeReason = ''
         
-        // 1. 캠페인 상태 체크
-        if (campaignStatus === 'closed' || campaignStatus === 'inactive') {
-          isClosed = true
-          closeReason = '캠페인 상태: ' + campaignStatus
-          console.log('🚫 캠페인 상태로 인한 신청 마감:', campaignStatus)
+        // 1. 캠페인 상태 체크 (실제 필드명 기준)
+        const statusFields = ['campaign_status', 'status', 'state', 'is_active']
+        for (const field of statusFields) {
+          const status = (experienceData as any)?.[field]
+          if (status === 'completed' || status === 'cancelled' || status === 'closed' || status === 'inactive' || status === 'ended' || status === 'expired' || status === false) {
+            isClosed = true
+            closeReason = `캠페인 상태(${field}): ${status}`
+            console.log('🚫 캠페인 상태로 인한 신청 마감:', { field, status })
+            break
+          }
         }
         
-        // 2. 신청 마감일 체크
+        // 2. 신청 마감일 체크 (다양한 필드명 고려)
         if (!isClosed) {
-          const applicationEndDate = (experienceData as any)?.application_end_date || 
-                                   (experienceData as any)?.application_end ||
-                                   (experienceData as any)?.end_date
-          if (applicationEndDate) {
-            const endDate = new Date(applicationEndDate)
-            const today = new Date()
-            today.setHours(0, 0, 0, 0) // 오늘 시작 시간으로 설정
-            endDate.setHours(0, 0, 0, 0) // 마감일 시작 시간으로 설정
-            
-            console.log('📅 날짜 비교:', {
-              endDate: endDate.toISOString(),
-              today: today.toISOString(),
-              isExpired: endDate < today
-            })
-            
-            if (endDate < today) {
-              isClosed = true
-              closeReason = '신청 마감일 초과: ' + applicationEndDate
-              console.log('🚫 신청 마감일 초과로 인한 신청 마감:', applicationEndDate)
+          const dateFields = [
+            'end_date',
+            'review_deadline', 
+            'application_end_date', 
+            'application_end',
+            'deadline',
+            'application_deadline',
+            'close_date'
+          ]
+          
+          for (const field of dateFields) {
+            const dateValue = (experienceData as any)?.[field]
+            if (dateValue) {
+              try {
+                const endDate = new Date(dateValue)
+                const today = new Date()
+                today.setHours(23, 59, 59, 999) // 오늘 끝 시간으로 설정
+                endDate.setHours(23, 59, 59, 999) // 마감일 끝 시간으로 설정
+                
+                console.log('📅 날짜 비교:', {
+                  field,
+                  dateValue,
+                  endDate: endDate.toISOString(),
+                  today: today.toISOString(),
+                  isExpired: endDate < today
+                })
+                
+                if (endDate < today) {
+                  isClosed = true
+                  closeReason = `신청 마감일 초과(${field}): ${dateValue}`
+                  console.log('🚫 신청 마감일 초과로 인한 신청 마감:', { field, dateValue })
+                  break
+                }
+              } catch (dateError) {
+                console.warn('날짜 파싱 오류:', { field, dateValue, dateError })
+              }
             }
           }
         }
         
-        // 3. 최대 참가자 수 체크
+        // 3. 최대 참가자 수 체크 (다양한 필드명 고려)
         if (!isClosed) {
-          const maxParticipants = (experienceData as any)?.max_participants
-          const currentParticipants = (experienceData as any)?.current_participants || 0
+          const maxFields = ['recruitment_count', 'max_participants', 'maximum_participants', 'participant_limit', 'max_people']
+          const currentFields = ['current_applicants', 'current_participants', 'participant_count', 'applicant_count']
           
-          if (maxParticipants && currentParticipants >= maxParticipants) {
+          let maxParticipants = 0
+          let currentParticipants = 0
+          
+          // 최대 참가자 수 찾기
+          for (const field of maxFields) {
+            const value = (experienceData as any)?.[field]
+            if (value && value > 0) {
+              maxParticipants = value
+              break
+            }
+          }
+          
+          // 현재 참가자 수 찾기
+          for (const field of currentFields) {
+            const value = (experienceData as any)?.[field]
+            if (value >= 0) {
+              currentParticipants = value
+              break
+            }
+          }
+          
+          if (maxParticipants > 0 && currentParticipants >= maxParticipants) {
             isClosed = true
             closeReason = `모집 인원 마감: ${currentParticipants}/${maxParticipants}`
             console.log('🚫 최대 참가자 수 도달로 인한 신청 마감:', { currentParticipants, maxParticipants })
@@ -212,13 +410,34 @@ function ExperienceDetail() {
     checkApplicationStatus()
   }, [user, experience, getUserApplications])
 
-  const handleApplyClick = () => {
+  const handleApplyClick = async () => {
     console.log('🔥 handleApplyClick 호출됨', { isApplicationClosed, experience })
-    
+
     if (!isAuthenticated) {
       toast.error('로그인이 필요합니다.')
       navigate('/login')
       return
+    }
+
+    // 본인인증 완료 여부 확인
+    if (user) {
+      try {
+        const { data: identityInfo } = await supabase
+          .from('user_identity_info')
+          .select('identity_verified')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!identityInfo?.identity_verified) {
+          toast.error('캠페인 신청을 위해 본인인증이 필요합니다.')
+          setTimeout(() => {
+            navigate('/identity-verification')
+          }, 1500)
+          return
+        }
+      } catch (error) {
+        console.error('본인인증 확인 실패:', error)
+      }
     }
     
     // 마감 상태 재확인
@@ -302,14 +521,73 @@ function ExperienceDetail() {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           {/* 체험단 이미지 */}
           <div className="aspect-video bg-gray-200 relative overflow-hidden">
-            <img
-              src={experience.image_url || experience.main_image || (experience.main_images && experience.main_images.length > 0 ? experience.main_images[0] : null) || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'}
-              alt={experience.title || experience.experience_name || '체험단 이미지'}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
-              }}
-            />
+            {(() => {
+              // 🔥 실제 DB 필드명 기반 이미지 소스 확인 (main_images, detail_images)
+              const imageSources = [
+                // 실제 DB 필드: main_images (jsonb 배열)
+                (experience.main_images && Array.isArray(experience.main_images) && experience.main_images.length > 0) ? experience.main_images[0] : null,
+                // 실제 DB 필드: detail_images (jsonb 배열) - 메인 이미지가 없을 때 사용
+                (experience.detail_images && Array.isArray(experience.detail_images) && experience.detail_images.length > 0) ? experience.detail_images[0] : null,
+                // 호환성을 위한 추가 필드들 (실제 DB에는 없지만 혹시 있을 경우)
+                experience.image_url,
+                experience.main_image,
+                experience.thumbnail
+              ].filter(Boolean)
+              
+              const imageSrc = imageSources[0] || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
+              
+              return (
+                <img
+                  src={imageSrc}
+                  alt={experience.title || experience.experience_name || '체험단 이미지'}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
+                  }}
+                />
+              )
+            })()}
+            
+            {/* 🔥 체험단 타입 태그들 */}
+            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+              {(() => {
+                // 체험단 타입 데이터 추출
+                const typeData = experience.type || experience.experience_type || experience.campaign_type
+                const types = getExperienceTypes(typeData)
+                
+                console.log('🔥 체험단 타입 데이터:', {
+                  typeData,
+                  types,
+                  experienceType: experience.type,
+                  experience_type: experience.experience_type,
+                  campaign_type: experience.campaign_type
+                })
+                
+                if (types.length === 0) {
+                  return (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                      <Gift className="w-4 h-4 mr-1" />
+                      체험단
+                    </span>
+                  )
+                }
+                
+                return types.map((type, index) => {
+                  const typeInfo = EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES]
+                  const Icon = typeInfo?.icon || Gift
+                  
+                  return (
+                    <span 
+                      key={index}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${typeInfo?.color || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                    >
+                      <Icon className="w-4 h-4 mr-1" />
+                      {typeInfo?.label || type}
+                    </span>
+                  )
+                })
+              })()}
+            </div>
             </div>
 
               {/* 체험단 정보 */}
@@ -318,6 +596,54 @@ function ExperienceDetail() {
                   <h1 className="text-3xl font-bold text-gray-900 mb-4">
               {experience.campaign_name || experience.title || experience.experience_name || experience.name || '체험단 제목'}
             </h1>
+                  
+                  {/* 🔥 체험단 타입 표시 */}
+                  {(() => {
+                    const typeData = experience.type || experience.experience_type || experience.campaign_type
+                    const types = getExperienceTypes(typeData)
+                    const typeDisplay = getExperienceTypeDisplay(types)
+                    
+                    if (types.length === 0) return null
+                    
+                    return (
+                      <div className="mb-4">
+                        <div className="inline-flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                          <Target className="w-5 h-5 text-blue-600 mr-2" />
+                          <span className="text-blue-800 font-medium">
+                            {types.length === 1 
+                              ? `${EXPERIENCE_TYPES[types[0] as keyof typeof EXPERIENCE_TYPES]?.label || types[0]} 체험단`
+                              : `${typeDisplay} 체험단 (${types.length}개 타입)`
+                            }
+                          </span>
+                        </div>
+                        
+                        {/* 타입별 설명 */}
+                        {types.length > 1 && (
+                          <div className="mt-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <p className="text-sm text-gray-700 mb-2">
+                              <strong>이 체험단은 다음 {types.length}가지 활동을 모두 진행해야 합니다:</strong>
+                            </p>
+                            <ul className="space-y-2">
+                              {types.map((type, index) => {
+                                const typeInfo = EXPERIENCE_TYPES[type as keyof typeof EXPERIENCE_TYPES]
+                                return (
+                                  <li key={index} className="flex items-start">
+                                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium mr-3 mt-0.5 ${typeInfo?.color || 'bg-gray-100 text-gray-800'}">
+                                      {typeInfo?.label || type}
+                                    </span>
+                                    <span className="text-sm text-gray-600">
+                                      {typeInfo?.description || '해당 타입의 체험 활동'}
+                                    </span>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                  
                   <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
@@ -403,6 +729,129 @@ function ExperienceDetail() {
                 <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                   {experience.description || '체험단 설명이 없습니다.'}
                 </p>
+              </div>
+            </div>
+
+            {/* 체험단 진행 프로세스 */}
+            <div id="process-guide" className="mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <svg className="w-6 h-6 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                체험단 진행 프로세스
+              </h2>
+              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-xl p-6">
+                <div className="space-y-4">
+                  {/* STEP 1 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                        1
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">체험단 신청</h3>
+                      <p className="text-sm text-gray-600">체험단에 신청하고 관리자 승인을 기다립니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 2 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+                        2
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">제품 구매 및 수령</h3>
+                      <p className="text-sm text-gray-600">승인 후 제품을 구매하고, 배송을 받습니다 (배송형인 경우)</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 3 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
+                        3
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">체험 및 리뷰 작성</h3>
+                      <p className="text-sm text-gray-600">제품을 체험하고 리뷰를 작성하여 제출합니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 4 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
+                        4
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">리뷰 검수</h3>
+                      <p className="text-sm text-gray-600">관리자가 리뷰를 검수하고 승인/반려를 진행합니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 5 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold">
+                        5
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">포인트 지급 요청</h3>
+                      <p className="text-sm text-gray-600">리뷰 승인 완료 후 '내 신청' 페이지에서 포인트 지급을 요청합니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 6 */}
+                  <div className="flex items-start space-x-4 bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold">
+                        6
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">포인트 지급 승인</h3>
+                      <p className="text-sm text-gray-600">관리자가 포인트 지급을 승인하고 포인트가 지급됩니다</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 7 */}
+                  <div className="flex items-start space-x-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4 shadow-sm border-2 border-purple-300">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full flex items-center justify-center font-bold">
+                        7
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1 flex items-center">
+                        체험 종료 🎉
+                      </h3>
+                      <p className="text-sm text-gray-600">모든 프로세스가 완료되었습니다. 다음 체험단도 기대해주세요!</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 추가 안내 */}
+                <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-yellow-900 mb-1">💡 참고사항</h4>
+                      <ul className="text-sm text-yellow-800 space-y-1">
+                        <li>• 리뷰가 반려된 경우 수정 후 재제출이 가능합니다</li>
+                        <li>• 각 단계별 진행 상태는 '내 신청' 페이지에서 확인할 수 있습니다</li>
+                        <li>• 포인트는 1,000P 이상부터 출금 신청이 가능합니다</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -623,21 +1072,116 @@ function ExperienceDetail() {
                   )}
                   
                   <div className="flex flex-col sm:flex-row gap-4">
-                    {isApplicationClosed ? (
-                      <button
-                        disabled
-                        className="flex-1 px-8 py-4 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium text-lg opacity-60"
-                      >
-                        리뷰 신청하기 (마감)
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleApplyClick}
-                        className="flex-1 px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
-                      >
-                        리뷰 신청하기
-                      </button>
-                    )}
+                    {(() => {
+                      console.log('🔍 버튼 렌더링 상태:', {
+                        isApplicationClosed,
+                        userApplication,
+                        status: userApplication?.status,
+                        experience: experience?.title || experience?.campaign_name,
+                        application_end_date: experience?.application_end_date
+                      })
+
+                      // 신청 상태별 버튼 표시
+                      if (userApplication) {
+                        const status = userApplication.status
+
+                        // 상태별 버튼 설정
+                        const statusConfig: { [key: string]: { text: string; color: string; disabled?: boolean } } = {
+                          pending: { text: '검수 대기중', color: 'bg-yellow-500', disabled: true },
+                          approved: { text: '승인 완료', color: 'bg-green-500', disabled: true },
+                          rejected: { text: '반려됨', color: 'bg-red-500', disabled: true },
+                          product_purchased: { text: '제품 구매 완료', color: 'bg-blue-500', disabled: true },
+                          shipping: { text: '배송중', color: 'bg-indigo-500', disabled: true },
+                          delivered: { text: '제품 수령 완료', color: 'bg-teal-500', disabled: true },
+                          review_in_progress: { text: '리뷰 검수중', color: 'bg-purple-500', disabled: true },
+                          review_rejected: { text: '리뷰 반려됨', color: 'bg-red-500', disabled: true },
+                          review_resubmitted: { text: '리뷰 재제출됨', color: 'bg-orange-500', disabled: true },
+                          review_completed: { text: '리뷰 승인 완료', color: 'bg-emerald-500', disabled: true },
+                          point_requested: { text: '포인트 지급 요청됨', color: 'bg-orange-500', disabled: true },
+                          point_completed: { text: '🎉 체험 종료', color: 'bg-gradient-to-r from-purple-500 to-pink-500', disabled: true }
+                        }
+
+                        const config = statusConfig[status] || { text: '신청 완료', color: 'bg-gray-500', disabled: true }
+
+                        // 프로세스 단계 정보
+                        const getProcessInfo = (status: string) => {
+                          switch (status) {
+                            case 'pending':
+                              return { current: '신청 검수중', next: '승인 결과를 기다려주세요' }
+                            case 'approved':
+                              return { current: '체험단 선정 완료', next: '제품 구매 완료 버튼을 눌러주세요 (내 신청 페이지)' }
+                            case 'product_purchased':
+                              return { current: '제품 구매 완료', next: '배송 대기중입니다' }
+                            case 'shipping':
+                              return { current: '배송중', next: '제품 수령 후 수령 완료 버튼을 눌러주세요' }
+                            case 'delivered':
+                              return { current: '제품 수령 완료', next: '리뷰를 작성해주세요 (내 신청 페이지)' }
+                            case 'review_in_progress':
+                              return { current: '리뷰 검수중', next: '관리자 검수를 기다려주세요' }
+                            case 'review_rejected':
+                              return { current: '리뷰 반려됨', next: '반려 사유를 확인하고 리뷰를 수정해주세요 (내 신청 페이지)' }
+                            case 'review_resubmitted':
+                              return { current: '리뷰 재제출 완료', next: '관리자 재검수를 기다려주세요' }
+                            case 'review_completed':
+                              return { current: '리뷰 승인 완료 ✅', next: '포인트 지급을 신청해주세요 (내 신청 페이지)' }
+                            case 'point_requested':
+                              return { current: '포인트 지급 요청됨', next: '관리자 승인을 기다려주세요' }
+                            case 'point_completed':
+                              return { current: '체험 완료 🎉', next: '모든 프로세스가 완료되었습니다. 감사합니다!' }
+                            default:
+                              return { current: '진행중', next: '다음 단계를 진행해주세요' }
+                          }
+                        }
+
+                        const processInfo = getProcessInfo(status)
+
+                        return (
+                          <>
+                            <button
+                              disabled={config.disabled}
+                              className={`flex-1 px-8 py-4 ${config.color} text-white rounded-lg font-medium text-lg ${config.disabled ? 'cursor-not-allowed opacity-90' : 'hover:opacity-90 transition-opacity'}`}
+                            >
+                              {config.text}
+                            </button>
+                            {/* 프로세스 안내 */}
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4 mt-4">
+                              <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0">
+                                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                                    📍 현재 단계: {processInfo.current}
+                                  </h4>
+                                  <p className="text-sm text-blue-800">
+                                    ➡️ 다음 단계: {processInfo.next}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )
+                      }
+
+                      // 신청 전
+                      return isApplicationClosed ? (
+                        <button
+                          disabled
+                          className="flex-1 px-8 py-4 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium text-lg opacity-60"
+                        >
+                          마감된 캠페인
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleApplyClick}
+                          className="flex-1 px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
+                        >
+                          리뷰 신청하기
+                        </button>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>

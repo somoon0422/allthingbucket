@@ -9,6 +9,7 @@ interface PhoneInputProps {
   disabled?: boolean
   placeholder?: string
   required?: boolean
+  showLabel?: boolean
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -17,7 +18,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   error,
   disabled = false,
   placeholder = "010-1234-5678",
-  required = false
+  required = false,
+  showLabel = true
 }) => {
   const [displayValue, setDisplayValue] = useState('')
   const [isFocused, setIsFocused] = useState(false)
@@ -111,7 +113,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   const showValidation = displayValue.length > 0 && !isFocused
 
   const getInputClassName = () => {
-    let baseClass = "w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+    let baseClass = "w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
     
     if (disabled) {
       baseClass += " bg-gray-100 cursor-not-allowed"
@@ -137,11 +139,13 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   return (
     <div>
-      <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-        <Phone className="w-4 h-4 mr-2" />
-        연락처 {required && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      
+      {showLabel && (
+        <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+          <Phone className="w-4 h-4 mr-2" />
+          연락처 {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
+
       <div className="relative">
         {/* 전화 아이콘 */}
         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />

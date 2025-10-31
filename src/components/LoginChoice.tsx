@@ -83,7 +83,7 @@ const LoginChoice: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-orange-300 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-navy-400 via-pink-400 to-orange-300 flex items-center justify-center p-4">
       <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 w-full max-w-sm">
         {/* 🏠 네비게이션 버튼들 */}
         <div className="flex justify-between items-center mb-6">
@@ -110,7 +110,7 @@ const LoginChoice: React.FC = () => {
           <div className="flex justify-center mb-4">
             <img src="/logo.png" alt="올띵버킷 로고" className="w-20 h-20" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-navy-600 to-pink-600 bg-clip-text text-transparent mb-2">
             올띵버킷
           </h1>
           <p className="text-gray-600 mb-6">체험단 플랫폼</p>
@@ -159,8 +159,8 @@ const LoginChoice: React.FC = () => {
 
         {/* 🎯 디버깅 정보 */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="text-sm font-semibold text-blue-800 mb-2">🔧 시스템 상태</h3>
-          <ul className="text-xs text-blue-700 space-y-1">
+          <h3 className="text-sm font-semibold text-primary-800 mb-2">🔧 시스템 상태</h3>
+          <ul className="text-xs text-primary-700 space-y-1">
             <li>• 훅 상태: {authHook ? '정상' : '오류'}</li>
             <li>• 로그인 함수: {typeof authHook?.login === 'function' ? '사용가능' : '불가'}</li>
             <li>• 로딩 상태: {loading ? '진행중' : '대기중'}</li>

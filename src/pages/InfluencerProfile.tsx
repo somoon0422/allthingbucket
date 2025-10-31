@@ -154,7 +154,7 @@ const InfluencerProfile: React.FC = () => {
     switch (status) {
       case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />
       case 'approved': return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'completed': return <Award className="w-4 h-4 text-blue-500" />
+      case 'completed': return <Award className="w-4 h-4 text-primary-500" />
       case 'cancelled': return <XCircle className="w-4 h-4 text-red-500" />
       case 'rejected': return <AlertCircle className="w-4 h-4 text-red-500" />
       default: return <Clock className="w-4 h-4 text-gray-500" />
@@ -176,7 +176,7 @@ const InfluencerProfile: React.FC = () => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
       case 'approved': return 'bg-green-100 text-green-800'
-      case 'completed': return 'bg-blue-100 text-blue-800'
+      case 'completed': return 'bg-blue-100 text-primary-800'
       case 'cancelled': return 'bg-red-100 text-red-800'
       case 'rejected': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
@@ -187,7 +187,7 @@ const InfluencerProfile: React.FC = () => {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-600 mx-auto mb-4"></div>
           <p className="text-gray-600">체험단 히스토리를 불러오는 중...</p>
         </div>
       </div>
@@ -206,8 +206,8 @@ const InfluencerProfile: React.FC = () => {
       {/* 🔹 통계 카드 */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-lg shadow-sm border p-4 text-center">
-          <TrendingUp className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-purple-600">{stats.total}</p>
+          <TrendingUp className="w-6 h-6 text-navy-600 mx-auto mb-2" />
+          <p className="text-2xl font-bold text-navy-600">{stats.total}</p>
           <p className="text-sm text-gray-600">총 신청</p>
         </div>
 
@@ -224,8 +224,8 @@ const InfluencerProfile: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border p-4 text-center">
-          <Award className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-blue-600">{stats.completed}</p>
+          <Award className="w-6 h-6 text-primary-600 mx-auto mb-2" />
+          <p className="text-2xl font-bold text-primary-600">{stats.completed}</p>
           <p className="text-sm text-gray-600">완료</p>
         </div>
 
@@ -244,7 +244,7 @@ const InfluencerProfile: React.FC = () => {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-navy-500 focus:border-transparent"
             >
               <option value="all">모든 상태</option>
               <option value="pending">대기중</option>
@@ -262,13 +262,13 @@ const InfluencerProfile: React.FC = () => {
                 placeholder="체험단 또는 브랜드 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-navy-500 focus:border-transparent"
               />
             </div>
 
             <button
               onClick={loadApplicationHistory}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               <span>새로고침</span>
@@ -350,7 +350,7 @@ const InfluencerProfile: React.FC = () => {
 
                   {app.status === 'approved' && !app.review_submitted && (
                     <button
-                      className="flex items-center space-x-1 px-3 py-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="flex items-center space-x-1 px-3 py-1 text-primary-600 hover:text-primary-700 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       <Eye className="w-4 h-4" />
                       <span className="text-sm">상세보기</span>

@@ -2,28 +2,33 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield, Heart} from 'lucide-react'
+import {Menu, X, Home, Gift, FileText, Coins, User, LogOut, Shield, Heart, MessageSquare, Users} from 'lucide-react'
 import LoginModal from './LoginModal'
+import ProfileCompletionModal from './ProfileCompletionModal'
+import { dataService } from '../lib/dataService'
+import { alimtalkService } from '../services/alimtalkService'
+import toast from 'react-hot-toast'
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout, isAuthenticated, isAdminUser } = useAuth()
+  const { user, logout, isAuthenticated, isAdminUser, updateUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [existingPhone, setExistingPhone] = useState('')
+  const [hasPhone, setHasPhone] = useState(false)
 
   const navigationItems = [
     { name: '홈', href: '/', icon: Home },
     { name: '체험단', href: '/experiences', icon: Gift },
+    { name: '커뮤니티', href: '/community', icon: Users },
     ...(isAuthenticated ? [
-      { name: '찜목록', href: '/wishlist', icon: Heart },
-      { name: '내신청', href: '/my-applications', icon: FileText },
-      { name: '포인트', href: '/points', icon: Coins },
-      { name: '프로필', href: '/profile', icon: User },
+      { name: '마이페이지', href: '/mypage', icon: User },
     ] : [])
   ]
 
@@ -31,6 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     logout()
     navigate('/')
     setIsMobileMenuOpen(false)
+    // 로그아웃 시에는 체크 상태 유지 (다른 사용자가 로그인할 수 있으므로)
   }
 
   const handleAdminAccess = () => {
@@ -60,13 +66,270 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     window.addEventListener('openLoginModal', handleOpenLoginModal)
     window.addEventListener('openAdminLoginModal', handleOpenAdminLoginModal)
     window.addEventListener('closeLoginModal', handleCloseLoginModal)
-    
+
     return () => {
       window.removeEventListener('openLoginModal', handleOpenLoginModal)
       window.removeEventListener('openAdminLoginModal', handleOpenAdminLoginModal)
       window.removeEventListener('closeLoginModal', handleCloseLoginModal)
     }
   }, [])
+
+  // 소셜 로그인 후 프로필 완성 체크
+  useEffect(() => {
+    const checkProfileCompletion = async () => {
+      const isAdmin = isAdminUser()
+
+      console.log('🔍 [프로필체크] 시작', {
+        isAuthenticated,
+        hasUser: !!user,
+        userId: user?.id,
+        isAdmin
+      })
+
+      // 로그인하지 않았거나, 관리자이면 스킵
+      if (!isAuthenticated || !user || isAdmin) {
+        console.log('⏭️ [프로필체크] 스킵 (미인증 또는 어드민) - 모달 닫기')
+        setIsProfileModalOpen(false)
+        return
+      }
+
+      try {
+        // 1️⃣ user_profiles 체크
+        const userProfiles = await (dataService.entities as any).user_profiles.list()
+        const userProfile = Array.isArray(userProfiles)
+          ? userProfiles.find((p: any) => p && p.user_id === user.id)
+          : null
+
+        console.log('📋 [프로필체크] user_profiles:', {
+          found: !!userProfile,
+          phone: userProfile?.phone
+        })
+
+        // 2️⃣ influencer_profiles 체크
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+        const influencerProfile = Array.isArray(influencerProfiles)
+          ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
+          : null
+
+        console.log('📋 [프로필체크] influencer_profiles:', {
+          found: !!influencerProfile,
+          phone: influencerProfile?.phone
+        })
+
+        // 3️⃣ 전화번호 체크
+        const userProfilePhone = userProfile?.phone
+        const influencerProfilePhone = influencerProfile?.phone
+
+        const hasPhoneInUserProfile = !!(
+          userProfilePhone &&
+          typeof userProfilePhone === 'string' &&
+          userProfilePhone.trim().length >= 10
+        )
+
+        const hasPhoneInInfluencerProfile = !!(
+          influencerProfilePhone &&
+          typeof influencerProfilePhone === 'string' &&
+          influencerProfilePhone.trim().length >= 10
+        )
+
+        const phoneExists = hasPhoneInUserProfile || hasPhoneInInfluencerProfile
+        const phoneNumber = hasPhoneInUserProfile ? userProfilePhone : (hasPhoneInInfluencerProfile ? influencerProfilePhone : '')
+
+        // 4️⃣ 닉네임 체크
+        const userProfileNickname = userProfile?.nickname
+        const influencerProfileNickname = influencerProfile?.nickname
+
+        const hasNicknameInUserProfile = !!(
+          userProfileNickname &&
+          typeof userProfileNickname === 'string' &&
+          userProfileNickname.trim().length >= 2
+        )
+
+        const hasNicknameInInfluencerProfile = !!(
+          influencerProfileNickname &&
+          typeof influencerProfileNickname === 'string' &&
+          influencerProfileNickname.trim().length >= 2
+        )
+
+        const nicknameExists = hasNicknameInUserProfile || hasNicknameInInfluencerProfile
+
+        console.log('📞 [프로필체크] 최종 판단:', {
+          hasPhoneInUserProfile,
+          hasPhoneInInfluencerProfile,
+          phoneExists,
+          phoneNumber: phoneExists ? phoneNumber : 'none',
+          hasNicknameInUserProfile,
+          hasNicknameInInfluencerProfile,
+          nicknameExists,
+          willShowModal: !phoneExists || !nicknameExists
+        })
+
+        // 전화번호나 닉네임이 없으면 모달 표시
+        if (!phoneExists || !nicknameExists) {
+          console.log('❌ [프로필체크] 프로필 미완성 → 모달 표시')
+          setExistingPhone(phoneNumber)
+          setHasPhone(phoneExists)
+          setIsProfileModalOpen(true)
+        } else {
+          console.log('✅ [프로필체크] 프로필 완성 → 모달 표시 안 함')
+          setIsProfileModalOpen(false)
+        }
+      } catch (error) {
+        console.error('❌ [프로필체크] 오류 발생:', error)
+      }
+    }
+
+    // 로그인 후 1초 뒤에 체크 (로그인 처리가 완료된 후)
+    const timer = setTimeout(() => {
+      checkProfileCompletion()
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [isAuthenticated, user])
+
+  // 프로필 완성 완료 핸들러
+  const handleProfileComplete = async (data: { name: string, phone: string, nickname: string, profileImage?: string }) => {
+    try {
+      if (!user) return
+
+      console.log('🔄 프로필 업데이트 시작:', {
+        userId: user.id,
+        phone: data.phone,
+        nickname: data.nickname,
+        hasProfileImage: !!data.profileImage
+      })
+
+      // influencer_profiles 테이블 업데이트/생성
+      try {
+        const influencerProfiles = await (dataService.entities as any).influencer_profiles.list()
+        const influencerProfile = Array.isArray(influencerProfiles)
+          ? influencerProfiles.find((p: any) => p && p.user_id === user.id)
+          : null
+
+        const profileData: any = {
+          phone: data.phone,
+          nickname: data.nickname,
+          updated_at: new Date().toISOString()
+        }
+
+        if (data.profileImage) {
+          profileData.profile_image_url = data.profileImage
+        }
+
+        if (influencerProfile) {
+          // 기존 프로필 업데이트
+          await (dataService.entities as any).influencer_profiles.update(influencerProfile.id, profileData)
+          console.log('✅ influencer_profiles 업데이트 완료')
+        } else {
+          // 새 프로필 생성 - nickname 중복 체크
+          let uniqueNickname = data.nickname
+          const existingNicknames = influencerProfiles
+            .filter((p: any) => p && p.nickname)
+            .map((p: any) => p.nickname)
+
+          // nickname이 중복되면 고유한 닉네임 생성
+          if (existingNicknames.includes(uniqueNickname)) {
+            let counter = 1
+            while (existingNicknames.includes(`${uniqueNickname}_${counter}`)) {
+              counter++
+            }
+            uniqueNickname = `${uniqueNickname}_${counter}`
+            console.log(`⚠️ 닉네임 중복 발견, 고유 닉네임 생성: ${uniqueNickname}`)
+          }
+
+          await (dataService.entities as any).influencer_profiles.create({
+            user_id: user.id,
+            ...profileData,
+            nickname: uniqueNickname,
+            created_at: new Date().toISOString()
+          })
+          console.log('✅ influencer_profiles 생성 완료:', uniqueNickname)
+        }
+      } catch (error) {
+        console.error('❌ influencer_profiles 업데이트 실패:', error)
+        throw error // 이 부분은 실패하면 안되므로 에러 throw
+      }
+
+      // user_profiles 테이블 업데이트 (user_id로 검색)
+      try {
+        const profiles = await (dataService.entities as any).user_profiles.list()
+        const profile = Array.isArray(profiles)
+          ? profiles.find((p: any) => p && p.user_id === user.id)
+          : null
+
+        const profileData: any = {
+          phone: data.phone,
+          nickname: data.nickname,
+          updated_at: new Date().toISOString()
+        }
+
+        if (data.profileImage) {
+          profileData.profile_image_url = data.profileImage
+        }
+
+        if (profile) {
+          await (dataService.entities as any).user_profiles.update(profile.id, profileData)
+          console.log('✅ user_profiles 업데이트 완료')
+        }
+      } catch (error) {
+        console.warn('⚠️ user_profiles 업데이트 실패 (무시):', error)
+      }
+
+      // users 테이블도 업데이트
+      try {
+        const usersResponse = await (dataService.entities as any).users.list()
+        const users = Array.isArray(usersResponse) ? usersResponse : []
+        const dbUser = users.find((u: any) => u.user_id === user.id)
+
+        if (dbUser) {
+          await (dataService.entities as any).users.update(dbUser.id, {
+            phone: data.phone,
+            updated_at: new Date().toISOString()
+          })
+          console.log('✅ users 업데이트 완료')
+        }
+      } catch (error) {
+        console.warn('⚠️ users 테이블 업데이트 실패 (무시):', error)
+      }
+
+      // 사용자 상태 업데이트
+      updateUser({
+        phone: data.phone,
+        profile: {
+          ...(user.profile || {}),
+          phone: data.phone
+        }
+      })
+
+      // 환영 알림톡 발송
+      try {
+        const result = await alimtalkService.sendWelcomeAlimtalk(data.phone, user.name)
+        if (result.success) {
+          toast.success('환영 알림톡이 발송되었습니다! 📱')
+        }
+      } catch (error) {
+        console.warn('환영 알림톡 발송 실패 (무시):', error)
+      }
+
+      toast.success('프로필이 완성되었습니다! 🎉')
+      setIsProfileModalOpen(false)
+      console.log('✅ 프로필 완성 완료')
+    } catch (error) {
+      console.error('❌ 프로필 업데이트 실패:', error)
+      toast.error('프로필 업데이트에 실패했습니다')
+    }
+  }
+
+  // 프로필 미완성 사용자 자동 리디렉션
+  useEffect(() => {
+    if (isAuthenticated && user && !isAdminUser()) {
+      // 필수 정보(실명)가 없는 경우, 마이페이지가 아니면 리디렉션
+      if (!user.name && location.pathname !== '/mypage' && location.pathname !== '/profile') {
+        console.log('🔄 프로필 미완성 감지 - /mypage로 리디렉션')
+        navigate('/mypage')
+      }
+    }
+  }, [isAuthenticated, user, location.pathname, navigate, isAdminUser])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,7 +340,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* 로고 */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
-                <img src="/logo.png" alt="올띵버킷 로고" className="w-6 h-6 sm:w-8 sm:h-8" />
+                <img
+                  src="/logo.png"
+                  alt="올띵버킷 로고"
+                  className="w-6 h-6 sm:w-8 sm:h-8 object-cover"
+                  style={{ clipPath: 'ellipse(50% 50% at 50% 50%)', objectFit: 'cover' }}
+                />
                 <span className="text-lg sm:text-xl font-bold text-gray-900">올띵버킷</span>
                 <span className="hidden sm:inline text-sm text-gray-500">체험단</span>
               </Link>
@@ -93,8 +361,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     to={item.href}
                     className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActive
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                        ? 'text-primary-600 bg-primary-50'
+                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                     }`}
                   >
                     <item.icon className="w-4 h-4" />
@@ -105,7 +373,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
 
             {/* 사용자 메뉴 */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-3">
               {isAuthenticated ? (
                 <>
                   <div className="flex items-center space-x-2 text-sm text-gray-700">
@@ -118,7 +386,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </span>
                     )}
                   </div>
-                  
+
                   {isAdminUser() && (
                     <button
                       onClick={handleAdminAccess}
@@ -128,7 +396,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       <span>관리자 페이지</span>
                     </button>
                   )}
-                  
+
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-1 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
@@ -143,11 +411,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     // 모달 열기 이벤트 발생
                     window.dispatchEvent(new CustomEvent('openLoginModal'))
                   }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors shadow-sm"
                 >
                   로그인
                 </button>
               )}
+
+              {/* 광고문의 버튼 (작고 오른쪽 배치) */}
+              <Link
+                to="/consultation"
+                className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-md transition-all"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>광고문의</span>
+              </Link>
             </div>
 
             {/* 모바일 메뉴 버튼 */}
@@ -179,8 +456,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
                       isActive
-                        ? 'text-blue-600 bg-blue-50 border-l-4 border-blue-600'
-                        : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                        ? 'text-primary-600 bg-primary-50 border-l-4 border-primary-600'
+                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                     }`}
                   >
                     <item.icon className="w-5 h-5" />
@@ -188,7 +465,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                 )
               })}
-              
+
+              {/* 광고문의 버튼 (모바일) */}
+              <Link
+                to="/consultation"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm"
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span>광고문의</span>
+              </Link>
+
               {isAuthenticated ? (
                 <>
                   <div className="border-t pt-4 mt-4">
@@ -235,7 +522,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       window.dispatchEvent(new CustomEvent('openLoginModal'))
                       setIsMobileMenuOpen(false)
                     }}
-                    className="w-full px-4 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    className="w-full px-4 py-3 text-base font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm"
                   >
                     로그인
                   </button>
@@ -257,7 +544,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="sm:col-span-2 lg:col-span-1">
               <div className="flex items-center space-x-2 mb-3 sm:mb-4">
-                <img src="/logo.png" alt="올띵버킷 로고" className="w-6 h-6 sm:w-8 sm:h-8" />
+                <img
+                  src="/logo.png"
+                  alt="올띵버킷 로고"
+                  className="w-6 h-6 sm:w-8 sm:h-8 object-cover"
+                  style={{ clipPath: 'ellipse(50% 50% at 50% 50%)', objectFit: 'cover' }}
+                />
                 <span className="text-base sm:text-lg font-bold text-gray-900">올띵버킷 체험단</span>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed">
@@ -268,10 +560,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 sm:mb-4">서비스</h3>
               <ul className="space-y-2">
-                <li><Link to="/experiences" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">체험단 목록</Link></li>
-                <li><Link to="/wishlist" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">찜 목록</Link></li>
-                <li><Link to="/my-applications" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">내 신청내역</Link></li>
-                <li><Link to="/points" className="text-sm text-gray-600 hover:text-blue-600 transition-colors">포인트 관리</Link></li>
+                <li><Link to="/experiences" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">체험단 목록</Link></li>
+                <li><Link to="/wishlist" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">찜 목록</Link></li>
+                <li><Link to="/my-applications" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">내 신청내역</Link></li>
+                <li><Link to="/points" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">포인트 관리</Link></li>
               </ul>
             </div>
             
@@ -284,18 +576,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
           
-          <div className="border-t mt-6 sm:mt-8 pt-6 sm:pt-8 text-center">
-            <p className="text-xs sm:text-sm text-gray-500">
-              © 2024 올띵버킷 체험단. All rights reserved.
+          <div className="border-t mt-6 sm:mt-8 pt-6 sm:pt-8">
+            <div className="text-center mb-4">
+              <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                <p className="font-semibold">올띵버킷</p>
+                <p>사업자번호: 250-14-02600 | 대표자: 김소희</p>
+                <p>주소: 서울특별시 마포구 염리동 488-3 401호</p>
+              </div>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-500 text-center">
+              © 2025 올띵버킷 체험단. All rights reserved.
             </p>
           </div>
         </div>
       </footer>
 
       {/* 로그인 모달 */}
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)} 
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
+
+      {/* 프로필 완성 모달 */}
+      <ProfileCompletionModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        onComplete={handleProfileComplete}
+        requiresPhoneOnly={true}
+        hasPhone={hasPhone}
+        existingPhone={existingPhone}
       />
     </div>
   )

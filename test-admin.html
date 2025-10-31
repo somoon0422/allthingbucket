@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Session Test</title>
+</head>
+<body>
+    <h1>Admin Session Test</h1>
+    <button onclick="setAdminSession()">Set Admin Session</button>
+    <button onclick="checkSession()">Check Session</button>
+    <button onclick="clearSession()">Clear Session</button>
+    <pre id="output"></pre>
+    
+    <script>
+        function setAdminSession() {
+            const adminData = {
+                id: 'admin1',
+                user_id: 'admin1',
+                name: 'Admin',
+                email: 'admin@allthingbucket.com',
+                role: 'admin',
+                admin_name: 'admin',
+                admin_role: 'super_admin'
+            };
+            localStorage.setItem('admin_session', JSON.stringify(adminData));
+            document.getElementById('output').textContent = 'Admin session set!\n' + JSON.stringify(adminData, null, 2);
+            alert('Admin session set! Now reload the page and go to /admin');
+        }
+        
+        function checkSession() {
+            const session = localStorage.getItem('admin_session');
+            const token = localStorage.getItem('admin_token');
+            document.getElementById('output').textContent = 
+                'admin_session: ' + session + '\n\n' +
+                'admin_token: ' + token;
+        }
+        
+        function clearSession() {
+            localStorage.clear();
+            document.getElementById('output').textContent = 'All sessions cleared!';
+        }
+    </script>
+</body>
+</html>

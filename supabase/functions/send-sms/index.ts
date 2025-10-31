@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, message, from = '+821012345678' } = await req.json()
+    const { to, message } = await req.json()
 
     if (!to || !message) {
       return new Response(

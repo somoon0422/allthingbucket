@@ -32,7 +32,7 @@ class NaverEmailService {
         throw new Error('네이버 클라우드 플랫폼 SENS API 설정이 완료되지 않았습니다');
       }
 
-      const { to, subject, content, fromEmail = 'noreply@allthingbucket.com' } = options;
+      const { to, subject, content, fromEmail = 'support@allthingbucket.com' } = options;
 
       if (!to || !subject || !content) {
         throw new Error('필수 필드가 누락되었습니다: to, subject, content');
@@ -98,7 +98,7 @@ class NaverEmailService {
   // HTML 이메일 발송 (템플릿 사용)
   async sendHtmlEmail(options) {
     try {
-      const { to, subject, htmlContent, fromEmail = 'noreply@allthingbucket.com' } = options;
+      const { to, subject, htmlContent, fromEmail = 'support@allthingbucket.com' } = options;
 
       // HTML 템플릿 생성
       const emailTemplate = `

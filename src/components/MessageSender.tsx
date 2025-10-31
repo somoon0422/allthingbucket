@@ -227,7 +227,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
               </h4>
               <button
                 onClick={() => setEditingRecipient(!editingRecipient)}
-                className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                className="text-primary-600 hover:text-primary-800 text-sm flex items-center"
               >
                 <Edit className="w-4 h-4 mr-1" />
                 {editingRecipient ? '완료' : '수정'}
@@ -305,7 +305,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
                 onClick={() => setSendMethod('email')}
                 className={`p-3 rounded-lg border-2 transition-colors ${
                   sendMethod === 'email'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    ? 'border-primary-500 bg-blue-50 text-primary-700'
                     : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -341,7 +341,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
                 onClick={() => setSendMethod('both')}
                 className={`p-3 rounded-lg border-2 transition-colors ${
                   sendMethod === 'both'
-                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    ? 'border-navy-500 bg-purple-50 text-navy-700'
                     : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -383,7 +383,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
                   onClick={() => handleTemplateSelect('reminder')}
                   className={`p-2 rounded-lg border text-sm transition-colors ${
                     selectedTemplate === 'reminder'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      ? 'border-primary-500 bg-blue-50 text-primary-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -393,7 +393,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
                   onClick={() => handleTemplateSelect('custom')}
                   className={`p-2 rounded-lg border text-sm transition-colors ${
                     selectedTemplate === 'custom'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      ? 'border-navy-500 bg-purple-50 text-navy-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -467,7 +467,7 @@ const MessageSender: React.FC<MessageSenderProps> = ({
             onClick={handleSend}
             disabled={sending || !message.trim() || !editableRecipient.name.trim() || 
               ((sendMethod === 'email' || sendMethod === 'both') && !emailSubject.trim())}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
+            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
           >
             {sending ? (
               <>

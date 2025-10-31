@@ -25,8 +25,9 @@ export const usePointsManagement = () => {
         ...request,
         _id: request?._id || `temp_${Math.random()}`,
         user_id: request?.user_id || '',
-        amount: request?.requested_amount || request?.amount || 0,
-        requested_amount: request?.requested_amount || request?.amount || 0,
+        amount: request?.points_amount || request?.withdrawal_amount || 0,
+        points_amount: request?.points_amount || request?.withdrawal_amount || 0,
+        withdrawal_amount: request?.withdrawal_amount || request?.points_amount || 0,
         tax_amount: request?.tax_amount || 0,
         net_amount: request?.net_amount || 0,
         bank_name: request?.bank_name || '은행 없음',
@@ -150,8 +151,8 @@ export const usePointsManagement = () => {
       // 출금 요청 생성
       await (dataService.entities as any).withdrawal_requests.create({
         user_id: userId,
-        requested_amount: amount,
-        amount: amount, // 호환성을 위해 둘 다 설정
+        points_amount: amount,
+        withdrawal_amount: amount,
         tax_amount: taxInfo.taxAmount,
         net_amount: taxInfo.netAmount,
         bank_name: bankInfo.bankName,
@@ -227,9 +228,9 @@ export const usePointsManagement = () => {
         const pointsResult = await (dataService.entities as any).user_points.list()
         const pointRecords = pointsResult?.list || []
         const safePointRecords = Array.isArray(pointRecords) ? pointRecords : []
-        const pendingRecord = safePointRecords.find(p => 
-          p?.user_id === withdrawal.user_id && 
-          p?.amount === -(withdrawal.requested_amount || withdrawal.amount) && 
+        const pendingRecord = safePointRecords.find(p =>
+          p?.user_id === withdrawal.user_id &&
+          p?.amount === -(withdrawal.points_amount || withdrawal.withdrawal_amount) &&
           p?.status === 'pending'
         )
         
@@ -248,7 +249,7 @@ export const usePointsManagement = () => {
         
         if (userProfile) {
           await (dataService.entities as any).user_profiles.update(userProfile._id, {
-            total_points_withdrawn: (userProfile.total_points_withdrawn || 0) + (withdrawal.requested_amount || withdrawal.amount),
+            total_points_withdrawn: (userProfile.total_points_withdrawn || 0) + (withdrawal.points_amount || withdrawal.withdrawal_amount),
             updated_at: new Date().toISOString()
           })
         }
@@ -272,7 +273,7 @@ export const usePointsManagement = () => {
         
         if (userProfile) {
           await (dataService.entities as any).user_profiles.update(userProfile._id, {
-            current_balance: (userProfile.current_balance || 0) + (withdrawal.requested_amount || withdrawal.amount),
+            current_balance: (userProfile.current_balance || 0) + (withdrawal.points_amount || withdrawal.withdrawal_amount),
             updated_at: new Date().toISOString()
           })
         }
@@ -281,9 +282,9 @@ export const usePointsManagement = () => {
         const pointsResult = await (dataService.entities as any).user_points.list()
         const pointRecords = pointsResult?.list || []
         const safePointRecords = Array.isArray(pointRecords) ? pointRecords : []
-        const pendingRecord = safePointRecords.find(p => 
-          p?.user_id === withdrawal.user_id && 
-          p?.amount === -(withdrawal.requested_amount || withdrawal.amount) && 
+        const pendingRecord = safePointRecords.find(p =>
+          p?.user_id === withdrawal.user_id &&
+          p?.amount === -(withdrawal.points_amount || withdrawal.withdrawal_amount) &&
           p?.status === 'pending'
         )
         

@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const naverEmailService = require('../services/naverEmailService');
 
-// 이메일 전송 API (네이버 SENS 사용)
+// 이메일 전송 API (Gmail SMTP 폴백 포함)
 router.post('/send-email', async (req, res) => {
   try {
     const { to, subject, message, userInfo } = req.body;
-    
+
     if (!to || !subject || !message) {
       return res.status(400).json({
         success: false,
@@ -14,37 +14,49 @@ router.post('/send-email', async (req, res) => {
       });
     }
 
-    console.log('📧 네이버 SENS 이메일 발송 요청:', { to, subject, messageLength: message.length });
+    console.log('📧 이메일 발송 요청:', { to, subject, messageLength: message.length });
 
-    // HTML 이메일 발송
-    const result = await naverEmailService.sendHtmlEmail({
-      to: to,
-      subject: subject,
-      htmlContent: message,
-      fromEmail: 'noreply@allthingbucket.com'
-    });
-
-    if (!result.success) {
-      console.error('❌ 네이버 SENS 이메일 발송 실패:', result.error);
-      return res.status(500).json({
-        success: false,
-        error: result.error
+    // 먼저 네이버 SENS 이메일 시도
+    try {
+      const naverResult = await naverEmailService.sendHtmlEmail({
+        to: to,
+        subject: subject,
+        htmlContent: message,
+        fromEmail: 'support@allthingbucket.com'
       });
+
+      if (naverResult.success) {
+        console.log('✅ 네이버 SENS 이메일 발송 성공:', naverResult.messageId);
+        return res.json({
+          success: true,
+          messageId: naverResult.messageId,
+          message: naverResult.message
+        });
+      }
+    } catch (naverError) {
+      console.warn('⚠️ 네이버 SENS 실패, Gmail로 폴백:', naverError.message);
     }
-    
-    console.log('✅ 네이버 SENS 이메일 발송 성공:', result.messageId);
-    
-    res.json({
-      success: true,
-      messageId: result.messageId,
-      message: result.message
-    });
+
+    // 네이버 SENS 실패 시 Gmail SMTP로 폴백
+    const emailService = require('../services/emailService');
+    const gmailResult = await emailService.sendEmail(to, subject, message);
+
+    if (gmailResult.success) {
+      console.log('✅ Gmail 이메일 발송 성공:', gmailResult.messageId);
+      return res.json({
+        success: true,
+        messageId: gmailResult.messageId,
+        message: '이메일이 성공적으로 발송되었습니다'
+      });
+    } else {
+      throw new Error(gmailResult.error);
+    }
 
   } catch (error) {
     console.error('❌ 이메일 발송 실패:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message || '이메일 발송 중 오류가 발생했습니다'
     });
   }
 });

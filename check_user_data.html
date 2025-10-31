@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Data Checker</title>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+    const SUPABASE_URL = 'https://nwwwesxzlpotabtcvkgj.supabase.co'
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53d3dlc3h6bHBvdGFidGN2a2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwNjI1MjAsImV4cCI6MjA0OTYzODUyMH0.BqSKaE9qW8EBx6LY-VXN3HXZ9OghyJeRB2fhz3CmIJE'
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    async function checkUserData() {
+      const userId = '6221c4d8-18ad-4a13-a474-31d94ed90f97'
+
+      console.log('=== Checking User Data ===')
+      console.log('User ID:', userId)
+
+      // Check users table
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', userId)
+
+      console.log('\n--- Users Table ---')
+      console.log('Data:', users)
+      console.log('Error:', usersError)
+
+      // Check user_profiles table
+      const { data: profiles, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+
+      console.log('\n--- User Profiles Table ---')
+      console.log('Data:', profiles)
+      console.log('Error:', profilesError)
+
+      // Check all user_profiles
+      const { data: allProfiles, error: allProfilesError } = await supabase
+        .from('user_profiles')
+        .select('user_id, name, real_name')
+
+      console.log('\n--- All User Profiles (name check) ---')
+      console.log('Data:', allProfiles)
+      console.log('Error:', allProfilesError)
+
+      // Display results on page
+      document.getElementById('results').innerHTML = `
+        <h2>User ID: ${userId}</h2>
+
+        <h3>Users Table:</h3>
+        <pre>${JSON.stringify(users, null, 2)}</pre>
+
+        <h3>User Profiles Table:</h3>
+        <pre>${JSON.stringify(profiles, null, 2)}</pre>
+
+        <h3>All User Profiles:</h3>
+        <pre>${JSON.stringify(allProfiles, null, 2)}</pre>
+      `
+    }
+
+    window.addEventListener('DOMContentLoaded', checkUserData)
+  </script>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h2 { color: #333; }
+    h3 { color: #666; margin-top: 20px; }
+    pre {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>User Data Checker</h1>
+  <div id="results">Loading...</div>
+</body>
+</html>

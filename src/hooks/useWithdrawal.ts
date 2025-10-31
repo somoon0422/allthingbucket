@@ -111,9 +111,9 @@ export const useWithdrawal = () => {
       setLoading(true)
       console.log('💰 MCP 서버 출금 요청:', { userId, bankAccountId, pointsAmount, requestReason })
 
-      // 최소 출금 금액 확인 (5,000P)
-      if (pointsAmount < 5000) {
-        toast.error('최소 출금 금액은 5,000P입니다')
+      // 최소 출금 금액 확인 (1,000P)
+      if (pointsAmount < 1000) {
+        toast.error('최소 출금 금액은 1,000P입니다')
         return null
       }
 

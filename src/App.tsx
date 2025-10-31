@@ -13,13 +13,19 @@ import CampaignDetail from './pages/CampaignDetail'
 import MyApplications from './pages/MyApplications'
 import Wishlist from './pages/Wishlist'
 import Points from './pages/Points'
-import Profile from './pages/Profile'
+import MyPage from './pages/MyPage'
 import WithdrawalRequest from './pages/WithdrawalRequest'
+import IdentityVerification from './pages/IdentityVerification'
 import AuthCallback from './pages/AuthCallback'
 import GoogleOAuthCallback from './pages/GoogleOAuthCallback'
+import Consultation from './pages/Consultation'
+import Community from './pages/Community'
+import CommunityDetail from './pages/CommunityDetail'
 
 // 관리자 페이지
+import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminChat from './pages/AdminChat'
 
 function App() {
   return (
@@ -31,27 +37,29 @@ function App() {
         }}
       >
         <div className="min-h-screen bg-gray-50">
-          <Toaster 
+          <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
-              style: { 
-                background: '#363636', 
+              style: {
+                background: '#363636',
                 color: '#fff',
                 borderRadius: '12px'
               },
-              success: { 
-                style: { background: '#10b981' } 
+              success: {
+                style: { background: '#10b981' }
               },
-              error: { 
-                style: { background: '#ef4444' } 
+              error: {
+                style: { background: '#ef4444' }
               }
             }}
           />
-          
+
           <Routes>
             {/* 관리자 라우트 */}
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/chat" element={<AdminChat />} />
             
             {/* OAuth 콜백 */}
             <Route path="/auth/callback" element={<AuthCallback />} />
@@ -69,8 +77,13 @@ function App() {
                   <Route path="/my-applications" element={<MyApplications />} />
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/points" element={<Points />} />
-                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/mypage" element={<MyPage />} />
+                  <Route path="/profile" element={<Navigate to="/mypage" replace />} />
                   <Route path="/withdrawal" element={<WithdrawalRequest />} />
+                  <Route path="/identity-verification" element={<IdentityVerification />} />
+                  <Route path="/consultation" element={<Consultation />} />
+                  <Route path="/community" element={<Community />} />
+                  <Route path="/community/:id" element={<CommunityDetail />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

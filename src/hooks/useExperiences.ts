@@ -10,7 +10,8 @@ export const useExperiences = () => {
     try {
       setLoading(true)
       
-      const campaigns = await (dataService.entities as any).campaigns.list()
+      // 🔥 성능 최적화: 제한된 수량만 가져오기
+      const campaigns = await (dataService.entities as any).campaigns.list({ limit: 20 })
       return campaigns || []
     } catch (error) {
       console.error('체험단 목록 조회 실패:', error)
@@ -31,6 +32,25 @@ export const useExperiences = () => {
     } catch (error) {
       console.error('체험단 상세 조회 실패:', error)
       toast.error('체험단 정보를 불러오는데 실패했습니다')
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // 캠페인 코드로 체험단 조회
+  const getCampaignByCode = useCallback(async (code: string) => {
+    try {
+      setLoading(true)
+      
+      const campaigns = await (dataService.entities as any).campaigns.list()
+      const campaign = campaigns.find((c: any) => 
+        c.campaign_code === code || c.code === code
+      )
+      
+      return campaign || null
+    } catch (error) {
+      console.error('캠페인 코드 조회 실패:', error)
       return null
     } finally {
       setLoading(false)
@@ -76,60 +96,148 @@ export const useExperiences = () => {
         return { success: false, reason: 'duplicate', existingApplication: duplicateCheck.existingApplication }
       }
 
-      // 모집인원 체크
+      // 캠페인 상태 및 마감일 체크
       try {
         const experience = await (dataService.entities as any).campaigns.get(experienceId)
         
-        if (experience && experience.max_participants) {
-          const applications = await (dataService.entities as any).user_applications.list()
-          const approvedApplications = applications.filter((app: any) => 
-            app.campaign_id === experienceId && app.status === 'approved'
-          )
+        if (experience) {
+          // 1. 캠페인 상태 체크
+          const campaignStatus = experience.status || 'active'
+          if (campaignStatus === 'closed' || campaignStatus === 'inactive') {
+            toast.error('마감된 캠페인입니다')
+            return { success: false, reason: 'closed_status' }
+          }
           
-          if (approvedApplications.length >= experience.max_participants) {
-            toast.error('모집인원이 마감되었습니다')
-            return { success: false, reason: 'full' }
+          // 2. 신청 마감일 체크
+          const applicationEndDate = experience.application_end_date || 
+                                   experience.application_end ||
+                                   experience.end_date
+          if (applicationEndDate) {
+            const endDate = new Date(applicationEndDate)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            endDate.setHours(0, 0, 0, 0)
+            
+            if (today > endDate) {
+              toast.error('신청 마감일이 지났습니다')
+              return { success: false, reason: 'deadline_passed' }
+            }
+          }
+          
+          // 3. 모집인원 체크
+          if (experience.max_participants) {
+            const applications = await (dataService.entities as any).user_applications.list()
+            const approvedApplications = applications.filter((app: any) => 
+              app.campaign_id === experienceId && app.status === 'approved'
+            )
+            
+            if (approvedApplications.length >= experience.max_participants) {
+              toast.error('모집인원이 마감되었습니다')
+              return { success: false, reason: 'full' }
+            }
           }
         }
       } catch (error) {
-        console.warn('모집인원 체크 실패:', error)
+        console.warn('캠페인 상태 체크 실패:', error)
       }
 
-      // 신청 데이터 생성
-      const applicationData = {
-        user_id: userId,
-        experience_id: experienceId,
-        status: 'pending',
-        applied_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        
-        name: additionalData.name || '',
-        email: additionalData.email || '',
-        phone: additionalData.phone || '',
-        address: additionalData.address || '',
-        detailed_address: additionalData.detailed_address || '',
-        
-        instagram_handle: additionalData.instagram_handle || '',
-        blog_url: additionalData.blog_url || '',
-        youtube_channel: additionalData.youtube_channel || '',
-        
-        application_reason: additionalData.application_reason || '',
-        experience_plan: additionalData.experience_plan || '',
-        additional_info: additionalData.additional_info || '',
-        
-        submitted_by_role: additionalData.submitted_by_role || '',
-        submitted_by_admin_role: additionalData.submitted_by_admin_role || '',
-        debug_info: additionalData.debug_info || {}
+      // 먼저 기존 데이터 구조 확인
+      console.log('🔍 데이터베이스 테이블 구조 확인 중...')
+      
+      let actualColumns: string[] = []
+      try {
+        const existingApps = await (dataService.entities as any).user_applications.list()
+        if (existingApps && existingApps.length > 0) {
+          actualColumns = Object.keys(existingApps[0])
+          console.log('📋 실제 데이터베이스 컬럼들:', actualColumns)
+          console.log('📋 기존 데이터 샘플:', existingApps[0])
+        } else {
+          console.log('⚠️ 기존 데이터가 없어서 컬럼 구조를 확인할 수 없습니다')
+          throw new Error('기존 데이터가 없어서 테이블 구조를 확인할 수 없습니다')
+        }
+      } catch (error) {
+        console.log('❌ 기존 데이터 조회 실패:', error)
+        throw new Error('데이터베이스 테이블 구조를 확인할 수 없습니다')
       }
+
+      // 🔥 additionalData에서 전달된 모든 데이터를 포함하여 신청 데이터 생성
+      const applicationData: any = {}
+
+      // 🔥 1. additionalData의 모든 필드를 먼저 복사 (name, email, phone, address 등)
+      if (additionalData && typeof additionalData === 'object') {
+        // application_data 필드가 존재하면 그 안에 저장
+        if (actualColumns.includes('application_data')) {
+          applicationData.application_data = { ...additionalData }
+        } else {
+          // application_data 필드가 없으면 루트 레벨에 모든 필드 저장
+          Object.keys(additionalData).forEach(key => {
+            if (actualColumns.includes(key)) {
+              applicationData[key] = additionalData[key]
+            }
+          })
+        }
+      }
+
+      // 🔥 2. user_id 확인 및 추가 (덮어쓰기)
+      if (actualColumns.includes('user_id')) {
+        applicationData.user_id = userId
+      } else if (actualColumns.includes('userid')) {
+        applicationData.userid = userId
+      } else if (actualColumns.includes('user')) {
+        applicationData.user = userId
+      }
+
+      // 🔥 3. experience_id/campaign_id 확인 및 추가 (덮어쓰기)
+      if (actualColumns.includes('experience_id')) {
+        applicationData.experience_id = experienceId
+      } else if (actualColumns.includes('campaign_id')) {
+        applicationData.campaign_id = experienceId
+      } else if (actualColumns.includes('experienceid')) {
+        applicationData.experienceid = experienceId
+      }
+
+      // 🔥 4. 날짜 필드 추가 (존재하는 경우에만)
+      const currentDate = new Date().toISOString()
+      if (actualColumns.includes('applied_at')) {
+        applicationData.applied_at = currentDate
+      }
+      if (actualColumns.includes('created_at')) {
+        applicationData.created_at = currentDate
+      }
+      if (actualColumns.includes('applied_date')) {
+        applicationData.applied_date = currentDate
+      }
+      if (actualColumns.includes('application_date')) {
+        applicationData.application_date = currentDate
+      }
+
+      console.log('🔍 최종 신청 데이터 (additionalData 포함):', applicationData)
+      console.log('📦 원본 additionalData:', additionalData)
 
       // Supabase API로 신청 생성
       const result = await (dataService.entities as any).user_applications.create(applicationData)
-      
-      if (result.success) {
+
+      if (result && result.success) {
+        // 🔥 신청 성공 후 캠페인의 current_participants 카운트 업데이트
+        try {
+          const experience = await (dataService.entities as any).campaigns.get(experienceId)
+          if (experience) {
+            const currentCount = experience.current_participants || 0
+            await (dataService.entities as any).campaigns.update(experienceId, {
+              current_participants: currentCount + 1
+            })
+            console.log('✅ 캠페인 신청자 수 업데이트 완료:', currentCount + 1)
+          }
+        } catch (updateError) {
+          console.error('⚠️ 신청자 수 업데이트 실패 (신청은 완료됨):', updateError)
+        }
+
         toast.success('체험단 신청이 완료되었습니다!')
         return { success: true, application: result.data }
       } else {
-        throw new Error(result.message || '신청 생성에 실패했습니다')
+        const errorMessage = result?.error || '신청 생성에 실패했습니다'
+        console.error('❌ 신청 실패:', result)
+        throw new Error(errorMessage)
       }
     } catch (error) {
       console.error('체험단 신청 실패:', error)
@@ -178,7 +286,7 @@ export const useExperiences = () => {
   }, [])
 
   // 사용자 신청 내역 조회
-  const getUserApplications = useCallback(async (userId?: string, user?: any, forceRefresh?: boolean) => {
+  const getUserApplications = useCallback(async (userId?: string) => {
     try {
       setLoading(true)
 
@@ -289,15 +397,39 @@ export const useExperiences = () => {
     return colorMap[status] || 'bg-gray-100 text-gray-800'
   }, [])
 
+  // 🔥 캠페인의 실제 신청자 수를 계산하여 업데이트
+  const syncCampaignParticipants = useCallback(async (campaignId: string) => {
+    try {
+      const applications = await (dataService.entities as any).user_applications.list()
+      const campaignApplications = applications.filter((app: any) =>
+        app.campaign_id === campaignId
+      )
+
+      const actualCount = campaignApplications.length
+
+      await (dataService.entities as any).campaigns.update(campaignId, {
+        current_participants: actualCount
+      })
+
+      console.log(`✅ 캠페인 ${campaignId} 신청자 수 동기화 완료:`, actualCount)
+      return actualCount
+    } catch (error) {
+      console.error('❌ 신청자 수 동기화 실패:', error)
+      return null
+    }
+  }, [])
+
   return {
     loading,
     getExperiences,
     getCampaignById,
+    getCampaignByCode,
     applyForCampaign,
     getUserApplications,
     getStatusLabel,
     getStatusColor,
     checkDuplicateApplication,
-    cancelApplication
+    cancelApplication,
+    syncCampaignParticipants
   }
 }

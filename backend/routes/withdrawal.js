@@ -58,7 +58,8 @@ router.post('/request', async (req, res) => {
     // 출금 요청 생성
     const withdrawalRequest = {
       user_id,
-      requested_amount: requestedAmount,
+      points_amount: requestedAmount,
+      withdrawal_amount: requestedAmount,
       bank_name,
       account_number,
       account_holder,
@@ -133,7 +134,7 @@ router.post('/process/:withdrawalId', async (req, res) => {
     }
 
     const availablePoints = userPointData.points || 0;
-    const requestedAmount = withdrawalRequest.requested_amount;
+    const requestedAmount = withdrawalRequest.points_amount || withdrawalRequest.withdrawal_amount;
 
     // 출금 가능 여부 재확인
     const withdrawalCheck = await tossPaymentsService.canWithdraw(requestedAmount, availablePoints);

@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import ReviewSubmissionManager from '../components/ReviewSubmissionManager'
-import {Calendar, Gift, Clock, AlertCircle, CheckCircle, XCircle, Eye, FileText, Coins, User, Instagram, MessageSquare, ExternalLink, Trash2, Edit3, CalendarDays, RefreshCw, Package} from 'lucide-react'
+import {Calendar, Gift, Clock, AlertCircle, CheckCircle, XCircle, Eye, FileText, Coins, User, Instagram, MessageSquare, ExternalLink, Trash2, Edit3, CalendarDays, RefreshCw, Package, AlertTriangle} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dataService } from '../lib/dataService'
+import ChatBot from '../components/ChatBot'
 
 // 🔥 ULTRA SAFE 배열 변환 - undefined.length 완전 차단
 function ultraSafeArray<T>(value: any): T[] {
@@ -104,7 +105,11 @@ function safeObject(obj: any, field: string): any {
   }
 }
 
-const MyApplications: React.FC = () => {
+interface MyApplicationsProps {
+  embedded?: boolean
+}
+
+const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => {
   const navigate = useNavigate()
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const { getUserApplications, cancelApplication } = useExperiences()
@@ -139,7 +144,7 @@ const MyApplications: React.FC = () => {
 
       console.log('👤 사용자 ID:', user.user_id)
 
-      const userApplications = await getUserApplications(user.user_id, user)
+      const userApplications = await getUserApplications(user.user_id)
       
       console.log('✅ 최종 데이터 처리 완료:', userApplications.length, '개')
 
@@ -185,7 +190,7 @@ const MyApplications: React.FC = () => {
     const interval = setInterval(async () => {
       console.log('🔄 자동 새로고침 실행')
       try {
-        const userApplications = await getUserApplications(user?.user_id, user, true) // forceRefresh = true
+        const userApplications = await getUserApplications(user?.user_id)
         const finalApplications = ultraSafeArray(userApplications)
         setApplications(finalApplications)
         setLastRefresh(new Date())
@@ -236,7 +241,7 @@ const MyApplications: React.FC = () => {
     switch (status) {
       case 'pending':
         return {
-          label: '검토중',
+          label: '승인 대기',
           color: 'bg-yellow-100 text-yellow-800',
           icon: Clock
         }
@@ -255,19 +260,19 @@ const MyApplications: React.FC = () => {
       case 'product_purchased':
         return {
           label: '제품구매완료',
-          color: 'bg-blue-100 text-blue-800',
+          color: 'bg-blue-100 text-primary-800',
           icon: CheckCircle
         }
       case 'shipping':
         return {
           label: '제품배송중',
-          color: 'bg-purple-100 text-purple-800',
+          color: 'bg-purple-100 text-navy-800',
           icon: Calendar
         }
       case 'delivered':
         return {
           label: '제품수령완료',
-          color: 'bg-indigo-100 text-indigo-800',
+          color: 'bg-indigo-100 text-navy-800',
           icon: CheckCircle
         }
       case 'review_verification':
@@ -279,25 +284,31 @@ const MyApplications: React.FC = () => {
       case 'registered':
         return {
           label: '등록',
-          color: 'bg-blue-100 text-blue-800',
+          color: 'bg-blue-100 text-primary-800',
           icon: User
         }
       case 'completed':
         return {
           label: '종료',
-          color: 'bg-purple-100 text-purple-800',
+          color: 'bg-purple-100 text-navy-800',
           icon: CheckCircle
         }
       case 'in_progress':
         return {
           label: '진행중',
-          color: 'bg-blue-100 text-blue-800',
+          color: 'bg-blue-100 text-primary-800',
           icon: CheckCircle
         }
       case 'review_submitted':
         return {
           label: '리뷰 제출됨',
-          color: 'bg-blue-100 text-blue-800',
+          color: 'bg-blue-100 text-primary-800',
+          icon: FileText
+        }
+      case 'review_in_progress':
+        return {
+          label: '리뷰 검수중',
+          color: 'bg-purple-100 text-navy-800',
           icon: FileText
         }
       case 'review_approved':
@@ -312,22 +323,34 @@ const MyApplications: React.FC = () => {
           color: 'bg-red-100 text-red-800',
           icon: XCircle
         }
+      case 'review_resubmitted':
+        return {
+          label: '리뷰 보완 제출',
+          color: 'bg-orange-100 text-orange-800',
+          icon: RefreshCw
+        }
+      case 'review_completed':
+        return {
+          label: '리뷰 승인 완료 (포인트 지급 요청 가능)',
+          color: 'bg-emerald-100 text-emerald-800',
+          icon: CheckCircle
+        }
       case 'point_requested':
         return {
-          label: '포인트 지급 요청됨',
+          label: '포인트 지급 요청됨 (승인 대기중)',
           color: 'bg-orange-100 text-orange-800',
           icon: Coins
         }
       case 'point_approved':
         return {
           label: '포인트 지급 승인됨',
-          color: 'bg-purple-100 text-purple-800',
+          color: 'bg-purple-100 text-navy-800',
           icon: CheckCircle
         }
       case 'point_completed':
         return {
-          label: '종료',
-          color: 'bg-purple-100 text-purple-800',
+          label: '🎉 캠페인 체험 종료 (포인트 지급 완료)',
+          color: 'bg-gradient-to-r from-navy-100 to-pink-100 text-navy-900',
           icon: CheckCircle
         }
       case 'cancelled':
@@ -385,6 +408,11 @@ const MyApplications: React.FC = () => {
         return
       }
 
+      // 확인 다이얼로그
+      if (!confirm('제품을 구매하셨나요?\n\n구매 완료 후에는 리뷰 작성이 가능합니다.\n이 작업은 되돌릴 수 없습니다.')) {
+        return
+      }
+
       const applicationId = application._id || application.id
       if (!applicationId) {
         toast.error('신청 정보를 찾을 수 없습니다')
@@ -394,7 +422,6 @@ const MyApplications: React.FC = () => {
       // 상태를 'product_purchased'로 업데이트
       const result = await dataService.entities.user_applications.update(applicationId, {
         status: 'product_purchased',
-        product_purchased_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
 
@@ -413,6 +440,11 @@ const MyApplications: React.FC = () => {
 
   // 🔥 제품 수령 완료 처리
   const handleProductDelivered = async (application: any) => {
+    // 확인 다이얼로그
+    if (!confirm('제품을 수령하셨나요?\n\n수령 완료 후에는 리뷰 작성이 가능합니다.\n이 작업은 되돌릴 수 없습니다.')) {
+      return
+    }
+
     try {
       if (!user?.user_id) {
         toast.error('로그인이 필요합니다')
@@ -428,7 +460,6 @@ const MyApplications: React.FC = () => {
       // 상태를 'delivered'로 업데이트
       const result = await dataService.entities.user_applications.update(applicationId, {
         status: 'delivered',
-        delivered_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
 
@@ -538,7 +569,7 @@ const MyApplications: React.FC = () => {
         // 강제 새로고침으로 최신 상태 확인
         setTimeout(async () => {
           try {
-            const userApplications = await getUserApplications(user?.user_id, user, true)
+            const userApplications = await getUserApplications(user?.user_id)
             const finalApplications = ultraSafeArray(userApplications)
             setApplications(finalApplications)
             setLastRefresh(new Date())
@@ -675,7 +706,7 @@ const MyApplications: React.FC = () => {
       // 신청 내역 새로고침
       setTimeout(async () => {
         try {
-          const userApplications = await getUserApplications(user?.user_id, user, true)
+          const userApplications = await getUserApplications(user?.user_id)
           const finalApplications = ultraSafeArray(userApplications)
           setApplications(finalApplications)
           setLastRefresh(new Date())
@@ -689,7 +720,7 @@ const MyApplications: React.FC = () => {
     }
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !embedded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -703,18 +734,18 @@ const MyApplications: React.FC = () => {
 
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={embedded ? 'flex justify-center items-center py-12' : 'min-h-screen bg-gray-50 flex items-center justify-center'}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">신청 내역을 불러오는 중...</p>
         </div>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+  const content = (
+    <>
+    <div className={embedded ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8'}>
         {/* 헤더 */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
@@ -730,7 +761,7 @@ const MyApplications: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => navigate('/profile')}
-                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
               >
                 <User className="w-4 h-4" />
                 <span>프로필 관리</span>
@@ -739,7 +770,7 @@ const MyApplications: React.FC = () => {
                 onClick={async () => {
                   try {
                     setLoading(true)
-                    const userApplications = await getUserApplications(user?.user_id, user, true) // forceRefresh = true
+                    const userApplications = await getUserApplications(user?.user_id)
                     const finalApplications = ultraSafeArray(userApplications)
                     setApplications(finalApplications)
                     setLastRefresh(new Date())
@@ -752,7 +783,7 @@ const MyApplications: React.FC = () => {
                   }
                 }}
                 disabled={loading}
-                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 <span>새로고침</span>
@@ -782,14 +813,14 @@ const MyApplications: React.FC = () => {
                 onClick={() => setStatusFilter(tab.value)}
                 className={`px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all duration-200 ${
                   statusFilter === tab.value
-                    ? 'bg-blue-600 text-white shadow-md'
+                    ? 'bg-primary-600 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {tab.label}
                 <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
                   statusFilter === tab.value
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-gray-300 text-gray-600'
                 }`}>
                   {tab.count}
@@ -800,12 +831,87 @@ const MyApplications: React.FC = () => {
           
           <div className="text-sm sm:text-base text-gray-600">
             {statusFilter === 'all' ? (
-              <>총 <span className="font-semibold text-blue-600">{filteredApplications.length}</span>개 신청</>
+              <>총 <span className="font-semibold text-primary-600">{filteredApplications.length}</span>개 신청</>
             ) : (
-              <>{getStatusInfo(statusFilter).label} <span className="font-semibold text-blue-600">{filteredApplications.length}</span>개</>
+              <>{getStatusInfo(statusFilter).label} <span className="font-semibold text-primary-600">{filteredApplications.length}</span>개</>
             )}
           </div>
         </div>
+
+        {/* 프로세스 안내 박스 */}
+        {filteredApplications.length > 0 && (
+          <div className="bg-gradient-to-r from-primary-50 to-navy-50 border border-blue-200 rounded-xl p-4 sm:p-6 mb-6">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  체험단 진행 프로세스 안내
+                </h3>
+                <div className="space-y-2.5 text-sm sm:text-base">
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      1
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">선정완료:</span>
+                      <span className="text-gray-700 ml-1">제품을 구매하신 후 '제품 구매 완료' 버튼을 클릭해주세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      2
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">제품구매완료:</span>
+                      <span className="text-gray-700 ml-1">관리자가 배송 정보를 등록하면 송장번호를 확인하실 수 있습니다.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-primary-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      3
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">제품배송중:</span>
+                      <span className="text-gray-700 ml-1">제품을 받으시면 '제품 수령 완료' 버튼을 클릭해주세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      4
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">제품수령완료:</span>
+                      <span className="text-gray-700 ml-1">'리뷰 인증하기' 버튼을 통해 리뷰를 인증해주세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 text-navy-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      5
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">리뷰 검수중:</span>
+                      <span className="text-gray-700 ml-1">관리자가 리뷰를 검수합니다. 승인될 때까지 기다려주세요.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 flex items-center justify-center text-xs font-semibold mt-0.5">
+                      6
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">🎉 리뷰 승인 및 포인트 지급:</span>
+                      <span className="text-gray-700 ml-1">관리자가 리뷰를 승인하면 포인트가 자동으로 지급됩니다! </span>
+                      <a href="/points" className="text-blue-600 hover:text-blue-700 font-semibold underline ml-1">
+                        적립된 포인트 현금으로 출금하기 →
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 🔥 안전한 배열 길이 체크 */}
         {!Array.isArray(filteredApplications) || filteredApplications.length === 0 ? (
@@ -822,7 +928,7 @@ const MyApplications: React.FC = () => {
             {statusFilter === 'all' && (
               <a
                 href="/experiences"
-                className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
               >
                 체험단 둘러보기
                 <ExternalLink className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
@@ -848,6 +954,29 @@ const MyApplications: React.FC = () => {
                   (safeString(experienceData, 'campaign_name') || safeString(experienceData, 'product_name') || safeString(experienceData, 'experience_name', '체험단 정보 없음')) :
                   safeString(application, 'experience_name', '체험단 정보 없음')
                 
+                // 🔥 캠페인 마감 상태 체크
+                const isExpiredCampaign = experienceData ? (() => {
+                  // 1. 캠페인 상태 체크
+                  const campaignStatus = experienceData.status || 'active'
+                  if (campaignStatus === 'closed' || campaignStatus === 'inactive') {
+                    return true
+                  }
+                  
+                  // 2. 신청 마감일 체크
+                  const applicationEndDate = experienceData.application_end_date || 
+                                           experienceData.application_end ||
+                                           experienceData.end_date
+                  if (applicationEndDate) {
+                    const endDate = new Date(applicationEndDate)
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+                    endDate.setHours(0, 0, 0, 0)
+                    return today > endDate
+                  }
+                  
+                  return false
+                })() : false
+                
                 const brandName = experienceData ? safeString(experienceData, 'brand_name') : ''
                 const rewardPoints = experienceData ? (experienceData.rewards || experienceData.reward_points || experienceData.point_reward || 0) : 0
                 const imageUrl = experienceData ? safeString(experienceData, 'main_image_url') || safeString(experienceData, 'image_url') : ''
@@ -871,9 +1000,14 @@ const MyApplications: React.FC = () => {
                           {/* 체험단 정보 */}
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
                             <div className="flex items-center space-x-2 sm:space-x-3">
-                              <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
-                              <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2">
+                              <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 flex-shrink-0" />
+                              <h3 className={`text-base sm:text-lg font-semibold line-clamp-2 ${isExpiredCampaign ? 'text-gray-500' : 'text-gray-900'}`}>
                                 {experienceName}
+                                {isExpiredCampaign && (
+                                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    마감
+                                  </span>
+                                )}
                               </h3>
                             </div>
                             <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${statusInfo.color} self-start`}>
@@ -911,7 +1045,7 @@ const MyApplications: React.FC = () => {
                                 dDayInfo.status === 'expired' ? 'bg-red-100 text-red-800' :
                                 dDayInfo.status === 'today' ? 'bg-orange-100 text-orange-800' :
                                 dDayInfo.status === 'urgent' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-blue-800'
+                                'bg-blue-100 text-primary-800'
                               }`}>
                                 <CalendarDays className="w-3 h-3" />
                                 <span>리뷰 마감: {dDayInfo.text}</span>
@@ -950,7 +1084,7 @@ const MyApplications: React.FC = () => {
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => handleViewDetail(application)}
-                            className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            className="inline-flex items-center px-3 py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                           >
                             <Eye className="w-4 h-4 mr-1 sm:mr-2" />
                             <span className="hidden sm:inline">상세보기</span>
@@ -990,23 +1124,11 @@ const MyApplications: React.FC = () => {
                             </button>
                           )}
 
-                          {/* 🔥 리뷰 제출 버튼 (제품 구매 완료된 경우) */}
-                          {status === 'product_purchased' && (
-                            <button
-                              onClick={() => handleWriteReview(application)}
-                              className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                              <FileText className="w-4 h-4 mr-1 sm:mr-2" />
-                              <span className="hidden sm:inline">리뷰 작성하기</span>
-                              <span className="sm:hidden">리뷰</span>
-                            </button>
-                          )}
-
                           {/* 🔥 리뷰 수정 버튼 (리뷰 제출된 경우만) */}
                           {status === 'review_in_progress' && (
                             <button
                               onClick={() => handleWriteReview(application)}
-                              className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                              className="inline-flex items-center px-3 py-2 bg-navy-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
                             >
                               <Edit3 className="w-4 h-4 mr-1 sm:mr-2" />
                               <span className="hidden sm:inline">리뷰 수정하기</span>
@@ -1018,10 +1140,10 @@ const MyApplications: React.FC = () => {
                           {status === 'shipping' && (application as any).tracking_number && (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                               <div className="flex items-center space-x-2">
-                                <Package className="w-4 h-4 text-blue-600" />
+                                <Package className="w-4 h-4 text-primary-600" />
                                 <div>
-                                  <p className="text-sm font-medium text-blue-800">배송 추적 정보</p>
-                                  <p className="text-xs text-blue-600">
+                                  <p className="text-sm font-medium text-primary-800">배송 추적 정보</p>
+                                  <p className="text-xs text-primary-600">
                                     {(application as any).courier && (application as any).courier !== 'other' ? 
                                       `${(application as any).courier}: ${(application as any).tracking_number}` : 
                                       `송장번호: ${(application as any).tracking_number}`
@@ -1036,7 +1158,7 @@ const MyApplications: React.FC = () => {
                           {status === 'shipping' && (
                             <button
                               onClick={() => handleProductDelivered(application)}
-                              className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                              className="inline-flex items-center px-3 py-2 bg-navy-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
                             >
                               <CheckCircle className="w-4 h-4 mr-1 sm:mr-2" />
                               <span className="hidden sm:inline">제품 수령 완료</span>
@@ -1055,8 +1177,35 @@ const MyApplications: React.FC = () => {
                               <span className="sm:hidden">리뷰인증</span>
                             </button>
                           )}
+
+                          {/* 🔥 반려 사유 표시 (리뷰 반려된 경우) */}
+                          {status === 'review_rejected' && (application as any).rejection_reason && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <div className="flex items-start space-x-2">
+                                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-red-800 mb-1">반려 사유</p>
+                                  <p className="text-sm text-red-700 whitespace-pre-wrap">
+                                    {(application as any).rejection_reason}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 🔥 리뷰 수정 버튼 (리뷰 반려된 경우) */}
+                          {status === 'review_rejected' && (
+                            <button
+                              onClick={() => handleWriteReview(application)}
+                              className="inline-flex items-center px-3 py-2 bg-red-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                              <RefreshCw className="w-4 h-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">리뷰 수정하기</span>
+                              <span className="sm:hidden">수정</span>
+                            </button>
+                          )}
                         </div>
-                        
+
                         {/* 취소 버튼 (승인 대기중인 경우만) */}
                         {status === 'pending' && (
                           <button
@@ -1085,9 +1234,9 @@ const MyApplications: React.FC = () => {
       {showDetailModal && selectedApplication && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6 border-b">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg sm:text-xl font-bold">신청 상세 정보</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">신청 상세 정보</h3>
                 <button
                   onClick={() => setShowDetailModal(false)}
                   className="text-gray-400 hover:text-gray-600 p-1"
@@ -1100,32 +1249,34 @@ const MyApplications: React.FC = () => {
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* 체험단 정보 */}
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base">
-                  <Gift className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base text-gray-900">
+                  <Gift className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-gray-700" />
                   체험단 정보
                 </h4>
                 <div className="space-y-2">
-                  <div className="text-sm sm:text-base">
-                    <span className="font-medium">체험단명:</span>{' '}
-                    {safeObject(selectedApplication, 'experience') ? 
-                      (safeString(safeObject(selectedApplication, 'experience'), 'campaign_name') || 
-                       safeString(safeObject(selectedApplication, 'experience'), 'product_name') || 
-                       safeString(safeObject(selectedApplication, 'experience'), 'experience_name', '정보 없음')) :
-                      safeString(selectedApplication, 'experience_name', '정보 없음')}
+                  <div className="text-sm sm:text-base text-gray-900">
+                    <span className="font-medium text-gray-900">체험단명:</span>{' '}
+                    <span className="text-gray-700">
+                      {safeObject(selectedApplication, 'experience') ?
+                        (safeString(safeObject(selectedApplication, 'experience'), 'campaign_name') ||
+                         safeString(safeObject(selectedApplication, 'experience'), 'product_name') ||
+                         safeString(safeObject(selectedApplication, 'experience'), 'experience_name', '정보 없음')) :
+                        safeString(selectedApplication, 'experience_name', '정보 없음')}
+                    </span>
                   </div>
                   {safeObject(selectedApplication, 'experience') && safeString(safeObject(selectedApplication, 'experience'), 'brand_name') && (
-                    <div className="text-sm sm:text-base">
-                      <span className="font-medium">브랜드:</span>{' '}
-                      {safeString(safeObject(selectedApplication, 'experience'), 'brand_name')}
+                    <div className="text-sm sm:text-base text-gray-900">
+                      <span className="font-medium text-gray-900">브랜드:</span>{' '}
+                      <span className="text-gray-700">{safeString(safeObject(selectedApplication, 'experience'), 'brand_name')}</span>
                     </div>
                   )}
                   {safeObject(selectedApplication, 'experience') && (() => {
                     const exp = safeObject(selectedApplication, 'experience')
                     const points = exp?.rewards || exp?.reward_points || 0
                     return points > 0 ? (
-                      <div className="text-sm sm:text-base">
-                        <span className="font-medium">리워드:</span>{' '}
-                        {points}P
+                      <div className="text-sm sm:text-base text-gray-900">
+                        <span className="font-medium text-gray-900">리워드:</span>{' '}
+                        <span className="text-gray-700">{points}P</span>
                       </div>
                     ) : null
                   })()}
@@ -1134,18 +1285,18 @@ const MyApplications: React.FC = () => {
 
               {/* 신청자 정보 */}
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base">
-                  <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <h4 className="font-bold mb-3 flex items-center text-sm sm:text-base text-gray-900">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-gray-700" />
                   신청자 정보
                 </h4>
                 <div className="space-y-2">
-                  <div className="text-sm sm:text-base"><span className="font-medium">이름:</span> {safeString(selectedApplication, 'name', user?.name || '정보 없음')}</div>
-                  <div className="text-sm sm:text-base"><span className="font-medium">이메일:</span> {safeString(selectedApplication, 'email', user?.email || '정보 없음')}</div>
+                  <div className="text-sm sm:text-base text-gray-900"><span className="font-medium text-gray-900">이름:</span> <span className="text-gray-700">{safeString(selectedApplication, 'name', user?.name || '정보 없음')}</span></div>
+                  <div className="text-sm sm:text-base text-gray-900"><span className="font-medium text-gray-900">이메일:</span> <span className="text-gray-700">{safeString(selectedApplication, 'email', user?.email || '정보 없음')}</span></div>
                   {safeString(selectedApplication, 'phone') && (
-                    <div className="text-sm sm:text-base"><span className="font-medium">연락처:</span> {safeString(selectedApplication, 'phone')}</div>
+                    <div className="text-sm sm:text-base text-gray-900"><span className="font-medium text-gray-900">연락처:</span> <span className="text-gray-700">{safeString(selectedApplication, 'phone')}</span></div>
                   )}
                   {safeString(selectedApplication, 'address') && (
-                    <div className="text-sm sm:text-base"><span className="font-medium">주소:</span> {safeString(selectedApplication, 'address')}</div>
+                    <div className="text-sm sm:text-base text-gray-900"><span className="font-medium text-gray-900">주소:</span> <span className="text-gray-700">{safeString(selectedApplication, 'address')}</span></div>
                   )}
                 </div>
               </div>
@@ -1153,35 +1304,35 @@ const MyApplications: React.FC = () => {
               {/* SNS 정보 */}
               {(safeString(selectedApplication, 'instagram_handle') || safeString(selectedApplication, 'blog_url') || safeString(selectedApplication, 'youtube_channel')) && (
                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <h4 className="font-bold mb-3 text-sm sm:text-base">SNS 정보</h4>
+                  <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">SNS 정보</h4>
                   <div className="space-y-2">
                     {safeString(selectedApplication, 'instagram_handle') && (
-                      <div className="flex items-center space-x-2 text-sm sm:text-base">
-                        <Instagram className="w-4 h-4" />
-                        <span>@{safeString(selectedApplication, 'instagram_handle')}</span>
+                      <div className="flex items-center space-x-2 text-sm sm:text-base text-gray-900">
+                        <Instagram className="w-4 h-4 text-gray-700" />
+                        <span className="text-gray-700">@{safeString(selectedApplication, 'instagram_handle')}</span>
                       </div>
                     )}
                     {safeString(selectedApplication, 'blog_url') && (
-                      <div className="flex items-center space-x-2 text-sm sm:text-base">
-                        <MessageSquare className="w-4 h-4" />
-                        <a 
-                          href={safeString(selectedApplication, 'blog_url')} 
-                          target="_blank" 
+                      <div className="flex items-center space-x-2 text-sm sm:text-base text-gray-900">
+                        <MessageSquare className="w-4 h-4 text-gray-700" />
+                        <a
+                          href={safeString(selectedApplication, 'blog_url')}
+                          target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 break-all"
+                          className="text-primary-600 hover:text-primary-800 break-all"
                         >
                           {safeString(selectedApplication, 'blog_url')}
                         </a>
                       </div>
                     )}
                     {safeString(selectedApplication, 'youtube_channel') && (
-                      <div className="flex items-center space-x-2 text-sm sm:text-base">
-                        <ExternalLink className="w-4 h-4" />
-                        <a 
-                          href={safeString(selectedApplication, 'youtube_channel')} 
-                          target="_blank" 
+                      <div className="flex items-center space-x-2 text-sm sm:text-base text-gray-900">
+                        <ExternalLink className="w-4 h-4 text-gray-700" />
+                        <a
+                          href={safeString(selectedApplication, 'youtube_channel')}
+                          target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 break-all"
+                          className="text-primary-600 hover:text-primary-800 break-all"
                         >
                           {safeString(selectedApplication, 'youtube_channel')}
                         </a>
@@ -1194,7 +1345,7 @@ const MyApplications: React.FC = () => {
               {/* 신청 사유 */}
               {safeString(selectedApplication, 'application_reason') && (
                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <h4 className="font-bold mb-3 text-sm sm:text-base">신청 사유</h4>
+                  <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">신청 사유</h4>
                   <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'application_reason')}
                   </p>
@@ -1204,7 +1355,7 @@ const MyApplications: React.FC = () => {
               {/* 체험 계획 */}
               {safeString(selectedApplication, 'experience_plan') && (
                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <h4 className="font-bold mb-3 text-sm sm:text-base">체험 계획</h4>
+                  <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">체험 계획</h4>
                   <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'experience_plan')}
                   </p>
@@ -1214,7 +1365,7 @@ const MyApplications: React.FC = () => {
               {/* 추가 정보 */}
               {safeString(selectedApplication, 'additional_info') && (
                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <h4 className="font-bold mb-3 text-sm sm:text-base">추가 정보</h4>
+                  <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">추가 정보</h4>
                   <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                     {safeString(selectedApplication, 'additional_info')}
                   </p>
@@ -1223,35 +1374,39 @@ const MyApplications: React.FC = () => {
 
               {/* 신청 상태 */}
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                <h4 className="font-bold mb-3 text-sm sm:text-base">신청 상태</h4>
+                <h4 className="font-bold mb-3 text-sm sm:text-base text-gray-900">신청 상태</h4>
                 <div className="space-y-2">
-                  <div className="text-sm sm:text-base">
-                    <span className="font-medium">현재 상태:</span>{' '}
+                  <div className="text-sm sm:text-base text-gray-900">
+                    <span className="font-medium text-gray-900">현재 상태:</span>{' '}
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusInfo(safeString(selectedApplication, 'status', 'pending')).color}`}>
                       {getStatusInfo(safeString(selectedApplication, 'status', 'pending')).label}
                     </span>
                   </div>
-                  <div className="text-sm sm:text-base">
-                    <span className="font-medium">신청일:</span>{' '}
-                    {new Date(safeString(selectedApplication, 'applied_at') || safeString(selectedApplication, 'created_at') || Date.now()).toLocaleString('ko-KR')}
+                  <div className="text-sm sm:text-base text-gray-900">
+                    <span className="font-medium text-gray-900">신청일:</span>{' '}
+                    <span className="text-gray-700">
+                      {new Date(safeString(selectedApplication, 'applied_at') || safeString(selectedApplication, 'created_at') || Date.now()).toLocaleString('ko-KR')}
+                    </span>
                   </div>
                   {safeString(selectedApplication, 'processed_at') && (
-                    <div className="text-sm sm:text-base">
-                      <span className="font-medium">처리일:</span>{' '}
-                      {new Date(safeString(selectedApplication, 'processed_at')).toLocaleString('ko-KR')}
+                    <div className="text-sm sm:text-base text-gray-900">
+                      <span className="font-medium text-gray-900">처리일:</span>{' '}
+                      <span className="text-gray-700">
+                        {new Date(safeString(selectedApplication, 'processed_at')).toLocaleString('ko-KR')}
+                      </span>
                     </div>
                   )}
                   {safeString(selectedApplication, 'admin_message') && (
-                    <div className="text-sm sm:text-base">
-                      <span className="font-medium">관리자 메시지:</span>
+                    <div className="text-sm sm:text-base text-gray-900">
+                      <span className="font-medium text-gray-900">관리자 메시지:</span>
                       <p className="text-gray-700 bg-blue-50 p-3 rounded mt-1 text-sm sm:text-base">
                         {safeString(selectedApplication, 'admin_message')}
                       </p>
                     </div>
                   )}
                   {safeString(selectedApplication, 'rejection_reason') && (
-                    <div className="text-sm sm:text-base">
-                      <span className="font-medium">반려 사유:</span>
+                    <div className="text-sm sm:text-base text-gray-900">
+                      <span className="font-medium text-gray-900">반려 사유:</span>
                       <p className="text-red-700 bg-red-50 p-3 rounded mt-1 text-sm sm:text-base">
                         {safeString(selectedApplication, 'rejection_reason')}
                       </p>
@@ -1368,7 +1523,18 @@ const MyApplications: React.FC = () => {
           </div>
         </div>
       )}
+    </>
+  )
 
+  if (embedded) {
+    return content
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {content}
+      {/* 채팅봇 */}
+      <ChatBot />
     </div>
   )
 }

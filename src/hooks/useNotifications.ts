@@ -10,6 +10,7 @@ interface Notification {
   message: string
   type: string
   read: boolean
+  is_read: boolean
   created_at: string
 }
 
@@ -70,7 +71,7 @@ export const useNotifications = () => {
       setLoading(true)
       console.log('📡 알림 조회 시작:', userId)
       
-      const response = await (dataService.entities as any).notifications.list({
+      const response = await (dataService.entities as any).admin_notifications.list({
         filter: { user_id: userId },
         sort: { created_at: -1 }
       })
@@ -95,14 +96,14 @@ export const useNotifications = () => {
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      await (dataService.entities as any).notifications.update(notificationId, {
-        read: true,
-        read_at: new Date().toISOString()
+      // admin_notifications 테이블 사용 (올바른 테이블명과 필드명)
+      await (dataService.entities as any).admin_notifications.update(notificationId, {
+        is_read: true
       })
       
       setNotifications(prev => prev.map(notification => 
         notification._id === notificationId 
-          ? { ...notification, read: true }
+          ? { ...notification, read: true, is_read: true }
           : notification
       ))
       
@@ -135,7 +136,7 @@ export const useNotifications = () => {
   }, [])
 
   const getUnreadCount = useCallback(() => {
-    return notifications.filter(notification => !notification.read).length
+    return notifications.filter(notification => !notification.is_read && !notification.read).length
   }, [notifications])
 
   return {

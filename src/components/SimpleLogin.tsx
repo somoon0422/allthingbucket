@@ -17,7 +17,7 @@ const SimpleLogin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-orange-300 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-navy-400 via-pink-400 to-orange-300 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
         {/* 로고 */}
         <div className="text-center mb-8">
@@ -30,7 +30,7 @@ const SimpleLogin: React.FC = () => {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-navy-500 to-pink-500 text-white py-4 rounded-xl font-medium hover:from-navy-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50"
         >
           {loading ? '로그인 중...' : 'Google로 시작하기'}
         </button>

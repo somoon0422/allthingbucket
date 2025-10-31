@@ -1,4 +1,4 @@
-import { apiCall } from '../config/database'
+import { supabase } from '../lib/dataService'
 
 export interface CampaignFilters {
   status?: string
@@ -20,6 +20,10 @@ export interface CampaignData {
   experience_period: string
   requirements?: string[]
   image_url?: string
+  // 승인 안내 메시지 커스터마이징
+  approval_email_subject?: string
+  approval_email_content?: string
+  approval_sms_content?: string
 }
 
 export class CampaignService {
@@ -68,14 +72,14 @@ export class CampaignService {
   // 특정 체험단 캠페인 조회
   async getCampaignById(campaignId: string): Promise<any> {
     try {
-      const response = await fetch(`/api/db/campaigns?campaign_id=${campaignId}`)
-      const result = await response.json()
-      
-      if (result.success && result.data && result.data.length > 0) {
-        return result.data[0]
-      } else {
-        throw new Error('캠페인을 찾을 수 없습니다')
-      }
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('id', campaignId)
+        .single()
+
+      if (error) throw error
+      return data
     } catch (error) {
       console.error('체험단 캠페인 조회 실패:', error)
       throw error
@@ -85,11 +89,14 @@ export class CampaignService {
   // 새로운 체험단 캠페인 생성
   async createCampaign(campaignData: CampaignData): Promise<any> {
     try {
-      const result = await apiCall('/campaigns', {
-        method: 'POST',
-        body: JSON.stringify(campaignData)
-      })
-      return result
+      const { data, error } = await supabase
+        .from('campaigns')
+        .insert(campaignData)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
     } catch (error) {
       console.error('체험단 캠페인 생성 실패:', error)
       throw error
@@ -99,11 +106,15 @@ export class CampaignService {
   // 체험단 캠페인 수정
   async updateCampaign(campaignId: string, updateData: Partial<CampaignData>): Promise<any> {
     try {
-      const result = await apiCall(`/campaigns/${campaignId}`, {
-        method: 'PUT',
-        body: JSON.stringify(updateData)
-      })
-      return result
+      const { data, error } = await supabase
+        .from('campaigns')
+        .update(updateData)
+        .eq('id', campaignId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
     } catch (error) {
       console.error('체험단 캠페인 수정 실패:', error)
       throw error
@@ -113,9 +124,12 @@ export class CampaignService {
   // 체험단 캠페인 삭제
   async deleteCampaign(campaignId: string): Promise<boolean> {
     try {
-      await apiCall(`/campaigns/${campaignId}`, {
-        method: 'DELETE'
-      })
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', campaignId)
+
+      if (error) throw error
       return true
     } catch (error) {
       console.error('체험단 캠페인 삭제 실패:', error)
@@ -126,15 +140,18 @@ export class CampaignService {
   // 체험단 신청
   async applyToCampaign(campaignId: string, userId: string, applicationData: any): Promise<any> {
     try {
-      const result = await apiCall('/applications', {
-        method: 'POST',
-        body: JSON.stringify({
+      const { data, error } = await supabase
+        .from('user_applications')
+        .insert({
           campaign_id: campaignId,
           user_id: userId,
           application_data: applicationData
         })
-      })
-      return result
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
     } catch (error) {
       console.error('체험단 신청 실패:', error)
       throw error
@@ -144,8 +161,13 @@ export class CampaignService {
   // 사용자의 체험단 신청 목록 조회
   async getUserApplications(userId: string): Promise<any[]> {
     try {
-      const result = await apiCall(`/users/${userId}/applications`)
-      return result.applications || result || []
+      const { data, error } = await supabase
+        .from('user_applications')
+        .select('*')
+        .eq('user_id', userId)
+
+      if (error) throw error
+      return data || []
     } catch (error) {
       console.error('사용자 체험단 신청 목록 조회 실패:', error)
       throw error
@@ -155,8 +177,14 @@ export class CampaignService {
   // 인기 체험단 캠페인 조회 (신청자 수 기준)
   async getPopularCampaigns(limit: number = 10): Promise<any[]> {
     try {
-      const result = await apiCall(`/campaigns/popular?limit=${limit}`)
-      return result.campaigns || result || []
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .order('current_participants', { ascending: false })
+        .limit(limit)
+
+      if (error) throw error
+      return data || []
     } catch (error) {
       console.error('인기 체험단 캠페인 조회 실패:', error)
       throw error
@@ -166,8 +194,14 @@ export class CampaignService {
   // 카테고리별 체험단 캠페인 조회
   async getCampaignsByCategory(category: string, limit: number = 20): Promise<any[]> {
     try {
-      const result = await apiCall(`/campaigns/category/${category}?limit=${limit}`)
-      return result.campaigns || result || []
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('category', category)
+        .limit(limit)
+
+      if (error) throw error
+      return data || []
     } catch (error) {
       console.error('카테고리별 체험단 캠페인 조회 실패:', error)
       throw error

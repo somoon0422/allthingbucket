@@ -26,32 +26,64 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
   const [urlInput, setUrlInput] = useState('')
   const [showUrlInput, setShowUrlInput] = useState(false)
 
-  // 🔄 대안 업로드 방식 (Base64 변환)
-  const handleAlternativeUpload = useCallback(async (files: File[]) => {
+  // 🔥 initialImages가 변경될 때마다 images 상태 업데이트
+  React.useEffect(() => {
+    console.log('🖼️ ImageUploadManager initialImages 변경 감지:', {
+      initialImages,
+      currentImages: images,
+      initialImagesLength: initialImages?.length || 0,
+      currentImagesLength: images?.length || 0
+    })
+    
+    if (initialImages && Array.isArray(initialImages)) {
+      setImages(initialImages)
+      console.log('🖼️ ImageUploadManager 이미지 상태 업데이트:', initialImages)
+    }
+  }, [initialImages])
+
+  // 🔄 Supabase Storage 업로드
+  const handleStorageUpload = useCallback(async (files: File[]) => {
     try {
-      console.log('🔄 대안 업로드 방식 시도 (Base64)')
-      const base64Images: string[] = []
-      
+      console.log('🔄 Supabase Storage 업로드 시도')
+      const { supabase } = await import('../lib/dataService')
+      const uploadedUrls: string[] = []
+
       for (const file of files) {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-        base64Images.push(base64)
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`
+        const filePath = `campaigns/${fileName}`
+
+        // Supabase Storage에 업로드
+        const { data, error } = await supabase.storage
+          .from('campaign_images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (error) {
+          console.error('❌ Storage 업로드 실패:', error)
+          throw error
+        }
+
+        // Public URL 가져오기
+        const { data: { publicUrl } } = supabase.storage
+          .from('campaign_images')
+          .getPublicUrl(filePath)
+
+        uploadedUrls.push(publicUrl)
+        console.log('✅ Storage 업로드 성공:', publicUrl)
       }
-      
-      if (base64Images.length > 0) {
-        const newImages = [...images, ...base64Images]
+
+      if (uploadedUrls.length > 0) {
+        const newImages = [...images, ...uploadedUrls]
         setImages(newImages)
         onImagesChange(newImages)
-        toast.success(`${base64Images.length}개 이미지를 Base64 방식으로 업로드 완료`)
-        console.log('✅ Base64 업로드 성공')
+        toast.success(`${uploadedUrls.length}개 이미지 업로드 완료`)
       }
-    } catch (altError) {
-      console.error('❌ 대안 업로드도 실패:', altError)
-      toast.error('모든 업로드 방식이 실패했습니다. 파일 크기를 확인해주세요.')
+    } catch (error) {
+      console.error('❌ Storage 업로드 실패:', error)
+      toast.error('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
+      throw error
     }
   }, [images, onImagesChange])
 
@@ -97,62 +129,17 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
       console.log('🔄 파일 업로드 시작:', validFiles.map(f => f.name))
       console.log('🔍 이미지 업로드 준비 완료')
       console.log('🔍 사용자 인증 상태:', { user: user?.name, id: user?.user_id })
-      
-      // 🚀 Base64 방식으로 파일 업로드
-      try {
-        const uploadResults = await Promise.all(
-          validFiles.map(async (file) => {
-            return new Promise<{fileUrl: string}>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => {
-                resolve({ fileUrl: reader.result as string })
-              }
-              reader.onerror = reject
-              reader.readAsDataURL(file)
-            })
-          })
-        )
-        console.log('📊 업로드 결과:', uploadResults)
-        
-        const successfulUploads: string[] = []
-        const failedUploads: string[] = []
-        
-        uploadResults.forEach((result, index) => {
-          if (result.fileUrl) {
-            successfulUploads.push(result.fileUrl)
-            console.log(`✅ 업로드 성공: ${validFiles[index].name} -> ${result.fileUrl}`)
-          } else {
-            failedUploads.push(validFiles[index].name)
-            console.error(`❌ 업로드 실패: ${validFiles[index].name}`)
-          }
-        })
-        
-        if (successfulUploads.length > 0) {
-          const newImages = [...images, ...successfulUploads]
-          setImages(newImages)
-          onImagesChange(newImages)
-          toast.success(`${successfulUploads.length}개 이미지 업로드 완료`)
-        }
-        
-        if (failedUploads.length > 0) {
-          // 실패한 파일들을 Base64로 처리
-          const failedFiles = validFiles.filter((_, index) => failedUploads.includes(validFiles[index].name))
-          await handleAlternativeUpload(failedFiles)
-        }
-      } catch (uploadError) {
-        console.warn('⚠️ 업로드 실패, Base64 방식으로 전환:', uploadError)
-        // 업로드 실패 시 Base64 방식으로 전환
-        await handleAlternativeUpload(validFiles)
-      }
-      
+
+      // 🚀 Supabase Storage로 파일 업로드
+      await handleStorageUpload(validFiles)
+
     } catch (error) {
       console.error('❌ 파일 업로드 오류:', error)
-      // 최종적으로 Base64 방식으로 시도
-      await handleAlternativeUpload(validFiles)
+      toast.error('이미지 업로드에 실패했습니다.')
     } finally {
       setUploading(false)
     }
-  }, [images, maxImages, onImagesChange, user, allowFileUpload, handleAlternativeUpload])
+  }, [images, maxImages, onImagesChange, user, allowFileUpload, handleStorageUpload])
 
   // URL 추가 처리
   const handleUrlAdd = useCallback(() => {
@@ -227,7 +214,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
         <div
           className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
             dragActive 
-              ? 'border-blue-500 bg-blue-50' 
+              ? 'border-primary-500 bg-blue-50' 
               : 'border-gray-300 hover:border-gray-400'
           } ${uploading ? 'pointer-events-none opacity-50' : ''}`}
           onDragEnter={handleDrag}
@@ -246,7 +233,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
           
           {uploading ? (
             <div className="flex flex-col items-center">
-              <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
+              <Loader2 className="w-8 h-8 text-primary-600 animate-spin mb-2" />
               <p className="text-sm text-gray-600">업로드 중...</p>
             </div>
           ) : (
@@ -269,7 +256,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
           {!showUrlInput ? (
             <button
               onClick={() => setShowUrlInput(true)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-3 py-2 text-sm text-primary-600 hover:text-primary-700 hover:bg-blue-50 rounded-lg transition-colors"
             >
               <LinkIcon className="w-4 h-4" />
               <span>URL로 이미지 추가</span>
@@ -281,12 +268,12 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="이미지 URL을 입력하세요"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 onKeyPress={(e) => e.key === 'Enter' && handleUrlAdd()}
               />
               <button
                 onClick={handleUrlAdd}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 추가
               </button>
@@ -338,8 +325,8 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
 
       {/* 도움말 */}
       <div className="flex items-start space-x-2 p-3 bg-blue-50 rounded-lg">
-        <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-        <div className="text-xs text-blue-700">
+        <AlertCircle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+        <div className="text-xs text-primary-700">
           <p className="font-medium mb-1">이미지 업로드 안내</p>
           <ul className="space-y-1">
             {allowFileUpload && <li>• 파일 업로드: JPG, PNG, GIF 등 이미지 파일만 가능</li>}

@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { dataService } from '../lib/dataService'
 import ImageUploadManager from './ImageUploadManager'
-import {X, Calendar, Users, Coins, FileText, Phone, Mail, Image, Code, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone} from 'lucide-react'
+import {X, Calendar, Users, Coins, FileText, Phone, Mail, Image, Code, Gift, Target, Hash, Link, Info, CalendarDays, UserCheck, Megaphone, Plus, Trash2, Package} from 'lucide-react'
 import toast from 'react-hot-toast'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -71,11 +71,27 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     }
   }
   
+  // 🔥 제품 상태 관리
+  interface Product {
+    id: string
+    name: string
+    allowed_platforms: string[]
+  }
+
+  const [products, setProducts] = useState<Product[]>([
+    {
+      id: Date.now().toString(),
+      name: '',
+      allowed_platforms: []
+    }
+  ])
+
   const [formData, setFormData] = useState({
     experience_name: '',
     brand_name: '',
     description: '',
-    experience_type: ['purchase_review'], // 새로 추가: 체험단 타입 (배열로 변경)
+    platform: '인스타그램', // 플랫폼
+    delivery_type: '배송형', // 배송형
     reward_points: '',
     max_participants: '30',
     requirements: '',
@@ -97,8 +113,56 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     content_end_date: '', // 콘텐츠 등록 종료일
     experience_announcement_date: '', // 체험단 발표일
     result_announcement_date: '', // 캠페인 결과발표일
-    current_applicants: 0 // 현재 신청자 수
+    current_applicants: 0, // 현재 신청자 수
+    // 상시 운영 플래그
+    is_always_open_application: false, // 상시 신청
+    is_always_open_content: false, // 상시 콘텐츠 등록
+    is_always_announcement_experience: false, // 상시 체험단 발표
+    is_always_announcement_result: false, // 상시 결과 발표
+    is_always_announcement_influencer: false, // 상시 인플루언서 발표
+    // 승인 안내 메시지 커스터마이징
+    approval_email_subject: '', // 승인 이메일 제목
+    approval_email_content: '', // 승인 이메일 내용
+    approval_sms_content: '' // 승인 SMS 내용
   })
+
+  // 🔥 제품 추가
+  const addProduct = () => {
+    setProducts([...products, {
+      id: Date.now().toString(),
+      name: '',
+      allowed_platforms: []
+    }])
+  }
+
+  // 🔥 제품 삭제
+  const removeProduct = (id: string) => {
+    if (products.length === 1) {
+      toast.error('최소 1개의 제품은 등록해야 합니다')
+      return
+    }
+    setProducts(products.filter(p => p.id !== id))
+  }
+
+  // 🔥 제품명 변경
+  const updateProductName = (id: string, name: string) => {
+    setProducts(products.map(p =>
+      p.id === id ? { ...p, name } : p
+    ))
+  }
+
+  // 🔥 제품의 플랫폼 변경
+  const toggleProductPlatform = (productId: string, platform: string) => {
+    setProducts(products.map(p => {
+      if (p.id === productId) {
+        const platforms = p.allowed_platforms.includes(platform)
+          ? p.allowed_platforms.filter(pl => pl !== platform)
+          : [...p.allowed_platforms, platform]
+        return { ...p, allowed_platforms: platforms }
+      }
+      return p
+    }))
+  }
 
   // 🔥 메인 이미지 변경 처리
   const handleMainImagesChange = (images: string[]) => {
@@ -112,10 +176,11 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+    const target = e.target as HTMLInputElement
+    const { name, value, type, checked } = target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }))
   }
 
@@ -142,8 +207,16 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         return
       }
 
-      if (formData.experience_type.length === 0) {
-        toast.error('최소 하나의 체험단 타입을 선택해주세요')
+      // 제품 검증
+      const invalidProduct = products.find(p => !p.name.trim())
+      if (invalidProduct) {
+        toast.error('모든 제품의 이름을 입력해주세요')
+        return
+      }
+
+      const productWithoutPlatform = products.find(p => p.allowed_platforms.length === 0)
+      if (productWithoutPlatform) {
+        toast.error('모든 제품에 최소 하나의 플랫폼을 선택해주세요')
         return
       }
 
@@ -153,7 +226,9 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         product_name: formData.brand_name.trim(),
         brand_name: formData.brand_name.trim(),
         description: formData.description.trim(),
-        type: formData.experience_type.join(', '), // 배열을 쉼표로 구분된 문자열로 변환
+        type: 'campaign', // 기본값
+        platform: formData.platform, // 플랫폼
+        delivery_type: formData.delivery_type, // 배송형
         status: 'active',
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : 0,
         current_participants: 0,
@@ -172,7 +247,17 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         contact_email: 'support@allthingbucket.com',
         contact_phone: '01022129245',
         main_images: mainImages,
-        detail_images: detailImages
+        detail_images: detailImages,
+        // 상시 운영 플래그
+        is_always_open_application: formData.is_always_open_application,
+        is_always_open_content: formData.is_always_open_content,
+        is_always_announcement_experience: formData.is_always_announcement_experience,
+        is_always_announcement_result: formData.is_always_announcement_result,
+        is_always_announcement_influencer: formData.is_always_announcement_influencer,
+        // 승인 안내 메시지
+        approval_email_subject: formData.approval_email_subject.trim() || null,
+        approval_email_content: formData.approval_email_content.trim() || null,
+        approval_sms_content: formData.approval_sms_content.trim() || null
       }
 
       // 🔥 디버깅: 이미지 데이터 확인
@@ -185,7 +270,23 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
       })
 
       // 캠페인 생성 (campaigns 테이블에 저장)
-      await (dataService.entities as any).campaigns.create(campaignData)
+      const createdCampaign = await (dataService.entities as any).campaigns.create(campaignData)
+
+      if (!createdCampaign || !createdCampaign.id) {
+        throw new Error('캠페인 생성 실패')
+      }
+
+      // 🔥 제품 데이터 저장 (campaign_products 테이블)
+      const productData = products.map(product => ({
+        campaign_id: createdCampaign.id,
+        product_name: product.name.trim(),
+        allowed_platforms: product.allowed_platforms, // JSON 배열
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }))
+
+      console.log('📦 제품 데이터 저장:', productData)
+      await (dataService.entities as any).campaign_products.createMany(productData)
       
       toast.success('캠페인이 성공적으로 등록되었습니다!')
       onSuccess()
@@ -196,9 +297,10 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         experience_name: '',
         brand_name: '',
         description: '',
-        experience_type: 'purchase_review',
+        platform: '인스타그램',
+        delivery_type: '배송형',
         reward_points: '',
-        max_participants: '',
+        max_participants: '30',
         requirements: '',
         additional_info: '',
         contact_email: '',
@@ -218,7 +320,17 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         content_end_date: '',
         experience_announcement_date: '',
         result_announcement_date: '',
-        current_applicants: 0
+        current_applicants: 0,
+        // 상시 운영 플래그
+        is_always_open_application: false,
+        is_always_open_content: false,
+        is_always_announcement_experience: false,
+        is_always_announcement_result: false,
+        is_always_announcement_influencer: false,
+        // 승인 안내 메시지
+        approval_email_subject: '',
+        approval_email_content: '',
+        approval_sms_content: ''
       })
       setMainImages([])
       setDetailImages([])
@@ -295,7 +407,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="experience_name"
                 value={formData.experience_name}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="체험단명을 입력하세요"
                 required
               />
@@ -310,67 +422,149 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="brand_name"
                 value={formData.brand_name}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="브랜드명을 입력하세요"
                 required
               />
             </div>
           </div>
 
-          {/* 체험단 타입 선택 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              체험단 타입 * (여러 개 선택 가능)
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                { value: 'purchase_review', label: '구매평', icon: '🛒' },
-                { value: 'blog_review', label: '블로그 리뷰', icon: '📝' },
-                { value: 'instagram', label: '인스타그램', icon: '📸' },
-                { value: 'youtube', label: '유튜브', icon: '🎥' },
-                { value: 'product', label: '제품 체험', icon: '🧪' },
-                { value: 'press', label: '기자단', icon: '📰' },
-                { value: 'local', label: '지역 체험', icon: '🏘️' },
-                { value: 'other', label: '기타', icon: '🔧' }
-              ].map((type) => (
-                <label
-                  key={type.value}
-                  className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors ${
-                    formData.experience_type.includes(type.value)
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    value={type.value}
-                    checked={formData.experience_type.includes(type.value)}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      if (e.target.checked) {
-                        setFormData(prev => ({
-                          ...prev,
-                          experience_type: [...prev.experience_type, value]
-                        }))
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          experience_type: prev.experience_type.filter(t => t !== value)
-                        }))
-                      }
-                    }}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium">
-                    <span className="mr-1">{type.icon}</span>
-                    {type.label}
-                  </span>
-                </label>
+          {/* 🔥 제품 관리 섹션 */}
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl border-2 border-purple-200">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Package className="w-5 h-5 mr-2 text-purple-600" />
+                  제품 관리 *
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  각 제품별로 참여 가능한 플랫폼을 지정하세요. 신청자는 원하는 제품을 선택하여 신청합니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addProduct}
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                제품 추가
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {products.map((product, index) => (
+                <div key={product.id} className="bg-white p-5 rounded-lg border-2 border-gray-200 hover:border-purple-300 transition-all">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        제품 {index + 1} 이름 *
+                      </label>
+                      <input
+                        type="text"
+                        value={product.name}
+                        onChange={(e) => updateProductName(product.id, e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="예: 프리미엄 스킨케어 세트"
+                      />
+                    </div>
+                    {products.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeProduct(product.id)}
+                        className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="제품 삭제"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      📱 참여 가능한 플랫폼 * (여러 개 선택 가능)
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { value: 'review', label: '구매후기', icon: '⭐', color: 'blue' },
+                        { value: 'blog', label: '블로그', icon: '📝', color: 'green' },
+                        { value: 'naver', label: '네이버', icon: '🟢', color: 'green' },
+                        { value: 'instagram', label: '인스타그램', icon: '📸', color: 'pink' },
+                        { value: 'youtube', label: '유튜브', icon: '🎥', color: 'red' },
+                        { value: 'tiktok', label: '틱톡', icon: '🎵', color: 'purple' },
+                        { value: 'product', label: '제품 체험', icon: '🧪', color: 'orange' },
+                        { value: 'press', label: '기자단', icon: '📰', color: 'gray' },
+                        { value: 'local', label: '지역 체험', icon: '🏘️', color: 'yellow' },
+                        { value: 'other', label: '기타', icon: '🔧', color: 'gray' }
+                      ].map((platform) => (
+                        <label
+                          key={platform.value}
+                          className={`flex items-center space-x-2 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                            product.allowed_platforms.includes(platform.value)
+                              ? `border-${platform.color}-500 bg-${platform.color}-50`
+                              : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={product.allowed_platforms.includes(platform.value)}
+                            onChange={() => toggleProductPlatform(product.id, platform.value)}
+                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <span className="text-xs font-medium flex-1">
+                            <span className="mr-1">{platform.icon}</span>
+                            {platform.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {product.allowed_platforms.length === 0 && (
+                      <p className="text-red-500 text-xs mt-2">최소 하나의 플랫폼을 선택해주세요.</p>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
-            {formData.experience_type.length === 0 && (
-              <p className="text-red-500 text-sm mt-2">최소 하나의 타입을 선택해주세요.</p>
-            )}
+          </div>
+
+          {/* 플랫폼과 배송형 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                플랫폼 *
+              </label>
+              <select
+                name="platform"
+                value={formData.platform}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                required
+              >
+                <option value="인스타그램">인스타그램</option>
+                <option value="유튜브">유튜브</option>
+                <option value="블로그">블로그</option>
+                <option value="네이버">네이버</option>
+                <option value="틱톡">틱톡</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                배송형 *
+              </label>
+              <select
+                name="delivery_type"
+                value={formData.delivery_type}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                required
+              >
+                <option value="배송형">배송형</option>
+                <option value="방문형">방문형</option>
+                <option value="온라인">온라인</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
           </div>
 
           {/* 설명 */}
@@ -383,7 +577,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               value={formData.description}
               onChange={handleInputChange}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="캠페인에 대한 자세한 설명을 입력하세요"
               required
             />
@@ -399,7 +593,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               value={htmlContent}
               onChange={(e) => setHtmlContent(e.target.value)}
               rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
               placeholder="HTML 코드를 입력하세요. 예: <div><img src='...' /><p>상세 설명...</p></div>"
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -419,7 +613,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="reward_points"
                 value={formData.reward_points}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="0"
                 min="0"
               />
@@ -435,7 +629,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="max_participants"
                 value={formData.max_participants}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="0"
                 min="0"
               />
@@ -449,7 +643,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="active">모집중</option>
                 <option value="pending">준비중</option>
@@ -505,7 +699,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               value={formData.requirements}
               onChange={handleInputChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="참여자가 만족해야 할 조건들을 입력하세요"
             />
           </div>
@@ -562,7 +756,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="keywords"
                 value={formData.keywords}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="예: #뷰티 #스킨케어 #자연주의 (쉼표로 구분)"
               />
             </div>
@@ -578,7 +772,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 name="product_links"
                 value={formData.product_links}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="https://example.com/product"
               />
             </div>
@@ -609,10 +803,22 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 신청 기간 */}
               <div className="space-y-4">
-                <h4 className="text-md font-medium text-gray-700 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-blue-600" />
-                  신청 기간
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-md font-medium text-gray-700 flex items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-primary-600" />
+                    신청 기간
+                  </h4>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_open_application"
+                      checked={formData.is_always_open_application}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 신청</span>
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">시작일</label>
@@ -621,7 +827,8 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="application_start_date"
                       value={formData.application_start_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={formData.is_always_open_application}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -631,11 +838,17 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="application_end_date"
                       value={formData.application_end_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={formData.is_always_open_application}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
-                    {formData.application_end_date && (
-                      <p className="text-xs text-blue-600 mt-1">
+                    {formData.application_end_date && !formData.is_always_open_application && (
+                      <p className="text-xs text-primary-600 mt-1">
                         신청 마감일: {getDeadlineDisplay(formData.application_end_date)}
+                      </p>
+                    )}
+                    {formData.is_always_open_application && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        ✓ 상시 신청 가능
                       </p>
                     )}
                   </div>
@@ -644,25 +857,55 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
               {/* 인플루언서 발표 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <UserCheck className="w-4 h-4 mr-2 text-green-600" />
-                  인플루언서 발표일
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-green-600" />
+                    인플루언서 발표일
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_announcement_influencer"
+                      checked={formData.is_always_announcement_influencer}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 발표</span>
+                  </label>
+                </div>
                 <input
                   type="date"
                   name="influencer_announcement_date"
                   value={formData.influencer_announcement_date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={formData.is_always_announcement_influencer}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
+                {formData.is_always_announcement_influencer && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">
+                    ✓ 상시 발표
+                  </p>
+                )}
               </div>
 
               {/* 콘텐츠 등록 기간 */}
               <div className="space-y-4">
-                <h4 className="text-md font-medium text-gray-700 flex items-center">
-                  <CalendarDays className="w-4 h-4 mr-2 text-purple-600" />
-                  콘텐츠 등록 기간
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-md font-medium text-gray-700 flex items-center">
+                    <CalendarDays className="w-4 h-4 mr-2 text-navy-600" />
+                    콘텐츠 등록 기간
+                  </h4>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="is_always_open_content"
+                      checked={formData.is_always_open_content}
+                      onChange={handleInputChange}
+                      className="mr-2 h-4 w-4 text-navy-600 focus:ring-navy-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">상시 등록</span>
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">시작일</label>
@@ -671,7 +914,8 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="content_start_date"
                       value={formData.content_start_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={formData.is_always_open_content}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -681,11 +925,17 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                       name="content_end_date"
                       value={formData.content_end_date}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={formData.is_always_open_content}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
-                    {formData.content_end_date && (
-                      <p className="text-xs text-purple-600 mt-1">
+                    {formData.content_end_date && !formData.is_always_open_content && (
+                      <p className="text-xs text-navy-600 mt-1">
                         리뷰 마감일: {getDeadlineDisplay(formData.content_end_date)}
+                      </p>
+                    )}
+                    {formData.is_always_open_content && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        ✓ 상시 등록 가능
                       </p>
                     )}
                   </div>
@@ -695,38 +945,74 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
               {/* 발표 일정 */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <UserCheck className="w-4 h-4 mr-2 text-green-600" />
-                    체험단 발표일
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700 flex items-center">
+                      <UserCheck className="w-4 h-4 mr-2 text-green-600" />
+                      체험단 발표일
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="is_always_announcement_experience"
+                        checked={formData.is_always_announcement_experience}
+                        onChange={handleInputChange}
+                        className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-600">상시 발표</span>
+                    </label>
+                  </div>
                   <input
                     type="date"
                     name="experience_announcement_date"
                     value={formData.experience_announcement_date}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    disabled={formData.is_always_announcement_experience}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
+                  {formData.is_always_announcement_experience && (
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      ✓ 상시 발표
+                    </p>
+                  )}
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <Megaphone className="w-4 h-4 mr-2 text-orange-600" />
-                    캠페인 결과발표일
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700 flex items-center">
+                      <Megaphone className="w-4 h-4 mr-2 text-orange-600" />
+                      캠페인 결과발표일
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="is_always_announcement_result"
+                        checked={formData.is_always_announcement_result}
+                        onChange={handleInputChange}
+                        className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-600">상시 발표</span>
+                    </label>
+                  </div>
                   <input
                     type="date"
                     name="result_announcement_date"
                     value={formData.result_announcement_date}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    disabled={formData.is_always_announcement_result}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
+                  {formData.is_always_announcement_result && (
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      ✓ 상시 발표
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* 현재 신청자 수 */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <Users className="w-4 h-4 mr-2 text-indigo-600" />
+                  <Users className="w-4 h-4 mr-2 text-navy-600" />
                   현재 신청자 수
                 </label>
                 <input
@@ -735,11 +1021,79 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                   value={formData.current_applicants}
                   onChange={handleInputChange}
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="0"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   현재까지 신청한 인플루언서 수를 입력하세요
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 승인 안내 메시지 설정 */}
+          <div className="bg-green-50 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Mail className="w-5 h-5 mr-2 text-green-600" />
+              승인 안내 메시지 설정 (선택)
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              체험단 선정 시 발송될 이메일과 SMS 내용을 미리 설정할 수 있습니다.
+              비워두면 기본 템플릿이 사용됩니다.
+            </p>
+
+            <div className="space-y-4">
+              {/* 이메일 제목 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Mail className="w-4 h-4 mr-2 text-green-600" />
+                  승인 이메일 제목
+                </label>
+                <input
+                  type="text"
+                  name="approval_email_subject"
+                  value={formData.approval_email_subject}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="예: 🎉 '{캠페인명}' 최종 선정 안내"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {'{'}캠페인명{'}'}, {'{'}신청자명{'}'} 변수를 사용할 수 있습니다
+                </p>
+              </div>
+
+              {/* 이메일 내용 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <FileText className="w-4 h-4 mr-2 text-green-600" />
+                  승인 이메일 내용
+                </label>
+                <textarea
+                  name="approval_email_content"
+                  value={formData.approval_email_content}
+                  onChange={handleInputChange}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder={`예시:\n안녕하세요, {신청자명}님.\n\n'{캠페인명}'에 최종 선정되셨음을 진심으로 축하드립니다! 🎉\n\n아래 링크를 클릭해서 체험단 가이드를 확인하시고 다음 단계를 진행해주세요.`}
+                />
+              </div>
+
+              {/* SMS 내용 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Phone className="w-4 h-4 mr-2 text-green-600" />
+                  승인 SMS 내용
+                </label>
+                <textarea
+                  name="approval_sms_content"
+                  value={formData.approval_sms_content}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder={`예시:\n{신청자명}님, '{캠페인명}' 체험단에 최종 선정되셨습니다! 자세한 내용은 이메일을 확인해주세요.`}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  SMS는 90자 제한이 있습니다. 간결하게 작성해주세요.
                 </p>
               </div>
             </div>
@@ -758,7 +1112,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? '등록 중...' : '캠페인 등록'}
             </button>
