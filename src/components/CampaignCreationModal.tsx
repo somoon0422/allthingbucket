@@ -123,7 +123,9 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
     // 승인 안내 메시지 커스터마이징
     approval_email_subject: '', // 승인 이메일 제목
     approval_email_content: '', // 승인 이메일 내용
-    approval_sms_content: '' // 승인 SMS 내용
+    approval_sms_content: '', // 승인 SMS 내용
+    // 배송 주소 수집 여부
+    collect_shipping_address: true // 배송 주소 수집 여부 (기본값: 수집함)
   })
 
   // 🔥 제품 추가
@@ -257,7 +259,9 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         // 승인 안내 메시지
         approval_email_subject: formData.approval_email_subject.trim() || null,
         approval_email_content: formData.approval_email_content.trim() || null,
-        approval_sms_content: formData.approval_sms_content.trim() || null
+        approval_sms_content: formData.approval_sms_content.trim() || null,
+        // 배송 주소 수집 여부
+        collect_shipping_address: formData.collect_shipping_address
       }
 
       // 🔥 디버깅: 이미지 데이터 확인
@@ -330,7 +334,9 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
         // 승인 안내 메시지
         approval_email_subject: '',
         approval_email_content: '',
-        approval_sms_content: ''
+        approval_sms_content: '',
+        // 배송 주소 수집 여부
+        collect_shipping_address: true
       })
       setMainImages([])
       setDetailImages([])
@@ -565,6 +571,26 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 <option value="기타">기타</option>
               </select>
             </div>
+          </div>
+
+          {/* 배송 주소 수집 여부 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="collect_shipping_address"
+                checked={formData.collect_shipping_address}
+                onChange={handleInputChange}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="ml-3 text-sm font-medium text-gray-700">
+                📦 신청 시 배송 주소 수집
+              </span>
+            </label>
+            <p className="mt-2 ml-7 text-xs text-gray-600">
+              체크 해제 시 신청 모달에서 배송 주소 입력란이 표시되지 않습니다.<br/>
+              (네이버 구매평, 온라인 체험 등 배송이 불필요한 경우 체크 해제)
+            </p>
           </div>
 
           {/* 설명 */}

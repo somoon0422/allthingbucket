@@ -712,12 +712,25 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
                 required
               />
 
-              <AddressInput
-                address={formData.address}
-                detailedAddress={formData.detailed_address}
-                onAddressChange={handleAddressChange}
-                required
-              />
+              {/* 배송 주소 수집 여부에 따라 조건부 렌더링 */}
+              {targetCampaign?.collect_shipping_address !== false && (
+                <AddressInput
+                  address={formData.address}
+                  detailedAddress={formData.detailed_address}
+                  onAddressChange={handleAddressChange}
+                  required
+                />
+              )}
+
+              {/* 배송 주소 미수집 안내 메시지 */}
+              {targetCampaign?.collect_shipping_address === false && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    📌 이 캠페인은 배송 주소 수집이 필요하지 않습니다.<br/>
+                    (온라인 체험, 네이버 구매평 등)
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* 🔥 제품 선택 섹션 (제품이 2개 이상일 때만 표시) */}

@@ -224,7 +224,9 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
     // 승인 안내 메시지
     approval_email_subject: '',
     approval_email_content: '',
-    approval_sms_content: ''
+    approval_sms_content: '',
+    // 배송 주소 수집 여부
+    collect_shipping_address: true
   })
 
   // 🔥 캠페인 데이터로 폼 초기화
@@ -291,7 +293,9 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         // 승인 안내 메시지
         approval_email_subject: safeString(campaign, 'approval_email_subject', ''),
         approval_email_content: safeString(campaign, 'approval_email_content', ''),
-        approval_sms_content: safeString(campaign, 'approval_sms_content', '')
+        approval_sms_content: safeString(campaign, 'approval_sms_content', ''),
+        // 배송 주소 수집 여부
+        collect_shipping_address: campaign.collect_shipping_address !== undefined ? campaign.collect_shipping_address : true
       }
 
       console.log('📝 폼 데이터 생성:', newFormData)
@@ -597,6 +601,8 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         is_always_announcement_experience: formData.is_always_announcement_experience,
         is_always_announcement_result: formData.is_always_announcement_result,
         is_always_announcement_influencer: formData.is_always_announcement_influencer,
+        // 배송 주소 수집 여부
+        collect_shipping_address: formData.collect_shipping_address,
         main_images: mainImages,
         detail_images: detailImages,
         updated_at: new Date().toISOString()
@@ -771,6 +777,26 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
                 required
               />
             </div>
+          </div>
+
+          {/* 배송 주소 수집 여부 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="collect_shipping_address"
+                checked={formData.collect_shipping_address}
+                onChange={handleInputChange}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="ml-3 text-sm font-medium text-gray-700">
+                📦 신청 시 배송 주소 수집
+              </span>
+            </label>
+            <p className="mt-2 ml-7 text-xs text-gray-600">
+              체크 해제 시 신청 모달에서 배송 주소 입력란이 표시되지 않습니다.<br/>
+              (네이버 구매평, 온라인 체험 등 배송이 불필요한 경우 체크 해제)
+            </p>
           </div>
 
           {/* 🔥 제품 관리 섹션 */}
