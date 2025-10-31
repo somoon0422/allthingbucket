@@ -19,13 +19,6 @@ export default defineConfig(({ mode }) => {
       'process.env.NODE_ENV': '"development"',
       __DEV__: 'true',
     }
-  } else {
-    // Production build configuration
-    build = {
-      rollupOptions: {
-        external: ['@portone/browser-sdk/v2']
-      }
-    }
   }
 
   return {
