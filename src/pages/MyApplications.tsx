@@ -14,7 +14,6 @@ function ultraSafeArray<T>(value: any): T[] {
   try {
     // 1. null/undefined 즉시 차단
     if (value === null || value === undefined) {
-      console.log('🛡️ ultraSafeArray: null/undefined → 빈 배열')
       return []
     }
     
@@ -22,7 +21,6 @@ function ultraSafeArray<T>(value: any): T[] {
     if (Array.isArray(value)) {
       try {
         const filtered = value.filter(item => item != null)
-        console.log('🛡️ ultraSafeArray: 유효한 배열 →', filtered.length, '개 항목')
         return filtered
       } catch (filterError) {
         console.warn('⚠️ 배열 필터링 실패:', filterError)
@@ -32,17 +30,14 @@ function ultraSafeArray<T>(value: any): T[] {
     
     // 3. 객체에서 배열 속성 찾기
     if (typeof value === 'object' && value !== null) {
-      console.log('🔍 ultraSafeArray: 객체에서 배열 속성 검색...')
-      
       // 일반적인 배열 속성명들
       const arrayKeys = ['list', 'data', 'items', 'results', 'applications', 'experiences']
-      
+
       for (const key of arrayKeys) {
         try {
           const candidate = value[key]
           if (candidate && Array.isArray(candidate)) {
             const filtered = candidate.filter((item: any) => item != null)
-            console.log(`🛡️ ultraSafeArray: ${key}에서 배열 발견 →`, filtered.length, '개 항목')
             return filtered
           }
         } catch (keyError) {
@@ -58,7 +53,6 @@ function ultraSafeArray<T>(value: any): T[] {
           if (Array.isArray(val)) {
             try {
               const filtered = val.filter((item: any) => item != null)
-              console.log('🛡️ ultraSafeArray: Object.values에서 배열 발견 →', filtered.length, '개 항목')
               return filtered
             } catch (filterError) {
               console.warn('⚠️ Object.values 배열 필터링 실패:', filterError)
@@ -112,7 +106,7 @@ interface MyApplicationsProps {
 const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => {
   const navigate = useNavigate()
   const { user, isAuthenticated, loading: authLoading } = useAuth()
-  const { getUserApplications, cancelApplication } = useExperiences()
+  const { getUserApplications, cancelApplication, deleteApplication } = useExperiences()
   
   const [applications, setApplications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -188,7 +182,6 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
     if (!isAuthenticated || !user?.user_id) return
 
     const interval = setInterval(async () => {
-      console.log('🔄 자동 새로고침 실행')
       try {
         const userApplications = await getUserApplications(user?.user_id)
         const finalApplications = ultraSafeArray(userApplications)
@@ -557,30 +550,66 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
 
       const success = await cancelApplication(applicationId)
       if (success) {
-        // 상태를 'cancelled'로 업데이트
-        setApplications(prev => prev.map(app => 
-          (app._id || app.id) === applicationId 
-            ? { ...app, status: 'cancelled', cancelled_at: new Date().toISOString() }
+        // 상태를 cancelled로 업데이트
+        setApplications(prev => prev.map(app =>
+          (app._id || app.id) === applicationId
+            ? { ...app, status: 'cancelled' }
             : app
         ))
         setShowCancelModal(false)
         setSelectedApplication(null)
-        
-        // 강제 새로고침으로 최신 상태 확인
-        setTimeout(async () => {
-          try {
-            const userApplications = await getUserApplications(user?.user_id)
-            const finalApplications = ultraSafeArray(userApplications)
-            setApplications(finalApplications)
-            setLastRefresh(new Date())
-          } catch (error) {
-            console.error('취소 후 새로고침 실패:', error)
-          }
-        }, 1000)
+
+        // 즉시 새로고침으로 최신 상태 확인
+        try {
+          const userApplications = await getUserApplications(user?.user_id)
+          const finalApplications = ultraSafeArray(userApplications)
+          setApplications(finalApplications)
+          setLastRefresh(new Date())
+        } catch (error) {
+          console.error('취소 후 새로고침 실패:', error)
+        }
       }
     } catch (error) {
       console.error('❌ 신청 취소 실패:', error)
       toast.error('신청 취소에 실패했습니다')
+    }
+  }
+
+  // 취소된 신청 삭제
+  const handleDeleteCancelled = async (application: any) => {
+    try {
+      const applicationId = application._id || application.id
+      if (!applicationId) {
+        toast.error('신청 ID를 찾을 수 없습니다')
+        return
+      }
+
+      if (!confirm('정말로 이 신청 내역을 삭제하시겠습니까?')) {
+        return
+      }
+
+      console.log('🗑️ 취소된 신청 삭제 시작:', applicationId)
+      const success = await deleteApplication(applicationId)
+
+      if (success) {
+        // 배열에서 제거
+        setApplications(prev => prev.filter(app =>
+          (app._id || app.id) !== applicationId
+        ))
+
+        // 새로고침
+        try {
+          const userApplications = await getUserApplications(user?.user_id)
+          const finalApplications = ultraSafeArray(userApplications)
+          setApplications(finalApplications)
+          setLastRefresh(new Date())
+        } catch (error) {
+          console.error('삭제 후 새로고침 실패:', error)
+        }
+      }
+    } catch (error) {
+      console.error('❌ 신청 삭제 실패:', error)
+      toast.error('신청 삭제에 실패했습니다')
     }
   }
 
@@ -1215,6 +1244,18 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                             <Trash2 className="w-4 h-4 mr-1 sm:mr-2" />
                             <span className="hidden sm:inline">신청 취소</span>
                             <span className="sm:hidden">취소</span>
+                          </button>
+                        )}
+
+                        {/* 삭제 버튼 (취소된 경우만) */}
+                        {status === 'cancelled' && (
+                          <button
+                            onClick={() => handleDeleteCancelled(application)}
+                            className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors self-start"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">내역 삭제</span>
+                            <span className="sm:hidden">삭제</span>
                           </button>
                         )}
                       </div>

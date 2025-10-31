@@ -10,13 +10,9 @@ export const supabase = createClient(supabaseUrl, supabaseKey)
 // 인증 토큰 자동 설정 함수
 const setAuthToken = async () => {
   try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.access_token) {
-      // 세션이 있으면 자동으로 토큰이 설정됨
-      console.log('✅ Supabase 인증 토큰 자동 설정됨')
-    }
+    await supabase.auth.getSession()
   } catch (error) {
-    console.warn('⚠️ 인증 토큰 설정 실패:', error)
+    console.error('인증 토큰 설정 실패:', error)
   }
 }
 
@@ -26,18 +22,14 @@ setAuthToken()
 // Supabase 연결 상태 확인 함수
 export const checkDatabaseConnection = async () => {
   try {
-    console.log('🔍 Supabase 데이터베이스 연결 상태 확인 중...')
     const { error } = await supabase.from('campaigns').select('count').limit(1)
-    
     if (error) {
-      console.error('❌ Supabase 연결 실패:', error)
+      console.error('Supabase 연결 실패:', error)
       return false
     }
-    
-    console.log('✅ Supabase 데이터베이스 연결 성공')
     return true
   } catch (error) {
-    console.error('❌ Supabase 데이터베이스 연결 실패:', error)
+    console.error('Supabase 연결 실패:', error)
     return false
   }
 }
@@ -147,7 +139,6 @@ export const dataService = {
     user_profiles: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase user_profiles.list 호출됨', options)
           
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -169,7 +160,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase user_profiles.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ user_profiles 조회 실패:', error)
@@ -258,7 +248,6 @@ export const dataService = {
     user_points: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase user_points.list 호출됨', options)
           
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -280,7 +269,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase user_points.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ user_points 조회 실패:', error)
@@ -369,7 +357,6 @@ export const dataService = {
     points_history: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase points_history.list 호출됨', options)
           
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -391,7 +378,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase points_history.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ points_history 조회 실패:', error)
@@ -559,6 +545,14 @@ export const dataService = {
           
           if (error) {
             console.error('❌ campaigns 기본 데이터 업데이트 실패:', error)
+            console.error('❌ 에러 상세:', {
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint,
+              fullError: JSON.stringify(error, null, 2)
+            })
+            console.error('❌ 업데이트 시도한 데이터:', JSON.stringify(otherData, null, 2))
             return null
           }
           
@@ -619,7 +613,6 @@ export const dataService = {
     user_applications: {
       list: async (options?: { limit?: number }) => {
         try {
-          console.log('🔥 Supabase user_applications.list 호출됨')
           const limit = options?.limit || 100 // 기본값: 최근 100개만
 
           const { data, error } = await supabase
@@ -633,7 +626,6 @@ export const dataService = {
             return []
           }
 
-          console.log('✅ Supabase user_applications.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ user_applications 조회 실패:', error)
@@ -702,16 +694,18 @@ export const dataService = {
       },
       delete: async (id: string) => {
         try {
+          console.log('🔥 dataService.user_applications.delete 호출:', id)
           const { error } = await supabase
             .from('user_applications')
             .delete()
             .eq('id', id)
-          
+
           if (error) {
             console.error('❌ user_applications 삭제 실패:', error)
             return false
           }
-          
+
+          console.log('✅ user_applications 삭제 성공:', id)
           return true
         } catch (error) {
           console.error('❌ user_applications 삭제 실패:', error)
@@ -724,7 +718,6 @@ export const dataService = {
     review_submissions: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase review_submissions.list 호출됨', options)
 
           let query = supabase.from('review_submissions').select('*')
 
@@ -741,7 +734,6 @@ export const dataService = {
             return []
           }
 
-          console.log('✅ Supabase review_submissions.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ review_submissions 조회 실패:', error)
@@ -830,7 +822,6 @@ export const dataService = {
     user_reviews: {
       list: async () => {
         try {
-          console.log('🔥 Supabase user_reviews.list 호출됨')
           const { data, error } = await supabase
             .from('user_reviews')
             .select('*')
@@ -840,7 +831,6 @@ export const dataService = {
             return []
           }
 
-          console.log('✅ Supabase user_reviews.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ user_reviews 조회 실패:', error)
@@ -931,7 +921,6 @@ export const dataService = {
     admins: {
       list: async () => {
         try {
-          console.log('🔥 Supabase admins.list 호출됨')
           const { data, error } = await supabase
             .from('admins')
             .select('*')
@@ -942,7 +931,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase admins.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ admins 조회 실패:', error)
@@ -1031,7 +1019,6 @@ export const dataService = {
     admin_notifications: {
       list: async () => {
         try {
-          console.log('🔥 Supabase admin_notifications.list 호출됨')
           const { data, error } = await supabase
             .from('admin_notifications')
             .select('*')
@@ -1042,7 +1029,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase admin_notifications.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ admin_notifications 조회 실패:', error)
@@ -1131,7 +1117,6 @@ export const dataService = {
     users: {
       list: async () => {
         try {
-          console.log('🔥 Supabase users.list 호출됨')
           const { data, error } = await supabase
             .from('users')
             .select('*')
@@ -1142,7 +1127,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase users.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ users 조회 실패:', error)
@@ -1231,7 +1215,6 @@ export const dataService = {
     bank_accounts: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase bank_accounts.list 호출됨', options)
           
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -1253,7 +1236,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase bank_accounts.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ bank_accounts 조회 실패:', error)
@@ -1342,7 +1324,6 @@ export const dataService = {
     withdrawal_requests: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase withdrawal_requests.list 호출됨', options)
           
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -1364,7 +1345,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase withdrawal_requests.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ withdrawal_requests 조회 실패:', error)
@@ -1453,7 +1433,6 @@ export const dataService = {
     wishlist: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase wishlist.list 호출됨', options)
           
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -1475,7 +1454,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase wishlist.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ wishlist 조회 실패:', error)
@@ -1564,7 +1542,6 @@ export const dataService = {
     user_codes: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase user_codes.list 호출됨', options)
           
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -1586,7 +1563,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase user_codes.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ user_codes 조회 실패:', error)
@@ -1675,7 +1651,6 @@ export const dataService = {
     influencer_profiles: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase influencer_profiles.list 호출됨', options)
           
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -1697,7 +1672,6 @@ export const dataService = {
             return []
           }
           
-          console.log('✅ Supabase influencer_profiles.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ influencer_profiles 조회 실패:', error)
@@ -2028,7 +2002,6 @@ export const dataService = {
     campaign_products: {
       list: async (options?: { filter?: any }) => {
         try {
-          console.log('🔥 Supabase campaign_products.list 호출됨', options)
 
           if (!supabase) {
             console.error('❌ Supabase 클라이언트가 초기화되지 않았습니다')
@@ -2050,7 +2023,6 @@ export const dataService = {
             return []
           }
 
-          console.log('✅ Supabase campaign_products.list 결과:', data)
           return data || []
         } catch (error) {
           console.error('❌ campaign_products 조회 실패:', error)

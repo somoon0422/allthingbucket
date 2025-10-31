@@ -61,18 +61,26 @@ export const useExperiences = () => {
   const checkDuplicateApplication = useCallback(async (experienceId: string, userId: string) => {
     try {
       const applications = await (dataService.entities as any).user_applications.list()
-      const userApplications = applications.filter((app: any) => 
-        app.user_id === userId && app.campaign_id === experienceId
+      // 사용자의 해당 캠페인 신청 내역 확인 (취소된 신청 제외)
+      const userApplications = applications.filter((app: any) =>
+        app.user_id === userId &&
+        app.campaign_id === experienceId &&
+        app.status !== 'cancelled'  // 취소된 신청은 제외
       )
-      
+
       if (userApplications.length > 0) {
+        console.log('🔍 유효한 신청 내역 발견:', userApplications[0])
         return {
           isDuplicate: true,
           existingApplication: userApplications[0]
         }
       }
-      
-      return { isDuplicate: false, existingApplication: null }
+
+      console.log('✅ 신청 가능 (중복 없음)')
+      return {
+        isDuplicate: false,
+        existingApplication: null
+      }
     } catch (error) {
       console.error('중복 체크 실패:', error)
       return { isDuplicate: false, existingApplication: null }
@@ -260,25 +268,58 @@ export const useExperiences = () => {
     }
   }, [checkDuplicateApplication])
 
-  // 신청 취소 함수
+  // 신청 취소 함수 (상태를 cancelled로 변경)
   const cancelApplication = useCallback(async (applicationId: string) => {
     try {
       setLoading(true)
-      
+      console.log('🚫 신청 취소 시작:', applicationId)
+
+      // 신청 상태를 'cancelled'로 변경
       const result = await (dataService.entities as any).user_applications.update(applicationId, {
         status: 'cancelled',
         reviewed_at: new Date().toISOString()
       })
-      
-      if (result.success) {
+
+      if (result) {
+        console.log('✅ 신청 취소 완료')
         toast.success('신청이 취소되었습니다')
         return true
       } else {
-        throw new Error(result.message || '신청 취소에 실패했습니다')
+        console.error('❌ 취소 실패')
+        toast.error('신청 취소에 실패했습니다')
+        return false
       }
     } catch (error) {
-      console.error('신청 취소 실패:', error)
+      console.error('❌ 신청 취소 실패:', error)
       toast.error('신청 취소에 실패했습니다')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // 취소된 신청 삭제 함수 (완전 삭제)
+  const deleteApplication = useCallback(async (applicationId: string) => {
+    try {
+      setLoading(true)
+      console.log('🗑️ 신청 삭제 시작:', applicationId)
+
+      // 신청 내역을 완전히 삭제
+      const deleteResult = await (dataService.entities as any).user_applications.delete(applicationId)
+      console.log('🗑️ 삭제 결과:', deleteResult)
+
+      if (deleteResult) {
+        console.log('✅ 신청 내역 삭제 완료')
+        toast.success('신청 내역이 삭제되었습니다')
+        return true
+      } else {
+        console.error('❌ 삭제 실패: deleteResult가 false')
+        toast.error('신청 삭제에 실패했습니다')
+        return false
+      }
+    } catch (error) {
+      console.error('❌ 신청 삭제 실패:', error)
+      toast.error('신청 삭제에 실패했습니다')
       return false
     } finally {
       setLoading(false)
@@ -294,24 +335,14 @@ export const useExperiences = () => {
         return []
       }
 
-      console.log('🔍 사용자 신청 내역 조회 시작:', userId)
-
       const applications = await (dataService.entities as any).user_applications.list()
-      console.log('📋 전체 신청 내역:', applications?.length || 0, '개')
-      
+
       const userApplications = applications.filter((app: any) => app.user_id === userId)
-      console.log('👤 사용자 신청 내역:', userApplications.length, '개')
 
       // 각 신청에 체험단 정보 추가
       const enrichedApplications = await Promise.all(
         userApplications.map(async (app: any) => {
           try {
-            console.log('🔍 신청 처리 중:', {
-              app_id: app.id,
-              campaign_id: app.campaign_id,
-              user_id: app.user_id
-            })
-
             if (!app.campaign_id) {
               console.log('⚠️ campaign_id가 없음:', app.id)
               return {
@@ -325,15 +356,6 @@ export const useExperiences = () => {
             // campaigns 테이블에서 체험단 정보 조회 (필요한 필드만)
             const experience = await (dataService.entities as any).campaigns.get(app.campaign_id, {
               select: 'id,campaign_name,product_name,point_reward,rewards,reward_points,created_at'
-            })
-            console.log('📦 체험단 정보 조회 결과:', {
-              campaign_id: app.campaign_id,
-              found: !!experience,
-              experience_name: experience?.campaign_name || experience?.product_name || '정보 없음',
-              point_reward: experience?.point_reward,
-              rewards: experience?.rewards,
-              reward_points: experience?.reward_points,
-              full_experience_data: experience
             })
 
             return {
@@ -358,7 +380,6 @@ export const useExperiences = () => {
         })
       )
 
-      console.log('✅ 신청 내역 처리 완료:', enrichedApplications.length, '개')
       return enrichedApplications
     } catch (error) {
       console.error('신청 내역 조회 실패:', error)
@@ -430,6 +451,7 @@ export const useExperiences = () => {
     getStatusColor,
     checkDuplicateApplication,
     cancelApplication,
+    deleteApplication,
     syncCampaignParticipants
   }
 }

@@ -104,7 +104,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           filter: { campaign_id: targetCampaign.id }
         })
 
-        console.log('📦 캠페인 제품 목록:', products)
         setCampaignProducts(products || [])
 
         // 제품이 1개면 자동 선택
@@ -139,8 +138,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
   // 사용자 정보 초기화 - 모달이 열릴 때마다 실행
   useEffect(() => {
     if (isOpen && user && isAuthenticated) {
-      console.log('🔄 모달 열림 - 프로필 로드 시작')
-      // 사용자 프로필 정보 불러오기
       loadUserProfile()
     }
   }, [isOpen, user, isAuthenticated])
@@ -159,17 +156,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         influencerProfile = Array.isArray(influencerProfiles)
           ? influencerProfiles.find((p: any) => p && p.user_id === userId)
           : null
-        console.log('📋 influencer_profiles 전체 데이터:', influencerProfile)
-        if (influencerProfile) {
-          console.log('📞 influencer_profiles 전화번호 필드들:', {
-            phone: influencerProfile.phone,
-            user_phone: influencerProfile.user_phone,
-            phoneNumber: influencerProfile.phoneNumber,
-            phone_number: influencerProfile.phone_number
-          })
-        }
       } catch (influencerError) {
-        console.log('⚠️ influencer_profiles 조회 실패 (무시):', influencerError)
+        // 무시
       }
 
       // users 테이블에서도 전화번호 확인
@@ -180,11 +168,9 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         const userData = usersData.find((u: any) => u.user_id === userId || u.id === userId)
         if (userData) {
           usersPhone = userData.phone || userData.user_phone || userData.phoneNumber || userData.phone_number || ''
-          console.log('📋 users 테이블 데이터:', userData)
-          console.log('📞 users 테이블 전화번호:', usersPhone)
         }
       } catch (usersError) {
-        console.log('⚠️ users 테이블 조회 실패 (무시):', usersError)
+        // 무시
       }
 
       // user_profiles에서 사용자 기본 정보 검색
@@ -195,15 +181,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       if (profileResponse && Array.isArray(profileResponse) && profileResponse.length > 0) {
         const profile = profileResponse[0]
 
-        console.log('📋 user_profiles 데이터:', profile)
-        console.log('📞 user_profiles 전화번호 필드들:', {
-          phone: profile.phone,
-          user_phone: profile.user_phone,
-          phoneNumber: profile.phoneNumber,
-          phone_number: profile.phone_number
-        })
-
-        // 🔥 전화번호 우선순위: influencer_profiles > users > user_profiles > user 객체
+        // 전화번호 우선순위: influencer_profiles > users > user_profiles > user 객체
         const phoneNumber = (
           influencerProfile?.phone ||
           influencerProfile?.user_phone ||
@@ -219,12 +197,34 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           ''
         )
 
-        console.log('🔍 최종 선택된 전화번호:', phoneNumber)
+        // 운영채널 정보는 influencer_profiles 우선, 없으면 user_profiles
+        const instagramHandle = (
+          influencerProfile?.instagram_id ||
+          influencerProfile?.instagram_handle ||
+          influencerProfile?.instagram ||
+          profile.instagram_handle ||
+          profile.instagram_id ||
+          profile.instagram ||
+          ''
+        ).replace('@', '')
 
-        // 🔥 운영채널 정보는 influencer_profiles 우선, 없으면 user_profiles
-        const instagramHandle = (influencerProfile?.instagram_id || profile.instagram_handle || profile.instagram_id || '').replace('@', '')
-        const blogUrl = influencerProfile?.naver_blog || profile.blog_url || profile.naver_blog || ''
-        const youtubeChannel = influencerProfile?.youtube_channel || profile.youtube_channel || ''
+        const blogUrl = (
+          influencerProfile?.naver_blog ||
+          influencerProfile?.blog_url ||
+          influencerProfile?.blog ||
+          profile.blog_url ||
+          profile.naver_blog ||
+          profile.blog ||
+          ''
+        )
+
+        const youtubeChannel = (
+          influencerProfile?.youtube_channel ||
+          influencerProfile?.youtube ||
+          profile.youtube_channel ||
+          profile.youtube ||
+          ''
+        )
 
         setFormData(prev => ({
           ...prev,
@@ -237,13 +237,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           blog_url: blogUrl,
           youtube_channel: youtubeChannel
         }))
-
-        console.log('✅ 폼 데이터 초기화 완료:', {
-          phone: phoneNumber,
-          instagram: instagramHandle,
-          blog: blogUrl,
-          youtube: youtubeChannel
-        })
       } else {
         // 프로필이 없어도 influencer_profiles의 운영채널 정보는 가져오기
         const phoneNumber = (
@@ -258,9 +251,25 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         )
 
         if (influencerProfile) {
-          const instagramHandle = (influencerProfile.instagram_id || '').replace('@', '')
-          const blogUrl = influencerProfile.naver_blog || ''
-          const youtubeChannel = influencerProfile.youtube_channel || ''
+          const instagramHandle = (
+            influencerProfile.instagram_id ||
+            influencerProfile.instagram_handle ||
+            influencerProfile.instagram ||
+            ''
+          ).replace('@', '')
+
+          const blogUrl = (
+            influencerProfile.naver_blog ||
+            influencerProfile.blog_url ||
+            influencerProfile.blog ||
+            ''
+          )
+
+          const youtubeChannel = (
+            influencerProfile.youtube_channel ||
+            influencerProfile.youtube ||
+            ''
+          )
 
           setFormData(prev => ({
             ...prev,
@@ -271,12 +280,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
             blog_url: blogUrl,
             youtube_channel: youtubeChannel
           }))
-          console.log('✅ influencer_profiles에서 운영채널 정보 및 전화번호 로드:', {
-            phone: phoneNumber,
-            instagram: instagramHandle,
-            blog: blogUrl,
-            youtube: youtubeChannel
-          })
         } else {
           // 프로필이 없으면 기본 사용자 정보로만 초기화
           setFormData(prev => ({
@@ -285,9 +288,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
             email: user.email || '',
             phone: phoneNumber
           }))
-          console.log('✅ 기본 사용자 정보로 초기화:', {
-            phone: phoneNumber
-          })
         }
       }
     } catch (error) {
@@ -363,10 +363,9 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
             influencerProfile.tiktok_id ||
             influencerProfile.facebook_page
           )
-          console.log('✅ influencer_profiles SNS 체크:', hasSNS, influencerProfile)
         }
       } catch (influencerError) {
-        console.log('⚠️ influencer_profiles 조회 실패 (무시):', influencerError)
+        // 무시
       }
 
       // influencer_profiles에 없으면 user_profiles에서 확인
@@ -384,7 +383,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
             userProfile.tiktok_id ||
             userProfile.facebook_page
           )
-          console.log('✅ user_profiles SNS 체크:', hasSNS, userProfile)
         }
       }
 
@@ -437,17 +435,14 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
       }
     }
 
-    // 🔥 신청 전 사용자 ID 최종 확인 및 로깅
-    console.log('📝 신청 제출 시작 - 사용자 정보 최종 확인:')
-    console.log('👤 현재 로그인 사용자:', user)
-    console.log('🆔 사용할 사용자 ID:', user.id || user.user_id || (user as any)._id)
-    console.log('📋 캠페인 ID:', targetCampaign._id)
-    console.log('📝 신청 데이터:', formData)
 
     // 필수 필드 검증
-    const requiredFields = ['name', 'email', 'phone', 'address', 'platform_type']
+    const requiresShipping = targetCampaign?.requires_shipping_address !== false
+    const requiredFields = requiresShipping
+      ? ['name', 'email', 'phone', 'address', 'platform_type']
+      : ['name', 'email', 'phone', 'platform_type']
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData])
-    
+
     if (missingFields.length > 0) {
       toast.error(`필수 정보를 입력해주세요: ${missingFields.join(', ')}`)
       return
@@ -485,32 +480,40 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
         if (userProfile) {
           // 프로필이 이미 있으면 업데이트 (email 필드 제거)
           console.log('📝 user_profiles 업데이트:', userId)
-          await (dataService.entities as any).user_profiles.update(userProfile.id, {
+          const updateData: any = {
             name: formData.name,
             phone: formData.phone,
-            address: formData.address,
-            detailed_address: formData.detailed_address,
             instagram_handle: formData.instagram_handle || userProfile.instagram_handle,
             blog_url: formData.blog_url || userProfile.blog_url,
             youtube_channel: formData.youtube_channel || userProfile.youtube_channel,
             updated_at: new Date().toISOString()
-          })
+          }
+          // 배송지 수집이 필요한 경우에만 주소 필드 추가
+          if (requiresShipping) {
+            updateData.address = formData.address
+            updateData.detailed_address = formData.detailed_address
+          }
+          await (dataService.entities as any).user_profiles.update(userProfile.id, updateData)
           console.log('✅ user_profiles 업데이트 완료')
         } else {
           // 프로필이 없으면 새로 생성 (email 필드 제거)
           console.log('🔍 user_profiles 생성:', userId)
-          await (dataService.entities as any).user_profiles.create({
+          const createData: any = {
             user_id: userId,
             name: formData.name,
             phone: formData.phone,
-            address: formData.address,
-            detailed_address: formData.detailed_address,
             instagram_handle: formData.instagram_handle,
             blog_url: formData.blog_url,
             youtube_channel: formData.youtube_channel,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          })
+          }
+          // 배송지 수집이 필요한 경우에만 주소 필드 추가
+          if (requiresShipping) {
+            createData.address = formData.address
+            createData.detailed_address = formData.detailed_address
+          }
+          await (dataService.entities as any).user_profiles.create(createData)
           console.log('✅ user_profiles 생성 완료')
         }
       } catch (profileError) {

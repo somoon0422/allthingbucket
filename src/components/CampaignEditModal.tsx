@@ -567,13 +567,24 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         return
       }
 
+      // 🔥 날짜를 ISO 형식으로 변환하는 함수
+      const toISODate = (dateString: string) => {
+        if (!dateString || !dateString.trim()) return null
+        try {
+          const date = new Date(dateString)
+          return date.toISOString()
+        } catch (error) {
+          console.warn('날짜 변환 실패:', dateString, error)
+          return null
+        }
+      }
+
       // 캠페인 데이터 업데이트 (캠페인 생성 시와 동일한 필드들만)
       const updateData = {
         campaign_name: formData.experience_name.trim(),
         product_name: formData.product_name.trim(),
         brand_name: formData.brand_name.trim(),
         description: formData.description.trim(),
-        type: 'campaign',
         platform: formData.platform,
         delivery_type: formData.delivery_type,
         status: formData.status,
@@ -918,7 +929,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
                 <option value="기타">기타</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 배송형 *
@@ -936,6 +947,28 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
                 <option value="기타">기타</option>
               </select>
             </div>
+          </div>
+
+          {/* 배송 주소 수집 여부 */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="requires_shipping_address"
+                checked={formData.requires_shipping_address}
+                onChange={handleInputChange}
+                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-900">
+                  📦 신청 시 배송 주소 수집
+                </span>
+                <p className="text-xs text-gray-600 mt-1">
+                  체크 해제 시 신청 모달에서 배송 주소 입력란이 표시되지 않습니다.<br />
+                  (네이버 구매평, 온라인 체험 등 배송이 불필요한 경우 체크 해제)
+                </p>
+              </div>
+            </label>
           </div>
 
           {/* 설명 */}

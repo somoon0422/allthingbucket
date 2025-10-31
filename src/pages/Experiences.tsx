@@ -313,22 +313,7 @@ const Experiences: React.FC = () => {
                       experience.main_image,
                       experience.thumbnail
                     ].filter(Boolean)
-                    
-                    // 🔥 디버깅: 이미지 소스 확인 (첫 번째 체험단만)
-                    if (index === 0) {
-                      console.log('🔍 첫 번째 체험단 이미지 디버깅 (실제 DB 필드명):', {
-                        campaignName: experience.campaign_name,
-                        mainImages: experience.main_images,
-                        detailImages: experience.detail_images,
-                        mainImagesType: typeof experience.main_images,
-                        mainImagesIsArray: Array.isArray(experience.main_images),
-                        mainImagesLength: Array.isArray(experience.main_images) ? experience.main_images.length : 'N/A',
-                        imageSources,
-                        foundImageSrc: imageSources[0],
-                        allKeys: Object.keys(experience || {})
-                      })
-                    }
-                    
+
                     const imageSrc = imageSources[0]
                     
                     if (imageSrc) {
@@ -389,22 +374,7 @@ const Experiences: React.FC = () => {
                         
                         return false
                       })()
-                      
-                      // 🔥 디버깅: 상태 체크 로직 (첫 번째 체험단만)
-                      if (index === 0) {
-                        console.log('🔍 첫 번째 체험단 상태 디버깅 (실제 DB 필드명):', {
-                          campaignName: experience.campaign_name,
-                          campaignStatus: experience.status,
-                          endDate: experience.end_date,
-                          applicationEnd: experience.application_end,
-                          reviewDeadline: experience.review_deadline,
-                          maxParticipants: experience.max_participants,
-                          currentParticipants: experience.current_participants,
-                          isExpiredCampaign,
-                          allKeys: Object.keys(experience || {})
-                        })
-                      }
-                      
+
                       return (
                         <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
                           isExpiredCampaign

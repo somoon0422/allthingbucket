@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useExperiences } from '../hooks/useExperiences'
 import { useWishlist } from '../hooks/useWishlist'
@@ -107,6 +107,7 @@ function safeNumber(obj: any, field: string, fallback = 0): number {
 const CampaignDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const { user, isAuthenticated } = useAuth()
   const { getCampaignById, checkDuplicateApplication, loading } = useExperiences()
@@ -267,6 +268,42 @@ const CampaignDetail: React.FC = () => {
     console.log('🖼️ isDetailImagesExpanded 상태 변화:', isDetailImagesExpanded)
   }, [isDetailImagesExpanded])
 
+  // 🔥 디버깅: applicationStatus 상태 변화 추적
+  useEffect(() => {
+    console.log('🎯 applicationStatus 상태 변화:', applicationStatus)
+  }, [applicationStatus])
+
+  // 🔥 신청 상태를 다시 체크하는 함수
+  const recheckApplicationStatus = useCallback(async () => {
+    if (!id || !isAuthenticated || !user?.user_id) {
+      console.log('🔍 recheckApplicationStatus 건너뜀:', { id, isAuthenticated, userId: user?.user_id })
+      return
+    }
+
+    console.log('🔍 recheckApplicationStatus 실행 시작:', { campaignId: id, userId: user.user_id })
+    try {
+      const duplicateCheck = await checkDuplicateApplication(id, user.user_id)
+      console.log('🔍 중복 신청 체크 결과:', duplicateCheck)
+
+      // cancelled 상태는 신청 안 한 것으로 처리
+      if (duplicateCheck.isDuplicate) {
+        const application = duplicateCheck.existingApplication
+        if (application?.status === 'cancelled') {
+          console.log('🚫 취소된 신청 - applicationStatus null로 설정')
+          setApplicationStatus(null)
+        } else {
+          console.log('✅ 유효한 신청 내역 발견 - applicationStatus 설정')
+          setApplicationStatus(application)
+        }
+      } else {
+        console.log('❌ 신청 내역 없음 - applicationStatus null로 설정')
+        setApplicationStatus(null)
+      }
+    } catch (error) {
+      console.error('❌ 신청 상태 체크 실패:', error)
+    }
+  }, [id, isAuthenticated, user?.user_id, checkDuplicateApplication])
+
   useEffect(() => {
     const loadCampaign = async () => {
       if (!id) return
@@ -297,12 +334,7 @@ const CampaignDetail: React.FC = () => {
         }
 
         // 🔥 신청 상태 체크
-        if (isAuthenticated && user?.user_id && campaignWithCount) {
-          const duplicateCheck = await checkDuplicateApplication(id, user.user_id)
-          if (duplicateCheck.isDuplicate) {
-            setApplicationStatus(duplicateCheck.existingApplication)
-          }
-        }
+        await recheckApplicationStatus()
       } catch (error) {
         console.error('❌ 캠페인 상세 정보 로드 실패:', error)
         toast.error('캠페인 정보를 불러오는데 실패했습니다')
@@ -310,7 +342,33 @@ const CampaignDetail: React.FC = () => {
     }
 
     loadCampaign()
-  }, [id, getCampaignById, isAuthenticated, user?.user_id, checkDuplicateApplication])
+  }, [id, getCampaignById, recheckApplicationStatus])
+
+  // 🔥 페이지가 다시 보일 때 (뒤로가기 등) 신청 상태 재확인
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        recheckApplicationStatus()
+      }
+    }
+
+    const handleFocus = () => {
+      recheckApplicationStatus()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [recheckApplicationStatus])
+
+  // 🔥 페이지 이동 시에도 신청 상태 재확인 (뒤로가기 감지)
+  useEffect(() => {
+    recheckApplicationStatus()
+  }, [location.key, recheckApplicationStatus])
 
   const handleApplyClick = () => {
     if (!isAuthenticated) {
@@ -641,11 +699,11 @@ const CampaignDetail: React.FC = () => {
             <div className="bg-white rounded-xl overflow-hidden mb-6 border border-slate-200">
               {/* 🔥 메인 이미지 갤러리 */}
               {displayMainImages.length > 0 && (
-                <div className="aspect-video bg-slate-100 relative overflow-hidden group">
+                <div className="bg-slate-100 relative overflow-hidden group flex items-center justify-center min-h-[400px]">
                   <img
                     src={displayMainImages[currentMainImageIndex] || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'}
                     alt={`${productName} 메인 이미지 ${currentMainImageIndex + 1}`}
-                    className="w-full h-full object-cover transition-transform duration-500"
+                    className="w-full h-auto object-contain transition-transform duration-500 max-h-[600px]"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
                     }}
@@ -988,6 +1046,11 @@ const CampaignDetail: React.FC = () => {
                     <div className="text-right min-w-0 flex-1 ml-2">
                       <div className="font-semibold text-slate-900 whitespace-nowrap text-xs">
                         {(() => {
+                          // 🔥 상시 신청 체크
+                          if (campaign?.is_always_open_application) {
+                            return <span className="text-green-600 font-bold">✓ 상시 신청</span>
+                          }
+
                           const startDate = safeString(campaign, 'application_start')
                           const endDate = safeString(campaign, 'application_end')
 
@@ -1022,6 +1085,11 @@ const CampaignDetail: React.FC = () => {
                     <span className="text-slate-600 font-medium text-xs">발표일</span>
                     <span className="font-semibold text-slate-900 text-xs">
                       {(() => {
+                        // 🔥 상시 발표 체크
+                        if (campaign?.is_always_announcement_experience) {
+                          return <span className="text-green-600 font-bold">✓ 상시 발표</span>
+                        }
+
                         const dateStr = safeString(campaign, 'experience_announcement')
                         if (!dateStr) return '미정'
 
@@ -1045,6 +1113,11 @@ const CampaignDetail: React.FC = () => {
                     <div className="text-right min-w-0 flex-1 ml-2">
                       <div className="font-semibold text-slate-900 whitespace-nowrap text-xs">
                         {(() => {
+                          // 🔥 상시 콘텐츠 등록 체크
+                          if (campaign?.is_always_open_content) {
+                            return <span className="text-green-600 font-bold">✓ 상시 등록</span>
+                          }
+
                           const startDate = safeString(campaign, 'content_start')
                           const endDate = safeString(campaign, 'content_end')
 
@@ -1079,6 +1152,11 @@ const CampaignDetail: React.FC = () => {
                     <span className="text-slate-600 font-medium text-xs">평가 마감</span>
                     <span className="font-semibold text-slate-900 text-xs">
                       {(() => {
+                        // 🔥 상시 결과 발표 체크
+                        if (campaign?.is_always_announcement_result) {
+                          return <span className="text-green-600 font-bold">✓ 상시 발표</span>
+                        }
+
                         const dateStr = safeString(campaign, 'result_announcement')
                         if (!dateStr) return '미정'
 

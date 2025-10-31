@@ -87,8 +87,12 @@ ${variables.name}님, 올띵버킷 가입을 환영합니다! 🎉
 👉 지금 진행 중인 체험단 보러가기`;
         buttons = [
           {
+            type: 'AC',
+            name: '채널 추가'
+          },
+          {
             type: 'WL',
-            name: '체험단 보기',
+            name: '체험단 둘러보기',
             linkMobile: 'https://allthingbucket.com/experiences',
             linkPc: 'https://allthingbucket.com/experiences'
           }
@@ -141,7 +145,7 @@ ${variables.campaignName} 리뷰 검수가 완료되어 포인트가 지급되�
         buttons = [
           {
             type: 'WL',
-            name: '출금 신청하기',
+            name: '포인트 확인하기',
             linkMobile: 'https://allthingbucket.com/points',
             linkPc: 'https://allthingbucket.com/points'
           }
@@ -162,7 +166,7 @@ ${variables.name}님, 신청이 완료되었습니다! ✅
         buttons = [
           {
             type: 'WL',
-            name: '내 신청 보기',
+            name: '내 신청 확인하기',
             linkMobile: 'https://allthingbucket.com/my-applications',
             linkPc: 'https://allthingbucket.com/my-applications'
           }
@@ -182,7 +186,7 @@ ${variables.reason}
         buttons = [
           {
             type: 'WL',
-            name: '체험단 보기',
+            name: '다른 체험단 보기',
             linkMobile: 'https://allthingbucket.com/experiences',
             linkPc: 'https://allthingbucket.com/experiences'
           }
@@ -200,7 +204,7 @@ ${variables.reason}
         buttons = [
           {
             type: 'WL',
-            name: '내 신청 보기',
+            name: '리뷰 수정하기',
             linkMobile: 'https://allthingbucket.com/my-applications',
             linkPc: 'https://allthingbucket.com/my-applications'
           }
@@ -209,9 +213,15 @@ ${variables.reason}
 
       case 'WITHDRAWALAPPROVAL':
         replacedContent = `[올띵버킷]
-${variables.userName}님, ${variables.amount}P 출금이 승인되었습니다! 💰
 
-마이페이지에서 확인하세요.`;
+${variables.userName}님, 출금이 승인되었습니다! 💰
+
+  💰 출금 정보
+  - 출금 금액: ${variables.amount}P
+  - 입금 예정 금액: ${variables.actualAmount}원
+    (원천징수 3.3% 공제)
+
+영업일 기준 3~5일 내에 등록하신 계좌로 입금됩니다.`;
         buttons = [
           {
             type: 'WL',

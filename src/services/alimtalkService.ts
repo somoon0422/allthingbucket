@@ -58,18 +58,22 @@ class AlimtalkService {
     userName: string,
     amount: number
   ): Promise<{ success: boolean; message: string }> {
+    // 원천징수 3.3% 공제 후 실제 입금 금액 계산
+    const actualAmount = Math.floor(amount * 0.967)
+
     return this.sendAlimtalk({
       to: phoneNumber,
       templateCode: 'WITHDRAWALAPPROVAL', // 카카오에 등록한 템플릿 코드
       variables: {
         userName,
         amount: amount.toLocaleString(),
-        url: 'https://allthingbucket.com/points'
+        actualAmount: actualAmount.toLocaleString()
       },
       failoverConfig: {
         type: 'SMS',
         from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
-        content: `[올띵버킷]\n${userName}님, ${amount.toLocaleString()}P 출금이 승인되었습니다! 💰\n\n마이페이지에서 확인하세요.\nhttps://allthingbucket.com/points`
+        // SMS는 이모지 제거
+        content: `[올띵버킷]\n${userName}님, ${amount.toLocaleString()}P 출금이 승인되었습니다!\n\n입금 예정 금액: ${actualAmount.toLocaleString()}원 (원천징수 3.3% 공제)\n\n영업일 기준 3~5일 내에 입금됩니다.\n\nhttps://allthingbucket.com/points`
       }
     })
   }
@@ -123,7 +127,8 @@ https://allthingbucket.com/experiences`
         type: 'LMS',
         from: import.meta.env.VITE_SMS_FROM_NUMBER || '',
         subject: '[올띵버킷] 신청 완료',
-        content: `[올띵버킷]\n${userName}님, 신청이 완료되었습니다! ✅\n\n📋 신청 정보\n- 캠페인: ${campaignName}\n- 브랜드: ${brandName}\n- 신청일: ${applicationDate}\n- 상태: 승인 대기중\n\n영업일 기준 3일 이내에 결과를 안내드립니다.\n\nhttps://allthingbucket.com/my-applications`
+        // SMS는 이모지 지원 안함 - 모든 이모지 제거
+        content: `[올띵버킷]\n${userName}님, 신청이 완료되었습니다!\n\n신청 정보\n- 캠페인: ${campaignName}\n- 브랜드: ${brandName}\n- 신청일: ${applicationDate}\n- 상태: 승인 대기중\n\n영업일 기준 3일 이내에 결과를 안내드립니다.\n\nhttps://allthingbucket.com/my-applications`
       }
     })
   }
