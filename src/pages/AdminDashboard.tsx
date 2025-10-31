@@ -1903,26 +1903,26 @@ const AdminDashboard: React.FC = () => {
                           {/* 승인/거절 버튼 (대기중인 경우만) */}
                           {application.status === 'pending' && (
                             <>
-                              <button
-                                onClick={() => {
-                                  setSelectedApplication(application)
-                                  setShowApprovalModal(true)
-                                }}
-                                className="text-green-600 hover:text-green-900"
+                                  <button
+                                    onClick={() => {
+                                      setSelectedApplication(application)
+                                      setShowApprovalModal(true)
+                                    }}
+                                    className="text-green-600 hover:text-green-900"
                                 title="승인"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedApplication(application)
-                                  setShowRejectionModal(true)
-                                }}
-                                className="text-red-600 hover:text-red-900"
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedApplication(application)
+                                      setShowRejectionModal(true)
+                                    }}
+                                    className="text-red-600 hover:text-red-900"
                                 title="거절"
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </button>
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                  </button>
                             </>
                           )}
                           

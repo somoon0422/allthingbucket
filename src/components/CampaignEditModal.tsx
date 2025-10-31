@@ -158,12 +158,12 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         additional_info: safeString(campaign, 'additional_info', ''),
         status: safeString(campaign, 'status', 'active'),
         // 캠페인 일정 정보
-        application_start_date: formatDateForInput(safeString(campaign, 'application_start')),
-        application_end_date: formatDateForInput(safeString(campaign, 'application_end')),
-        content_start_date: formatDateForInput(safeString(campaign, 'content_start')),
-        content_end_date: formatDateForInput(safeString(campaign, 'content_end')),
-        experience_announcement_date: formatDateForInput(safeString(campaign, 'experience_announcement')),
-        result_announcement_date: formatDateForInput(safeString(campaign, 'result_announcement')),
+        application_start_date: formatDateForInput(safeString(campaign, 'application_start_date') || safeString(campaign, 'application_start')),
+        application_end_date: formatDateForInput(safeString(campaign, 'application_end_date') || safeString(campaign, 'application_end')),
+        content_start_date: formatDateForInput(safeString(campaign, 'content_start_date') || safeString(campaign, 'content_start')),
+        content_end_date: formatDateForInput(safeString(campaign, 'content_end_date') || safeString(campaign, 'content_end')),
+        experience_announcement_date: formatDateForInput(safeString(campaign, 'influencer_announcement_date') || safeString(campaign, 'experience_announcement')),
+        result_announcement_date: formatDateForInput(safeString(campaign, 'result_announcement_date') || safeString(campaign, 'result_announcement')),
         current_applicants: safeNumber(campaign, 'current_participants', 0)
       })
       
@@ -289,13 +289,13 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         current_participants: parseInt(formData.current_applicants.toString()) || 0,
         start_date: formData.application_start_date || new Date().toISOString(),
         end_date: formData.application_end_date || null,
-        application_start: formData.application_start_date || new Date().toISOString(),
-        application_end: formData.application_end_date || null,
-        content_start: formData.content_start_date || new Date().toISOString(),
-        content_end: formData.content_end_date || null,
+        application_start_date: formData.application_start_date || new Date().toISOString(),
+        application_end_date: formData.application_end_date || null,
+        content_start_date: formData.content_start_date || new Date().toISOString(),
+        content_end_date: formData.content_end_date || null,
         review_deadline: formData.content_end_date || null,
-        experience_announcement: formData.experience_announcement_date || null,
-        result_announcement: formData.result_announcement_date || null,
+        influencer_announcement_date: formData.experience_announcement_date || null,
+        result_announcement_date: formData.result_announcement_date || null,
         experience_location: formData.experience_location || null,
         experience_period: formData.experience_period || null,
         requirements: formData.requirements.trim() || null,
@@ -333,13 +333,13 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
       console.log('🚀 캠페인 업데이트 시작:', { campaignId: campaign.id, updateData })
       const updateResult = await dataService.entities.campaigns.update(campaign.id, updateData)
       console.log('🚀 캠페인 업데이트 결과:', updateResult)
-      
-      if (updateResult && updateResult.success) {
+
+      if (updateResult) {
         toast.success('캠페인이 성공적으로 수정되었습니다!')
         onSuccess()
         onClose()
       } else {
-        throw new Error(updateResult?.message || '캠페인 업데이트 실패')
+        throw new Error('캠페인 업데이트 실패')
       }
       
     } catch (error) {
