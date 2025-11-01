@@ -370,6 +370,22 @@ const CampaignDetail: React.FC = () => {
     recheckApplicationStatus()
   }, [location.key, recheckApplicationStatus])
 
+  // 🚀 모든 메인 이미지 미리 로드 (페이지 로드 시)
+  useEffect(() => {
+    if (!campaign) return
+
+    const displayMainImages = safeArray(campaign, 'main_images')
+    if (displayMainImages.length === 0) return
+
+    // 모든 메인 이미지를 백그라운드에서 미리 로드
+    displayMainImages.forEach((src: string) => {
+      if (src) {
+        const img = new Image()
+        img.src = src
+      }
+    })
+  }, [campaign])
+
   const handleApplyClick = () => {
     if (!isAuthenticated) {
       toast.error('로그인이 필요합니다')
