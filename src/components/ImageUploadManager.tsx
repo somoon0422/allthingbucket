@@ -255,6 +255,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
         <div className="space-y-2">
           {!showUrlInput ? (
             <button
+              type="button"
               onClick={() => setShowUrlInput(true)}
               className="flex items-center space-x-2 px-3 py-2 text-sm text-primary-600 hover:text-primary-700 hover:bg-blue-50 rounded-lg transition-colors"
             >
@@ -272,12 +273,14 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
                 onKeyPress={(e) => e.key === 'Enter' && handleUrlAdd()}
               />
               <button
+                type="button"
                 onClick={handleUrlAdd}
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 추가
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowUrlInput(false)
                   setUrlInput('')
@@ -312,6 +315,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
                   />
                 </div>
                 <button
+                  type="button"
                   onClick={() => handleRemoveImage(index)}
                   className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                 >
