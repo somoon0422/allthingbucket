@@ -118,9 +118,12 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
   const [selectedPointApplication, setSelectedPointApplication] = useState<any>(null)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'applications'
+  const [subStatusFilter, setSubStatusFilter] = useState('waiting') // 'waiting' | 'in_progress' | 'completed'
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
-  
+  const [processType, setProcessType] = useState<'shipping' | 'purchase'>('shipping') // 프로세스 타입
+  const [selectedStep, setSelectedStep] = useState<any>(null) // 선택된 프로세스 단계 정보
+
 
   // 🔥 신청내역 로드 함수 - undefined.length 완전 차단
   const loadApplications = useCallback(async () => {
@@ -199,35 +202,47 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
   const filteredApplications = React.useMemo(() => {
     try {
       const safeApplicationsArray = ultraSafeArray(applications)
-      
+
       if (statusFilter === 'all') {
         return safeApplicationsArray
       }
-      
-      return safeApplicationsArray.filter(app => {
-        try {
-          const status = safeString(app, 'status', 'pending')
-          
-          // 포인트 지급이 완료된 경우 "종료" 상태로 분류
-          if (status === 'point_completed' || status === 'point_approved') {
-            return statusFilter === 'completed'
+
+      if (statusFilter === 'applications') {
+        // 신청내역 필터
+        return safeApplicationsArray.filter(app => {
+          try {
+            const status = safeString(app, 'status', 'pending')
+
+            if (subStatusFilter === 'waiting') {
+              // 대기중: pending
+              return status === 'pending'
+            }
+
+            if (subStatusFilter === 'in_progress') {
+              // 진행중: 선정 이후부터 리뷰 완료까지
+              return ['approved', 'product_purchase_required', 'product_purchased', 'shipping',
+                      'product_received', 'review_in_progress', 'review_submitted',
+                      'review_completed', 'review_resubmitted'].includes(status)
+            }
+
+            if (subStatusFilter === 'completed') {
+              // 종료: 포인트 지급 완료, 취소, 반려
+              return ['point_completed', 'point_approved', 'cancelled', 'rejected'].includes(status)
+            }
+
+            return false
+          } catch {
+            return false
           }
-          
-          // 기존 상태 매핑
-          if (statusFilter === 'completed') {
-            return status === 'completed' || status === 'point_completed' || status === 'point_approved'
-          }
-          
-          return status === statusFilter
-        } catch {
-          return false
-        }
-      })
+        })
+      }
+
+      return safeApplicationsArray
     } catch (error) {
       console.error('필터링 실패:', error)
       return []
     }
-  }, [applications, statusFilter])
+  }, [applications, statusFilter, subStatusFilter])
 
 
   const getStatusInfo = (status: string) => {
@@ -367,29 +382,41 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
     }
   }
 
-  // 🔥 D-day 계산 함수
-  const calculateDDay = (approvedAt: string) => {
+  // 🔥 리뷰 작성 D-day 계산 함수 (수령완료 시점 기준)
+  const calculateReviewDDay = (application: any) => {
     try {
-      const approvedDate = new Date(approvedAt)
+      const status = safeString(application, 'status', 'pending')
+
+      // delivered, review_in_progress, review_submitted, review_resubmitted 상태일 때만 D-day 표시
+      if (!['delivered', 'review_in_progress', 'review_submitted', 'review_resubmitted'].includes(status)) {
+        return null
+      }
+
+      // updated_at을 수령 시점으로 간주 (delivered 상태가 된 시점)
+      const deliveredAt = safeString(application, 'updated_at') || safeString(application, 'created_at')
+      if (!deliveredAt) return null
+
+      const deliveredDate = new Date(deliveredAt)
       const today = new Date()
-      
-      // 승인일로부터 7일 후가 마감일
-      const deadline = new Date(approvedDate.getTime() + 7 * 24 * 60 * 60 * 1000)
-      
+
+      // 수령일로부터 7일 후가 마감일
+      const deadline = new Date(deliveredDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+
       const diffTime = deadline.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
+
       if (diffDays < 0) {
-        return { days: 0, status: 'expired', text: '마감됨' }
+        return { days: Math.abs(diffDays), status: 'expired', text: `기한초과 ${Math.abs(diffDays)}일`, color: 'bg-red-100 text-red-800 border-red-300' }
       } else if (diffDays === 0) {
-        return { days: 0, status: 'today', text: '오늘 마감' }
-      } else if (diffDays <= 3) {
-        return { days: diffDays, status: 'urgent', text: `D-${diffDays}` }
+        return { days: 0, status: 'today', text: '오늘 마감!', color: 'bg-orange-100 text-orange-800 border-orange-300 animate-pulse' }
+      } else if (diffDays <= 2) {
+        return { days: diffDays, status: 'urgent', text: `⚠️ D-${diffDays}`, color: 'bg-yellow-100 text-yellow-800 border-yellow-300' }
       } else {
-        return { days: diffDays, status: 'normal', text: `D-${diffDays}` }
+        return { days: diffDays, status: 'normal', text: `D-${diffDays}`, color: 'bg-blue-100 text-primary-800 border-blue-200' }
       }
     } catch (error) {
-      return { days: 0, status: 'error', text: '계산 오류' }
+      console.error('D-day 계산 오류:', error)
+      return null
     }
   }
 
@@ -789,6 +816,13 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
+                onClick={() => navigate('/points')}
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg text-sm sm:text-base font-semibold"
+              >
+                <Coins className="w-4 h-4" />
+                <span>포인트 출금</span>
+              </button>
+              <button
                 onClick={() => navigate('/profile')}
                 className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
               >
@@ -823,31 +857,28 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
 
         {/* 상태 탭 */}
         <div className="mb-6">
-          <div className="flex flex-wrap gap-2 mb-4">
+          {/* 메인 탭 */}
+          <div className="flex gap-2 mb-4">
             {[
               { value: 'all', label: '전체', count: applications.length },
-              { value: 'pending', label: '신청', count: applications.filter(app => app.status === 'pending').length },
-              { value: 'approved', label: '선정완료', count: applications.filter(app => app.status === 'approved').length },
-              { value: 'product_purchase_required', label: '제품구매', count: applications.filter(app => app.status === 'product_purchase_required').length },
-              { value: 'product_purchased', label: '구매완료', count: applications.filter(app => app.status === 'product_purchased').length },
-              { value: 'shipping', label: '배송중', count: applications.filter(app => app.status === 'shipping').length },
-              { value: 'delivered', label: '수령완료', count: applications.filter(app => app.status === 'delivered').length },
-              { value: 'review_verification', label: '리뷰인증', count: applications.filter(app => app.status === 'review_verification').length },
-              { value: 'completed', label: '종료', count: applications.filter(app => 
-                app.status === 'completed' || app.status === 'point_completed' || app.status === 'point_approved'
-              ).length }
+              { value: 'applications', label: '신청내역', count: applications.length }
             ].map((tab) => (
               <button
                 key={tab.value}
-                onClick={() => setStatusFilter(tab.value)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all duration-200 ${
+                onClick={() => {
+                  setStatusFilter(tab.value)
+                  if (tab.value === 'applications') {
+                    setSubStatusFilter('waiting')
+                  }
+                }}
+                className={`px-6 py-3 rounded-lg font-semibold text-base transition-all duration-200 ${
                   statusFilter === tab.value
-                    ? 'bg-primary-600 text-white shadow-md'
+                    ? 'bg-primary-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {tab.label}
-                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
                   statusFilter === tab.value
                     ? 'bg-primary-500 text-white'
                     : 'bg-gray-300 text-gray-600'
@@ -857,6 +888,42 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
               </button>
             ))}
           </div>
+
+          {/* 신청내역 하위 탭 */}
+          {statusFilter === 'applications' && (
+            <div className="flex flex-wrap gap-2 pl-4 border-l-4 border-primary-200 mb-4">
+              {[
+                { value: 'waiting', label: '대기중', count: applications.filter(app => app.status === 'pending').length },
+                { value: 'in_progress', label: '진행중', count: applications.filter(app =>
+                  ['approved', 'product_purchase_required', 'product_purchased', 'shipping',
+                   'product_received', 'review_in_progress', 'review_submitted',
+                   'review_completed', 'review_resubmitted'].includes(app.status)
+                ).length },
+                { value: 'completed', label: '종료', count: applications.filter(app =>
+                  ['point_completed', 'point_approved', 'cancelled', 'rejected'].includes(app.status)
+                ).length }
+              ].map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => setSubStatusFilter(tab.value)}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                    subStatusFilter === tab.value
+                      ? 'bg-primary-500 text-white shadow-md'
+                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  {tab.label}
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                    subStatusFilter === tab.value
+                      ? 'bg-primary-400 text-white'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           
           <div className="text-sm sm:text-base text-gray-600">
             {statusFilter === 'all' ? (
@@ -869,72 +936,268 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
 
         {/* 프로세스 안내 박스 */}
         {filteredApplications.length > 0 && (
-          <div className="bg-gradient-to-r from-primary-50 to-navy-50 border border-blue-200 rounded-xl p-4 sm:p-6 mb-6">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-white" />
+          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-primary-200 rounded-2xl p-6 sm:p-8 mb-6 shadow-lg">
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                    <AlertCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                      체험단 진행 프로세스
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
+                      캠페인 유형을 선택하여 진행 단계를 확인하세요
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
-                  체험단 진행 프로세스 안내
-                </h3>
-                <div className="space-y-2.5 text-sm sm:text-base">
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-xs font-semibold mt-0.5">
-                      1
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">선정완료:</span>
-                      <span className="text-gray-700 ml-1">제품을 구매하신 후 '제품 구매 완료' 버튼을 클릭해주세요.</span>
-                    </div>
+
+              {/* 안내 메시지 */}
+              <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-400 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-semibold mt-0.5">
-                      2
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">제품구매완료:</span>
-                      <span className="text-gray-700 ml-1">관리자가 배송 정보를 등록하면 송장번호를 확인하실 수 있습니다.</span>
-                    </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-900">
+                      💡 아래 버튼을 클릭하여 캠페인 유형별 상세 프로세스를 확인하세요
+                    </p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      👆 각 단계를 클릭하면 상세 안내를 확인할 수 있습니다
+                    </p>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-primary-700 flex items-center justify-center text-xs font-semibold mt-0.5">
-                      3
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">제품배송중:</span>
-                      <span className="text-gray-700 ml-1">제품을 받으시면 '제품 수령 완료' 버튼을 클릭해주세요.</span>
-                    </div>
+                </div>
+              </div>
+
+              {/* 프로세스 타입 선택 탭 */}
+              <div className="flex gap-3 mb-6">
+                <button
+                  onClick={() => setProcessType('shipping')}
+                  className={`flex-1 px-6 py-4 rounded-xl font-semibold text-sm transition-all transform hover:scale-105 ${
+                    processType === 'shipping'
+                      ? 'bg-gradient-to-r from-primary-600 to-blue-600 text-white shadow-xl shadow-blue-200'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-primary-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Package className="w-5 h-5" />
+                    <span>배송형 캠페인</span>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-semibold mt-0.5">
-                      4
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">제품수령완료:</span>
-                      <span className="text-gray-700 ml-1">'리뷰 인증하기' 버튼을 통해 리뷰를 인증해주세요.</span>
-                    </div>
+                  <p className={`text-xs mt-1 ${processType === 'shipping' ? 'text-blue-100' : 'text-gray-500'}`}>
+                    제품이 집으로 배송
+                  </p>
+                </button>
+                <button
+                  onClick={() => setProcessType('purchase')}
+                  className={`flex-1 px-6 py-4 rounded-xl font-semibold text-sm transition-all transform hover:scale-105 ${
+                    processType === 'purchase'
+                      ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-xl shadow-orange-200'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-orange-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Gift className="w-5 h-5" />
+                    <span>구매형 캠페인</span>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 text-navy-700 flex items-center justify-center text-xs font-semibold mt-0.5">
-                      5
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">리뷰 검수중:</span>
-                      <span className="text-gray-700 ml-1">관리자가 리뷰를 검수합니다. 승인될 때까지 기다려주세요.</span>
-                    </div>
+                  <p className={`text-xs mt-1 ${processType === 'purchase' ? 'text-orange-100' : 'text-gray-500'}`}>
+                    직접 구매 후 리뷰
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* 배송형 프로세스 플로우 */}
+            {processType === 'shipping' && (
+              <div className="relative bg-white/50 rounded-xl p-4">
+                <div className="flex items-center justify-between gap-2 sm:gap-3 overflow-x-auto pb-4">
+                  {[
+                    {
+                      icon: CheckCircle,
+                      label: '선정완료',
+                      color: 'from-green-400 to-emerald-500',
+                      bgColor: 'bg-green-50',
+                      borderColor: 'border-green-200',
+                      tip: '축하합니다! 캠페인에 선정되었습니다. 제품 발송 준비 중입니다.'
+                    },
+                    {
+                      icon: Package,
+                      label: '배송중',
+                      color: 'from-blue-400 to-indigo-500',
+                      bgColor: 'bg-blue-50',
+                      borderColor: 'border-blue-200',
+                      tip: '관리자가 배송 정보를 등록하면 송장번호를 확인할 수 있습니다.'
+                    },
+                    {
+                      icon: CheckCircle,
+                      label: '수령완료',
+                      color: 'from-purple-400 to-pink-500',
+                      bgColor: 'bg-purple-50',
+                      borderColor: 'border-purple-200',
+                      tip: '제품을 받으면 "제품 수령 완료" 버튼을 클릭해주세요.\n⏰ 수령 후 7일 이내 리뷰 작성 필수!'
+                    },
+                    {
+                      icon: FileText,
+                      label: '리뷰작성',
+                      color: 'from-pink-400 to-rose-500',
+                      bgColor: 'bg-pink-50',
+                      borderColor: 'border-pink-200',
+                      tip: '"리뷰 인증하기" 버튼을 통해 리뷰를 작성하고 인증해주세요.\n수령일로부터 7일 내 작성하셔야 합니다.'
+                    },
+                    {
+                      icon: Eye,
+                      label: '리뷰검수',
+                      color: 'from-orange-400 to-amber-500',
+                      bgColor: 'bg-orange-50',
+                      borderColor: 'border-orange-200',
+                      tip: '관리자가 리뷰를 검수합니다. 승인될 때까지 기다려주세요.'
+                    },
+                    {
+                      icon: Coins,
+                      label: '포인트지급',
+                      color: 'from-emerald-400 to-teal-500',
+                      bgColor: 'bg-emerald-50',
+                      borderColor: 'border-emerald-200',
+                      tip: '🎉 리뷰 승인 시 포인트가 자동으로 지급됩니다!'
+                    }
+                  ].map((step, index, arr) => (
+                    <React.Fragment key={index}>
+                      <div
+                        className="flex-shrink-0 cursor-pointer"
+                        onClick={() => setSelectedStep(step)}
+                      >
+                        <div className={`${step.bgColor} ${step.borderColor} border-2 rounded-xl p-1.5 sm:p-2 transition-all hover:shadow-2xl hover:scale-110 hover:-translate-y-1 duration-300`}>
+                          <div className="flex flex-col items-center gap-1">
+                            <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br ${step.color} rounded-lg flex items-center justify-center shadow-lg`}>
+                              <step.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                            </div>
+                            <span className="text-xs font-bold text-gray-800 whitespace-nowrap">{step.label}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {index < arr.length - 1 && (
+                        <div className="flex items-center justify-center flex-shrink-0 text-gray-300">
+                          <svg className="w-5 h-5 sm:w-7 sm:h-7 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 구매형 프로세스 플로우 */}
+            {processType === 'purchase' && (
+              <div className="relative bg-white/50 rounded-xl p-4">
+                <div className="flex items-center justify-between gap-2 sm:gap-3 overflow-x-auto pb-4">
+                  {[
+                    {
+                      icon: CheckCircle,
+                      label: '선정완료',
+                      color: 'from-green-400 to-emerald-500',
+                      bgColor: 'bg-green-50',
+                      borderColor: 'border-green-200',
+                      tip: '🎉 축하합니다! 캠페인에 선정되었습니다.\n\n📝 다음 단계를 따라주세요:\n1️⃣ 안내된 구매 링크를 통해 제품을 먼저 구매해주세요\n2️⃣ 구매 완료 후 아래 신청내역 카드의 "제품 구매 완료" 버튼을 클릭해주세요\n\n⚠️ 반드시 안내된 링크로 구매하셔야 포인트 지급이 가능합니다!'
+                    },
+                    {
+                      icon: Package,
+                      label: '배송중',
+                      color: 'from-blue-400 to-indigo-500',
+                      bgColor: 'bg-blue-50',
+                      borderColor: 'border-blue-200',
+                      tip: '관리자가 구매 내역 확인 후 배송 정보를 등록하면 송장번호를 확인할 수 있습니다.'
+                    },
+                    {
+                      icon: CheckCircle,
+                      label: '수령완료',
+                      color: 'from-purple-400 to-pink-500',
+                      bgColor: 'bg-purple-50',
+                      borderColor: 'border-purple-200',
+                      tip: '제품을 받으면 "제품 수령 완료" 버튼을 클릭해주세요.\n⏰ 수령 후 7일 이내 리뷰 작성 필수!'
+                    },
+                    {
+                      icon: FileText,
+                      label: '리뷰작성',
+                      color: 'from-pink-400 to-rose-500',
+                      bgColor: 'bg-pink-50',
+                      borderColor: 'border-pink-200',
+                      tip: '"리뷰 인증하기" 버튼을 통해 리뷰를 작성하고 인증해주세요.\n수령일로부터 7일 내 작성하셔야 합니다.'
+                    },
+                    {
+                      icon: Eye,
+                      label: '리뷰검수',
+                      color: 'from-orange-400 to-amber-500',
+                      bgColor: 'bg-orange-50',
+                      borderColor: 'border-orange-200',
+                      tip: '관리자가 리뷰를 검수합니다. 승인될 때까지 기다려주세요.'
+                    },
+                    {
+                      icon: Coins,
+                      label: '포인트지급',
+                      color: 'from-emerald-400 to-teal-500',
+                      bgColor: 'bg-emerald-50',
+                      borderColor: 'border-emerald-200',
+                      tip: '🎉 리뷰 승인 시 포인트가 자동으로 지급됩니다!'
+                    }
+                  ].map((step, index, arr) => (
+                    <React.Fragment key={index}>
+                      <div
+                        className="flex-shrink-0 cursor-pointer"
+                        onClick={() => setSelectedStep(step)}
+                      >
+                        <div className={`${step.bgColor} ${step.borderColor} border-2 rounded-xl p-1.5 sm:p-2 transition-all hover:shadow-2xl hover:scale-110 hover:-translate-y-1 duration-300`}>
+                          <div className="flex flex-col items-center gap-1">
+                            <div className={`w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br ${step.color} rounded-lg flex items-center justify-center shadow-lg`}>
+                              <step.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                            </div>
+                            <span className="text-xs font-bold text-gray-800 whitespace-nowrap">{step.label}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {index < arr.length - 1 && (
+                        <div className="flex items-center justify-center flex-shrink-0 text-gray-300">
+                          <svg className="w-5 h-5 sm:w-7 sm:h-7 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 하단 안내 메시지 */}
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 flex items-center justify-center text-xs font-semibold mt-0.5">
-                      6
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">🎉 리뷰 승인 및 포인트 지급:</span>
-                      <span className="text-gray-700 ml-1">관리자가 리뷰를 승인하면 포인트가 자동으로 지급됩니다! </span>
-                      <a href="/points" className="text-blue-600 hover:text-blue-700 font-semibold underline ml-1">
-                        적립된 포인트 현금으로 출금하기 →
-                      </a>
-                    </div>
+                  <div>
+                    <p className="text-sm font-bold text-primary-900 mb-1">⏰ 리뷰 작성 기한</p>
+                    <p className="text-xs text-primary-700">제품 수령 후 <strong>7일 이내</strong> 리뷰를 작성해주세요</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                      <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-purple-900 mb-1">💡 유용한 팁</p>
+                    <p className="text-xs text-purple-700">각 단계를 클릭하면 상세 안내를 확인할 수 있어요!</p>
                   </div>
                 </div>
               </div>
@@ -1013,10 +1276,9 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                 const appliedAt = safeString(application, 'applied_at') || safeString(application, 'created_at')
                 const processedAt = safeString(application, 'processed_at')
                 const applicationReason = safeString(application, 'application_reason')
-                
-                // 🔥 D-day 계산 (승인된 경우만)
-                const dDayInfo = (status === 'approved' || status === 'in_progress') && processedAt ? 
-                  calculateDDay(processedAt) : null
+
+                // 🔥 리뷰 작성 D-day 계산 (수령완료 상태일 때)
+                const reviewDDay = calculateReviewDDay(application)
                 
                 return (
                   <div
@@ -1060,24 +1322,19 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                                 </span>
                               </div>
                             )}
-                            
+
                             {rewardPoints > 0 && (
                               <div className="flex items-center space-x-1">
                                 <Coins className="w-3 h-3 sm:w-4 sm:h-4" />
-                                <span>리워드: {rewardPoints}P</span>
+                                <span>리워드: {rewardPoints.toLocaleString()}P</span>
                               </div>
                             )}
 
-                            {/* 🔥 D-day 표시 (승인된 경우만) */}
-                            {dDayInfo && (
-                              <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                dDayInfo.status === 'expired' ? 'bg-red-100 text-red-800' :
-                                dDayInfo.status === 'today' ? 'bg-orange-100 text-orange-800' :
-                                dDayInfo.status === 'urgent' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-primary-800'
-                              }`}>
-                                <CalendarDays className="w-3 h-3" />
-                                <span>리뷰 마감: {dDayInfo.text}</span>
+                            {/* 🔥 리뷰 작성 D-day 표시 (수령완료 후) */}
+                            {reviewDDay && (
+                              <div className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold border-2 shadow-sm ${reviewDDay.color}`}>
+                                <CalendarDays className="w-3.5 h-3.5" />
+                                <span>리뷰 마감: {reviewDDay.text}</span>
                               </div>
                             )}
                           </div>
@@ -1317,7 +1574,7 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                     return points > 0 ? (
                       <div className="text-sm sm:text-base text-gray-900">
                         <span className="font-medium text-gray-900">리워드:</span>{' '}
-                        <span className="text-gray-700">{points}P</span>
+                        <span className="text-gray-700">{points.toLocaleString()}P</span>
                       </div>
                     ) : null
                   })()}
@@ -1527,14 +1784,14 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                   <strong>캠페인:</strong> {selectedPointApplication.experience_name || '캠페인명 없음'}
                 </p>
                 <p className="text-sm sm:text-base text-gray-600 mb-4">
-                  <strong>예상 포인트:</strong> {
-                    selectedPointApplication.experience?.rewards || 
-                    selectedPointApplication.experience?.reward_points || 
+                  <strong>예상 포인트:</strong> {(
+                    selectedPointApplication.experience?.rewards ||
+                    selectedPointApplication.experience?.reward_points ||
                     selectedPointApplication.campaignInfo?.rewards ||
-                    selectedPointApplication.campaignInfo?.point_reward || 
-                    selectedPointApplication.point_reward || 
+                    selectedPointApplication.campaignInfo?.point_reward ||
+                    selectedPointApplication.point_reward ||
                     0
-                  }P
+                  ).toLocaleString()}P
                 </p>
                 <div className="bg-orange-50 p-3 sm:p-4 rounded-lg">
                   <p className="text-sm sm:text-base text-orange-800">
@@ -1560,6 +1817,70 @@ const MyApplications: React.FC<MyApplicationsProps> = ({ embedded = false }) => 
                   취소
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 프로세스 단계 상세 정보 모달 */}
+      {selectedStep && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn">
+            {/* 헤더 */}
+            <div className={`bg-gradient-to-r ${selectedStep.color} p-6 text-white relative`}>
+              <button
+                onClick={() => setSelectedStep(null)}
+                className="absolute top-4 right-4 w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                  <selectedStep.icon className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold">{selectedStep.label}</h3>
+                  <p className="text-sm text-white text-opacity-90 mt-1">단계별 상세 안내</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 본문 */}
+            <div className="p-6">
+              <div className={`${selectedStep.bgColor} ${selectedStep.borderColor} border-2 rounded-xl p-4`}>
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                      {selectedStep.tip}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 추가 정보 (배송형일 경우 D-day 정보 등) */}
+              {(selectedStep.label === '제품수령완료' || selectedStep.label === '리뷰작성') && (
+                <div className="mt-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
+                  <div className="flex items-start space-x-3">
+                    <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-yellow-800 mb-1">⏰ 기한 안내</p>
+                      <p className="text-xs text-yellow-700 leading-relaxed">
+                        제품 수령 후 7일 이내에 리뷰를 작성해야 합니다.<br />
+                        기한이 지나면 포인트 지급이 불가능할 수 있으니 주의해주세요!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 닫기 버튼 */}
+              <button
+                onClick={() => setSelectedStep(null)}
+                className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-primary-600 to-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg font-medium"
+              >
+                확인
+              </button>
             </div>
           </div>
         </div>

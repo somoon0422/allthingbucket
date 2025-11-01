@@ -931,7 +931,7 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                배송형 *
+                체험유형 *
               </label>
               <select
                 name="delivery_type"
@@ -941,33 +941,12 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
                 required
               >
                 <option value="배송형">배송형</option>
+                <option value="구매형">구매형</option>
                 <option value="방문형">방문형</option>
                 <option value="온라인">온라인</option>
                 <option value="기타">기타</option>
               </select>
             </div>
-          </div>
-
-          {/* 배송 주소 수집 여부 */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                name="requires_shipping_address"
-                checked={formData.requires_shipping_address}
-                onChange={handleInputChange}
-                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3"
-              />
-              <div>
-                <span className="text-sm font-medium text-gray-900">
-                  📦 신청 시 배송 주소 수집
-                </span>
-                <p className="text-xs text-gray-600 mt-1">
-                  체크 해제 시 신청 모달에서 배송 주소 입력란이 표시되지 않습니다.<br />
-                  (네이버 구매평, 온라인 체험 등 배송이 불필요한 경우 체크 해제)
-                </p>
-              </div>
-            </label>
           </div>
 
           {/* 설명 */}
@@ -1012,13 +991,22 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
                 리워드 포인트
               </label>
               <input
-                type="number"
+                type="text"
                 name="reward_points"
-                value={formData.reward_points}
-                onChange={handleInputChange}
+                value={formData.reward_points ? parseInt(formData.reward_points.toString().replace(/,/g, '')).toLocaleString() : ''}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/,/g, '')
+                  if (value === '' || /^\d+$/.test(value)) {
+                    handleInputChange({
+                      target: {
+                        name: 'reward_points',
+                        value: value
+                      }
+                    } as any)
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="0"
-                min="0"
               />
             </div>
 

@@ -556,7 +556,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                배송형 *
+                체험유형 *
               </label>
               <select
                 name="delivery_type"
@@ -566,6 +566,7 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 required
               >
                 <option value="배송형">배송형</option>
+                <option value="구매형">구매형</option>
                 <option value="방문형">방문형</option>
                 <option value="온라인">온라인</option>
                 <option value="기타">기타</option>
@@ -635,13 +636,22 @@ const CampaignCreationModal: React.FC<CampaignCreationModalProps> = ({
                 리워드 포인트
               </label>
               <input
-                type="number"
+                type="text"
                 name="reward_points"
-                value={formData.reward_points}
-                onChange={handleInputChange}
+                value={formData.reward_points ? parseInt(formData.reward_points.replace(/,/g, '')).toLocaleString() : ''}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/,/g, '')
+                  if (value === '' || /^\d+$/.test(value)) {
+                    handleInputChange({
+                      target: {
+                        name: 'reward_points',
+                        value: value
+                      }
+                    } as any)
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="0"
-                min="0"
               />
             </div>
 

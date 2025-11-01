@@ -152,20 +152,18 @@ const Home: React.FC = () => {
     const loadData = async () => {
       setLoading(true)
       try {
-        let campaigns = [], users = [], reviews = []
-
-        const [campaignsResult, usersResult, reviewsResult] = await Promise.allSettled([
+        // 🚀 성능 개선: 필수 데이터만 로드 (캠페인과 최근 리뷰 6개만)
+        const [campaignsResult, reviewsResult] = await Promise.allSettled([
           (dataService.entities as any).campaigns.list().catch(() => []),
-          (dataService.entities as any).users.list().catch(() => []),
           (dataService.entities as any).review_submissions.list().catch(() => [])
         ])
 
-        campaigns = campaignsResult.status === 'fulfilled' ? campaignsResult.value : []
-        users = usersResult.status === 'fulfilled' ? usersResult.value : []
-        reviews = reviewsResult.status === 'fulfilled' ? reviewsResult.value : []
+        const campaigns = campaignsResult.status === 'fulfilled' ? campaignsResult.value : []
+        const reviews = reviewsResult.status === 'fulfilled' ? reviewsResult.value : []
 
         updateFeaturedExperiences(campaigns)
-        updateStats(campaigns, users, reviews)
+        // 통계는 캠페인 개수만 사용 (users는 로드하지 않음)
+        updateStats(campaigns, [], reviews)
         updateReviews(reviews)
 
       } catch (error) {
@@ -322,6 +320,7 @@ const Home: React.FC = () => {
                             src={imageSrc}
                             alt={experience.campaign_name || ''}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            loading="lazy"
                             onError={(e) => e.currentTarget.style.display = 'none'}
                           />
                         )

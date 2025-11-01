@@ -45,18 +45,37 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 're
 
               <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
                 <h3 style="color: #2c5aa0; margin-top: 0;">📋 다음 단계</h3>
-                <ol style="color: #666; margin: 0; padding-left: 20px; line-height: 1.8;">
-                  <li><strong>나의 캠페인에서 체험단 진행 프로세스 안내 필독</strong></li>
-                  <li>제품 수령
-                    <ul style="margin-top: 8px;">
-                      <li><strong>배송형:</strong> 입력하신 주소로 제품 배송</li>
-                      <li><strong>구매형:</strong> 제품 구매 후 → <strong style="color: #e91e63;">"나의 캠페인"에서 "제품 구매 완료" 클릭</strong> → 발송 후 송장 번호 확인 가능</li>
-                    </ul>
-                  </li>
-                  <li>체험 진행 및 사진 촬영</li>
-                  <li>리뷰 작성 및 제출</li>
-                  <li>리뷰 승인 후 포인트 지급</li>
-                </ol>
+                <p style="color: #666; margin: 0 0 16px 0; font-weight: bold;">⚠️ 반드시 "나의 캠페인"에서 체험단 진행 프로세스 안내를 먼저 확인해주세요!</p>
+
+                <div style="background: #fff; padding: 16px; border-radius: 8px; margin: 16px 0; border: 2px solid #10b981;">
+                  <h4 style="color: #059669; margin: 0 0 12px 0; font-size: 16px;">📦 배송형 캠페인</h4>
+                  <ol style="color: #666; margin: 0; padding-left: 20px; line-height: 1.8; font-size: 14px;">
+                    <li><strong>선정완료:</strong> 입력하신 주소로 제품 발송 준비</li>
+                    <li><strong>배송중:</strong> 관리자가 배송 정보를 등록하면 송장번호 확인 가능</li>
+                    <li><strong>수령완료:</strong> 제품을 받으면 "제품 수령 완료" 버튼 클릭 (⏰ 수령 후 7일 이내 리뷰 작성 필수!)</li>
+                    <li><strong>리뷰작성:</strong> "리뷰 인증하기" 버튼으로 리뷰 작성 및 인증</li>
+                    <li><strong>리뷰검수:</strong> 관리자 검수 후 승인</li>
+                    <li><strong>포인트지급:</strong> 🎉 리뷰 승인 시 포인트 자동 지급</li>
+                  </ol>
+                </div>
+
+                <div style="background: #fff; padding: 16px; border-radius: 8px; margin: 16px 0; border: 2px solid #f59e0b;">
+                  <h4 style="color: #d97706; margin: 0 0 12px 0; font-size: 16px;">🛒 구매형 캠페인</h4>
+                  <ol style="color: #666; margin: 0; padding-left: 20px; line-height: 1.8; font-size: 14px;">
+                    <li><strong>선정완료:</strong>
+                      <ul style="margin-top: 8px; color: #d97706;">
+                        <li>📝 1️⃣ 안내된 구매 링크를 통해 제품을 먼저 구매</li>
+                        <li>📝 2️⃣ 구매 완료 후 "나의 캠페인"에서 <strong>"제품 구매 완료"</strong> 버튼 클릭</li>
+                        <li>⚠️ <strong>반드시 안내된 링크로 구매</strong>해야 포인트 지급 가능!</li>
+                      </ul>
+                    </li>
+                    <li><strong>배송중:</strong> 관리자가 구매 내역 확인 후 배송 정보 등록, 송장번호 확인 가능</li>
+                    <li><strong>수령완료:</strong> 제품을 받으면 "제품 수령 완료" 버튼 클릭 (⏰ 수령 후 7일 이내 리뷰 작성 필수!)</li>
+                    <li><strong>리뷰작성:</strong> "리뷰 인증하기" 버튼으로 리뷰 작성 및 인증</li>
+                    <li><strong>리뷰검수:</strong> 관리자 검수 후 승인</li>
+                    <li><strong>포인트지급:</strong> 🎉 리뷰 승인 시 포인트 자동 지급</li>
+                  </ol>
+                </div>
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
@@ -79,7 +98,7 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 're
             </div>
           </div>
         `,
-        text: `안녕하세요, ${data.userName}님!\n\n${data.campaignName} 체험단 신청이 승인되었습니다!\n\n⚠️ 필독사항\n반드시 "나의 캠페인"에서 체험단 진행 프로세스 안내를 확인해주세요!\n\n📋 다음 단계:\n1. 나의 캠페인에서 체험단 진행 프로세스 안내 필독\n2. 제품 수령\n   - 배송형: 입력하신 주소로 제품 배송\n   - 구매형: 제품 구매 후 → "나의 캠페인"에서 "제품 구매 완료" 클릭 → 발송 후 송장 번호 확인 가능\n3. 체험 진행 및 사진 촬영\n4. 리뷰 작성 및 제출\n5. 리뷰 승인 후 포인트 지급\n\n내 신청 현황: ${baseUrl}/my-applications\n\n문의: support@allthingbucket.com`
+        text: `안녕하세요, ${data.userName}님!\n\n${data.campaignName} 체험단 신청이 승인되었습니다!\n\n⚠️ 필독사항\n반드시 "나의 캠페인"에서 체험단 진행 프로세스 안내를 먼저 확인해주세요!\n\n📋 다음 단계:\n\n📦 배송형 캠페인:\n1. 선정완료: 입력하신 주소로 제품 발송 준비\n2. 배송중: 관리자가 배송 정보를 등록하면 송장번호 확인 가능\n3. 수령완료: 제품을 받으면 "제품 수령 완료" 버튼 클릭 (⏰ 수령 후 7일 이내 리뷰 작성 필수!)\n4. 리뷰작성: "리뷰 인증하기" 버튼으로 리뷰 작성 및 인증\n5. 리뷰검수: 관리자 검수 후 승인\n6. 포인트지급: 🎉 리뷰 승인 시 포인트 자동 지급\n\n🛒 구매형 캠페인:\n1. 선정완료:\n   📝 1️⃣ 안내된 구매 링크를 통해 제품을 먼저 구매\n   📝 2️⃣ 구매 완료 후 "나의 캠페인"에서 "제품 구매 완료" 버튼 클릭\n   ⚠️ 반드시 안내된 링크로 구매해야 포인트 지급 가능!\n2. 배송중: 관리자가 구매 내역 확인 후 배송 정보 등록, 송장번호 확인 가능\n3. 수령완료: 제품을 받으면 "제품 수령 완료" 버튼 클릭 (⏰ 수령 후 7일 이내 리뷰 작성 필수!)\n4. 리뷰작성: "리뷰 인증하기" 버튼으로 리뷰 작성 및 인증\n5. 리뷰검수: 관리자 검수 후 승인\n6. 포인트지급: 🎉 리뷰 승인 시 포인트 자동 지급\n\n내 신청 현황: ${baseUrl}/my-applications\n\n문의: support@allthingbucket.com`
       }
       
     case 'rejection':

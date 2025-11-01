@@ -81,41 +81,10 @@ const Experiences: React.FC = () => {
       await checkSupabaseData()
 
       const campaigns = await dataService.entities.campaigns.list()
-      console.log('✅ Supabase 체험단 데이터 성공:', campaigns)
+      console.log('✅ 캠페인 데이터 로드 완료:', campaigns.length, '개')
 
-      // 🔥 각 캠페인의 실제 신청자 수 계산
-      const applications = await (dataService.entities as any).user_applications.list()
-      console.log('✅ 전체 신청 내역:', applications.length)
-
-      // 캠페인별 신청자 수 계산
-      const campaignsWithCount = campaigns.map((campaign: any) => {
-        const campaignApplications = applications.filter((app: any) =>
-          app.campaign_id === campaign.id
-        )
-        const actualCount = campaignApplications.length
-
-        // 실제 신청자 수로 업데이트
-        return {
-          ...campaign,
-          current_participants: actualCount,
-          current_applicants: actualCount // 호환성을 위해 둘 다 설정
-        }
-      })
-
-      // 🔥 디버깅: 각 캠페인의 필드 확인
-      if (Array.isArray(campaignsWithCount) && campaignsWithCount.length > 0) {
-        const firstCampaign = campaignsWithCount[0] as any
-        console.log('🔍 첫 번째 캠페인 상세 데이터 (신청자 수 포함):', {
-          campaign_name: firstCampaign?.campaign_name,
-          status: firstCampaign?.status,
-          current_participants: firstCampaign?.current_participants,
-          current_applicants: firstCampaign?.current_applicants,
-          max_participants: firstCampaign?.max_participants,
-          allFields: Object.keys(firstCampaign || {})
-        })
-      }
-
-      const safeCampaigns = Array.isArray(campaignsWithCount) ? campaignsWithCount : []
+      // 🚀 성능 개선: DB에 저장된 current_participants를 그대로 사용
+      const safeCampaigns = Array.isArray(campaigns) ? campaigns : []
       setExperiences(safeCampaigns)
       setFilteredExperiences(safeCampaigns)
     } catch (error) {
@@ -322,6 +291,7 @@ const Experiences: React.FC = () => {
                           src={imageSrc}
                           alt={experience.campaign_name || experience.title || experience.experience_name || experience.name}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          loading="lazy"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none'
                           }}
