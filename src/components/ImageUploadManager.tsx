@@ -115,8 +115,8 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
         toast.error(`${file.name}은(는) 이미지 파일이 아닙니다`)
         return false
       }
-      if (file.size > 10 * 1024 * 1024) { // 10MB 제한
-        toast.error(`${file.name}은(는) 10MB를 초과합니다`)
+      if (file.size > 20 * 1024 * 1024) { // 20MB 제한
+        toast.error(`${file.name}은(는) 20MB를 초과합니다`)
         return false
       }
       return true
@@ -243,7 +243,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
                 이미지를 드래그하거나 클릭하여 업로드
               </p>
               <p className="text-xs text-gray-500">
-                최대 {maxImages}개, 10MB 이하의 이미지 파일
+                최대 {maxImages}개, 20MB 이하의 이미지 파일
               </p>
             </div>
           )}
@@ -336,7 +336,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
             {allowFileUpload && <li>• 파일 업로드: JPG, PNG, GIF 등 이미지 파일만 가능</li>}
             {allowUrlInput && <li>• URL 입력: 이미지 직접 링크 주소 입력 가능</li>}
             <li>• 최대 {maxImages}개까지 업로드 가능</li>
-            <li>• 파일 크기는 10MB 이하로 제한</li>
+            <li>• 파일 크기는 20MB 이하로 제한</li>
           </ul>
         </div>
       </div>
