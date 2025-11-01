@@ -2613,6 +2613,42 @@ const AdminDashboard: React.FC = () => {
         }
       }
 
+      // 🔥 이메일 발송 (체험단 선정)
+      const userEmail = application.email
+      if (userEmail) {
+        try {
+          // 캠페인 정보에서 커스텀 이메일 내용 가져오기
+          const campaignId = application.campaign_id || application.experience_id
+          const campaign = experiences.find(exp => exp.id === campaignId || exp._id === campaignId)
+
+          if (campaign && campaign.approval_email_content && campaign.approval_email_content.trim()) {
+            // 커스텀 이메일 발송 (캠페인 등록 시 작성한 내용 사용)
+            const customSubject = campaign.approval_email_subject || `🎉 체험단 신청이 승인되었습니다! - ${campaignName}`
+            const customContent = campaign.approval_email_content
+              .replace(/\{신청자명\}/g, userName)
+              .replace(/\{캠페인명\}/g, campaignName)
+              .replace(/\{포인트\}/g, rewardPoints.toString())
+
+            await emailNotificationService.sendEmail({
+              to: userEmail,
+              toName: userName,
+              type: 'custom',
+              data: {
+                subject: customSubject,
+                content: customContent
+              }
+            })
+            console.log('✅ 커스텀 승인 이메일 발송 완료:', userName)
+          } else {
+            // 기본 템플릿 이메일 발송
+            await emailNotificationService.sendApprovalEmail(userEmail, userName, campaignName)
+            console.log('✅ 기본 승인 이메일 발송 완료:', userName)
+          }
+        } catch (emailError) {
+          console.error('⚠️ 이메일 발송 실패 (승인은 완료됨):', emailError)
+        }
+      }
+
       toast.success(`${userName}님의 신청이 승인되었습니다`)
       await loadApplications()
     } catch (error) {
