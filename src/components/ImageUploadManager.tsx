@@ -49,7 +49,9 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
       const uploadedUrls: string[] = []
 
       for (const file of files) {
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`
+        // 파일 확장자만 추출 (한글 파일명 문제 방지)
+        const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`
         const filePath = `campaigns/${fileName}`
 
         // Supabase Storage에 업로드
