@@ -41,6 +41,63 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
     }
   }, [initialImages])
 
+  // 🔄 이미지 압축 함수 (Canvas API 사용)
+  const compressImage = useCallback(async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (e) => {
+        const img = new Image()
+        img.src = e.target?.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+
+          // 이미지가 너무 크면 최대 크기로 제한 (긴 쪽 기준 2000px)
+          const maxSize = 2000
+          let width = img.width
+          let height = img.height
+
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height * maxSize) / width
+              width = maxSize
+            } else {
+              width = (width * maxSize) / height
+              height = maxSize
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+
+          // 이미지 그리기
+          ctx?.drawImage(img, 0, 0, width, height)
+
+          // JPEG로 변환 (품질 0.85)
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                })
+                console.log(`📦 압축 완료: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
+                resolve(compressedFile)
+              } else {
+                reject(new Error('이미지 압축 실패'))
+              }
+            },
+            'image/jpeg',
+            0.85 // 품질 85%
+          )
+        }
+        img.onerror = () => reject(new Error('이미지 로드 실패'))
+      }
+      reader.onerror = () => reject(new Error('파일 읽기 실패'))
+    })
+  }, [])
+
   // 🔄 Supabase Storage 업로드
   const handleStorageUpload = useCallback(async (files: File[]) => {
     try {
@@ -49,15 +106,17 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
       const uploadedUrls: string[] = []
 
       for (const file of files) {
-        // 파일 확장자만 추출 (한글 파일명 문제 방지)
-        const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`
+        // 이미지 압축
+        const compressedFile = await compressImage(file)
+
+        // 파일 확장자는 항상 jpg (압축 후)
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`
         const filePath = `campaigns/${fileName}`
 
         // Supabase Storage에 업로드
         const { data, error } = await supabase.storage
           .from('campaign_images')
-          .upload(filePath, file, {
+          .upload(filePath, compressedFile, {
             cacheControl: '3600',
             upsert: false
           })
@@ -87,7 +146,7 @@ const ImageUploadManager: React.FC<ImageUploadManagerProps> = ({
       toast.error('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
       throw error
     }
-  }, [images, onImagesChange])
+  }, [images, onImagesChange, compressImage])
 
   // 🔥 파일 업로드 처리 (Base64 방식)
   const handleFileUpload = useCallback(async (files: FileList) => {
