@@ -703,7 +703,7 @@ const CampaignDetail: React.FC = () => {
                   <img
                     src={displayMainImages[currentMainImageIndex] || 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'}
                     alt={`${productName} 메인 이미지 ${currentMainImageIndex + 1}`}
-                    className="w-full h-auto object-contain transition-transform duration-500 max-h-[600px]"
+                    className="w-full h-auto object-contain transition-transform duration-200 max-h-[600px]"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg'
                     }}
