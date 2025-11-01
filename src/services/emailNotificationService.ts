@@ -36,13 +36,27 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 're
                 <strong>${data.campaignName}</strong> 체험단 신청이 승인되었습니다! 🎊
               </p>
               
+              <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                <h3 style="color: #856404; margin-top: 0;">⚠️ 필독사항</h3>
+                <p style="color: #856404; margin: 10px 0; font-weight: bold;">
+                  반드시 "나의 캠페인"에서 <strong>체험단 진행 프로세스 안내</strong>를 확인해주세요!
+                </p>
+              </div>
+
               <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
                 <h3 style="color: #2c5aa0; margin-top: 0;">📋 다음 단계</h3>
-                <ul style="color: #666; margin: 0; padding-left: 20px;">
-                  <li>제품을 받으신 후 체험을 진행해주세요</li>
-                  <li>리뷰 작성 기한을 확인해주세요</li>
-                  <li>리뷰 가이드라인을 숙지해주세요</li>
-                </ul>
+                <ol style="color: #666; margin: 0; padding-left: 20px; line-height: 1.8;">
+                  <li><strong>나의 캠페인에서 체험단 진행 프로세스 안내 필독</strong></li>
+                  <li>제품 수령
+                    <ul style="margin-top: 8px;">
+                      <li><strong>배송형:</strong> 입력하신 주소로 제품 배송</li>
+                      <li><strong>구매형:</strong> 제품 구매 후 → <strong style="color: #e91e63;">"나의 캠페인"에서 "제품 구매 완료" 클릭</strong> → 발송 후 송장 번호 확인 가능</li>
+                    </ul>
+                  </li>
+                  <li>체험 진행 및 사진 촬영</li>
+                  <li>리뷰 작성 및 제출</li>
+                  <li>리뷰 승인 후 포인트 지급</li>
+                </ol>
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
@@ -65,7 +79,7 @@ const createEmailTemplate = (type: 'approval' | 'rejection' | 'withdrawal' | 're
             </div>
           </div>
         `,
-        text: `안녕하세요, ${data.userName}님!\n\n${data.campaignName} 체험단 신청이 승인되었습니다!\n\n다음 단계:\n- 제품을 받으신 후 체험을 진행해주세요\n- 리뷰 작성 기한을 확인해주세요\n- 리뷰 가이드라인을 숙지해주세요\n\n내 신청 현황: ${baseUrl}/my-applications\n\n문의: support@allthingbucket.com`
+        text: `안녕하세요, ${data.userName}님!\n\n${data.campaignName} 체험단 신청이 승인되었습니다!\n\n⚠️ 필독사항\n반드시 "나의 캠페인"에서 체험단 진행 프로세스 안내를 확인해주세요!\n\n📋 다음 단계:\n1. 나의 캠페인에서 체험단 진행 프로세스 안내 필독\n2. 제품 수령\n   - 배송형: 입력하신 주소로 제품 배송\n   - 구매형: 제품 구매 후 → "나의 캠페인"에서 "제품 구매 완료" 클릭 → 발송 후 송장 번호 확인 가능\n3. 체험 진행 및 사진 촬영\n4. 리뷰 작성 및 제출\n5. 리뷰 승인 후 포인트 지급\n\n내 신청 현황: ${baseUrl}/my-applications\n\n문의: support@allthingbucket.com`
       }
       
     case 'rejection':
