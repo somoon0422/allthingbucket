@@ -410,7 +410,7 @@ const Home: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 text-primary-600 font-bold">
                         <Coins className="w-5 h-5" />
-                        <span>{experience.rewards || 0} P</span>
+                        <span>{(experience.rewards || 0).toLocaleString()} P</span>
                       </div>
                       <div className="inline-flex items-center gap-1 text-primary-600 font-semibold group-hover:gap-2 transition-all">
                         <span>자세히 보기</span>

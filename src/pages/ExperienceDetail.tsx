@@ -655,7 +655,7 @@ function ExperienceDetail() {
                     </div>
                     <div className="flex items-center">
                       <Coins className="w-4 h-4 mr-1" />
-                      <span>리워드: {experience.reward_points || 0}P</span>
+                      <span>리워드: {(experience.reward_points || 0).toLocaleString()}P</span>
                     </div>
               </div>
             </div>

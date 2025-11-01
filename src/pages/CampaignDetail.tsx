@@ -1061,7 +1061,7 @@ const CampaignDetail: React.FC = () => {
 
                   <div className="flex justify-between items-center py-2 border-b border-slate-100">
                     <span className="text-slate-600 font-medium text-xs">리워드</span>
-                    <span className="font-bold text-sm text-gold-600">{rewards} P</span>
+                    <span className="font-bold text-sm text-gold-600">{rewards.toLocaleString()} P</span>
                   </div>
 
                   <div className="flex justify-between items-center py-2 border-b border-slate-100">

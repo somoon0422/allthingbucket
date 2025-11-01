@@ -449,7 +449,7 @@ const Experiences: React.FC = () => {
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                     <div className="flex items-center text-primary-600 font-bold text-lg">
                       <Coins className="w-5 h-5 mr-2" />
-                      {experience.rewards || 0} P
+                      {(experience.rewards || 0).toLocaleString()} P
                     </div>
                   </div>
                 </div>
