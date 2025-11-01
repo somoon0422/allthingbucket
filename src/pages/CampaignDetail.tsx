@@ -165,14 +165,15 @@ const CampaignDetail: React.FC = () => {
 
     try {
       setLoadingComments(true)
-      const applications = await dataService.entities.user_applications.list()
+      // 🚀 성능 개선: 필터를 사용해서 이 캠페인의 신청만 조회
+      const applications = await dataService.entities.user_applications.list({
+        filter: { campaign_id: id }
+      })
       const users = await dataService.entities.users.list()
 
-      // 이 캠페인에 대한 신청 중 코멘트가 있는 것만 필터링
+      // 코멘트가 있는 것만 필터링
       const commentsWithApplicants = applications
         .filter((app: any) => {
-          if (app.campaign_id !== id) return false
-
           // 루트 레벨과 application_data 둘 다 체크
           const rootComment = app.applicant_comment
           const dataComment = app.application_data?.applicant_comment
@@ -215,13 +216,16 @@ const CampaignDetail: React.FC = () => {
 
     try {
       setLoadingReviews(true)
-      const allReviews = await dataService.entities.user_reviews.list()
+      // 🚀 성능 개선: 필터를 사용해서 이 캠페인의 리뷰만 조회
+      const allReviews = await dataService.entities.user_reviews.list({
+        filter: { campaign_id: id }
+      })
       const users = await dataService.entities.users.list()
 
       // review_submissions에서 blog_url 가져오기
       const reviewSubmissions = await (dataService.entities as any).review_submissions?.list() || []
 
-      // 이 캠페인에 대한 리뷰만 필터링
+      // experience_id로도 조회된 경우를 위한 추가 필터링
       const campaignReviews = allReviews
         .filter((review: any) => review.campaign_id === id || review.experience_id === id)
         .map((review: any) => {
@@ -312,12 +316,11 @@ const CampaignDetail: React.FC = () => {
         console.log('🔍 캠페인 상세 정보 로딩:', id)
         const campaignData = await getCampaignById(id)
 
-        // 🔥 실제 신청자 수 계산
-        const applications = await (dataService.entities as any).user_applications.list()
-        const campaignApplications = applications.filter((app: any) =>
-          app.campaign_id === id
-        )
-        const actualCount = campaignApplications.length
+        // 🚀 성능 개선: 필터를 사용해서 이 캠페인의 신청만 조회
+        const applications = await (dataService.entities as any).user_applications.list({
+          filter: { campaign_id: id }
+        })
+        const actualCount = applications.length
 
         // 캠페인 데이터에 실제 신청자 수 추가
         const campaignWithCount = {

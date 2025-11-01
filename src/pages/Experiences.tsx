@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { dataService, checkSupabaseData } from '../lib/dataService'
+import { dataService } from '../lib/dataService'
 import { setExperiencesOGTags } from '../utils/ogTags'
 import { useAuth } from '../hooks/useAuth'
 import { useWishlist } from '../hooks/useWishlist'
@@ -82,9 +82,7 @@ const Experiences: React.FC = () => {
       setError(null)
       console.log('🔥 체험단 로딩 시작...')
 
-      // Supabase 데이터 확인
-      await checkSupabaseData()
-
+      // 🚀 성능 개선: checkSupabaseData() 제거 (중복 조회 방지)
       const campaigns = await dataService.entities.campaigns.list()
       console.log('✅ 캠페인 데이터 로드 완료:', campaigns.length, '개')
 
