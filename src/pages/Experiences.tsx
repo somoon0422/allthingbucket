@@ -35,14 +35,19 @@ const Experiences: React.FC = () => {
 
   // D-Day 계산 함수 - 실제 날짜 기반
   const getDeadlineDisplay = (experience: any) => {
+    // 상시 신청이 활성화된 경우 항상 모집중
+    if (experience.is_always_open_application) {
+      return '상시모집'
+    }
+
     // 다양한 날짜 필드명 시도
-    const deadline = experience.application_end_date || 
+    const deadline = experience.application_end_date ||
                     experience.application_deadline ||
                     experience.end_date ||
                     experience.deadline ||
                     experience.신청_마감일 ||
                     experience.application_end
-    
+
     if (!deadline) {
       // 날짜가 없으면 기본값 대신 상태 기반으로 표시
       const status = experience.status || experience.campaign_status
@@ -50,16 +55,16 @@ const Experiences: React.FC = () => {
       if (status === 'active' || status === 'recruiting') return '모집중'
       return '진행중'
     }
-    
+
     try {
       const deadlineDate = new Date(deadline)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       deadlineDate.setHours(0, 0, 0, 0)
-      
+
       const diffTime = deadlineDate.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
+
       if (diffDays < 0) return '마감됨'
       if (diffDays === 0) return 'D-Day'
       if (diffDays === 1) return 'D-1'
@@ -311,14 +316,19 @@ const Experiences: React.FC = () => {
                     {(() => {
                       // 🔥 종합적인 마감 상태 체크 (실제 DB 스키마 기준)
                       const isExpiredCampaign = (() => {
+                        // 0. 상시 신청이 활성화된 경우 마감되지 않음
+                        if (experience.is_always_open_application) {
+                          return false
+                        }
+
                         // 1. 캠페인 상태 체크 (실제 DB 필드명: status)
                         const campaignStatus = experience.status || 'active'
                         if (campaignStatus === 'completed' || campaignStatus === 'cancelled' || campaignStatus === 'closed' || campaignStatus === 'inactive' || campaignStatus === 'ended') {
                           return true
                         }
-                        
+
                         // 2. 신청 마감일 체크 (실제 DB 필드명: end_date, application_end, review_deadline)
-                        const applicationEndDate = experience.end_date || 
+                        const applicationEndDate = experience.end_date ||
                                                  experience.application_end ||
                                                  experience.review_deadline
                         if (applicationEndDate) {
@@ -334,14 +344,14 @@ const Experiences: React.FC = () => {
                             console.warn('날짜 파싱 오류:', applicationEndDate, error)
                           }
                         }
-                        
+
                         // 3. 모집인원 체크 (실제 DB 필드명: max_participants, current_participants)
                         const maxParticipants = experience.max_participants
                         const currentParticipants = experience.current_participants || 0
                         if (maxParticipants && currentParticipants >= maxParticipants) {
                           return true
                         }
-                        
+
                         return false
                       })()
 

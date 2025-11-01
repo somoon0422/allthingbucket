@@ -755,14 +755,18 @@ const CampaignDetail: React.FC = () => {
                   {/* 상태 배지 */}
                   <div className="absolute top-4 left-4">
                     <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold backdrop-blur ${
-                      applicationDeadline && getDeadlineDisplay(applicationDeadline) !== '마감일 미정'
+                      campaign?.is_always_open_application
+                        ? 'bg-primary-500/90 text-white'
+                        : applicationDeadline && getDeadlineDisplay(applicationDeadline) !== '마감일 미정'
                         ? getDeadlineDisplay(applicationDeadline) === '마감됨'
                           ? 'bg-slate-800/80 text-white'
                           : 'bg-primary-500/90 text-white'
                         : statusInfo.color
                     }`}>
                       <StatusIcon className="w-3 h-3 mr-1" />
-                      {applicationDeadline && getDeadlineDisplay(applicationDeadline) !== '마감일 미정'
+                      {campaign?.is_always_open_application
+                        ? '상시모집'
+                        : applicationDeadline && getDeadlineDisplay(applicationDeadline) !== '마감일 미정'
                         ? getDeadlineDisplay(applicationDeadline)
                         : 'D-7'}
                     </span>

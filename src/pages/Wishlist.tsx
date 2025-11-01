@@ -193,16 +193,21 @@ const Wishlist: React.FC<WishlistProps> = ({ embedded = false }) => {
               
               // 🔥 종합적인 마감 상태 체크 (실제 DB 스키마 기준)
               const isExpiredCampaign = (() => {
+                // 0. 상시 신청이 활성화된 경우 마감되지 않음
+                if (campaign.is_always_open_application) {
+                  return false
+                }
+
                 // 1. 캠페인 상태 체크 (실제 필드명)
                 const campaignStatus = campaign.campaign_status || campaign.status || 'recruiting'
                 if (campaignStatus === 'completed' || campaignStatus === 'cancelled' || campaignStatus === 'closed' || campaignStatus === 'inactive') {
                   return true
                 }
-                
+
                 // 2. 신청 마감일 체크 (실제 필드명)
-                const applicationEndDate = campaign.end_date || 
+                const applicationEndDate = campaign.end_date ||
                                          campaign.review_deadline ||
-                                         campaign.application_end_date || 
+                                         campaign.application_end_date ||
                                          campaign.application_end
                 if (applicationEndDate) {
                   const endDate = new Date(applicationEndDate)
@@ -213,14 +218,14 @@ const Wishlist: React.FC<WishlistProps> = ({ embedded = false }) => {
                     return true
                   }
                 }
-                
+
                 // 3. 모집인원 체크 (실제 필드명)
                 const maxParticipants = campaign.recruitment_count || campaign.max_participants
                 const currentParticipants = campaign.current_applicants || campaign.current_participants || 0
                 if (maxParticipants && currentParticipants >= maxParticipants) {
                   return true
                 }
-                
+
                 return false
               })()
               
@@ -275,8 +280,12 @@ const Wishlist: React.FC<WishlistProps> = ({ embedded = false }) => {
                     
                     {/* 상태 배지 */}
                     <div className="absolute top-3 left-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(finalStatus)}`}>
-                        {getStatusLabel(finalStatus)}
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        campaign.is_always_open_application
+                          ? 'bg-green-100 text-green-800'
+                          : getStatusColor(finalStatus)
+                      }`}>
+                        {campaign.is_always_open_application ? '상시모집' : getStatusLabel(finalStatus)}
                       </span>
                     </div>
                     

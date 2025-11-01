@@ -25,6 +25,11 @@ const Home: React.FC = () => {
 
   // D-Day 계산 함수 - 실제 날짜 기반
   const getDeadlineDisplay = (experience: any) => {
+    // 상시 신청이 활성화된 경우 항상 모집중
+    if (experience.is_always_open_application) {
+      return '상시모집'
+    }
+
     const deadline = experience.application_end_date ||
                     experience.application_deadline ||
                     experience.end_date ||
@@ -70,6 +75,11 @@ const Home: React.FC = () => {
 
   // 캠페인이 마감되었는지 확인하는 함수
   const isCampaignClosed = (experience: any) => {
+    // 상시 신청이 활성화된 경우 마감되지 않음
+    if (experience.is_always_open_application) {
+      return false
+    }
+
     const status = experience.status || experience.campaign_status
     const maxParticipants = experience.max_participants
     const currentParticipants = experience.current_participants || 0
