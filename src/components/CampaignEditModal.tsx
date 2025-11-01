@@ -597,7 +597,6 @@ const CampaignEditModal: React.FC<CampaignEditModalProps> = ({
         content_start: formData.content_start_date || new Date().toISOString(),
         content_end: formData.content_end_date || null,
         review_deadline: formData.content_end_date || null,
-        influencer_announcement: formData.experience_announcement_date || null,
         result_announcement: formData.result_announcement_date || null,
         experience_location: formData.experience_location || null,
         experience_period: formData.experience_period || null,
