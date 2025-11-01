@@ -226,9 +226,16 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           ''
         )
 
+        console.log('👤 사용자 이름 설정:', {
+          profileName: profile.name,
+          userName: user.name,
+          adminName: user.admin_name,
+          finalName: user.name || user.admin_name || profile.name || ''
+        })
+
         setFormData(prev => ({
           ...prev,
-          name: profile.name || user.name || user.admin_name || '',
+          name: user.name || user.admin_name || profile.name || '',
           email: profile.email || user.email || '',
           phone: phoneNumber,
           address: profile.address || '',
